@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: orange; icon-glyph: crown;
-await main()
+
 async function main() {
   const scriptName = '高德会员等级'
   const version = '1.0.0';
