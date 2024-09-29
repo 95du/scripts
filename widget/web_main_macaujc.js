@@ -13,7 +13,7 @@ async function main() {
   
   const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
   
-  const [scrName, scrUrl] = ['macaujc.js', 'https://gitcode.net/4qiao/scriptable/raw/master/table/macaujc.js'];
+  const [scrName, scrUrl] = ['macaujc.js', 'https://raw.githubusercontent.com/95du/scripts/main/api/web_macaujc.js'];
 
   /**
    * 创建，获取存储路径
