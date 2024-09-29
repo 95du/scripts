@@ -8,7 +8,6 @@
  * 更新日期: 2024-03-27
  */
 
-await main()
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_amap_vip');
