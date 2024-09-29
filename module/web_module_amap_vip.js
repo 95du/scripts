@@ -23,9 +23,8 @@ hostname = *.amap.com
 =================================
  */
 
-// 随时守护彼此位置安全
 const scriptName = '95du_amap_vip';
-const scriptUrl = atob('YUhSMGNITTZMeTluYVhSamIyUmxMbTVsZEM4MGNXbGhieTltY21GdFpYZHZjbXN2Y21GM0wyMWhjM1JsY2k5aGNHa3ZkMlZpWDIxaGFXNWZZVzFoY0Y5MmFYQXVhbk09');
+const scriptUrl = atob('YUhSMGNITTZMeTl5WVhjdVoybDBhSFZpZFhObGNtTnZiblJsYm5RdVkyOXRMemsxWkhVdmMyTnlhWEIwY3k4dmJXRnBiaTkzYVdSblpYUXZkMlZpWDIxaGFXNWZZVzFoY0Y5MmFYQXVhbk09');
 
 const fm = FileManager.local();
 const runPath = fm.joinPath(fm.documentsDirectory(), scriptName);
