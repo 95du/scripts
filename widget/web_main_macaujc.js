@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: teal; icon-glyph: cog;
-await main()
+
 async function main() {
   const uri = Script.name();
   const scriptName = '澳门六合彩'
