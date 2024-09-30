@@ -8,7 +8,6 @@
  * 澳门六合彩开奖结果
  */
 
-await main()
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_macaujc');
