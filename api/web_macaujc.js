@@ -8,7 +8,7 @@
  * 澳门六合彩开奖结果
  */
 
-
+await main()
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_macaujc');
@@ -25,14 +25,12 @@ async function main() {
    */
   const useFileManager = ( cacheTime ) => {
     return {
-      readString: (fileName) => {
+      read: (fileName) => {
         const filePath = fm.joinPath(cache, fileName);
-        if (fm.fileExists(filePath) && cacheTime < 21) {
-          return fm.readString(filePath);
-        }
+        if (fm.fileExists(filePath) && cacheTime < 21) return fm.readString(filePath);
         return null;
       },
-      writeString: (fileName, content) => fm.writeString(fm.joinPath(cache, fileName), content)
+      write: (fileName, content) => fm.writeString(fm.joinPath(cache, fileName), content)
     }
   };
   
@@ -55,12 +53,12 @@ async function main() {
     df.dateFormat = 'HH';
     const cacheTime = df.string(new Date());
     const cache = useFileManager(cacheTime);
-    const jsonString = cache.readString(jsonFileName);
+    const jsonString = cache.read(jsonFileName);
     if (jsonString) {
       return jsonString;
     }
     const response = await getString(jsonFileUrl);
-    cache.writeString(jsonFileName, JSON.stringify(response));
+    cache.write(jsonFileName, JSON.stringify(response));
     return JSON.stringify(response);
   };
   
@@ -91,19 +89,8 @@ async function main() {
     yellow: '#FFA300'
   };
   
-  const colorCode = waveArr.map((name) => { return colorHex[name] });
-  
-  const colorCode2 = waveArr2.map((name) => { return colorHex[name] });
-  
-  const widgetBgColor = Color.dynamic(
-    new Color("#fefefe"),
-    new Color("#1e1e1e")
-  );
-  
-  const contextColor = Color.dynamic(
-    new Color('#48484b', 0.3),
-    new Color('#FFFFFF', 0.3)
-  );
+  const colorCode = waveArr.map((name) => colorHex[name]);
+  const colorCode2 = waveArr2.map((name) => colorHex[name]);
   
   const isSmallScreen = Device.screenSize().height < 926;
   const adapt = {
@@ -117,22 +104,28 @@ async function main() {
    * 获取网络图片
    * @param {Image} url
    */
-  const getImage = async (url) => {
-    return await new Request(url).loadImage();
+  const getImage = async (url) => await new Request(url).loadImage();
+  
+  // 绘制分割线
+  const drawLine = () => {
+    const context = new DrawContext()
+    context.size = new Size(150, 0.5)
+    context.opaque = false;
+    context.respectScreenScale = true;
+    context.setFillColor(new Color('#777777', 0.5));
+    const path = new Path();
+    path.addRoundedRect(new Rect(0, 0, 150, 0.3), 3, 2);
+    context.addPath(path);
+    context.fillPath();
+    return context.getImage();
   };
-  
-  
+    
   //=========> Create <=========//
   
   const createWidget = async () => {
     const widget = new ListWidget();
-    
-    if (!Device.isUsingDarkAppearance()) {
-      widget.backgroundImage = await getImage('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png');
-    };
-    
-    widget.backgroundColor = widgetBgColor;
     widget.setPadding(10, adapt.padding, 10, adapt.padding);
+    
     const titleStack = widget.addStack();
     titleStack.layoutHorizontally();
     titleStack.centerAlignContent();
@@ -165,7 +158,6 @@ async function main() {
     codeStack.layoutHorizontally();
     codeStack.centerAlignContent();
     mainStack1.addSpacer();
-    
     widget.addSpacer(3);
     
     const mainStack2 = widget.addStack();
@@ -206,18 +198,8 @@ async function main() {
     
     // 绘制分割线
     widget.addSpacer(adapt.middle);
-    const context = new DrawContext()
-    context.size = new Size(150, 0.3);
-    context.opaque = false;
-    context.respectScreenScale = true;
-    context.setFillColor(contextColor);
-    const path = new Path();
-    path.addRoundedRect(new Rect(0, 0, 150, 0.2), 3, 2);
-    context.addPath(path);
-    context.fillPath();
-    context.setFillColor(contextColor);
-    const drawLine = widget.addImage(context.getImage());
-    drawLine.centerAlignImage();
+    const drawLineImg = widget.addImage(drawLine());
+    drawLineImg.centerAlignImage();
     widget.addSpacer(8);
     
     // openCodeArr2
@@ -229,7 +211,6 @@ async function main() {
     codeStack2.layoutHorizontally();
     codeStack2.centerAlignContent();
     mainStack3.addSpacer();
-    
     widget.addSpacer(3);
     
     const mainStack4 = widget.addStack();
@@ -266,12 +247,6 @@ async function main() {
       zodiacStack2.addSpacer();
     };
     
-    if (config.runsInApp) {
-      await widget.presentMedium();
-    } else {
-      Script.setWidget(widget);
-      Script.complete();
-    };
     return widget;
   };
   
@@ -284,8 +259,18 @@ async function main() {
   };
   
   const runWidget = async () => {
-    await (config.runsInApp || config.widgetFamily === 'medium' ? createWidget() : errorWidget());
-  }
+    const family = config.widgetFamily || 'medium';
+    const widget = await (family === 'medium' ? createWidget() : errorWidget());
+    //widget.backgroundImage = await getImage('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png');
+    widget.backgroundColor = Color.dynamic(new Color("#fefefe"), new Color("#000000"));
+    
+    if (config.runsInApp) {
+      await widget.presentMedium();
+    } else {
+      Script.setWidget(widget);
+      Script.complete();
+    }
+  };
   await runWidget();
-}
+};
 module.exports = { main }
