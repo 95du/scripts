@@ -1,0 +1,3 @@
+# 南网在线 Token
+^https:\/\/95598\.csg\.cn\/ucs\/ma\/zt\/user url script-request-header https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_95598_token.js
+hostname = 95598.csg.cn
