@@ -1,35 +1,50 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: magic;
-/**
-脚本名称：高德家人运动
-更新时间：2024-03-29
-Author: 95度茅台
+/*
+脚本名称：获取GitCode代码仓Cookie
+更新时间：2023-02-02
+
+配置 (QuanX)
+==================================
+[rewrite_local]
+^https:\/\/gitcode\.net\/dashboard\/projects\/home,requires-body=0,max-size=0,timeout=1000,script-path=https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_gitcode_cookie.js,script-update-interval=0
+
+[MITM]
+hostname = gitcode.net
+==================================
 */
 
-const $ = new Env('高德家人运动');
-$.sport_url_key = 'amap_family_sport_url';
+const $ = new Env('GitCode');
+$.cookie_key = 'gitcode_cookie';
+$.cookie = $.getdata($.cookie_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
-  if (typeof $request !== 'undefined') {
-    GetCookie($request);
+  if (isGetCookie = typeof $request !== `undefined`) {
+    GetCookie();
   }
 
-  function GetCookie(request) {
-    if (request && request.url.includes('https://m5.amap.com/ws/mapapi/sport/family_sport_space_card') && request.headers) {
-      if (request.url !== $.getdata($.sport_url_key)) {
-        $.setdata(request.url, $.sport_url_key);
-        $.msg($.name, ``, '健康达人_Url获取成功');
-        console.log(`sport_url 获取成功‼️‼️\n${request.url}`);
+  function GetCookie() {
+    if ($request && $request.url.indexOf("home") > -1 && $request.headers) {
+      debug($request.headers);
+      if ($request['headers']['Cookie'] !== $.cookie) {
+        $.cookie = $request['headers']['Cookie'];
+        if ($.cookie !== undefined && $.cookie.indexOf("UserNick") > -1) {
+          debug($.cookie);
+          $.setdata($.cookie, $.cookie_key);
+          $.msg($.name + '_Cookie 获取成功', ``, $.cookie);
+          console.log(`${$.name}_Cookie 获取成功: \n${$.cookie}`);  
+        }
       } else {
-        console.log(`无需更新 sport_url 🚫\n${request.url}`);
+        console.log(`GitCode_Cookie未变动‼️跳过更新。\n${$.cookie}`);
       }
-    } else {
-      console.log('获取失败');
     }
-  };
-  
+  }
+
+  function debug(text) {
+    if ($.is_debug === 'true') {
+      console.log(text);
+    }
+  }
+
 })()
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
