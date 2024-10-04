@@ -1,35 +1,46 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: magic;
 /*
-脚本名称：高德家人运动
-更新时间：2024-03-29
+脚本名称：石墨文档 Cookie
+更新时间：2024-03-05
 Author: 95度茅台
+
+重写订阅 Quantumult X
+https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_shimo_cookie..conf
+
+Boxjs 重写: https://raw.githubusercontent.com/chavyleung/scripts/master/box/rewrite/boxjs.rewrite.quanx.conf
+
+95度茅台 Boxjs 订阅:
+https://gitcode.net/4qiao/scriptable/raw/master/boxjs/sub.json
+
+
+========== Quantumult X ===========
+[rewrite_local]
+^https:\/\/shimo\.im\/api\/newforms\/forms\/ url script-request-header https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_shimo_cookie.js
+
+hostname = shimo.im
 */
 
-const $ = new Env('高德家人运动');
-$.sport_url_key = 'amap_family_sport_url';
+const $ = new Env('石墨文档');
+$.cookie_key = 'shimo_cookie';
+$.boxjs_cookie = $.getdata($.cookie_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
   if (typeof $request !== 'undefined') {
-    GetCookie($request);
+    GetToken();
   }
 
-  function GetCookie(request) {
-    if (request && request.url.includes('https://m5.amap.com/ws/mapapi/sport/family_sport_space_card') && request.headers) {
-      if (request.url !== $.getdata($.sport_url_key)) {
-        $.setdata(request.url, $.sport_url_key);
-        $.msg($.name, ``, '健康达人_Url获取成功');
-        console.log(`sport_url 获取成功‼️‼️\n${request.url}`);
+  function GetToken() {
+    if ($request.url.includes("https://shimo.im/lizard-api") && $request.headers) {
+      $.shimo_cookie = $request.headers.Authorization;
+      if ($.shimo_cookie !== $.boxjs_cookie) {
+        $.setdata($.shimo_cookie, $.cookie_key);
+        $.msg(`${$.name}_cookie 获取成功`, ``, $.shimo_cookie);
       } else {
-        console.log(`无需更新 sport_url 🚫\n${request.url}`);
+        console.log(`无需更新 Cookie 🚫\n${$.shimo_cookie}`);
       }
-    } else {
-      console.log('获取失败');
     }
-  };
-  
+  }
+
 })()
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
