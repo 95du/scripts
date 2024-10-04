@@ -1,9 +1,3 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: magic;
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-blue; icon-glyph: user-tie;
 /*
 脚本名称：南网在线token
 更新时间：2022-10-22
