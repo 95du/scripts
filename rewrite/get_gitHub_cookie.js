@@ -14,18 +14,14 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie(request) {
-    if (request?.url.includes('https://github.com') && request.headers) {
+    if (request?.url.includes('https://github.com') && request?.url.includes('repositories') && request.headers) {
       debug(request.headers);
 
       const currentCookie = request.headers['Cookie'];
-      if (currentCookie && currentCookie !== $.cookie && currentCookie.includes("_gh")) {
-        $.cookie = currentCookie;
-        $.setdata($.cookie, $.cookie_key);
-        $.msg(`${$.name}_Cookie 获取成功`, '', $.cookie);
-        console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
-      } else {
-        console.log(`GitHub_Cookie未变动，跳过更新。\n${$.cookie}`);
-      }
+      $.cookie = currentCookie;
+      $.setdata($.cookie, $.cookie_key);
+      $.msg(`${$.name}_Cookie 获取成功`, '', $.cookie);
+      console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
     }
   }
 
