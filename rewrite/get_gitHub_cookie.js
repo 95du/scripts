@@ -14,7 +14,7 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie(request) {
-    if (request?.url.includes('https://github.com') && request?.url.includes('repositories') && request.headers) {
+    if (request?.url?.match(/https:\/\/github\.com\/[^/]+\/repositories/) && request.headers) {
       debug(request.headers);
 
       const currentCookie = request.headers['Cookie'];
