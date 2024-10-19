@@ -1,6 +1,6 @@
 /*
 脚本名称：获取GitHub代码仓Cookie
-更新时间：2024-10-15
+更新时间：2024-10-19
 */
 
 const $ = new Env('GitHub');
@@ -14,16 +14,20 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie(request) {
-    if (request?.url?.match(/https:\/\/github\.com\/[^/]+\?tab=repositories/)) {
+    if (request.headers && request?.url?.match(/https:\/\/github\.com\/[^/]+\?tab=repositories/)) {
       debug(request.headers);
 
-      const currentCookie = request.headers['Cookie'];
-      $.cookie = currentCookie;
-      $.setdata($.cookie, $.cookie_key);
-      $.msg(`${$.name}_Cookie 获取成功`, '', $.cookie);
-      console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
+      const currentCookie = request.headers['Cookie'];  
+      const match = currentCookie.match(/(_gh_sess=.*?;\s?).*?(logged_in=(\w+);)/);
+  
+      if (currentCookie && match && match[3] === 'yes') {  
+        $.cookie = match[3];
+        $.setdata($.cookie, $.cookie_key);
+        $.msg(`${$.name}_Cookie 获取成功`, '', $.cookie);
+        console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
+      }
     }
-  }
+  };
 
   function debug(text) {
     if ($.is_debug === 'true') {
