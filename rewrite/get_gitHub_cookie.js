@@ -25,6 +25,8 @@ $.is_debug = $.getdata('is_debug');
         $.setdata($.cookie, $.cookie_key);
         $.msg(`${$.name}_Cookie 获取成功`, '', $.cookie);
         console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
+      } else {
+        $.msg(`${$.name}_Cookie 获取失败`, '', '检测到用户未登录');
       }
     }
   };
