@@ -21,7 +21,7 @@ $.is_debug = $.getdata('is_debug');
       const match = Cookie.match(/logged_in=(\w+)/);
   
       if (currentCookie && match && match[1] === 'yes') {  
-        $.cookie = currentCookie;
+        $.cookie = Cookie;
         $.setdata($.cookie, $.cookie_key);
         $.msg(`${$.name}_Cookie 获取成功❗️`, '', $.cookie);
         console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
