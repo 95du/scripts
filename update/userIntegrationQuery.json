@@ -1,0 +1,73 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-gray; icon-glyph: magic;
+{
+  "businessId": "ig5aWa8JdTXAVp69z411mobilegwRZ43",
+  "data": {
+    "passwordExist": "false",
+    "registrationDate": "2020-09-26 23:47:15",
+    "idNumber": "460004********2617",
+    "platformName": "海南",
+    "userType": "1",
+    "postcode": null,
+    "isInterview": "2",
+    "othersVehicles": [
+      {
+        "status": "A",
+        "name": "*芳玲",
+        "bindTime": "2021-07-06 21:11:38",
+        "vehType": "K33",
+        "internalOrder": "1",
+        "plateTypeAddress": "小型汽车",
+        "plateEnableTime": "20200908",
+        "validPeriodEnd": "2026-09-30",
+        "vehPhoneNumber": "177****8041",
+        "management": null,
+        "plateType": "02",
+        "firtsRegDate": "20160914",
+        "organizationAddress": "海南省海口市公安局交通警察支队",
+        "useType": "A",
+        "forceScrapTime": "2099-12-31",
+        "vehicleSerialNumber": null,
+        "plateNumber": "琼A8**A8",
+        "issueOrganization": "琼A"
+      }
+    ],
+    "drivingLicense": {
+      "firstGetDrvDate": null,
+      "cumulativePoint": "0",
+      "idNumber": "460004********2617",
+      "issueOrganizationName": "海南省海口市公安局交通警察支队",
+      "fileNumber": null,
+      "allowToDrive": "C1",
+      "inspectionValidityEnd": "2031-05-04",
+      "birthDate": null,
+      "orderNum": null,
+      "management": null,
+      "validityEnd": "2031-05-04",
+      "driverLicense": "460004********2617",
+      "updateDate": "2024-05-04 01:00:57",
+      "reaccDate": "2025-05-04",
+      "inspectionDate": "2031-05-04",
+      "idType": "A",
+      "issueOrganization": "琼A",
+      "name": "*夙新",
+      "status": "A"
+    },
+    "idCardValidEndDate": null,
+    "vehicles": [],
+    "contactAddress": null,
+    "mobilePhone": "180****4968",
+    "userCode": "460004********2617",
+    "idType": "A",
+    "issueOrganization": "琼A",
+    "name": "*夙新",
+    "status": "1"
+  },
+  "errorMsg": null,
+  "resultMsg": "处理成功",
+  "success": true,
+  "detailErrorMessage": null,
+  "resultCode": "SUCCESS",
+  "errorCode": null
+}
