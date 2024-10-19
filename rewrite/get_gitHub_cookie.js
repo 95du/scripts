@@ -17,11 +17,11 @@ $.is_debug = $.getdata('is_debug');
     if (request.headers && request?.url?.match(/https:\/\/github\.com\/[^/]+\?tab=repositories/)) {
       debug(request.headers);
 
-      const Cookie = request.headers['Cookie'];  
-      const match = Cookie.match(/logged_in=(\w+)/);
+      const currentCookie = request.headers['Cookie'];  
+      const match = currentCookie.match(/logged_in=(\w+)/);
   
-      if (currentCookie && match && match[1] === 'yes') {  
-        $.cookie = Cookie;
+      if (currentCookie && match?.[1] === 'yes') {
+        $.cookie = currentCookie;
         $.setdata($.cookie, $.cookie_key);
         $.msg(`${$.name}_Cookie 获取成功❗️`, '', $.cookie);
         console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
