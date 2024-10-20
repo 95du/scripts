@@ -21,7 +21,7 @@ $.is_debug = $.getdata('is_debug');
       const logged_in = currentCookie.match(/logged_in=(\w+)/);
   
       if (currentCookie && logged_in?.[1] === 'yes') {
-        $.user = currentCookie.match(/dotcom_user=(\w+);/);
+        $.user = currentCookie.match(/dotcom_user=(\w+);/)?.[1];
         $.cookie = currentCookie.match(/(__Host-user_session.*?;\s?|user_session.*?;\s?)/g).join('');
         $.setdata($.cookie, $.cookie_key);
         $.msg(`${$.user}-${$.name}_Cookie 获取成功❗️`, '', $.cookie);
