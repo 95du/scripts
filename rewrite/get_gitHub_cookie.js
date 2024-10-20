@@ -18,9 +18,9 @@ $.is_debug = $.getdata('is_debug');
       debug(request.headers);
 
       const currentCookie = request.headers['Cookie'];
-      const match = currentCookie.match(/logged_in=(\w+)/);
+      const logged = currentCookie.match(/logged_in=(\w+)/);
   
-      if (currentCookie && match?.[1] === 'yes') {
+      if (currentCookie && logged?.[1] === 'yes') {
         $.user = currentCookie.match(/dotcom_user=(\w+);/)?.[1];
         $.cookie = currentCookie.match(/(__Host-user_session.*?;\s?|user_session.*?;\s?)/g).join('');
         $.setdata($.cookie, $.cookie_key);
