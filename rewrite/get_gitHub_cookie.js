@@ -21,11 +21,10 @@ $.is_debug = $.getdata('is_debug');
       const logged_in = currentCookie.match(/logged_in=(\w+)/);
   
       if (currentCookie && logged_in?.[1] === 'yes') {
-        const session = currentCookie.match(/(__Host-user_session.*?;\s?|user_session.*?;\s?)/g).join('');
-        const user = currentCookie.match(/dotcom_user=(\w+);/);
-        $.cookie = session;
+        $.user = currentCookie.match(/dotcom_user=(\w+);/);
+        $.cookie = currentCookie.match(/(__Host-user_session.*?;\s?|user_session.*?;\s?)/g).join('');
         $.setdata($.cookie, $.cookie_key);
-        $.msg(`${user}-${$.name}_Cookie 获取成功❗️`, '', $.cookie);
+        $.msg(`${$.user}-${$.name}_Cookie 获取成功❗️`, '', $.cookie);
         console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
       } else {
         $.msg(`${$.name}_Cookie 获取失败`, '', `检测到用户未登录${match[0]}`);
