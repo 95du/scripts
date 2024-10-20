@@ -18,15 +18,15 @@ $.is_debug = $.getdata('is_debug');
       debug(request.headers);
 
       const currentCookie = request.headers['Cookie'];
-      const logged = currentCookie.match(/logged_in=(\w+)/);
+      const login = currentCookie.match(/logged_in=(\w+)/);
 
-      if (currentCookie && logged?.[1] === 'yes') {
+      if (currentCookie && login?.[1] === 'yes') {
         $.cookie = currentCookie.match(/(dotcom_user=.*?;\s?|__Host-user_session.*?;\s?|user_session=.*?;\s?)/g).join('');
         $.setdata($.cookie, $.cookie_key);
         $.msg(`${$.name}_Cookie 获取成功‼️`, '', $.cookie);
         console.log(`${$.name}_Cookie 获取成功:\n${$.cookie}`);
       } else {
-        $.msg(`${$.name}_Cookie 获取失败`, '', `检测到用户未登录${match[0]}`);
+        $.msg(`${$.name}_Cookie 获取失败`, '', `检测到用户未登录${login[0]}`);
       }
     }
   };
