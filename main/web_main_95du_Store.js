@@ -1,6 +1,3 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: orange; icon-glyph: cog;
 
 async function main() {
   const uri = Script.name();
@@ -8,7 +5,8 @@ async function main() {
   const version = '1.0.1'
   const updateDate = '2023年07月09日'
   
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const pathName = '95du_Store';
   const appStoreLink = [
     'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
     'https://apps.apple.com/cn/app/携程旅行-订酒店机票火车票/id379395415',
@@ -20,7 +18,7 @@ async function main() {
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_store');
+  const mainPath = fm.joinPath(fm.documentsDirectory(), pathName);
   
   const getSettingPath = () => {
     if (!fm.fileExists(mainPath)) {
@@ -65,7 +63,7 @@ async function main() {
   
   // 获取头像图片
   const getAvatarImg = () => {
-    const avatarImgPath = fm.joinPath(fm.documentsDirectory(), '95du_store');
+    const avatarImgPath = fm.joinPath(fm.documentsDirectory(), pathName);
     return fm.joinPath(avatarImgPath, 'userSetAvatar.png');
   };
     
@@ -270,7 +268,7 @@ async function main() {
   const getCacheDrawSFIcon = async (name) => {
     const cache = useFileManager();
     const image = cache.readImage(name);
-    if ( image ) return toBase64(image);
+    if (image) return toBase64(image);
     const img = await drawSFIcon(name);
     cache.writeImage(name, img);
     return toBase64(img);
@@ -285,13 +283,11 @@ async function main() {
     };
     req.body = JSON.stringify({
       formRev: 1,
-      responseContent: [
-        {
-          type: 4,
-          guid: 'oXsoTl07',
-          text: { content: '' },
-        },
-      ],
+      responseContent: [{
+        type: 4,
+        guid: 'oXsoTl07',
+        text: { content: '' }
+      }],
       userName: `${scriptName}  -  ${Device.systemName()} ${Device.systemVersion()}  ${action}`
     });
     await req.loadJSON();
@@ -342,8 +338,8 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_china_unicom.js',
-          icon: `${rootUrl}img/icon/china_unicom.png`
+          scrUrl: `${rootUrl}/run/web_module_china_unicom.js`,
+          icon: `${rootUrl}/img/icon/china_unicom.png`
         },
         {
           label: '中国电信_3',
@@ -351,8 +347,8 @@ async function main() {
           version: '1.0.2',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_china_telecom_3.js',
-          icon: `${rootUrl}img/icon/telecom.png`
+          scrUrl: `${rootUrl}/run/web_module_china_telecom_3.js`,
+          icon: `${rootUrl}/img/icon/telecom.png`
         },
       ]
     },
@@ -366,8 +362,8 @@ async function main() {
           version: '1.1.2',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_12123.js',
-          icon: `${rootUrl}img/icon/12123.png`
+          scrUrl: `${rootUrl}/run/web_module_12123.js`,
+          icon: `${rootUrl}/img/icon/12123.png`
         },
         {
           label: '全国油价_2',
@@ -375,8 +371,8 @@ async function main() {
           version: '1.0.1',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_oil_price.js',
-          icon: `${rootUrl}img/icon/oilPrice2.png`
+          scrUrl: `${rootUrl}/run/web_module_oil_price.js`,
+          icon: `${rootUrl}/img/icon/oilPrice2.png`
         },
         {
           label: '高德智慧交通',
@@ -384,16 +380,8 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest_4.js',
-          icon: `${rootUrl}img/icon/aMap.png`
-        },
-        {
-          label: '高德会员',
-          desc: '会员福利中心',
-          version: '1.0.0',
-          type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_amap_vip.js',
-          icon: `${rootUrl}img/icon/aMap_vip.png`
+          scrUrl: `${rootUrl}/widget/congest_4.js`,
+          icon: `${rootUrl}/img/icon/aMap.png`
         },
         {
           label: '高德家人地图',
@@ -402,8 +390,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_amap_family.js',
-          icon: `${rootUrl}img/icon/aMap_1.png`
+          scrUrl: `${rootUrl}/run/web_module_amap_family.js`,
+          icon: `${rootUrl}/img/icon/aMap_1.png`
         },
         {
           label: '重点区域实况',
@@ -412,8 +400,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest_3.js',
-          icon: `${rootUrl}img/icon/gateway.jpeg`
+          scrUrl: `${rootUrl}/widget/congest_3.js`,
+          icon: `${rootUrl}/img/icon/gateway.jpeg`
         },
         {
           label: '城市通行实况',
@@ -421,8 +409,8 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest_2.js',
-          icon: `${rootUrl}img/icon/baidu_map.png`
+          scrUrl: `${rootUrl}/widget/congest_2.js`,
+          icon: `${rootUrl}/img/icon/baidu_map.png`
         },
         {
           label: '景区通行实况',
@@ -430,8 +418,8 @@ async function main() {
           version: '1.0.1',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/scenic_area.js',
-          icon: `${rootUrl}img/icon/scenic_area.png`
+          scrUrl: `${rootUrl}/widget/scenic_area.js`,
+          icon: `${rootUrl}/img/icon/scenic_area.png`
         },
         {
           label: '百度智慧交通',
@@ -439,8 +427,8 @@ async function main() {
           version: '1.0.2',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest.js',
-          icon: `${rootUrl}img/icon/baidu_map.png`
+          scrUrl: `${rootUrl}/widget/congest.js`,
+          icon: `${rootUrl}/img/icon/baidu_map.png`
         },
         {
           label: '车辆_GPS',
@@ -449,8 +437,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_GPS.js',
-          icon: `${rootUrl}img/icon/gps_location.png`
+          scrUrl: `${rootUrl}/run/web_module_GPS.js`,
+          icon: `${rootUrl}/img/icon/gps_location.png`
         }
       ]
     },
@@ -464,8 +452,8 @@ async function main() {
           version: '1.0.1',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/festival.js',
-          icon: `${rootUrl}img/icon/festival.png`
+          scrUrl: `${rootUrl}/widget/festival.js`,
+          icon: `${rootUrl}/img/icon/festival.png`
         },
         {
           label: '开奖结果',
@@ -473,8 +461,8 @@ async function main() {
           version: '1.0.4',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_lottery.js',
-          icon: `${rootUrl}img/icon/lottery.png`
+          scrUrl: `${rootUrl}/widget/web_module_lottery.js`,
+          icon: `${rootUrl}/img/icon/lottery.png`
         },
         {
           label: '中国电信_2',
@@ -482,8 +470,8 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_china_telecom.js',
-          icon: `${rootUrl}img/icon/telecom_2.png`
+          scrUrl: `${rootUrl}/run/web_module_china_telecom.js`,
+          icon: `${rootUrl}/img/icon/telecom_2.png`
         },
         {
           label: '市值股票',
@@ -492,8 +480,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_marketCap.js',
-          icon: `${rootUrl}img/icon/marketCap.png`
+          scrUrl: `${rootUrl}/run/web_module_marketCap.js`,
+          icon: `${rootUrl}/img/icon/marketCap.png`
         },
         {
           label: '豆瓣电影_Top250',
@@ -502,8 +490,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/douban_top250.js',
-          icon: `${rootUrl}img/icon/douban.png`
+          scrUrl: `${rootUrl}/widget/douban_top250.js`,
+          icon: `${rootUrl}/img/icon/douban.png`
         },
         {
           label: '人民币汇率',
@@ -511,8 +499,8 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_exchange_rate.js',
-          icon: `${rootUrl}img/icon/exchange_rate.png`
+          scrUrl: `${rootUrl}/run/web_module_exchange_rate.js`,
+          icon: `${rootUrl}/img/icon/exchange_rate.png`
         },
         {
           label: '埃隆·马斯克',
@@ -521,8 +509,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/elonMusk_info.js',
-          icon: `${rootUrl}img/icon/AI.jpeg`
+          scrUrl: `${rootUrl}/widget/elonMusk_info.js`,
+          icon: `${rootUrl}/img/icon/AI.jpeg`
         }
       ]
     },
@@ -553,8 +541,8 @@ async function main() {
           desc: '每日油价，油价预警',
           version: '1.2.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/oils.js',
-          icon: `${rootUrl}img/icon/oilPrice2.png`
+          scrUrl: `${rootUrl}/widget/oils.js`,
+          icon: `${rootUrl}/img/icon/oilPrice2.png`
         },
         {
           label: '负一屏底栏',
@@ -562,8 +550,8 @@ async function main() {
           version: '1.3.1',
           type: 'button',
           recommend: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/bottomBar.js',
-          icon: `${rootUrl}img/icon/bottomBars.png`
+          scrUrl: `${rootUrl}/widget/bottomBar.js`,
+          icon: `${rootUrl}/img/icon/bottomBars.png`
         },
         {
           label: '南网在线',
@@ -572,24 +560,16 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_powerGrid.js',
-          icon: `${rootUrl}img/icon/electric.png`
+          scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
+          icon: `${rootUrl}/img/icon/electric.png`
         },
         {
           label: '房屋估值',
           desc: '幸福里全国房屋估值',
           version: '1.0.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/housePrice.js',
-          icon: `${rootUrl}img/icon/house.png`
-        },
-        {
-          label: '澳门六合彩',
-          desc: '新旧版每日开奖结果',
-          version: '1.0.2',
-          type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/module_macaujc.js',
-          icon: `${rootUrl}img/icon/macaujc.png`
+          scrUrl: `${rootUrl}/widget/housePrice.js`,
+          icon: `${rootUrl}/img/icon/house.png`
         },
         {
           label: '循环组件',
@@ -598,16 +578,16 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/loopScripts.js',
-          icon: `${rootUrl}img/icon/loopScript.png`
+          scrUrl: `${rootUrl}/widget/loopScripts.js`,
+          icon: `${rootUrl}/img/icon/loopScript.png`
         },
         {
           label: '随机组件',
           desc: '随机切换多个小组件',
           version: '1.1.5',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/randomScript.js',
-          icon: `${rootUrl}img/icon/random_2.jpeg`
+          scrUrl: `${rootUrl}/widget/randomScript.js`,
+          icon: `${rootUrl}/img/icon/random_2.jpeg`
         }
       ]
     },
@@ -622,8 +602,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong.js',
-          icon: `${rootUrl}img/icon/jd.png`
+          scrUrl: `${rootUrl}/run/web_module_jingDong.js`,
+          icon: `${rootUrl}/img/icon/jd.png`
         },
         {
           label: '京东收支账单',
@@ -632,8 +612,8 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong_bill.js',
-          icon: `${rootUrl}img/icon/jingDong.png`
+          scrUrl: `${rootUrl}/run/web_module_jingDong_bill.js`,
+          icon: `${rootUrl}/img/icon/jingDong.png`
         },
         {
           label: '京东小白鹅',
@@ -642,24 +622,24 @@ async function main() {
           type: 'button',
           recommend: true,
           random: true,
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong_baiTiao.js',
-          icon: `${rootUrl}img/icon/jingDong.png`
+          scrUrl: `${rootUrl}/run/web_module_jingDong_baiTiao.js`,
+          icon: `${rootUrl}/img/icon/jingDong.png`
         },
         {
           label: '京东小金库',
           desc: '资产，累积收益',
           version: '1.0.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong_treasury.js',
-          icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/finance.png',
+          scrUrl: `${rootUrl}/run/web_module_jingDong_treasury.js`,
+          icon: `${rootUrl}/img/jingdong/finance.png`,
         },
         {
           label: '京东汪汪',
           desc: '汪汪庄园30张Joy图',
           version: '1.0.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/module_jd_Joy.js',
-          icon: `${rootUrl}img/icon/jd_wangWang.png`
+          scrUrl: `${rootUrl}/run/module_jd_Joy.js`,
+          icon: `${rootUrl}/img/icon/jd_wangWang.png`
         }
       ]
     },
@@ -672,7 +652,7 @@ async function main() {
           desc: '跳转支付宝App指定页面',
           version: '1.0.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/alipay_schemeUrl.js',
+          scrUrl: `${rootUrl}/widget/alipay_schemeUrl.js`,
           icon: 'https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/08/6b/da/086bdadb-643e-e7dd-f508-761c3d8d0258/AppIcon2-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.png'
         },
         {
@@ -680,16 +660,16 @@ async function main() {
           desc: '跳转京东App指定页面',
           version: '1.0.0',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/jd_schemeUrl.js',
-          icon: `${rootUrl}img/icon/jd_green.png`
+          scrUrl: `${rootUrl}/widget/jd_schemeUrl.js`,
+          icon: `${rootUrl}/img/icon/jd_green.png`
         },
         {
           label: '清空回收站',
           desc: '清空Scriptable回收站',
           version: '1.0.1',
           type: 'button',
-          scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/cleanTrash.js',
-          icon: `${rootUrl}img/icon/cleanFiles.png`
+          scrUrl: `${rootUrl}/widget/cleanTrash.js`,
+          icon: `${rootUrl}/img/icon/cleanFiles.png`
         }
       ]
     },
@@ -833,14 +813,14 @@ async function main() {
     
     const themeColor = Device.isUsingDarkAppearance() ? 'dark' : 'white';
 
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}img/picture/appleHub_black.png`);
+    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}?ver=7.4.2`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -1822,7 +1802,7 @@ document.getElementById('telegram').addEventListener('click', () => {
     
     // 组件效果图
     const previewEffectImgHtml = async () => {
-      const previewImgUrl = Array.from({ length: 3 }, (_, index) => `${rootUrl}img/picture/Example_${index}.png`);
+      const previewImgUrl = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/Example_${index}.png`);
 
       const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
         const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
