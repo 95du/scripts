@@ -112,7 +112,7 @@ async function main(family) {
    * @param {Image} url
    */
   const getCacheImage = async (name, url) => {
-    const cache = useFileManager({ cacheTime : 240 });
+    const cache = useFileManager();
     const image = cache.read(name);
     if (image) return image;
     const img = await new Request(url).loadImage();
@@ -218,8 +218,8 @@ async function main(family) {
       } else if (item.unitTypeId == 3 && amount < 999999990000 && (setting.orient ? name.includes('定向') : !name.includes('定向'))) {
         totalFlow += parseFloat(item.ratableAmount);
         balanceFlow += parseFloat(item.balanceAmount);
-      } 
-    });
+      };
+    })
   });
   
   // 语音
@@ -245,7 +245,8 @@ async function main(family) {
    */
   const calculateTotal = (value) => {
     const thresholds = [100, 300, 500, 1000, 3000, 5000];
-    return thresholds.find((threshold) => value < threshold) || 5000;
+    const matchingThreshold = thresholds.find((threshold) => value < threshold) || 5000;
+    return matchingThreshold;
   };
   
   const fetchBalance = async () => {
@@ -261,11 +262,8 @@ async function main(family) {
   // 账单
   const getUserBill = async () => {
     const data = await getCacheString('bill.json', 'https://e.189.cn/user/bill.do');
-    if (data && data.serviceResultCode == 0) {
-      const bill = (data.items[0].sumCharge) / 100;
-      return bill;
-    }
-    return 0;
+    const bill = data?.serviceResultCode == 0 ? data.items[0].sumCharge / 100 : 0;
+    return bill;
   };
   const sumCharge = await getUserBill();
   
@@ -283,11 +281,7 @@ async function main(family) {
     if (setting.cookie && (timeDifference >= setting.cacheTime || !setting.flowBalance)) {  
       const flowUesd = formatFlow(setting.flowBalance, flowBalance);
       notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
-      writeSettings({ 
-        ...setting,
-        flowBalance,
-        voiceBalance
-      });
+      writeSettings({ ...setting, flowBalance, voiceBalance });
     }
   };
   
@@ -297,7 +291,7 @@ async function main(family) {
     circle: scr < 926 ? 145 : 152
   });
   
-  const logo = await getCacheImage('telecom.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom_4.png');
+  const logo = await getCacheImage('telecom.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png');
   
   const subTitleColor = Color.dynamic(new Color(setting.subTitleColor), new Color('#FFFFFF'));
   
