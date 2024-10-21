@@ -1,12 +1,11 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: purple; icon-glyph: car;
 const fm = FileManager.local();
 const mainPath = fm.joinPath(fm.documentsDirectory(), 'maybach');
 const cache = fm.joinPath(mainPath, 'cache_path');
 if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
 if (!fm.fileExists(cache)) fm.createDirectory(cache);
 const cacheFile = fm.joinPath(mainPath, 'setting.json')
+
+const repo = 'https://raw.githubusercontent.com/95du/scripts/master';
 
 /**
  * 存储当前设置
@@ -54,7 +53,7 @@ const ScriptableRun = () => {
  * @returns {Promise<void>}
  */
 const updateString = async () => {
-  const codeString = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/maybach.js').loadString();
+  const codeString = await new Request(`${repo}/widget/maybach.js`).loadString();
   const filename = module.filename;
   const iCloudInUse = fm.isFileStoredIniCloud(filename);
   if (codeString.includes('95度茅台') && iCloudInUse) {
@@ -83,8 +82,7 @@ const getImage = async (url) => await new Request(url).loadImage();
  */
 const getJson = async (url) => {
   const response = await makeRequest(url);
-  const { status } = response;
-  if (status === '1') {
+  if (response.status === '1') {
     return response;
   }
 };
@@ -133,7 +131,7 @@ const getCacheData = async (name, url) => {
  * @returns {image} - Request
  */
 const getRandomImage = async () => {
-  const maybach = Array.from({ length: 9 }, (_, index) => `https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-${index}.png`);
+  const maybach = Array.from({ length: 9 }, (_, index) => `${repo}/img/car/Maybach-${index}.png`);
   const randomImg = getRandomItem(maybach);
   const name = randomImg.split('/').pop();
   return await getCacheData(name, randomImg);
@@ -212,25 +210,29 @@ const getDistance = async () => {
  * @returns {Promise} Promise
  */
 const sendWechat = async (description, url, longitude, latitude) => {
-  const mapPicUrl = `https://restapi.amap.com/v3/staticmap?&key=a35a9538433a183718ce973382012f55&zoom=14&size=450*300&markers=-1,https://gitcode.net/4qiao/scriptable/raw/master/img/car/locating_0.png,0:${longitude},${latitude}`;
+  const mapPicUrl = `https://restapi.amap.com/v3/staticmap?&key=a35a9538433a183718ce973382012f55&zoom=14&size=450*300&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`;
   // 推送到微信
-  const { access_token } = await new Request('https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=ww1ce681aef2442dad&corpsecret=Oy7opWLXZimnS_s76YkuHexs12OrUOwYEoMxwLTaxX4').loadJSON();
-  const request = new Request(`https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${access_token}`);
-  request.method = 'POST'
-  request.body = JSON.stringify({
-    touser: 'DianQiao',
-    agentid: 1000004,
-    msgtype: 'news',
-    news: { 
-      articles: [{
-        title: address,
-        picurl: mapPicUrl,
-        url,
-        description
-      }]
-    }
-  });
-  request.load();
+  try {
+    const { access_token } = await new Request('https://qyapi.weixin.qq.com/cgi-bin/gettoken?corpid=ww1ce681aef2442dad&corpsecret=Oy7opWLXZimnS_s76YkuHexs12OrUOwYEoMxwLTaxX4').loadJSON();
+    const request = new Request(`https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=${access_token}`);
+    request.method = 'POST'
+    request.body = JSON.stringify({
+      touser: 'DianQiao',
+      agentid: 1000004,
+      msgtype: 'news',
+      news: { 
+        articles: [{
+          title: address,
+          picurl: mapPicUrl,
+          url,
+          description
+        }]
+      }
+    });
+    request.load();
+  } catch (e) {
+    console.log('推送微信' + e);
+  }
 };
 
 /**
@@ -335,7 +337,7 @@ const getInfo = async () => {
   
   const mapUrl = `https://maps.apple.com/?q=${encodeURIComponent('琼A·849A8')}&ll=${latitude},${longitude}&t=m`;
   
-  const carLogo = await getCacheData('maybachLogo.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/car/maybachLogo.png');
+  const carLogo = await getCacheData('maybachLogo.png', `${repo}/img/car/maybachLogo.png`);
   
   const [fullTime, parkingTime] = [formatDate(updateTime), formatDate(updateTime, true)];
   
@@ -499,7 +501,7 @@ const createWidget = async () => {
 const smallWidget = async (widget = new ListWidget()) => {
   try {
     const { mapUrl } = await getInfo();
-    const url = `https://restapi.amap.com/v3/staticmap?key=a35a9538433a183718ce973382012f55&zoom=13&size=240*240&markers=-1,https://gitcode.net/4qiao/scriptable/raw/master/img/car/locating_0.png,0:${longitude},${latitude}`;
+    const url = `https://restapi.amap.com/v3/staticmap?key=a35a9538433a183718ce973382012f55&zoom=13&size=240*240&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`;
     const fetchData = async (url) => setting.updateTime !== updateTime ? await getImage(url) : await getCacheData('map.png', url);
     widget.backgroundImage = await fetchData(url);
     widget.url = mapUrl;
