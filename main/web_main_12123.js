@@ -1538,10 +1538,10 @@ async function main() {
           writeSettings(settings);
           break;
         case 'boxjs':
-          Safari.openInApp('http://boxjs.com/#/sub/add/https://gitcode.net/4qiao/scriptable/raw/master/boxjs/sub.json', false);
+          Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false);
           break;
         case 'rewrite':
-          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%7B%0A%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%22https%3A%2F%2Fgitcode.net%2F4qiao%2Fscriptable%2Fraw%2Fmaster%2FquanX%2FgetToken_12123.sgmodule%2C%20tag%3D%E4%BA%A4%E7%AE%A112123%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%5D%0A%7D');
+          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%20%20%7B%0A%20%20%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%20%20%22https%3A%2F%2Fraw.githubusercontent.com%2F95du%2Fscripts%2Fmaster%2Frewrite%2FgetToken_12123.sgmodule%2C%20tag%3D%E4%BA%A4%E7%AE%A112123%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%20%20%5D%0A%20%20%7D');
           break;
         case 'boxjs_rewrite':
           Safari.open('quantumult-x:///add-resource?remote-resource=%0A%7B%0A%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%22https%3A%2F%2Fgithub.com%2Fchavyleung%2Fscripts%2Fraw%2Fmaster%2Fbox%2Frewrite%2Fboxjs.rewrite.quanx.conf%2C%20tag%3Dboxjs%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%5D%0A%7D');
@@ -1583,8 +1583,8 @@ async function main() {
           }
           break;
         case 'store':
-          const storeModule = webModule('store.js', `${rootUrl}/run/web_module_95duScript.js`);
-          importModule(await storeModule).main();  
+          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          await importModule(await storeModule).main();
           await myStore();
           break;
         case 'install':
