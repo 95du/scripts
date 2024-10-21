@@ -1,15 +1,12 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-brown; icon-glyph: cog;
 
 async function main() {
   const scriptName = '交管 12123'
   const version = '1.1.6'
   const updateDate = '2024年06月07日'
-
   const pathName = '95du_12123';
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
-  const [scrName, scrUrl] = [`12123_${updateDate}.js`, 'https://gitcode.net/4qiao/scriptable/raw/master/table/web_12123_4.js'];
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  
+  const [scrName, scrUrl] = [`12123_${updateDate}.js`, `${rootUrl}/api/web_12123_4.js`];
   
   const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
@@ -125,8 +122,8 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
-    await main(family);
-    //shimoFormData(`Count: ${settings.count} - ${family}`);
+    
+    shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
@@ -189,7 +186,7 @@ async function main() {
   
   /** download store **/
   const myStore = async () => {
-    const script = await getString('https://gitcode.net/4qiao/scriptable/raw/master/api/95duScriptStore.js');
+    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
     const fm = FileManager.iCloud();
     fm.writeString(
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
@@ -225,13 +222,13 @@ async function main() {
   
   const updateString = async () => {
     const modulePath = fm.joinPath(cacheStr, scrName);
-    const codeString = await getString(scrUrl);
-    if (!codeString.includes('95度茅台')) {
+    const str = await getString(scrUrl);
+    if (!str.includes('95度茅台')) {
       notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
       const moduleDir = fm.joinPath(mainPath, 'Running');
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
-      fm.writeString(modulePath, codeString);
+      fm.writeString(modulePath, str)
       settings.version = version;
       writeSettings(settings);
       shimoFormData('update');
@@ -240,9 +237,8 @@ async function main() {
   };
   
   const appleOS = async () => {
-    const startHour = settings.startTime || 4;
-    const endHour = settings.endTime || 6;
     const currentHour = new Date().getHours();
+    const { startHour = 4, endHour = 6 } = settings;
 
     if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
       try { 
@@ -294,7 +290,7 @@ async function main() {
   const getString = async (url) => await new Request(url).loadString();
   
   const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager({ cacheTime: 150 });
+    const cache = useFileManager({ cacheTime: 240 });
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
@@ -538,20 +534,20 @@ async function main() {
       previewImage
     } = options;
     
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}img/picture/appleHub_black.png`);
+    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await getCacheImage('appImage.png', `${rootUrl}img/icon/12123.png`);
+    const appImage = await getCacheImage('appImage.png', `${rootUrl}/img/icon/12123.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png', `${rootUrl}img/picture/collectionCode.jpeg`);
+    const collectionCode = await getCacheImage('collection.png', `${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}web/clock.html`);
+    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}?ver=7.4.2`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -831,12 +827,12 @@ async function main() {
     
     previewImgHtml = async () => {
       const displayStyle = settings.clock ? 'none' : 'block';
-      const pictureArr = Array.from({ length: 4 }, (_, index) => `${rootUrl}img/picture/12123_${index}.png`);
+      const pictureArr = Array.from({ length: 4 }, (_, index) => `${rootUrl}/img/picture/12123_${index}.png`);
       const randomImageUrl = pictureArr[Math.floor(Math.random() * pictureArr.length)];
       
       const previewImgUrl = [
         randomImageUrl,
-        `${rootUrl}img/picture/12123_5.png`
+        `${rootUrl}/img/picture/12123_5.png`
       ];
       
       if ( settings.topStyle ) {
@@ -1391,7 +1387,7 @@ async function main() {
     };
     
     const loadPicture = async () => {
-      const maybach = Array.from({ length: 9 }, (_, index) => `https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-${index}.png`);
+      const maybach = Array.from({ length: 9 }, (_, index) => `${rootUrl}/img/car/Maybach-${index}.png`);
       !settings.imgArr?.length && maybach.forEach(async (item) => await downloadCarImage(item));
     };
     
@@ -1580,14 +1576,14 @@ async function main() {
           }
           break;
         case 'background':
-          const modulePath = webModule('background_2.js', 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground_2.js');
+          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
           if (modulePath != null) {
             await importModule(await modulePath).main(cacheImg);
             await previewWidget();
           }
           break;
         case 'store':
-          const storeModule = webModule('store.js', 'https://gitcode.net/4qiao/framework/raw/master/mian/module_95du_storeScript.js');
+          const storeModule = webModule('store.js', `${rootUrl}/run/web_module_95duScript.js`);
           importModule(await storeModule).main();  
           await myStore();
           break;
@@ -1697,7 +1693,7 @@ async function main() {
             label: 'AppleOS',
             name: 'appleOS',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/notice.png`
+            icon: `${rootUrl}/img/symbol/notice.png`
           },
           {
             label: '推送时段',
@@ -1720,7 +1716,7 @@ async function main() {
             name: "donate",
             label: "打赏作者",
             type: "cell",
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png'
+            icon: `${rootUrl}/img/icon/weChat.png`
           }
         ]
       }
@@ -1739,7 +1735,7 @@ async function main() {
             label: '重置所有',
             name: 'reset',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/reset.png`
+            icon: `${rootUrl}/img/symbol/reset.png`
           },
           {
             label: '清除缓存',
@@ -1764,7 +1760,7 @@ async function main() {
             name: 'refresh',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/refresh.png`,  
+            icon: `${rootUrl}/img/symbol/refresh.png`,  
             message: '设置桌面组件的时长\n( 单位: 分钟 )',
             desc: settings.refresh
           }
@@ -1808,7 +1804,7 @@ async function main() {
             label: '布局调整',
             name: 'layout',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/layout.png`,
+            icon: `${rootUrl}/img/symbol/layout.png`,
             message: '建议只调整图片上下空白参数'
           },
           {
@@ -1833,7 +1829,7 @@ async function main() {
             name: "textLightColor",
             label: "白天文字",
             type: "color",
-            icon: `${rootUrl}img/symbol/title.png`
+            icon: `${rootUrl}/img/symbol/title.png`
           },
           {
             name: "textDarkColor",
@@ -1956,7 +1952,7 @@ async function main() {
             name: 'transparency',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/masking_2.png`,  
+            icon: `${rootUrl}/img/symbol/masking_2.png`,  
             message: '渐变颜色透明度，完全透明设置为 0',
             desc: settings.transparency
           },
@@ -1964,7 +1960,7 @@ async function main() {
             label: '透明背景',
             name: 'background',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/transparent.png`
+            icon: `${rootUrl}/img/symbol/transparent.png`
           },
           {
             label: '遮罩透明',
@@ -1983,14 +1979,14 @@ async function main() {
             name: 'chooseBgImg',
             type: 'file',
             isAdd: true,
-            icon: `${rootUrl}img/symbol/bgImage.png`,
+            icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
           {
             label: '清除背景',
             name: 'clearBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/clearBg.png`
+            icon: `${rootUrl}/img/symbol/clearBg.png`
           }
         ]
       },
@@ -2001,7 +1997,7 @@ async function main() {
             label: '自动更新',
             name: 'update',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           },
           {
             label: '背景音乐',
@@ -2030,13 +2026,13 @@ async function main() {
             label: '设置头像',
             name: 'setAvatar',
             type: 'cell',
-            icon: `${rootUrl}img/icon/camera.png`
+            icon: `${rootUrl}/img/icon/camera.png`
           },
           {
             label: 'Telegram',
             name: 'telegram',
             type: 'cell',
-            icon: `${rootUrl}img/icon/Swiftgram.png`
+            icon: `${rootUrl}/img/icon/Swiftgram.png`
           }
         ]
       },
@@ -2079,7 +2075,7 @@ async function main() {
                 label: '添加重写',
                 name: 'rewrite',
                 type: 'cell',
-                icon: `${rootUrl}img/symbol/quantumult-x.png`,
+                icon: `${rootUrl}/img/symbol/quantumult-x.png`,
                 desc: 'Quantumult X'
               },
               {
@@ -2095,7 +2091,7 @@ async function main() {
             label: '组件通知',
             name: 'notify',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/notice.png`
+            icon: `${rootUrl}/img/symbol/notice.png`
           },
           {
             label: '偏好设置',
@@ -2128,14 +2124,14 @@ async function main() {
             name: 'preview',
             type: 'cell',
             family: 'medium',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           },
           {
             label: '小号组件',
             name: 'preview',
             type: 'cell',
             family: 'small',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           }
         ]
       },
@@ -2156,7 +2152,7 @@ async function main() {
             name: "updateCode",
             label: "更新代码",
             type: "cell",
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           }
         ]
       }
