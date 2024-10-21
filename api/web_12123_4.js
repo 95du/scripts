@@ -1,6 +1,3 @@
-// Variables used by Scriptable.
-// These must be at the very top of the file. Do not edit.
-// icon-color: deep-brown; icon-glyph: car;
 /**
  * 脚本名称: 交管12123
  * 组件作者：95度茅台
@@ -11,7 +8,8 @@
 async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_12123');
-  
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
   const [ settingPath, cacheImg, cacheStr, cacheCar ] = [
@@ -134,9 +132,7 @@ async function main(family) {
    * @returns {image} - url
    */
   const getCacheData = async (name, url, type) => {
-    const cache = useFileManager({  
-      cacheTime: 240, type
-    });
+    const cache = useFileManager({ type });
     const cacheData = cache.read(name);
     if (cacheData) return cacheData;
     const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
@@ -146,7 +142,7 @@ async function main(family) {
     return response;
   };
   
-  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await getCacheData('api.json', atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zaG9ydGN1dHMvcmF3L21hc3Rlci9hcGkvdXBkYXRlL3Zpb2xhdGlvbi5qc29u'), true)
+  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await getCacheData('api.json', `${rootUrl}/update/12123.json`, true);
   
   /**
    * 获取车辆图片并使用缓存
@@ -242,10 +238,11 @@ async function main(family) {
     if (!setting.sign) await getBoxjsData();
     const main = await getCacheString('main.json', api1);
     const { success, data } = main;
-    const randomData = data ? getRandomItem(data.list) : {};
     if (!success) handleError(main);
-    if (!data || randomData.count == 0) return { success };
-    
+    const randomData = data ?getRandomItem(data.list) : null;
+    if (!randomData || randomData.count === '0') {  
+      return { success };
+    }
     const vioDetails = await getVehicleViolation(randomData);
     return vioDetails;
   };
@@ -259,10 +256,12 @@ async function main(family) {
       notify(`${resultMsg} ⚠️`, '点击【通知框】或【车图】跳转到支付宝12123页面重新获取，请确保已打开辅助工具', alipayUrl);
     } else {
       notify(resultCode, resultMsg);
-    }
+    };
     
-    delete setting.sign;
-    writeSettings(setting);
+    if (setting.sign) {
+      delete setting.sign;
+      writeSettings(setting);
+    }
   };
   
   // 违章状态处理  
@@ -345,7 +344,7 @@ async function main(family) {
     plateNumber, 
     issueOrganization, 
     status: vehicles_status,
-    name = '姓名',
+    name,
     validPeriodEnd = '2099-12-30' 
   } = getRandomItem(vehicle) || {};
   
@@ -355,6 +354,7 @@ async function main(family) {
     allowToDrive = 'C1', 
     reaccDate = '2099-12-29',
     validityEnd = '2099-12-30',
+    name: myName,
     issueOrganizationName = setting.botStr
   } = drivingLicense;
 
@@ -547,7 +547,7 @@ async function main(family) {
       : shortText;
     };
     
-    const tipsText = tipsStack.addText(sta ? (`备案信息: ${name}，驾驶证状态 (${isStatus})，${issueOrganizationName}`) : violationMessage);
+    const tipsText = tipsStack.addText(sta ? (`备案信息: ${name || myName}，驾驶证状态 (${isStatus})，${issueOrganizationName}`) : violationMessage);
     tipsText.font = Font.mediumSystemFont(11);
     tipsText.textColor = textColor;
     tipsText.textOpacity = 0.8;
