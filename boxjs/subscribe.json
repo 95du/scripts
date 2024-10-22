@@ -1,17 +1,17 @@
 {
   "id": "95du.app.sub",
-  "name": "95du丶茅台",
+  "name": "95du茅台",
   "author": "@95du",
-  "icon": "https://gitcode.net/4qiao/framework/raw/master/img/icon/4qiao.png",
-  "repo": "https://gitcode.net/4qiao/scriptable",
+  "icon": "https://raw.githubusercontent.com/95du/scripts/master/img/icon/4qiao.png",
+  "repo": "https://raw.githubusercontent.com/95du/scripts/master",
   "apps": [
     {
       "id": "body_12123",
       "name": "交管12123",
       "author": "@95du",
-      "script": "https://gitcode.net/4qiao/scriptable/raw/master/quanX/getToken_12123.js",
+      "script": "https://raw.githubusercontent.com/95du/scripts/master/rewrite/getToken_12123.js",
       "descs_html": [
-        "<img src=\"https://gitcode.net/4qiao/framework/raw/master/img/picture/widget.gif\" style=\"width: 320px; height: auto; margin: 0 auto; display: block;\" />",
+        "<img src=\"https://raw.githubusercontent.com/95du/scripts/master/img/picture/widget.gif\" style=\"width: 320px; height: auto; margin: 0 auto; display: block;\" />",
         "<br />", 
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>跳转到 👉 </font><a href=\"alipays://platformapi/startapp?appId=2019050964403523&page=pages/index/index\">支付宝12123</a></h2>"
       ],
@@ -90,8 +90,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>淘宝 Cookie</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/scriptable/raw/master/img/icon/taobao.png",
-        "https://gitcode.net/4qiao/scriptable/raw/master/img/icon/taobao.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/taobao.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/taobao.png"
       ],
       "keys": [
         "taobao_cookie"
@@ -140,8 +140,8 @@
         "市值股票Authorization"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/marketCap.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/marketCap.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/marketCap.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/marketCap.png"
       ],
       "keys": [
         "laohu8_Authorization"
@@ -190,8 +190,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>中国电信 loginUrl</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom.png"
       ],
       "keys": [
         "china_telecom_loginUrl"
@@ -215,8 +215,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>中国电信 loginUrls</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom.png"
       ],
       "keys": [
         "china_telecom_loginUrls"
@@ -240,8 +240,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>高德地图 Cookie</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap.png"
       ],
       "keys": [
         "amap_cookie"
@@ -265,8 +265,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>高德会员</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap_vip.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap_vip.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap_vip.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap_vip.png"
       ],
       "keys": [
         "amap_vip_url",
@@ -304,13 +304,13 @@
       "id": "amap_family_sport",
       "name": "高德家人运动",
       "author": "@95du",
-      "script": "https://gitcode.net/4qiao/scriptable/raw/master/quanX/get_amap_family_sport.js",
+      "script": "https://raw.githubusercontent.com/95du/scripts/master/rewrite/get_amap_family_sport.js",
       "descs_html": [
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>高德家人运动</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap_vip.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap_vip.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap_vip.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap_vip.png"
       ],
       "keys": [
         "amap_family_sport_url"
@@ -334,8 +334,8 @@
         "<h2 align=\"center\"><font color='#FF6800' font-weight='bold'>高德家人地图</font></h2>"
       ],
       "icons": [
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap.png",
-        "https://gitcode.net/4qiao/framework/raw/master/img/icon/aMap.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/aMap.png"
       ],
       "keys": [
         "amap_family_info_url",
