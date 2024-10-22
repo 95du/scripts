@@ -4,14 +4,16 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 中国电信_2
- * Version 1.0.6
- * 2024-05-31 13:18
+ * Version 1.1.0
+ * 2024-10-23 13:18
  */
 
 
 async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_telecom');
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  
   
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
@@ -96,7 +98,7 @@ async function main(family) {
    * @param {Image} url
    */
   const getCacheImage = async (name, url) => {
-    const cache = useFileManager({ cacheTime : 240 });
+    const cache = useFileManager();
     const image = cache.read(name);
     if (image) return image;
     const img = await new Request(url).loadImage();
@@ -211,8 +213,8 @@ async function main(family) {
       } else if (item.unitTypeId == 3 && amount < 999999990000 && (setting.orient ? name.includes('定向') : !name.includes('定向'))) {
         totalFlow += parseFloat(item.ratableAmount);
         balanceFlow += parseFloat(item.balanceAmount);
-      } 
-    });
+      };
+    })
   });
   
   // 语音
@@ -227,7 +229,7 @@ async function main(family) {
   
   // 余额
   const fetchBalance = async () => {
-    const balances = await getCacheString('balance.json', 'https://e.dlife.cn/user/balance.do');  
+    const balances = await getCacheString('balance.json', 'https://e.dlife.cn/user/balance.do');
     return balances || {};
   };
   
@@ -333,8 +335,8 @@ async function main(family) {
   df.dateFormat = 'ddHHmm'
   const day1st = df.string(new Date());
   
-  const image = await getCacheImage('logo.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/TelecomLogo.png');
-  const image1 = await getCacheImage('logo1.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/telecom_1.png');
+  const image = await getCacheImage('logo.png', `${rootUrl}/img/icon/TelecomLogo.png`);
+  const image1 = await getCacheImage('logo1.png', `${rootUrl}/img/icon/telecom_1.png`);
   
   // 设置组件背景
   const setBackground = async (widget) => {
