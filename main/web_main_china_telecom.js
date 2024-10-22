@@ -91,7 +91,7 @@ async function main() {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     
-    //shimoFormData(family);
+    shimoFormData(family);
   };
   
   const shimoFormData = (action) => {
