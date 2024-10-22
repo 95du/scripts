@@ -335,7 +335,7 @@ async function main(family) {
   df.dateFormat = 'ddHHmm'
   const day1st = df.string(new Date());
   
-  const image = await getCacheImage('logo.png', `${rootUrl}/img/icon/TelecomLogo.png`);
+  const image = await getCacheImage('logo.png', `${rootUrl}/img/icon/telecom_5.png`);
   const image1 = await getCacheImage('logo1.png', `${rootUrl}/img/icon/telecom_1.png`);
   
   // 设置组件背景
