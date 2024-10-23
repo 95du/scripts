@@ -1,18 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-blue; icon-glyph: cog;
-/**
- * 组件作者: 95度茅台
- * 组件名称: 中国电信余量_3
- * 组件版本: Version 1.0.2
- * 发布日期: 2024-04-15 15:30
- */
-
 
 async function main() {
   const scriptName = '中国电信_3'
-  const version = '1.0.2'
-  const updateDate = '2024年04月16日'
+  const version = '1.1.0'
+  const updateDate = '2024年10月23日'
   const pathName = '95du_china_telecom_3';
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
@@ -289,7 +282,7 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    if (response.includes('茅台')) {  
+    if (!response.includes('!DOCTYPE')) {  
       cache.writeString(cssFileName, response);
     }
     return response;
@@ -581,7 +574,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);
 
     const style =`  
     :root {
@@ -708,7 +701,7 @@ async function main() {
         const iframe = document.querySelector('.custom-iframe');
         iframe.src = iframe.getAttribute('data-src');
       </script>`;
-      
+      console.log(music)
       return `${avatar}
       ${settings.music ? music : ''}`
     };
@@ -1789,7 +1782,7 @@ input.addEventListener("change", async (e) => {
             name: "donate",
             label: "打赏作者",
             type: "cell",
-            icon: `${rootIrl}/img/icon/weChat.png`
+            icon: `${rootUrl}/img/icon/weChat.png`
           }
         ]
       }
