@@ -6,6 +6,7 @@
  * 组件作者：95度茅台
  * 组件版本: Version 1.0.0
  * 更新日期: 2024-03-27
+ * https://m5-zb.amap.com/ws/vip/marketing-center/member-card
  */
 
 
@@ -292,7 +293,7 @@ async function main() {
     
     if (setting.rightIcon) {
       levStack.addSpacer();
-      const iconSymbol2 = await getCacheImage('icon.png', 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/map_yellow.png');
+      const iconSymbol2 = await getCacheImage('icon.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/symbol/map_yellow.png');
       const rightIcon = levStack.addImage(iconSymbol2);
       rightIcon.imageSize = new Size(25, 25);
     };
