@@ -11,6 +11,7 @@
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_jd_treasury');
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
@@ -214,7 +215,10 @@ async function main() {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      const imgUrl = ['https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/treasury.jpeg', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/treasury1.jpeg']
+      const imgUrl = [
+        `${rootUrl}/img/jingdong/treasury.jpeg`, 
+        `${rootUrl}/img/jingdong/treasury1.jpeg`
+      ];
       const randomUrl = imgUrl[Math.floor(Math.random() * imgUrl.length)];
       const name = randomUrl.split('/').pop();
       widget.backgroundImage = await getCacheImage(name, randomUrl);  
@@ -303,7 +307,7 @@ async function main() {
     rightStack.centerAlignContent();
     rightStack.setPadding(-12, 0, 0, 0);
     
-    const assetIcon = await getCacheImage('jdWord.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/jdWord.png');
+    const assetIcon = await getCacheImage('jdWord.png', `${rootUrl}/img/jingdong/jdWord.png`);
     const assetImage = rightStack.addImage(assetIcon);
     assetImage.imageSize = new Size(40, 40);
     assetImage.tintColor = new Color('#FFFFFF');
@@ -336,7 +340,7 @@ async function main() {
   
   async function createErrWidget() {
     const widget = new ListWidget();
-    const image = await getCacheImage('user.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/user.png');
+    const image = await getCacheImage('user.png', `${rootUrl}/img/jingdong/user.png`);
     const widgetImage = widget.addImage(image);
     widgetImage.imageSize = new Size(50, 50);
     widgetImage.centerAlignImage();
