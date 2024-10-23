@@ -8,6 +8,8 @@ async function main() {
   const path = F_MGR.joinPath(F_MGR.documentsDirectory(), "95duJingDong_Joy");
   if (!F_MGR.fileExists(path)) F_MGR.createDirectory(path);
 
+  const root = 'https://raw.githubusercontent.com/95du/scripts/master';
+  
   const bgPath = F_MGR.joinPath(F_MGR.documentsDirectory(), "95duBackground");
   const bgImage = F_MGR.joinPath(bgPath, uri + ".jpg");
   const cacheFile = F_MGR.joinPath(path, 'setting.json');
@@ -63,7 +65,7 @@ async function main() {
     if (setting.update === 'false' && F_MGR.fileExists(modulePath)) {
       return modulePath;
     } else {
-      const req = new Request('https://gitcode.net/4qiao/scriptable/raw/master/table/jingDong_Joy.js');
+      const req = new Request(`${root}/api/jingDong_Joy.js`);
       const moduleJs = await req.load().catch(() => {
         return null;
       });
@@ -119,7 +121,7 @@ async function main() {
   async function renderTables(table) {
     const effectRow = new UITableRow();
     effectRow.height = 85 * Device.screenScale();
-    const topImg = ['https://gitcode.net/4qiao/framework/raw/master/img/picture/widget.gif']
+    const topImg = ['https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif']
     const items = topImg[Math.floor(Math.random() * topImg.length)];
     const effectImage = effectRow.addImageAtURL(items);
     effectImage.widthWeight = 0.4;
@@ -136,7 +138,7 @@ async function main() {
       await importModule(await ScriptStore()).main();
     };
   
-    const authorImage = topRow.addImageAtURL('https://gitcode.net/4qiao/framework/raw/master/img/icon/4qiao.png');
+    const authorImage = topRow.addImageAtURL(`${root}/img/icon/4qiao.png`);
     authorImage.widthWeight = 0.4;
     authorImage.centerAligned();
   
@@ -164,7 +166,7 @@ async function main() {
         interval: 26
       },
       {
-        url: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/NicegramLogo.png',
+        url: `${root}/img/icon/NicegramLogo.png`,
         type: 'web',
         title: 'Telegram',
         val: '>',
@@ -274,7 +276,7 @@ async function main() {
         }
       },
       {
-        url: 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/WangWang2.png',
+        url: `${root}/img/jingdong/WangWang2.png`,
         title: '汪汪庄园',
         onClick: async () => {
           Safari.open(
@@ -298,28 +300,28 @@ async function main() {
               interval: 26
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/refresh.png',
+              url: `${root}/img/symbol/refresh.png`,
               type: 'input',
               title: '刷新时间',
               desc: '尝试改变刷新组件时间\n具体时间由系统判断，单位: 分钟',
               val: 'minute'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/gradientBackground.png',
+              url: `${root}/img/symbol/gradientBackground.png`,
               type: 'input',
               title: '单色白天',
               desc: '浅色模式颜色 ( 输入Hex颜色代码 )',
               val: 'light'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/carPicture.png',
+              url: `${root}/img/symbol/carPicture.png`,
               type: 'input',
               title: '单色夜晚',
               desc: '深色模式颜色 ( 输入Hex颜色代码 )',
               val: 'dark'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/photoSize.png',
+              url: `${root}/img/symbol/photoSize.png`,
               type: 'input',
               title: '渐变背景',
               desc: '深色由上往下渐变淡\n可添加多种颜色，组件随机切换\n',
@@ -327,26 +329,26 @@ async function main() {
               tips: '输入Hex颜色代码'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/masking.png',
+              url: `${root}/img/symbol/masking.png`,
               type: 'input',
               title: '渐变透明',
               desc: '深色透明度，完全透明设置为 0',
               val: 'transparency'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/transparent.png',
+              url: `${root}/img/symbol/transparent.png`,
               type: 'background',
               title: '透明背景'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/masking2.png',
+              url: `${root}/img/symbol/masking2.png`,
               type: 'input',
               title: '遮罩透明',
               desc: '给图片加一层半透明遮罩\n完全透明设置为 0',
               val: 'masking'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/bgImage.png',
+              url: `${root}/img/symbol/bgImage.png`,
               type: 'bgImage',
               title: '图片背景',
               onClick: async () => {
@@ -356,7 +358,7 @@ async function main() {
               }
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/clearBg.png',
+              url: `${root}/img/symbol/clearBg.png`,
               type: 'clear',
               title: '清除背景',
               desc: '删除背景图以及清空渐变背景代码'
@@ -365,11 +367,11 @@ async function main() {
               interval: 26
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/open.png',
+              url: `${root}/img/symbol/open.png`,
               title: '颜色代码',
               onClick: async () => {
                 const webView = new WebView();
-                const webHtml = await new Request('https://gitcode.net/4qiao/framework/raw/master/scriptable/colorFinder.js').loadString();
+                const webHtml = await new Request('https://gitcode.net/4qiao/framework/raw/master/script/colorFinder.js').loadString();
                 await webView.loadHTML(webHtml);
                 await webView.present()
               }
@@ -378,13 +380,13 @@ async function main() {
               interval: 26
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/update.png',
+              url: `${root}/img/symbol/update.png`,
               type: 'but',
               title: '自动更新',
               val: 'update'
             },
             {
-              url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/notice.png',
+              url: `${root}/img/symbol/notice.png`,
               type: 'but',
               title: 'AppleOS',
               val: 'appleOS'
@@ -408,7 +410,7 @@ async function main() {
         interval: 26
       },
       {
-        url: 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/preview.png',
+        url: `${root}/img/symbol/preview.png`,
         type: 'preview',
         title: '预览组件',
         val: '>'
@@ -489,7 +491,7 @@ async function main() {
         row.height = item.interval;
         row.backgroundColor = bgColor;
       } else {
-        const imgCell = UITableCell.imageAtURL('https://gitcode.net/4qiao/framework/raw/master/img/icon/button_false.png');
+        const imgCell = UITableCell.imageAtURL(`${root}/img/icon/button_false.png`);
         imgCell.rightAligned();
         imgCell.widthWeight = 500;
         row.addCell(imgCell);
@@ -587,9 +589,9 @@ async function main() {
         if (isBoolValue) {
           const trueFalse = setting[val] === "true";
           if (trueFalse) {
-            imgCell = UITableCell.imageAtURL('https://gitcode.net/4qiao/framework/raw/master/img/icon/button_false.png');
+            imgCell = UITableCell.imageAtURL(`${root}/img/icon/button_false.png`);
           } else {
-            imgCell = UITableCell.imageAtURL('https://gitcode.net/4qiao/framework/raw/master/img/icon/button_true.png');
+            imgCell = UITableCell.imageAtURL(`${root}/img/icon/button_true.png`);
           }
           imgCell.rightAligned();
           imgCell.widthWeight = 500;
@@ -711,7 +713,7 @@ async function main() {
     );
     if (index === 0) return;
     const modulePath = F_MGR.joinPath(path, 'jingDong.js');
-    const reqUpdate = new Request('https://gitcode.net/4qiao/scriptable/raw/master/table/jingDong_Joy.js');
+    const reqUpdate = new Request(`${root}/api/jingDong_Joy.js`);
     const codeString = await reqUpdate.loadString();
     if (codeString.indexOf('95度茅台') == -1) {
       notify('更新失败⚠️', '请检查网络或稍后再试');
@@ -798,7 +800,7 @@ async function main() {
     if (F_MGR.fileExists(modulePath)) {
       return modulePath;
     } else {
-      const req = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW5UYWJsZUJhY2tncm91bmQuanM='));
+      const req = new Request(`${root}/main/main_background.js`);
       const moduleJs = await req.load().catch(() => {
         return null;
       });
@@ -890,7 +892,7 @@ async function main() {
     if ( F_MGR.fileExists(modulePath) ) {
       F_MGR.remove(modulePath);
     }
-    const req = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM='));
+    const req = new Request(`${root}/main/web_main_95du_Store.js`);
     const moduleJs = await req.load().catch(() => {
       return null;
     });
