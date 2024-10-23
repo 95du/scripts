@@ -163,8 +163,8 @@ async function main() {
   };
   const updateTime = formatDate(localTime, 'MM-dd HH:mm');
   
-  const fromImage = await getCacheImage(`${currency}.png`, `https://gitcode.net/4qiao/framework/raw/master/img/flag/${currency}.png`)
-  const toImage = await getCacheImage('CNY.png', 'https://gitcode.net/4qiao/framework/raw/master/img/flag/CNY.png');
+  const fromImage = await getCacheImage(`${currency}.png`, `https://raw.githubusercontent.com/95du/scripts/master/img/flag/${currency}.png`)
+  const toImage = await getCacheImage('CNY.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/flag/CNY.png');
   
   // 图片遮罩
   async function shadowImage(img) {
