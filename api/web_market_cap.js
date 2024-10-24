@@ -20,6 +20,7 @@
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_marketCap');
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
@@ -104,7 +105,7 @@ async function main() {
 
   // 获取网络图片，使用缓存
   const getCacheImage = async (name, url) => {
-    const cache = useFileManager({ cacheTime: 96 });
+    const cache = useFileManager();
     const image = cache.readImage(name);
     if (image) return image;
     const img = await new Request(url).loadImage();
@@ -260,7 +261,7 @@ async function main() {
   
   // ===========图表============ //
   const headers = {
-    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MjkyNzIyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoidWV5ZjVzanBzN3dGRUpvRm9LaUxCSWpwS1Rpb2FpUEVuVGdicFFMSkpvZ2tYazB5VjMifQ.eGb6jA33c90n4FqHeYrhFygiaB3U9ZJKuUOtvV7zaxqNBUKG_U6szsJagV2YD9k0RpNXJWmgVGhpj5mDp65tgQ'
+    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzE4NjQyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiSUpBajdiQzZLZTF0ckZxczJacWFrdW1uc0xPWEdjR2U4MFpza3ZETkJ2S1RoQWt3cTAifQ.KI5ZPsp9y-MXCwecNWKzUHVRD8epU4MDg7raL3jTPRLHc7nIMNzQ4C2-_DxLNuTDjfGqG-ettdZETI_3doH2nA'
   };
   
   const getColor = (value) => {
@@ -709,8 +710,8 @@ async function main() {
       widget.backgroundGradient = gradient;
     } else {
       const urls = [
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg1.png',  
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png'];
+        `${rootUrl}/img/background/glass_1.png`,  
+        `${rootUrl}/img/background/glass_2.png`];
       const randomUrl = getRandomItem(urls);
       const name = randomUrl.split('/').pop();
       const randomBackgroundImage = await getCacheImage(name, randomUrl);
