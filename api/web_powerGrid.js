@@ -4,14 +4,15 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 南方电网
- * 组件版本: Version 1.0.0
- * 发布时间: 2023-10-17
+ * 组件版本: Version 1.0.1
+ * 发布时间: 2024-05-06
  */
 
-async function main() {
+async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_powerGrid');
-  
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
   const [ settingPath, cacheImg, cacheStr ] = [
@@ -26,7 +27,7 @@ async function main() {
    */
   const getBotSettings = (file) => {
     if (fm.fileExists(file)) {
-      return { avatar, useCache, count, loop, token, gap, location, progressWidth, radius } = JSON.parse(fm.readString(file));
+      return { avatar, useCache, count = 0, token, gap, location, progressWidth, radius } = JSON.parse(fm.readString(file));
     }
     return {};
   };
@@ -41,8 +42,20 @@ async function main() {
     fm.writeString(settingPath, JSON.stringify(setting, null, 2));
     console.log(JSON.stringify(
       setting, null, 2
-    ));
-  }
+    ))
+  };
+  
+  // 获取随机数组元素
+  const getRandomItem = async (array) => array[Math.floor(Math.random() * array.length)];
+  
+  /**
+   * 该函数获取当前的年份和月份
+   * @returns {Promise}
+   */
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const currentYear = month === '01' ? year - 1 : year;
   
   /**  
   * 弹出通知
@@ -51,20 +64,27 @@ async function main() {
   * @param {string} url
   * @param {string} sound
   */
-  const notify = async (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'alert', ...opts });
+  const notify = (title, body, url, opts = {}) => {
+    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
     if (url) n.openURL = url;
-    return await n.schedule();
+    n.schedule();
   };
   
-  /**
+ /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
-  const getBgImagePath = () => {
-    const bgPath = fm.joinPath(fm.documentsDirectory(), '95duBackground');
-    return fm.joinPath(bgPath, Script.name() + '.jpg');
-  }
+  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
+  
+  // 图片遮罩
+  async function shadowImage(img) {
+    let ctx = new DrawContext()
+    ctx.size = img.size
+    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']))
+    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
+    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
+    return await ctx.getImage()
+  };
   
   /**
    * 读取和写入缓存的文本和图片数据
@@ -72,29 +92,28 @@ async function main() {
    * @param {number}  - number
    * @returns {object} - Object
    */
-  const useFileManager = ({ cacheTime } = {}) => {
+  const useFileManager = ({ cacheTime, type } = {}) => {
+    const basePath = type ? cacheStr : cacheImg;
     return {
-      readString: (name) => {
-        const filePath = fm.joinPath(cacheStr, name);  
-        const fileExists =  fm.fileExists(filePath);
-        if (fileExists && hasExpired(filePath) > cacheTime) {
-          fm.remove(filePath);
-          return null;
+      read: (name) => {
+        const path = fm.joinPath(basePath, name);
+        if (fm.fileExists(path)) {
+          if (hasExpired(path) > cacheTime || !useCache) {  
+            fm.remove(path);
+          } else if (useCache) {  
+            return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
+          }
         }
-        return fm.fileExists(filePath) && useCache ? fm.readString(filePath) : null;
       },
-      writeString: (name, content) => fm.writeString(fm.joinPath(cacheStr, name), content),
-      // cache image
-      readImage: (name) => {
-        const filePath = fm.joinPath(cacheImg, name);
-        return fm.fileExists(filePath) ? fm.readImage(filePath) : null;
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cacheImg, name), image),
+      write: (name, content) => {
+        const path = fm.joinPath(basePath, name);
+        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
+      }
     };
-    
+  
     function hasExpired(filePath) {
       const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000)
+      return (Date.now() - createTime) / (60 * 60 * 1000);
     }
   };
   
@@ -103,11 +122,11 @@ async function main() {
    * @param {Image} url
    */
   const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
+    const cache = useFileManager({ cacheTime : 240 });
+    const image = cache.read(name);
     if (image) return image;
     const img = await new Request(url).loadImage();
-    cache.writeImage(name, img);
+    cache.write(name, img);
     return img;
   };
   
@@ -117,65 +136,139 @@ async function main() {
    * @returns {object} - JSON
    */
   const getCacheString = async (jsonName, jsonUrl, requestBody) => {
-    const cache = useFileManager({ cacheTime: 12 });
-    const jsonString = cache.readString(jsonName);
-    if (jsonString) {
-      return JSON.parse(jsonString);
-    }
+    const cache = useFileManager({ cacheTime: 12, type: true });
+    const json = cache.read(jsonName);
+    if (json) return json;
     
     const response = await makeRequest(jsonUrl, requestBody);
     const { sta } = response;
-    if ( sta == 00 ) {
-      cache.writeString(jsonName, JSON.stringify(response));
+    if (sta == 00) {
+      cache.write(jsonName, response);
     }
     return response;
   };
   
   /**
-  * 该函数获取当前的年份和月份
-  * @returns {Promise}
-  */
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-  const currentYear = month === '01' ? year - 1 : year;
+   * 获取请求数据
+   * @param {string} - string
+   * @returns {image} - url
+   */
+  const makeRequest = async (url, requestBody) => {
+    const req = new Request(url);
+    req.method = 'POST';
+    req.headers = {
+      'x-auth-token': token,
+      'Content-Type': 'application/json;charset=utf-8'
+    }
+    req.body = JSON.stringify(requestBody);
+    return await req.loadJSON();
+  };
+  
+  // 用户信息
+  const getUserInfo = async () => {
+    const url = 'https://95598.csg.cn/ucs/ma/zt/eleCustNumber/queryBindEleUsers';
+    const { sta, data } = await getCacheString('userInfo.json', url);
+    if (sta == 00) {
+      const outputNextIndex = (num, data) => (num + 1) % data.length;
+      setting.count = outputNextIndex(count, data);
+      writeSettings(setting);
+      return data[setting.count];
+    } else {
+      notify('南网在线', 'Token已过期，请重新获取。⚠️');
+    }
+  };
+  
+  // 月用电量
+  const getMonthData = async (areaCode, eleCustId) => {
+    const pointResponse = await getCacheString(
+      `queryMeteringPoint_${count}.json`,
+      'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint', {
+      areaCode,
+      eleCustNumberList: [{ areaCode, eleCustId }]
+    });
+    // totalPower & yesterday
+    if (pointResponse.sta == 00) {
+      const { meteringPointId } = pointResponse?.data[0];
+      const monthResponse = await getCacheString(`queryDayElectricByMPoint_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint', {
+        eleCustId,
+        areaCode,
+        yearMonth: year + month,
+        meteringPointId
+      });
+      return monthResponse.data;
+    }
+  };
+  
+  // 账单
+  const getEleBill = async (areaCode, eleCustId) => {
+    const response = await getCacheString(  
+      `selectElecBill_${count}.json`,
+      'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
+      electricityBillYear: currentYear,
+      areaCode,
+      eleCustId
+    });
+    if (response.sta == 00) {
+      const eleBill = response.data.billUserAndYear[0];
+      const lastMonth = eleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
+      return { lastMonth, ...eleBill };
+    }
+  };
+  
+  // 余额
+  const getUserBalance = async (areaCode, eleCustId) => {
+    const res = await getCacheString(`queryUserAccountNumberSurplus_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryUserAccountNumberSurplus', {
+      areaCode,
+      eleCustId
+    });
+    return res.sta == 00 ? res.data[0].balance : '0.00';
+  };
+  
+  // 提取数据
+  const {  
+    userName: name = '用户名',
+    eleCustNumber: number = '070100',
+    areaCode,
+    bindingId: eleCustId
+  } =  await getUserInfo() || {};
+  
+  const balance = await getUserBalance(areaCode, eleCustId);
   
   // totalPower & Yesterday
-  const Run = async () => {
-    const month = await getMonthData();
-    if ( month ) {
-      totalPower = month.totalPower;
-      ystdayPower = month.result.pop().power;
-      beforeYesterday = (month.result.length ? month.result[month.result.length - 1].power : '0.00') + ' °';
-    } else {
-      totalPower = '0.00';
-      ystdayPower = '0.00';
-      beforeYesterday = '0.00';
-    }
-    
-    // levelColor loop
-    if ( loop === 0 ) {
-      setting.loop = 1
-      levelColor = '#34C579'
-      barColor = new Color(levelColor, 0.6);
-    } else if ( loop === 1 ) {
-      setting.loop = 0
-      levelColor = '#00BAFF'
-      barColor = new Color(levelColor, 0.6);
+  const { totalPower, result } = await getMonthData(areaCode, eleCustId) || { totalPower: '0.00', result: [] };
+  const ystdayPower = result.length > 0 ? result.pop().power : '0.00';
+  const beforeYesterday = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
+  
+  const {
+    lastMonth = `${year}-${month}`,
+    totalPower: total = '0.00',  
+    totalElectricity = '0.00',   
+    arrears = '0', 
+    isArrears = '0'
+  } = await getEleBill(areaCode, eleCustId) || {};
+  
+  // 欠费时每12小时通知一次
+  const arrearsNotice = () => {
+    const pushTime = Date.now() - setting.updateTime;
+    const duration = pushTime % (24 * 3600 * 1000);
+    const hours_duration = Math.floor(duration / (3600 * 1000));
+    if (hours_duration >= 12 && isArrears == 1) {
+      setting.updateTime = Date.now()
+      writeSettings(setting);
+      notify('用电缴费通知 ‼️', `${name}，户号 ${number}` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImagePath();
+    const bgImage = getBgImage();
     const Appearance = Device.isUsingDarkAppearance();
     if (fm.fileExists(bgImage) && !Appearance) {
       widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
     } else if (setting.solidColor && !Appearance) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = color[Math.floor(Math.random() * color.length)];
-      
+      const randomColor = await getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
       const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
@@ -191,15 +284,23 @@ async function main() {
       ];
       widget.backgroundGradient = gradient;
     } else if (!Appearance) {
-      widget.backgroundImage = await getCacheImage("bg.png", 'https://gitcode.net/4qiao/framework/raw/master/img/picture/background_image_1.png');
+      widget.backgroundImage = await getCacheImage("bg.png", `${rootUrl}/img/picture/background_image_1.png`);
     } else {
-      const baiTiaoUrl = [
-        //'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg.png',
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png'];
-      const bgImageURL = baiTiaoUrl[Math.floor(Math.random() * baiTiaoUrl.length)];
-      const bgImageName = decodeURIComponent(bgImageURL.substring(bgImageURL.lastIndexOf("/") + 1));
-      const randomBackgroundImage = await getCacheImage(bgImageName, bgImageURL);
+      const baiTiaoUrl = [`${rootUrl}/img/background/glass_2.png`];
+      const imageUrl = await getRandomItem(baiTiaoUrl);
+      const name = imageUrl.split('/').pop();
+      const randomBackgroundImage = await getCacheImage(name, imageUrl);
       widget.backgroundImage = randomBackgroundImage;
+      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+    }
+    
+    // levelColor loop
+    if (count % 2 === 0) {
+      levelColor = '#34C579'
+      barColor = new Color(levelColor, 0.6);
+    } else {
+      levelColor = '#00BAFF'
+      barColor = new Color(levelColor, 0.6);
     }
   };
   
@@ -207,12 +308,6 @@ async function main() {
   const createWidget = async () => {
     const widget = new ListWidget();
     await setBackground(widget);
-    widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
-    
-    /**
-     * @param {number} padding
-     * @returns {WidgetStack} 
-     */
     widget.setPadding(0, 0, 0, 0);
     const mainStack = widget.addStack();
     mainStack.layoutVertically();
@@ -230,11 +325,9 @@ async function main() {
     const iconSymbol = await getCacheImage(imgName, avatar);
     const avatarIcon = avatarStack2.addImage(iconSymbol);
     avatarIcon.imageSize = new Size(50, 50);
-    if ( avatar.indexOf('png') == -1 ) {
-      avatarStack2.cornerRadius = Number(radius);
-      avatarStack2.borderWidth = 3;
-      avatarStack2.borderColor = new Color('#FFBF00');
-    }
+    avatarStack2.cornerRadius = Number(radius);
+    avatarStack2.borderWidth = 3;
+    avatarStack2.borderColor = new Color('#FFBF00');
     avatarStack.addSpacer(15);
     
     const topStack = avatarStack.addStack();
@@ -249,7 +342,7 @@ async function main() {
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
     barStack.backgroundColor = new Color(levelColor);
-    barStack.setPadding(1, 12, 1, 12);
+    barStack.setPadding(1, 12, 1, 12)
     barStack.cornerRadius = 10;
     
     const iconSF = SFSymbol.named('crown.fill');
@@ -266,22 +359,22 @@ async function main() {
     const beneStack = levelStack.addStack();
     beneStack.layoutHorizontally();
     beneStack.centerAlignContent();
-    const benefitText = beneStack.addText('昨日  ');
+    const benefitText = beneStack.addText('昨日 ');
     benefitText.font = Font.boldSystemFont(14);  
     benefitText.textOpacity = 0.7;
     
-    const benefitText2 = beneStack.addText(`${ystdayPower} °`);
+    const benefitText2 = beneStack.addText(`${ystdayPower} °`)
     benefitText2.font = Font.boldSystemFont(16);
-    benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red()
+    benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red();
     beneStack.addSpacer();
     
-    if ( isArrears == 1 ) {
+    if (isArrears == 1) {
       const payText0 = beneStack.addText(arrears);
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
     } else if (setting.estimate) {
-      const estimate = totalBill / total * totalPower;
-      const payText0 = beneStack.addText(estimate === 0 ? await getBalance() : estimate.toFixed(2));
+      const estimate = totalElectricity / total * totalPower
+      const payText0 = beneStack.addText(isNaN(estimate) ? '0.00' : estimate === 0 ? balance : estimate.toFixed(2));
       payText0.font = Font.mediumSystemFont(16);
       payText0.textColor = Color.blue();
     }
@@ -295,12 +388,12 @@ async function main() {
     payStack.layoutHorizontally();
     payStack.centerAlignContent();
     payStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#AF52DE');
-    payStack.setPadding(1, 5, 1, 5);
+    payStack.setPadding(2, 5, 2, 5);
     payStack.cornerRadius = 5;
     
-    const payText = payStack.addText(isArrears == 1 ? '待缴费' : '已缴费');
+    const payText = payStack.addText(!areaCode ? '用户未登录' : isArrears == 1 ? '待缴费' : '已缴费');
     payText.font = Font.boldSystemFont(11);
-    payText.textColor = new Color('#FFFFFF');
+    payText.textColor = Color.white();
     pointStack.addSpacer(8);
     
     const LevelText = pointStack.addText(number);
@@ -311,13 +404,13 @@ async function main() {
     const barStack2 = pointStack.addStack();
     barStack2.layoutHorizontally();
     barStack2.centerAlignContent();
-    barStack2.backgroundColor = new Color('#FF9500', 0.7);
-    barStack2.setPadding(0.5, 8, 0.5, 8);
+    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FFA61C' : '#00C400');
+    barStack2.setPadding(1, 7, 1, 7);
     barStack2.cornerRadius = 5;
     
     const pointText = barStack2.addText(beforeYesterday);
-    pointText.font = Font.boldSystemFont(12);
-    pointText.textColor = new Color('#FFFFFF');
+    pointText.font = Font.boldSystemFont(13);
+    pointText.textColor = Color.white();
     mainStack.addSpacer();
     
     // Switch position
@@ -346,27 +439,25 @@ async function main() {
     quotaStack.addSpacer(3);
     
     const quotaStack2 = quotaStack.addStack();
-    const quota = quotaStack2.addText(totalPower + ' °');
+    const quota = quotaStack2.addText(`${totalPower} °`);
     quota.font = Font.boldSystemFont(18);
     quotaStack2.addSpacer();
     quotaStack.addSpacer(3);
 
     const quotaStack3 = quotaStack.addStack();
-    const quotaText2 = quotaStack3.addText(totalPower > 0 ? await getBalance() : '0.00');
+    const quotaText2 = quotaStack3.addText(totalPower > 0 ? balance : '0.00');
     quotaText2.font = Font.boldSystemFont(14);
     quotaText2.textOpacity = 0.7;
     quotaStack3.addSpacer();
     middleStack.addSpacer();
 
-    const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png')
+    const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
     const gooseIconElement = middleStack.addImage(gooseIcon);
     gooseIconElement.imageSize = new Size(55, 55);
     gooseIconElement.url = 'alipays://platformapi/startapp?appId=2021001164644764';
     middleStack.addSpacer();
     
-    /**
-     * Middle Right Stack
-     */
+    /** Middle Right Stack **/
     const billStack = middleStack.addStack();    
     billStack.layoutVertically();  
     billStack.centerAlignContent();
@@ -381,13 +472,13 @@ async function main() {
     
     const billStack2 = billStack.addStack();
     billStack2.addSpacer();
-    const bill = billStack2.addText(total + ' °');
+    const bill = billStack2.addText(`${total} °`);
     bill.font = Font.boldSystemFont(18);
     billStack.addSpacer(3);
     
     const billStack3 = billStack.addStack();
     billStack3.addSpacer();
-    const billText2 = billStack3.addText(totalBill);
+    const billText2 = billStack3.addText(totalElectricity);
     billText2.font = Font.boldSystemFont(14);
     billText2.textOpacity = 0.7;
     mainStack.addSpacer();
@@ -396,26 +487,7 @@ async function main() {
     if (location == 1) {
       await progressBar(mainStack);
     }
-    
-    // 欠费时每12小时通知一次
-    const arrearsNotice = () => {
-      const pushTime = (Date.now() - setting.updateTime);
-      const duration = pushTime % (24 * 3600 * 1000);
-      const hours = Math.floor(duration / (3600 * 1000));
-      if ( hours >= 12 && isArrears == 1 ) {
-        notify('用电缴费通知 ‼️', `${name}，户号 ${number}` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`)
-        setting.updateTime = Date.now();
-      }
-    }
     arrearsNotice();
-    writeSettings(setting);
-    
-    if (!config.runsInWidget) {
-      await widget.presentMedium();
-    } else {
-      Script.setWidget(widget);
-      Script.complete();
-    };
     return widget;
   };
   
@@ -426,13 +498,13 @@ async function main() {
    */
   const progressBar = async (mainStack) => {
     const tempBarWidth = progressWidth;
-    const tempBarHeight = 18;
+    const tempBarHeight = 16;
     
     const prgsStack = mainStack.addStack();  
     prgsStack.layoutHorizontally();
     prgsStack.centerAlignContent();
       
-    const curScoreText = prgsStack.addText(month)
+    const curScoreText = prgsStack.addText(month);
     curScoreText.font = Font.boldSystemFont(13);
     prgsStack.addSpacer();
       
@@ -468,147 +540,95 @@ async function main() {
     };
       
     prgsStack.addSpacer();
-    const isPercent2 = String(Math.floor(totalPower / total * 100));
-    const percentText = prgsStack.addText(`${isPercent2} %`);
+    const isPercent2 = total > 0 ? String(Math.floor(totalPower / total * 100)) : 0;
+    const percentText = prgsStack.addText(`${isPercent2}%`);
     percentText.font = Font.boldSystemFont(13);  
     mainStack.addSpacer();
   };
   
   /**-------------------------**/
-     /** Request(url) json **/
-  /**-------------------------**/
-  async function makeRequest(url, requestBody) {
-    const req = new Request(url);
-    req.method = 'POST';
-    req.headers = {
-      'x-auth-token': token,
-      'Content-Type': 'application/json;charset=utf-8'
-    }
-    req.body = JSON.stringify(requestBody);
-    return await req.loadJSON();
+  const getLayout = (scr = Device.screenSize().height) => ({
+    stackSize: scr < 926 ? 35 : 37,
+    iconSize: scr < 926 ? 23 : 25,
+    titleSize: scr < 926 ? 18 : 20,
+    textSize: scr < 926 ? 11 : 11.5
+  });
+  
+  // 添加到 widget
+  const addVertical = async (horStack, iconName, iconColor, title, text, gap) => {
+    const lay = getLayout();
+    const rowStavk = horStack.addStack();
+    rowStavk.layoutHorizontally();
+    rowStavk.centerAlignContent();
+    
+    const iconStack = rowStavk.addStack();
+    iconStack.layoutHorizontally();
+    iconStack.centerAlignContent();
+    iconStack.size = new Size(lay.stackSize, lay.stackSize);
+    iconStack.cornerRadius = 50;
+    iconStack.backgroundColor = iconColor;
+    
+    const iconSymbol = SFSymbol.named(iconName);
+    const iconImage = iconStack.addImage(iconSymbol.image);
+    iconImage.tintColor = Color.white();
+    iconImage.imageSize = new Size(lay.iconSize, lay.iconSize);
+    rowStavk.addSpacer(10);
+    
+    const verticalStack = rowStavk.addStack();
+    verticalStack.layoutVertically();
+    
+    const titleText = verticalStack.addText(title);
+    titleText.font = Font.mediumSystemFont(lay.titleSize);
+    titleText.textColor = iconColor;
+    
+    const subtitleText = verticalStack.addText(text);
+    subtitleText.font = Font.mediumSystemFont(lay.textSize);
+    subtitleText.textOpacity = 0.65
+    if (!gap) horStack.addSpacer();
+    return horStack;
   };
   
-  // 用户信息
-  async function userInfo() {
-    const url = 'https://95598.csg.cn/ucs/ma/zt/eleCustNumber/queryBindEleUsers';
-    const { sta, data } = await getCacheString('userInfo.json', url);
-    if (sta == 00) {
-      let countArr = data.length;
-      setting.count = countArr == 1 ? countArr - 1 : setting.count > 0 ? setting.count - 1 : countArr - 1;
-      return {  
-        userName: name,
-        areaCode: code,
-        bindingId: id,
-        eleCustNumber: number,
-      } = data[setting.count];
-    } else {
-      console.log(sta);
-      notify('南网在线', 'token已过期，请重新获取 ⚠️');
-    }
-  };
-  
-  // 月用电量
-  async function getMonthData() {
-    const pointResponse = await getCacheString(
-      `queryMeteringPoint_${count}.json`,
-      'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint', {
-      areaCode: code,
-      eleCustNumberList: [{ areaCode: code, eleCustId: id }]
-    });
-    const { meteringPointId } = pointResponse.data[0];
-    // totalPower & yesterday
-    const monthResponse = await getCacheString(`queryDayElectricByMPoint_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint', {
-      eleCustId: id,
-      areaCode: code,
-      yearMonth: year + month,
-      meteringPointId
-    });
-    return monthResponse.data;
-  };
-  
-  // 余额
-  async function getBalance() {
-    try {
-      const response = await getCacheString(`queryUserAccountNumberSurplus_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryUserAccountNumberSurplus', {
-        areaCode: code,
-        eleCustId: id
-      });
-      return response.data[0].balance
-    } catch (e) {
-      return (totalBill / total * totalPower).toFixed(2);
-    }
-  };
-  
-  // 账单
-  async function selectEleBill() {
+  // 创建小号组件
+  const createSmall = async () => {
     const response = await getCacheString(  
-      `selectElecBill_${count}.json`,
-      'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
-      electricityBillYear: currentYear,
-      areaCode: code,
-      eleCustId: id
+      `eleCar.json`,
+      'https://95598.csg.cn/ucs/ma/zt/eleCar/getHomeInfo', {
+      mobile: setting.mobile
     });
-    const eleBill = response.data.billUserAndYear[0];
-    if ( eleBill ) {
-      lastMonth = eleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      return {
-        lastMonth: electricityBillYearMonth,
-        totalPower: total,
-        totalElectricity: totalBill,
-        arrears,
-        isArrears
-      } = eleBill;
-    }
-  };
-  
-  /**-------------------------**/
-     /** Request(url) json **/
-  /**-------------------------**/
-  async function shadowImage(img) {
-    let ctx = new DrawContext()
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']))
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
-    return await ctx.getImage()
-  };
-  
-  async function smallrWidget() {
+    
+    const { 
+      accFree = '0.00', 
+      dayCharge = '0',
+      monCharge = '0'
+    } = response?.data || {};
+    
     const widget = new ListWidget();
-    const text = widget.addText('仅支持中尺寸');
-    text.font = Font.systemFont(17);
-    text.centerAlignText();
-    Script.setWidget(widget);
-    Script.complete();
+    const mainStack = widget.addStack();
+    mainStack.setPadding(0, 0, 0, 0);
+    mainStack.layoutHorizontally();
+    mainStack.centerAlignContent();
+    
+    const horStack = mainStack.addStack();
+    horStack.layoutVertically();
+    
+    addVertical(horStack, 'bolt.fill', Color.green(), Number(dayCharge).toFixed(2), '今日充电 (度)');
+    addVertical(horStack, 'flame.fill', new Color('#FE4904'), Number(monCharge).toFixed(2), '本月充电 (度)');
+    addVertical(horStack, 'dollarsign', Color.orange(), accFree, '当前余额 (元)', true);
+
+    mainStack.addSpacer();
+    return widget;
   };
   
-  async function createErrWidget() {
-    const widget = new ListWidget();
-    const image = await getCacheImage('logo.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/electric_1.png');
-    const widgetImage = widget.addImage(image);
-    widgetImage.imageSize = new Size(50, 50);
-    widgetImage.centerAlignImage();
-    widget.addSpacer(10);
-    const text = widget.addText('用户未登录');
-    text.font = Font.systemFont(17);
-    text.centerAlignText();
-    Script.setWidget(widget);
-  };
-  
+  // 渲染组件
   const runWidget = async () => {
-    if (setting.code === 0) {
-      await userInfo();
-      await selectEleBill();
-      await Run();
-    }
-    if (config.widgetFamily === 'medium' || config.runsInApp) {
-      try {
-        await (setting.code === 0 ? createWidget() : createErrWidget());  
-      } catch (e) {
-        console.log(e)
-      }
+    const widget = await (family === 'medium' ? createWidget() : createSmall());
+    
+    if (config.runsInApp) {
+      await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
-      await smallrWidget();
+      widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
+      Script.setWidget(widget);
+      Script.complete();
     }
   };
   await runWidget();
