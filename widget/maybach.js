@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: purple; icon-glyph: car;
 const fm = FileManager.local();
 const mainPath = fm.joinPath(fm.documentsDirectory(), 'maybach');
 const cache = fm.joinPath(mainPath, 'cache_path');
