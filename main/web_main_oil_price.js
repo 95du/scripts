@@ -88,7 +88,7 @@ async function main() {
   // 预览组件
   const previewWidget = async () => {
     await importModule(await webModule(scrName, scrUrl)).main();
-    shimoFormData(settings.province);
+    //shimoFormData(settings.province);
   };
   
   const shimoFormData = (action) => {
@@ -265,7 +265,9 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('!DOCTYPE')) {  
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -556,7 +558,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);
 
     const style =`  
     :root {
