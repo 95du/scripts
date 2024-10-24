@@ -9,7 +9,7 @@
  *
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
  *
- * 例如: https://gitcode.net/4qiao/framework/raw/master/mian/web_module_12123.js
+ * 例如: https://raw.githubusercontent.com/95du/scripts/master/run/web_module_12123.js
  */
 
 const fm = FileManager.local();
@@ -51,7 +51,7 @@ const shimoFormData = async (action) => {
 };
 
 // Get scriptUrl
-const myScript = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci9hcGkvd2ViX21haW5fb2lsX3ByaWNlLmpz');
+const myScript = 'https://raw.githubusercontent.com/95du/scripts/master/main/web_main_oil_price.js';
 const script = files ? scripts : scripts = [ myScript ];
 
 const outputNextScript = () => {
@@ -127,7 +127,7 @@ async function presentMenu() {
     await importedModule.main();
   }
   if ( response === 0 ) {
-    const codeString = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/loopScripts.js').loadString();
+    const codeString = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/loopScripts.js').loadString();
     if ( codeString.indexOf('95度茅台') === -1 ) {
       notify('更新失败⚠️', '请检查网络或稍后再试');
     } else {
@@ -143,7 +143,7 @@ async function downloadScripts() {
   if (fm.fileExists(modulePath)) {
     fm.remove(modulePath);
   }
-  const req = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM='));
+  const req = new Request('https://raw.githubusercontent.com/95du/scripts/master/nain/web_main_95du_Store.js');
   const moduleJs = await req.load().catch(() => {
     return null;
   });
