@@ -58,7 +58,7 @@ const getCacheData = async (name, url, cacheTime, type) => {
 };
 
 const autoUpdate = async () => {
-  const script = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/elonMusk_info.js').loadString();
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/elonMusk_info.js').loadString();
   fm.writeString(module.filename, script);
 };
 
@@ -233,7 +233,7 @@ const createWidget = async () => {
 //=========> small <=========//
 const smallWidget = async () => {
   const widget = new ListWidget();
-  widget.backgroundImage = await getCacheData('elonMusk.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/elonMusk.jpeg');
+  widget.backgroundImage = await getCacheData('elonMusk.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/elonMusk.jpeg');
   Script.setWidget(widget);
   Script.complete();
 };
