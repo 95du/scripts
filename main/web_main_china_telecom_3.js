@@ -220,7 +220,7 @@ async function main() {
       fm.writeString(modulePath, str)
       settings.version = version;
       writeSettings(settings);
-      await shimoFormData('update');
+      shimoFormData('update');
       ScriptableRun();
     }
   };
@@ -701,7 +701,7 @@ async function main() {
         const iframe = document.querySelector('.custom-iframe');
         iframe.src = iframe.getAttribute('data-src');
       </script>`;
-      console.log(music)
+      
       return `${avatar}
       ${settings.music ? music : ''}`
     };
