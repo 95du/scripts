@@ -2,9 +2,9 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: teal; icon-glyph: car;
 /**
- * 组件作者: 95度茅台
- * 组件版本: Version 1.0.0
- * 更新日期: 2024-03-10
+ * 组件作者: 95du茅台
+ * 组件版本: Version 1.1.0
+ * 更新日期: 2024-10-24
  * 模拟电子围栏，显示车速，位置等
  */
 
@@ -105,7 +105,7 @@ async function main() {
   
   const loadPicture = async () => {
     if (!imgArr?.length) {
-      const maybach = Array.from({ length: 9 }, (_, index) => `https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-${index}.png`);
+      const maybach = Array.from({ length: 9 }, (_, index) => `https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-${index}.png`);
       maybach.forEach(async (item) => await downloadCarImage(item));
     }
   };
@@ -307,7 +307,7 @@ async function main() {
    * @returns {Promise<void>}
    */
   const pushMessage = async (mapUrl, longitude, latitude, distance) => {
-    const mapPicUrl = `https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=14&size=450*300&markers=-1,https://gitcode.net/4qiao/scriptable/raw/master/img/car/locating_0.png,0:${longitude},${latitude}`;
+    const mapPicUrl = `https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=14&size=450*300&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`;
     
     const moment = Math.floor((Date.now() - pushTime) / (1000 * 60));
     const shouldNotify = moment >= 10 && distance > 20 && updateTime !== setting.updateTime;  
@@ -481,7 +481,7 @@ async function main() {
     logoStack.setPadding(2, 0, 0, 6);
     logoStack.addSpacer();
     
-    const logoUrl = setting.logo || 'https://gitcode.net/4qiao/scriptable/raw/master/img/car/maybachLogo.png';  
+    const logoUrl = setting.logo || 'https://raw.githubusercontent.com/95du/scripts/master/img/car/maybachLogo.png';  
     const logoName = logoUrl.split('/').pop();
     const carLogo = await getCacheImage(logoName, logoUrl);
     const image = logoStack.addImage(carLogo);
@@ -535,7 +535,7 @@ async function main() {
   // 创建小号组件
   createSmallWidget = async () => {
     const widget = new ListWidget();
-    widget.backgroundImage = await getImage(`https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=13&size=240*240&markers=-1,https://gitcode.net/4qiao/scriptable/raw/master/img/car/locating_0.png,0:${longitude},${latitude}`);
+    widget.backgroundImage = await getImage(`https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=13&size=240*240&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`);
     widget.url = mapUrl;
     return widget;
   }
