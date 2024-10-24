@@ -1,19 +1,19 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: teal; icon-glyph: cog;
-await main()
+
 async function main() {
   const uri = Script.name();
   const scriptName = '澳门六合彩'
-  const version = '1.0.3'
-  const updateDate = '2023年05月18日'
+  const version = '1.1.0'
+  const updateDate = '2024年10月24日'
   
   const pathName = '95du_macaujc';
   const widgetMessage = 'The Caterpillar and Alice looked at each other for some time in silence: at last the Caterpillar took the hookah out of its mouth, and addressed her in a languid, sleepy voice.';
   
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
-  const [scrName, scrUrl] = ['macaujc.js', 'https://gitcode.net/4qiao/scriptable/raw/master/table/macaujc.js'];
+  const [scrName, scrUrl] = ['macaujc.js', `${rootUrl}/api/macaujc.js`];
 
   /**
    * 创建，获取存储路径
@@ -126,10 +126,11 @@ async function main() {
   
   // download store
   const myStore = async () => {
-    const script = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/95duScriptStore.js').loadString();
+    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
     const fm = FileManager.iCloud();
-    fm.writeString(fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-   };
+    fm.writeString(
+      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
+  };
   
   /**
    * 版本更新时弹出窗口
@@ -337,7 +338,9 @@ async function main() {
       return cssString;
     }
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('!DOCTYPE')) {  
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -374,7 +377,7 @@ async function main() {
   const notify = async (title, body, url, opts = {}) => {
     const n = Object.assign(new Notification(), { title, body, sound: 'piano_', ...opts });
     if (url) n.openURL = url;
-    return await n.schedule();
+    n.schedule();
   };
   
   /**
@@ -439,20 +442,19 @@ async function main() {
     const logoColor = Device.isUsingDarkAppearance() ? 'white' : 'black';
     const appleHub = await toBase64(await getCacheImage(
       `${logoColor}.png`,
-      `${rootUrl}img/picture/appleHub_${logoColor}.png`
+      `${rootUrl}/img/picture/appleHub_${logoColor}.png`
     ));
     
     const authorAvatar = await toBase64(fm.fileExists(getAvatarImg()) ? fm.readImage(getAvatarImg()) : await getCacheImage(
       'author.png',
-      `${rootUrl}img/icon/4qiao.png`
+      `${rootUrl}/img/icon/4qiao.png`
     ));
     
     const rangeColorImg = await getCacheMaskSFIcon('arrowshape.turn.up.left.2.fill', '#F6C534');
     
-    
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -478,7 +480,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
     const screenSize = Device.screenSize().height;
 
     const style =`  
@@ -924,8 +926,8 @@ document.getElementById('install').addEventListener('click', () => {
     // 组件效果图预览
     previewImgHtml = async () => {
       const previewImgUrl = [
-        `${rootUrl}img/picture/macaujc_black.png`,
-        `${rootUrl}img/picture/macaujc_white.png`
+        `${rootUrl}/img/picture/macaujc_black.png`,
+        `${rootUrl}/img/picture/macaujc_white.png`
       ];
       
       if ( settings.topStyle ) {
@@ -1095,10 +1097,15 @@ document.getElementById('install').addEventListener('click', () => {
           }
           break;
         case 'background':
-          await importModule(await webModule('background.js', 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground.js')).main();
+          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
+          if (modulePath != null) {
+            await importModule(await modulePath).main(cacheImg);
+            await previewWidget();
+          }
           break;
         case 'store':
-          importModule(await webModule('store.js', 'https://gitcode.net/4qiao/framework/raw/master/mian/module_95du_storeScript.js')).main();
+          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          await importModule(await storeModule).main();
           await myStore();
           break;
         case 'install':
@@ -1209,7 +1216,7 @@ document.getElementById('install').addEventListener('click', () => {
             name: "textLightColor",
             label: "白天文字",
             type: "color",
-            icon: `${rootUrl}img/symbol/title.png`
+            icon: `${rootUrl}/img/symbol/title.png`
           },
           {
             name: "textDarkColor",
@@ -1233,7 +1240,7 @@ document.getElementById('install').addEventListener('click', () => {
             name: "gradient",
             label: "渐变背景",
             type: "color",
-            icon: `${rootUrl}img/symbol/gradient.png`
+            icon: `${rootUrl}/img/symbol/gradient.png`
           }
         ]
       },
@@ -1255,14 +1262,14 @@ document.getElementById('install').addEventListener('click', () => {
             label: '刷新时间',
             name: 'refresh',
             type: 'number',
-            icon: `${rootUrl}img/symbol/refresh.png`
+            icon: `${rootUrl}/img/symbol/refresh.png`
           },
           {
             label: '精选渐变',
             name: 'gradient',
             type: 'select',
             multiple: true,
-            icon: `${rootUrl}img/symbol/gradientBackground.png`,
+            icon: `${rootUrl}/img/symbol/gradientBackground.png`,
             options: [
               {
                 values: [
@@ -1309,13 +1316,13 @@ document.getElementById('install').addEventListener('click', () => {
             name: 'transparency',
             type: 'number',
             id: 'input',
-            icon: `${rootUrl}img/symbol/masking.png`
+            icon: `${rootUrl}/img/symbol/masking.png`
           },
           {
             label: '透明背景',
             name: 'background',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/transparent.png`
+            icon: `${rootUrl}/img/symbol/transparent.png`
           },
           {
             label: '遮罩透明',
@@ -1331,13 +1338,13 @@ document.getElementById('install').addEventListener('click', () => {
             label: '图片背景',
             name: 'chooseBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/bgImage.png`
+            icon: `${rootUrl}/img/symbol/bgImage.png`
           },
           {
             label: '清除背景',
             name: 'clearBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/clearBg.png`,
+            icon: `${rootUrl}/img/symbol/clearBg.png`,
             desc: fm.fileExists(getBgImage()) ? '已设置' : ''
           }
         ]
@@ -1349,7 +1356,7 @@ document.getElementById('install').addEventListener('click', () => {
             label: '自动更新',
             name: 'update',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/update.png`,
+            icon: `${rootUrl}/img/symbol/update.png`,
             default: true
           },
           {
@@ -1395,13 +1402,13 @@ document.getElementById('install').addEventListener('click', () => {
             label: '设置头像',
             name: 'setAvatar',
             type: 'cell',
-            icon: `${rootUrl}img/icon/camera.png`
+            icon: `${rootUrl}/img/icon/camera.png`
           },
           {
             label: 'Telegram',
             name: 'telegram',
             type: 'cell',
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/NicegramLogo.png'
+            icon: `${rootUrl}/img/icon/Swiftgram.png`
           }
         ]
       },
@@ -1412,7 +1419,7 @@ document.getElementById('install').addEventListener('click', () => {
             label: '重置所有',
             name: 'reset',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/reset.png`
+            icon: `${rootUrl}/img/symbol/reset.png`
           },
           {
             label: '清除缓存',
@@ -1453,7 +1460,7 @@ document.getElementById('install').addEventListener('click', () => {
             label: '预览组件',
             name: 'preview',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           }
         ]
       },
@@ -1474,7 +1481,7 @@ document.getElementById('install').addEventListener('click', () => {
             name: "updateCode",
             label: "更新代码",
             type: "cell",
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           }
         ]
       }
