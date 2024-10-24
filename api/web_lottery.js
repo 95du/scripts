@@ -297,7 +297,7 @@ getCacheData('macaujc.json', 'https://m.zhuying.com/api/lotapi/indexV2/1', true)
       ];
       widget.backgroundGradient = gradient;
     } else {
-      widget.backgroundImage = await getCacheImage('logo.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png');
+      widget.backgroundImage = await getCacheImage('logo.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png');
     }
   };
   
