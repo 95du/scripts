@@ -8,7 +8,7 @@
  * 发布日期: 2024-04-16 15:30
  */
 
-
+await main('medium')
 async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_china_telecom_3');
