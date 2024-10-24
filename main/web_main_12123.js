@@ -1,12 +1,15 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-brown; icon-glyph: cog;
 
 async function main() {
   const scriptName = '交管 12123'
-  const version = '1.1.6'
-  const updateDate = '2024年06月07日'
+  const version = '1.2.0'
+  const updateDate = '2024年10月23日'
   const pathName = '95du_12123';
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
-  const [scrName, scrUrl] = [`12123_${updateDate}.js`, `${rootUrl}/api/web_12123_4.js`];
+  const [scrName, scrUrl] = [`12123.js`, `${rootUrl}/api/web_12123_4.js`];
   
   const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
@@ -123,7 +126,7 @@ async function main() {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     
-    shimoFormData(`Count: ${settings.count} - ${family}`);
+    //shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
@@ -294,7 +297,9 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('!DOCTYPE')) {  
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -584,7 +589,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/style.css`);  
 
     const style =`  
     :root {
