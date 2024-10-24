@@ -12,8 +12,7 @@
  */
 
 if (config.runsInApp) {
-  getData = await new Request(atob(
-'aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zaG9ydGN1dHMvcmF3L21hc3Rlci9hcGkvdXBkYXRlL3JhbmRvbS5qc29u')).loadJSON();
+  getData = await new Request('https://raw.githubusercontent.com/95du/scripts/master/update/random.json').loadJSON();
 }
 
 const F_MGR = FileManager.local();
@@ -122,7 +121,7 @@ async function downloadScripts() {
   if (F_MGR.fileExists(modulePath)) {
     F_MGR.remove(modulePath);
   }
-  const req = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM='));
+  const req = new Request('https://raw.githubusercontent.com/95du/scripts/master/nain/web_main_95du_Store.js');
   const moduleJs = await req.load().catch(() => {
     return null;
   });
