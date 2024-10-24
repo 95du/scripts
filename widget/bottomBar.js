@@ -18,6 +18,8 @@ const cache = fm.joinPath(path, 'cache_path');
 if (!fm.fileExists(cache)) fm.createDirectory(cache);
 const cacheFile = fm.joinPath(path, 'setting.json');
 
+const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+
 const df = new DateFormatter();
 df.dateFormat = 'HH:mm';
 const GMT = df.string(new Date());
@@ -173,9 +175,9 @@ const getWeather = async ({ location } = opts) => {
  */
 const getIcon = async () => {
   const images = [
-    'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png',
-    'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weather.png'
-  ]
+    `${rootUrl}/img/icon/weChat.png`,
+    `${rootUrl}/img/icon/weather.png`
+  ];
   const appIconUrl = images[Math.floor(Math.random() * images.length)];
   const iconName = appIconUrl.split('/').pop(); 
   return await getCacheImage(iconName, appIconUrl);
@@ -340,7 +342,7 @@ const createWidget = async () => {
   if (fm.fileExists(bgImage)) {
     widget.backgroundImage = fm.readImage(bgImage);
   } else {
-    widget.backgroundImage = await getCacheImage('default.jpeg', 'https://sweixinfile.hisense.com/media/M00/7D/EB/Ch4FyGVQ2PiAOtEMAAYfX67522s266.png');
+    widget.backgroundImage = await getCacheImage('default.jpeg', `${rootUrl}/img/background/bottomBar.png`);
   }
   
   const weatherStack = widget.addStack();
@@ -487,12 +489,11 @@ const presentMenu = async() => {
   
   const menu = await alert.presentSheet();
   if (menu === 0) {
-    await importModule(await downloadModule('store.js', 'aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM=')).main();
+    await importModule(await downloadModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`)).main();
   }
   
   if (menu === 1) {
-    const reqUpdate = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvYXBpL2JvdHRvbUJhci5qcw=='));
-    const code = await reqUpdate.loadString();
+    const code = new Request(`${rootUrl}/widget/bottomBar.js`).loadString();
     if (!code.includes('95度茅台')) {
       const finish = new Alert();
       finish.title = "更新失败"
@@ -510,7 +511,7 @@ const presentMenu = async() => {
   }
   
   if (menu === 3) {
-    await importModule(await downloadModule('image.js', 'aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW5UYWJsZUJhY2tncm91bmRfMi5qcw==')).main(cache);
+    await importModule(await downloadModule('image.js', `${rootUrl}/main/main_background.js`)).main(cache);
     await createWidget();
   }
   
