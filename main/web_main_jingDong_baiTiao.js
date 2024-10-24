@@ -4,14 +4,12 @@
 
 async function main() {
   const scriptName = '京东白条'
-  const version = '1.0.1'
-  const updateDate = '2023年11月11日'
-  
+  const version = '1.1.0'
+  const updateDate = '2024年10用24日'
   const pathName = '95du_jd_baiTiao'
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
-
-  const [scrName, scrUrl] = ['baiTiao.js', 'https://gitcode.net/4qiao/scriptable/raw/master/table/web_jingDong_baiTiao.js'];
-
+  
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const [scrName, scrUrl] = ['baiTiao.js', `${rootUrl}/api/web_jingDong_baiTiao.js`];
   /**
    * 创建，获取存储路径
    * @returns {string} - string
@@ -165,7 +163,7 @@ async function main() {
   
   /** download store **/
   const myStore = async () => {
-    const script = await getString('https://gitcode.net/4qiao/scriptable/raw/master/api/95duScriptStore.js');
+    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
     const fm = FileManager.iCloud();
     fm.writeString(
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
@@ -216,9 +214,8 @@ async function main() {
   };
   
   const appleOS = async () => {
-    const startHour = settings.startTime || 4;
-    const endHour = settings.endTime || 6;
     const currentHour = new Date().getHours();
+    const { startHour = 4, endHour = 6 } = settings;
 
     if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
       try { 
@@ -272,11 +269,13 @@ async function main() {
   };
   
   const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager({ cacheTime: 120 });
+    const cache = useFileManager({ cacheTime: 240 });
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('!DOCTYPE')) {  
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -519,20 +518,20 @@ async function main() {
       previewImage
     } = options;
 
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}img/picture/appleHub_black.png`);
+    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
 
-    const appImage = await getCacheImage('whiteGoose1.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/whiteGoose1.png');
+    const appImage = await getCacheImage('whiteGoose1.png', `${rootUrl}/img/jingdong/whiteGoose1.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png',`${rootUrl}img/picture/collectionCode.jpeg`);
+    const collectionCode = await getCacheImage('collection.png',`${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}web/clock.html`);
+    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}?ver=7.4.2`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -569,7 +568,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
 
     const style =`  
     :root {
@@ -812,7 +811,7 @@ async function main() {
     
     previewImgHtml = async () => {
       const displayStyle = settings.clock ? 'none' : 'block';
-      const pictureArr = Array.from({ length: 2 }, (_, index) => `${rootUrl}img/picture/jingDong_baiTiao_${index}.png`);
+      const pictureArr = Array.from({ length: 2 }, (_, index) => `${rootUrl}/img/picture/jingDong_baiTiao_${index}.png`);
       const randomImageUrl = pictureArr[Math.floor(Math.random() * pictureArr.length)];
       
       const previewImgUrl = [
@@ -1519,15 +1518,15 @@ async function main() {
           }
           break;
         case 'background':
-          const modulePath = webModule('background_2.js', 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground_2.js');
+          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
           if (modulePath != null) {
             await importModule(await modulePath).main(cacheImg);
             await previewWidget();
           }
           break;
         case 'store':
-          const storeModule = webModule('store.js', 'https://gitcode.net/4qiao/framework/raw/master/mian/module_95du_storeScript.js');
-          importModule(await storeModule).main();  
+          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          await importModule(await storeModule).main();
           await myStore();
           break;
         case 'install':
@@ -1623,64 +1622,64 @@ async function main() {
                 label: '交管12123',
                 type: 'card',
                 version: '1.0.1',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_12123.js',
-                icon: `${rootUrl}img/icon/12123.png`
+                scrUrl: `${rootUrl}/run/web_module_12123.js`,
+                icon: `${rootUrl}/img/icon/12123.png`
               },
               {
                 label: '全国油价',
                 type: 'card',
                 version: '1.0.0',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_oil_price.js',
-                icon: `${rootUrl}img/icon/oilPrice2.png`
+                scrUrl: `${rootUrl}/run/web_module_oil_price.js`,
+                icon: `${rootUrl}/img/icon/oilPrice2.png`
               },
               {
                 label: '中国电信',
                 type: 'card',
                 version: '1.0.0',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_china_telecom.js',
-                icon: `${rootUrl}img/icon/telecom_2.png`
+                scrUrl: `${rootUrl}/run/web_module_china_telecom.js`,
+                icon: `${rootUrl}/img/icon/telecom_2.png`
               },
               {
                 label: '开奖结果',
                 type: 'card',
                 version: '1.0.4',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_lottery.js',
-                icon: `${rootUrl}img/icon/lottery.png`
+                scrUrl: `${rootUrl}/run/web_module_lottery.js`,
+                icon: `${rootUrl}/img/icon/lottery.png`
               },
               {
                 label: '智慧交通',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest.js',
-                icon: `${rootUrl}img/icon/cityCongest.png`
+                scrUrl: `${rootUrl}/widget/congest.js`,
+                icon: `${rootUrl}/img/icon/cityCongest.png`
               },
               {
                 label: '收支账单',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong_bill.js',
-                icon: `${rootUrl}img/icon/jingDong.png`
+                scrUrl: `${rootUrl}/run/web_module_jingDong_bill.js`,
+                icon: `${rootUrl}/img/icon/jingDong.png`
               },
               {
                 label: '南网在线',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_powerGrid.js',
-                icon: `${rootUrl}img/icon/electric.png`
+                scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
+                icon: `${rootUrl}/img/icon/electric.png`
               },
               {
                 label: '负一屏底栏',
                 version: '1.3.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/bottomBar.js',
-                icon: `${rootUrl}img/icon/bottomBars.png`
+                scrUrl: `${rootUrl}/widget/bottomBar.js`,
+                icon: `${rootUrl}/img/icon/bottomBars.png`
               },
               {
                 label: '循环组件',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/loopScripts.js',
-                icon: `${rootUrl}img/icon/loopScript.png`
+                scrUrl: `${rootUrl}/widget/loopScripts.js`,
+                icon: `${rootUrl}/img/icon/loopScript.png`
               }
             ]
           },
@@ -1702,7 +1701,7 @@ async function main() {
             label: 'AppleOS',
             name: 'appleOS',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/notice.png`
+            icon: `${rootUrl}/img/symbol/notice.png`
           },
           {
             label: '推送时段',
@@ -1725,7 +1724,7 @@ async function main() {
             name: "donate",
             label: "打赏作者",
             type: "cell",
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png'
+            icon: `${rootUrl}/img/icon/weChat.png`
           }
         ]
       }
@@ -1754,7 +1753,7 @@ async function main() {
             name: 'refresh',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/refresh.png`,  
+            icon: `${rootUrl}/img/symbol/refresh.png`,  
             message: '设置桌面组件的时长\n( 单位: 分钟 )',
             desc: settings.refresh
           },
@@ -1790,7 +1789,7 @@ async function main() {
             name: 'progressWidth',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/layout.png`,
+            icon: `${rootUrl}/img/symbol/layout.png`,
             desc: settings.progressWidth,  
             message: '收入/支出进度条长度'
           },
@@ -1815,7 +1814,7 @@ async function main() {
             name: "textLightColor",
             label: "白天文字",
             type: "color",
-            icon: `${rootUrl}img/symbol/title.png`
+            icon: `${rootUrl}/img/symbol/title.png`
           },
           {
             name: "textDarkColor",
@@ -1911,7 +1910,7 @@ async function main() {
             name: 'transparency',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/masking_2.png`,  
+            icon: `${rootUrl}/img/symbol/masking_2.png`,  
             message: '渐变颜色透明度，完全透明设置为 0',
             desc: settings.transparency
           },
@@ -1919,7 +1918,7 @@ async function main() {
             label: '透明背景',
             name: 'background',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/transparent.png`
+            icon: `${rootUrl}/img/symbol/transparent.png`
           },
           {
             label: '遮罩透明',
@@ -1938,14 +1937,14 @@ async function main() {
             name: 'chooseBgImg',
             type: 'file',
             isAdd: true,
-            icon: `${rootUrl}img/symbol/bgImage.png`,
+            icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
           {
             label: '清除背景',
             name: 'clearBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/clearBg.png`
+            icon: `${rootUrl}/img/symbol/clearBg.png`
           }
         ]
       },
@@ -1956,7 +1955,7 @@ async function main() {
             label: '自动更新',
             name: 'update',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           },
           {
             label: '背景音乐',
@@ -1985,13 +1984,13 @@ async function main() {
             label: '设置头像',
             name: 'setAvatar',
             type: 'cell',
-            icon: `${rootUrl}img/icon/camera.png`
+            icon: `${rootUrl}/img/icon/camera.png`
           },
           {
             label: 'Telegram',
             name: 'telegram',
             type: 'cell',
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/NicegramLogo.png'
+            icon: `${rootUrl}/img/icon/Swiftgram.png`
           }
         ]
       },
@@ -2003,14 +2002,14 @@ async function main() {
             name: 'cookie',
             type: 'cell',
             isAdd: true,
-            icon: `${rootUrl}img/icon/jd_green.png`,
+            icon: `${rootUrl}/img/icon/jd_green.png`,
             desc: settings.code === 0 ? '已登录' : settings.code === 3 ? '已过期' : '未登录'
           },
           {
             label: '重置所有',
             name: 'reset',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/reset.png`
+            icon: `${rootUrl}/img/symbol/reset.png`
           },
           {
             label: '清除缓存',
@@ -2051,7 +2050,7 @@ async function main() {
             label: '预览组件',
             name: 'preview',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           }
         ]
       },
@@ -2072,7 +2071,7 @@ async function main() {
             name: "updateCode",
             label: "更新代码",
             type: "cell",
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           }
         ]
       }
