@@ -61,7 +61,7 @@ const ScriptableRun = () => {
 };
 
 const autoUpdate = async () => {
-  const script = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/congest.js').loadString();
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/congest.js').loadString();
   fm.writeString(module.filename, script);
 };
 
