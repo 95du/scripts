@@ -13,7 +13,7 @@ async function main() {
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
-  const [scrName, scrUrl] = ['macaujc.js', `${rootUrl}/api/macaujc.js`];
+  const [scrName, scrUrl] = ['macaujc.js', `${rootUrl}/api/web_macaujc.js`];
 
   /**
    * 创建，获取存储路径
@@ -39,6 +39,10 @@ async function main() {
       settings, null, 2)
     )
   };
+  
+  const ScriptableRun = () => {
+    Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
+  }
   
   /**
    * 读取储存的设置
@@ -159,15 +163,15 @@ async function main() {
   
   const updateString = async () => {
     const modulePath = fm.joinPath(mainPath, scrName);
-    const reqUpdate = new Request(scrUrl);
-    const codeString = await reqUpdate.loadString();
+    const codeString = await new Request(scrUrl).loadString();
+console.log(codeString)
     if (codeString.indexOf('95度茅台') == -1) {
       notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
       fm.writeString(modulePath, codeString);
       settings.version = version;
       writeSettings(settings);
-      Safari.open('scriptable:///run/' + encodeURIComponent(uri));
+      ScriptableRun();
     }
   };
   
@@ -1072,7 +1076,7 @@ document.getElementById('install').addEventListener('click', () => {
           fm.writeImage(
             getAvatarImg(), await drawSquare(avatar)
           );
-          Safari.open('scriptable:///run/' + encodeURIComponent(uri));
+          ScriptableRun();
           break;
         case 'telegram':
           Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false);
