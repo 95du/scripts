@@ -1,9 +1,9 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: light-gray; icon-glyph: magic;
+// icon-color: orange; icon-glyph: crown;
 /**
  * 脚本名称: 高德会员等级
- * 组件作者：95度茅台
+ * 组件作者：95du茅台
  * 组件版本: Version 1.0.0
  * 更新日期: 2024-03-27
  *
@@ -24,7 +24,7 @@ hostname = *.amap.com
  */
 
 const scriptName = '95du_amap_vip';
-const scriptUrl = atob('YUhSMGNITTZMeTl5WVhjdVoybDBhSFZpZFhObGNtTnZiblJsYm5RdVkyOXRMemsxWkhVdmMyTnlhWEIwY3k4dmJXRnBiaTkzYVdSblpYUXZkMlZpWDIxaGFXNWZZVzFoY0Y5MmFYQXVhbk09');
+const scriptUrl = 'https://raw.githubusercontent.com/95du/scripts/master/main/web_main_amap_vip.js';
 
 const fm = FileManager.local();
 const runPath = fm.joinPath(fm.documentsDirectory(), scriptName);
