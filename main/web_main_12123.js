@@ -125,7 +125,7 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
-    
+    await main(family);
     //shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
