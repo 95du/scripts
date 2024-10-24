@@ -210,7 +210,7 @@ async function main() {
     const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
     return {
       date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
-      oilsTips: cleanText(!match && tips ? tips[0] : data.tips)
+      oilsTips: cleanText(!match && tips ? tips?.[0] : data?.tips)
     }
   };
   
