@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-brown; icon-glyph: car;
 /**
  * 脚本名称: 交管12123
  * 组件作者：95度茅台
