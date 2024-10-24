@@ -4,8 +4,8 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 人民币汇率
- * Version 1.0.0
- * 2023-11-04 16:30
+ * Version 1.1.0
+ * 2024-10-24 16:30
  * https://www.wochala.com/huilv/currency-cny.html
  */
 
