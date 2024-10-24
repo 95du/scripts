@@ -40,7 +40,7 @@ const { citycode, cityname, name, type } = await getSettings(cacheFile);
 
 //
 const autoUpdate = async () => {
-  const script = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/congest_3.js').loadString();
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/congest_3.js').loadString();
   fm.writeString(module.filename, script);
 };
 
