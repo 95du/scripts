@@ -1,23 +1,15 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: orange; icon-glyph: cog;
-/**
- * 脚本名称: 高德家人地图
- * 组件作者：95度茅台
- * 组件版本: Version 1.0.1
- * 更新日期: 2024-03-27
- */
-
 
 async function main() {
   const scriptName = '中国联通'
-  const version = '1.0.0'
-  const updateDate = '2024年04月06日'
+  const version = '1.1.0'
+  const updateDate = '2024年10月24日'
 
   const pathName = '95du_china_unicom';
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
-  
-  const [scrName, scrUrl] = ['china_unicom.js', 'https://gitcode.net/4qiao/scriptable/raw/master/table/web_china_unicom.js'];
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const [scrName, scrUrl] = ['china_unicom.js', `${rootUrl}/api/web_china_unicom.js`];
 
   /**
    * 创建，获取存储路径
@@ -109,7 +101,7 @@ async function main() {
   // 预览组件，获取版本名称和链接
   const previewWidget = async () => {
     await importModule(await webModule(scrName, scrUrl)).main();
-    await shimoFormData('preview');
+    shimoFormData('preview');
   };
   
   const shimoFormData = async (action) => {
@@ -177,7 +169,7 @@ async function main() {
   
   /** download store **/
   const myStore = async () => {
-    const script = await getString('https://gitcode.net/4qiao/scriptable/raw/master/api/95duScriptStore.js');
+    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
     const fm = FileManager.iCloud();
     fm.writeString(
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
@@ -288,7 +280,9 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('!DOCTYPE')) {  
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -527,20 +521,20 @@ async function main() {
       previewImage
     } = options;
     
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}img/picture/appleHub_black.png`);
+    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await getCacheImage('china_unicom.png', `${rootUrl}img/icon/china_unicom.png`);
+    const appImage = await getCacheImage('china_unicom.png', `${rootUrl}/img/icon/china_unicom.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png', `${rootUrl}img/picture/collectionCode.jpeg`);
+    const collectionCode = await getCacheImage('collection.png', `${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}web/clock.html`);
+    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}?ver=7.4.2`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -577,7 +571,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
 
     const style =`  
     :root {
@@ -831,7 +825,7 @@ async function main() {
     });
     
     previewImgHtml = async () => {
-      const pictureArr = Array.from({ length: 3 }, (_, index) => `${rootUrl}img/picture/china_unicom_${index}.png`);
+      const pictureArr = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/china_unicom_${index}.png`);
       const getRandomValues = (arr, num) => [...arr].sort(() => Math.random() - 0.5).slice(0, num);
       const randomUrl = getRandomValues(pictureArr, 2);
 
@@ -1492,10 +1486,15 @@ input.addEventListener("change", async (e) => {
           }
           break;
         case 'background':
-          await getModule('background.js', 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground.js');
+          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
+          if (modulePath != null) {
+            await importModule(await modulePath).main(cacheImg);
+            await previewWidget();
+          }
           break;
         case 'store':
-          await getModule('store.js', 'https://gitcode.net/4qiao/framework/raw/master/mian/module_95du_storeScript.js');
+          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          await importModule(await storeModule).main();
           await myStore();
           break;
         case 'install':
@@ -1589,57 +1588,64 @@ input.addEventListener("change", async (e) => {
                 label: '交管12123',
                 type: 'card',
                 version: '1.0.1',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_12123.js',
-                icon: `${rootUrl}img/icon/12123.png`
+                scrUrl: `${rootUrl}/run/web_module_12123.js`,
+                icon: `${rootUrl}/img/icon/12123.png`
               },
               {
                 label: '全国油价',
                 type: 'card',
                 version: '1.0.0',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_oil_price.js',
-                icon: `${rootUrl}img/icon/oilPrice2.png`
+                scrUrl: `${rootUrl}/run/web_module_oil_price.js`,
+                icon: `${rootUrl}/img/icon/oilPrice2.png`
+              },
+              {
+                label: '中国电信',
+                type: 'card',
+                version: '1.0.0',
+                scrUrl: `${rootUrl}/run/web_module_china_telecom.js`,
+                icon: `${rootUrl}/img/icon/telecom_2.png`
               },
               {
                 label: '开奖结果',
                 type: 'card',
                 version: '1.0.4',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_lottery.js',
-                icon: `${rootUrl}img/icon/lottery.png`
+                scrUrl: `${rootUrl}/run/web_module_lottery.js`,
+                icon: `${rootUrl}/img/icon/lottery.png`
               },
               {
                 label: '智慧交通',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/congest.js',
-                icon: `${rootUrl}img/icon/cityCongest.png`
+                scrUrl: `${rootUrl}/widget/congest.js`,
+                icon: `${rootUrl}/img/icon/cityCongest.png`
               },
               {
                 label: '收支账单',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_jingDong_bill.js',
-                icon: `${rootUrl}img/icon/jingDong.png`
+                scrUrl: `${rootUrl}/run/web_module_jingDong_bill.js`,
+                icon: `${rootUrl}/img/icon/jingDong.png`
               },
               {
                 label: '南网在线',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/framework/raw/master/mian/web_module_powerGrid.js',
-                icon: `${rootUrl}img/icon/electric.png`
+                scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
+                icon: `${rootUrl}/img/icon/electric.png`
               },
               {
                 label: '负一屏底栏',
                 version: '1.3.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/bottomBar.js',
-                icon: `${rootUrl}img/icon/bottomBars.png`
+                scrUrl: `${rootUrl}/widget/bottomBar.js`,
+                icon: `${rootUrl}/img/icon/bottomBars.png`
               },
               {
                 label: '循环组件',
                 version: '1.0.0',
                 type: 'card',
-                scrUrl: 'https://gitcode.net/4qiao/scriptable/raw/master/api/loopScripts.js',
-                icon: `${rootUrl}img/icon/loopScript.png`
+                scrUrl: `${rootUrl}/widget/loopScripts.js`,
+                icon: `${rootUrl}/img/icon/loopScript.png`
               }
             ]
           },
@@ -1661,7 +1667,7 @@ input.addEventListener("change", async (e) => {
             label: 'AppleOS',
             name: 'appleOS',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/notice.png`
+            icon: `${rootUrl}/img/symbol/notice.png`
           },
           {
             label: '推送时段',
@@ -1684,7 +1690,7 @@ input.addEventListener("change", async (e) => {
             name: "donate",
             label: "打赏作者",
             type: "cell",
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png'
+            icon: `${rootUrl}/img/icon/weChat.png`
           }
         ]
       }
@@ -1713,7 +1719,7 @@ input.addEventListener("change", async (e) => {
             name: 'refresh',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/refresh.png`,  
+            icon: `${rootUrl}/img/symbol/refresh.png`,  
             message: '设置桌面组件的时长\n( 单位: 分钟 )',
             desc: settings.refresh
           }
@@ -1727,7 +1733,7 @@ input.addEventListener("change", async (e) => {
             name: 'notify',
             type: 'switch',
             default: true,
-            icon: `${rootUrl}img/symbol/notice.png`
+            icon: `${rootUrl}/img/symbol/notice.png`
           },
           {
             label: '缓存时长',
@@ -1925,7 +1931,7 @@ input.addEventListener("change", async (e) => {
             name: 'transparency',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/masking_2.png`,  
+            icon: `${rootUrl}/img/symbol/masking_2.png`,  
             message: '渐变颜色透明度，完全透明设置为 0',
             desc: settings.transparency
           },
@@ -1933,7 +1939,7 @@ input.addEventListener("change", async (e) => {
             label: '透明背景',
             name: 'background',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/transparent.png`
+            icon: `${rootUrl}/img/symbol/transparent.png`
           },
           {
             label: '遮罩透明',
@@ -1952,14 +1958,14 @@ input.addEventListener("change", async (e) => {
             name: 'chooseBgImg',
             type: 'file',
             isAdd: true,
-            icon: `${rootUrl}img/symbol/bgImage.png`,
+            icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
           {
             label: '清除背景',
             name: 'clearBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/clearBg.png`
+            icon: `${rootUrl}/img/symbol/clearBg.png`
           }
         ]
       },
@@ -1970,7 +1976,7 @@ input.addEventListener("change", async (e) => {
             label: '自动更新',
             name: 'update',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           },
           {
             label: '背景音乐',
@@ -1999,13 +2005,13 @@ input.addEventListener("change", async (e) => {
             label: '设置头像',
             name: 'setAvatar',
             type: 'cell',
-            icon: `${rootUrl}img/icon/camera.png`
+            icon: `${rootUrl}/img/icon/camera.png`
           },
           {
             label: 'Telegram',
             name: 'telegram',
             type: 'cell',
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/NicegramLogo.png'
+            icon: `${rootUrl}/img/icon/Swiftgram.png`
           }
         ]
       },
@@ -2029,7 +2035,7 @@ input.addEventListener("change", async (e) => {
             label: '重置所有',
             name: 'reset',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/reset.png`
+            icon: `${rootUrl}/img/symbol/reset.png`
           },
           {
             label: '清除缓存',
@@ -2070,7 +2076,7 @@ input.addEventListener("change", async (e) => {
             label: '预览组件',
             name: 'preview',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           }
         ]
       },
@@ -2092,7 +2098,7 @@ input.addEventListener("change", async (e) => {
             name: "updateCode",
             label: "更新代码",
             type: "cell",
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           }
         ]
       },
