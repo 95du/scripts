@@ -1,7 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-blue; icon-glyph: cog;
-()
 async function main() {
   const scriptName = '中国电信_3'
   const version = '1.1.0'
@@ -105,7 +104,7 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
-    (family);
+    await main(family);
     shimoFormData(family);
   };
   
@@ -1304,7 +1303,7 @@ input.addEventListener("change", async (e) => {
       <style>${style}</style>
       </head>
       <body>
-        ${avatarInfo ? MenuTop() : (previewImage ? await previewImgHtml() : '')}
+        ${avatarInfo ? await mainMenuTop() : (previewImage ? await previewImgHtml() : '')}
         <!-- 弹窗 -->
         ${await donatePopup()}
         ${await buttonPopup()}
