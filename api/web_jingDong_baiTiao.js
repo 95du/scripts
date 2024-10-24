@@ -4,14 +4,15 @@
 /**
  * 组件名称: 京东白条
  * 组件作者：95度茅台
- * 组件版本: Version 1.0.1
- * 更新日期: 2023-11-11 19:30
+ * 组件版本: Version 1.1.0
+ * 更新日期: 2024-10-24 19:30
  */
 
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_jd_baiTiao');
-  
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
   const [ settingPath, cacheImg, cacheStr ] = [
@@ -270,12 +271,12 @@ async function main() {
       ];
       widget.backgroundGradient = gradient;
     } else if (!Appearance) {
-      widget.backgroundImage = await getCacheImage("bg.png", 'https://gitcode.net/4qiao/framework/raw/master/img/picture/background_image_1.png');
+      widget.backgroundImage = await getCacheImage("bg.png", `${rootUrl}/img/picture/background_image_1.png`);
     } else {
       const baiTiaoUrl = [
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg.png',  
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg1.png',  
-        'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png'];
+        `${rootUrl}/img/background/glass_0.png'`,  
+        `${rootUrl}/img/background/glass_1.png`,  
+        `${rootUrl}/img/background/glass_2.png`];
       const bgImageURL = baiTiaoUrl[Math.floor(Math.random() * baiTiaoUrl.length)];
       const bgImageName = decodeURIComponent(bgImageURL.substring(bgImageURL.lastIndexOf("/") + 1));
       const randomBackgroundImage = await getCacheImage(bgImageName, bgImageURL);
@@ -312,7 +313,7 @@ async function main() {
     
     if (setting.isPlus) {
       avatarStack2.backgroundImage = iconSymbol;
-      const plus = await getCacheImage('plus.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/plus.png');
+      const plus = await getCacheImage('plus.png', `${rootUrl}/img/jingdong/plus.png`);
       const plusImage = avatarStack2.addImage(plus);
       plusImage.imageSize = new Size(55, 55);
     } else {
@@ -364,7 +365,7 @@ async function main() {
     barStack.addSpacer(5);
     beneStack.addSpacer(); // 调整
     
-    const jdImage = await getCacheImage('jdWord.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/jdWord.png');
+    const jdImage = await getCacheImage('jdWord.png', `${rootUrl}/img/jingdong/jdWord.png`);
     const jdIcon = beneStack.addImage(jdImage);
     jdIcon.imageSize = new Size(40, 35);
     topStack.addSpacer(1); // 5
@@ -372,7 +373,7 @@ async function main() {
     const pointStack = topStack.addStack();
     pointStack.layoutHorizontally();
     pointStack.centerAlignContent();
-    const baitiaoImage = await getCacheImage('baitiao.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baitiao.png');
+    const baitiaoImage = await getCacheImage('baitiao.png', `${rootUrl}/img/jingdong/baitiao.png`);
     const baitiaoIcon = pointStack.addImage(baitiaoImage);
     baitiaoIcon.imageSize = new Size(25, 18);
     pointStack.addSpacer(8);
@@ -433,8 +434,8 @@ async function main() {
     middleStack.addSpacer();
     
     const gooseUrl = [
-      'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/whiteGoose0.png',
-      'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/whiteGoose1.png'];
+      `${rootUrl}/img/jingdong/whiteGoose0.png`,
+      `${rootUrl}/img/jingdong/whiteGoose1.png`];
     const goose = gooseUrl[Math.floor(Math.random() * gooseUrl.length)];
     const bgImageName = decodeURIComponent(goose.substring(goose.lastIndexOf("/") + 1));
     const gooseIcon = await getCacheImage(bgImageName, goose);
@@ -584,7 +585,7 @@ async function main() {
   
   async function createErrWidget() {
     const widget = new ListWidget();
-    const image = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/user.png').loadImage();
+    const image = await new Request(`${rootUrl}/img/jingdong/user.png`).loadImage();
     const widgetImage = widget.addImage(image);
     widgetImage.imageSize = new Size(50, 50);
     widgetImage.centerAlignImage();
