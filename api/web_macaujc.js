@@ -8,6 +8,7 @@
  * 澳门六合彩开奖结果
  */
 
+
 async function main() {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_macaujc');
@@ -260,7 +261,7 @@ async function main() {
   const runWidget = async () => {
     const family = config.widgetFamily || 'medium';
     const widget = await (family === 'medium' ? createWidget() : errorWidget());
-    //widget.backgroundImage = await getImage('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baiTiaoBg2.png');
+    widget.backgroundImage = await getImage('https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png');
     widget.backgroundColor = Color.dynamic(new Color("#fefefe"), new Color("#000000"));
     
     if (config.runsInApp) {
