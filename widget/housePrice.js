@@ -12,7 +12,7 @@
 * 感谢 @LSP的帮助
 */
 
-const houseImageUrl = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/img/house/houseLogo.png').loadImage();
+const houseImageUrl = await new Request('https://raw.githubusercontent.com/95du/scripts/master/img/icon/houseLogo.png').loadImage();
 const imageSize = 150
 
 const uri = Script.name();
@@ -61,8 +61,7 @@ async function presentMenu() {
     await addHouseMsg();
   }
   if (mainMenu === 0) {
-    const reqUpdate = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvYXBpL2hvdXNlUHJpY2UuanM='));
-    const codeString = await reqUpdate.loadString();
+    const codeString = new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/housePrice.js').loadString();
     if (codeString.indexOf('95度茅台') === -1) {
       notify('更新失败⚠️', '请检查网络或稍后再试');
     } else {
@@ -174,7 +173,7 @@ async function downloadModule() {
   if (F_MGR.fileExists(modulePath)) {
     await F_MGR.remove(modulePath)
   }
-  const req = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM='));
+  const req = new Request('https://gitcode.net/4qiao/scriptable/raw/master/vip/main95duStore.js');
   const moduleJs = await req.load().catch(() => {
     return null;
   });
