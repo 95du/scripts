@@ -4,7 +4,7 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 全国油价
- * 组件版本: Version 1.2.0
+ * 组件版本: Version 1.2.5
  * 更新日期: 2022-12-19 11:30
  *
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
@@ -213,7 +213,7 @@ const downloadModule = async (scriptName, url) => {
   if (fm.fileExists(modulePath)) {
     return modulePath;
   } else {
-    const req = new Request(atob(url));
+    const req = new Request(url);
     const moduleJs = await req.load().catch(() => {
       return null;
     });
@@ -254,10 +254,10 @@ const presentMenu = async() => {
 
   switch (menu) {
     case 0:
-      await importModule(await downloadModule('store.js', 'aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvdmlwL21haW45NWR1U3RvcmUuanM=')).main();
+      await importModule(await downloadModule('store.js', 'https://raw.githubusercontent.com/95du/scripts/master/nain/web_main_95du_Store.js')).main();
       break;
     case 1:
-      const code = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/oils.js').loadString();
+      const code = await new Request('congest_4/api/oils.js').loadString();
       if (code.includes('95度茅台')) {
         fm.writeString(
           module.filename, code
