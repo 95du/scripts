@@ -4,16 +4,17 @@
 /**
  * 组件名称: 京东收支账单
  * 组件作者：95度茅台
- * 组件版本: Version 1.0.1
- * 更新日期: 2023-11-11 14:30
+ * 组件版本: Version 1.1.0
+ * 更新日期: 2024-10-24 14:30
  */
 
 async function main() {
   const phoneSize = Device.screenSize().height;
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
 
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_jd_Bill');
-  
+
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
   const [ settingPath, cacheImg, cacheStr ] = [
@@ -58,7 +59,7 @@ async function main() {
   * @param {string} url
   * @param {string} sound
   */
-  const notify = (title, body, url, opts = {}) => {
+  const notify = async (title, body, url, opts = {}) => {
     const n = Object.assign(new Notification(), { title, body, sound: 'alert', ...opts });
     if (url) n.openURL = url;
     n.schedule();
@@ -127,7 +128,7 @@ async function main() {
       const jsonFile = JSON.stringify(response);
       cache.writeString(jsonName, jsonFile);
     } else {
-      notify('京东账单', response.message);
+      console.log(response.message);
     }
     return response;
   };
@@ -336,7 +337,7 @@ async function main() {
         }
       } else {
         return {
-          icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png',
+          icon: `${rootUrl}/img/icon/weChat.png`,
           det: '没有收入/支付交易记录'
         }
       }
@@ -421,7 +422,7 @@ async function main() {
     
     if (setting.isPlus) {
       avatarStack.backgroundImage = iconSymbol;
-      const plus = await getCacheImage('plus.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/plus.png');
+      const plus = await getCacheImage('plus.png', `${rootUrl}/img/jingdong/plus.png`);
       const plusImage = avatarStack.addImage(plus);
       plusImage.imageSize = new Size(62, 62);
     } else {
@@ -452,7 +453,7 @@ async function main() {
     const btStack = leftStack.addStack();
     btStack.layoutHorizontally();
     btStack.centerAlignContent();
-    const baitiaoImage = await getCacheImage('baitiao.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/baitiao.png');
+    const baitiaoImage = await getCacheImage('baitiao.png', `${rootUrl}/img/jingdong/baitiao.png`);
     const baitiaoIcon = btStack.addImage(baitiaoImage);
     baitiaoIcon.imageSize = new Size(25, 18);
     btStack.addSpacer(6);
@@ -475,7 +476,7 @@ async function main() {
     const logoStack = rightStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.centerAlignContent();
-    const logoImage = await getCacheImage('logo.png', 'https://gitcode.net/enoyee/scriptable/-/raw/master/img/jd/ic_jd_logo.png');
+    const logoImage = await getCacheImage('logo.png', `${rootUrl}/img/jingdong/jd_logo.png`);
     const logoIcon = logoStack.addImage(logoImage);
     logoIcon.imageSize = new Size(32, 32);
     logoStack.addSpacer();
@@ -486,7 +487,7 @@ async function main() {
     assetText.textOpacity = 0.8;
     logoStack.addSpacer();
     
-    const jdImage = await getCacheImage('jdWord.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/jdWord.png');
+    const jdImage = await getCacheImage('jdWord.png', `${rootUrl}/img/jingdong/jdWord.png`);
     const jdIcon = logoStack.addImage(jdImage);
     jdIcon.imageSize = new Size(36, 36);
     
@@ -520,7 +521,7 @@ async function main() {
     const moneyBagUrl = [
       // 'https://img30.360buyimg.com/jdmonitor/jfs/t1/191158/3/10079/3167/60d4547bEee00ce33/dc8d2287590e39af.png',  
       'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png',
-      'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/walket.png'
+      `${rootUrl}/img/jingdong/walket.png`
     ];
     const moneyBag = moneyBagUrl[Math.floor(Math.random() * moneyBagUrl.length)];
     const bgImageName = decodeURIComponent(moneyBag.substring(moneyBag.lastIndexOf("/") + 1));
@@ -644,7 +645,7 @@ async function main() {
   // error widget
   async function createErrWidget() {
     const widget = new ListWidget();
-    const image = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/user.png').loadImage();
+    const image = await new Request(`${rootUrl}/img/jingdong/user.png`).loadImage();
     const widgetImage = widget.addImage(image);
     widgetImage.imageSize = new Size(50, 50);
     widgetImage.centerAlignImage();
