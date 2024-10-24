@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: orange; icon-glyph: shopping-bag;
 
 async function main() {
   const uri = Script.name();
@@ -394,6 +397,14 @@ async function main() {
           icon: `${rootUrl}/img/icon/aMap_1.png`
         },
         {
+          label: '高德会员',
+          desc: '会员福利中心',
+          version: '1.0.0',
+          type: 'button',
+          scrUrl: `${rootUrl}/run/web_module_amap_vip.js`,
+          icon: `${rootUrl}/img/icon/aMap_vip.png`
+        },
+        {
           label: '重点区域实况',
           desc: '旅游景区，客运枢纽、购物中心',
           version: '1.0.1',
@@ -418,7 +429,7 @@ async function main() {
           version: '1.0.1',
           type: 'button',
           recommend: true,
-          scrUrl: `${rootUrl}/widget/scenic_area.js`,
+          scrUrl: `${rootUrl}/widget/congest_1.js`,
           icon: `${rootUrl}/img/icon/scenic_area.png`
         },
         {
@@ -562,6 +573,14 @@ async function main() {
           random: true,
           scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
           icon: `${rootUrl}/img/icon/electric.png`
+        },
+        {
+          label: '澳门六合彩',
+          desc: '新旧版每日开奖结果',
+          version: '1.0.2',
+          type: 'button',
+          scrUrl: `${rootUrl}/run/module_macaujc.js`,
+          icon: `${rootUrl}/img/icon/macaujc.png`
         },
         {
           label: '房屋估值',
