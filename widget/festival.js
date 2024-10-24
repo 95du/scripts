@@ -2,7 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: purple; icon-glyph: atom;
 /**
- * 组件作者：95度茅台
+ * 组件作者：95du茅台
  * 组件名称: 节日倒计时
  * 圆环内部: 如果今日是休息日或工作日，则显示一个特定内容，否则显示下一个节日的星期。
  * 组件版本: Version 1.0.1
@@ -41,7 +41,7 @@ const getCacheData = async (name, url, type) => {
   });
   const cacheData = cache.read(name);
   if (cacheData) return cacheData;
-  const response = type ? await new Request(url).loadJSON() : await new Request(url).loadImage();
+  const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
   if (response) {
     cache.write(name, response);
   }
@@ -49,8 +49,10 @@ const getCacheData = async (name, url, type) => {
 };
 
 const autoUpdate = async () => {
-  const script = await new Request('https://gitcode.net/4qiao/scriptable/raw/master/api/festival.js').loadString();
-  fm.writeString(module.filename, script);
+  const script = await new Request(`${rootUrl}/widget/festival.js`).loadString();
+  if (script.includes('95du茅台')) {
+    fm.writeString(module.filename, script);  
+  }
 };
 
 const shimoFormData = () => {
@@ -61,11 +63,7 @@ const shimoFormData = () => {
   };
   req.body = JSON.stringify({
     formRev: 1,
-    responseContent: [{
-      type: 4,
-      guid: 'gTmPmwch',
-      text: { content: '' }
-    }],
+    responseContent: [{ type: 4, guid: 'gTmPmwch', text: { content: '' } }],
     userName: `${Script.name()}  -  ${Device.systemName()} ${Device.systemVersion()}`
   });
   req.load();
@@ -88,7 +86,7 @@ const fetchData = async () => {
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
-  const url = `https://opendata.baidu.com/data/inner?resource_id=52109&query=${year}%E5%B9%B4${month}%E6%9C%88&apiType=yearMonthData`;
+  const url = `https://opendata.baidu.com/data/inner?resource_id=52109&query=${encodeURIComponent(`${year}年${month}月`)}&apiType=yearMonthData`;
   const value = await getCacheData('api.json', url, true);
   const resultArray = value.Result[0].DisplayData.resultData.tplData.data.almanac;
   return resultArray;
@@ -101,7 +99,7 @@ const todayAndNext = async () => {
   
   const today = tplData.find(obj => {
     const objDate = new Date(obj.oDate);  
-    return objDate.toDateString() === date.toDateString() &&  (obj.status == 1 || obj.status == 2);
+    return objDate.toDateString() === date.toDateString() && (obj.status == 1 || obj.status == 2);
   });
   
   const festivalObj = tplData.find(obj => {
@@ -148,7 +146,7 @@ const drawCircle = async () => {
   canvas.respectScreenScale = true;
   canvas.size = new Size(canvSize, canvSize);
   
-  drawArc(Math.floor(daysUntil / 20 * 360), new Color('#FFDD00'), canvas, canvSize, canvWidth);
+  drawArc(Math.floor(daysUntil / 15 * 360), new Color('#FFDD00'), canvas, canvSize, canvWidth);
   
   const canvTextSize = sta ? 55 : 36
   const canvTextRect = new Rect(0, 100 - canvTextSize / 2, canvSize, canvTextSize);
@@ -162,21 +160,22 @@ const drawCircle = async () => {
 
 const setBackground = async (widget) => {
   if (daysUntil > 0) {
-    widget.backgroundImage = await getCacheData('background.jpeg', 'https://gitcode.net/4qiao/framework/raw/master/img/picture/background_festival.jpeg');
+    widget.backgroundImage = await getCacheData('background.jpeg', 'https://raw.githubusercontent.com/95du/scripts/master/img/picture/background_festival.jpeg');
   } else {
+    const solarTerms = ['立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒'];
+    const termColor = [new Color('#7B417B'), new Color('#E796B7')];  
+    const festivalColors = [new Color('#FF0000'), new Color('#FF9500')];
+
     const gradient = new LinearGradient();
-    const angle = 90 // 渐变角度
+    const angle = 90;
     const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
     const x = 0.5 + 0.5 * Math.cos(radianAngle);
     const y = 0.5 + 0.5 * Math.sin(radianAngle);
     gradient.startPoint = new Point(1 - x, y);
     gradient.endPoint = new Point(x, 1 - y);
-      
+    
     gradient.locations = [0, 1];
-    gradient.colors = [
-      new Color('#FF0000'),
-      new Color('#FF9500')
-    ];
+    gradient.colors = solarTerms.includes(term) ? termColor : festivalColors;
     widget.backgroundGradient = gradient;
   }
 };
