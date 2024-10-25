@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: bowling-ball;
+// icon-color: deep-brown; icon-glyph: bowling-ball;
 /**
  * 组件名称: 全国彩开奖结果
  * 小组件作者: 95度茅台
@@ -59,8 +59,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  await importedModule.main();
-};
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
+    await importedModule.main();
+  }
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
