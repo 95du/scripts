@@ -46,7 +46,7 @@ const downloadModule = async () => {
   const [moduleFiles, moduleLatestFile] = getModuleVersions();
 
   try {
-    const moduleJs = await new Request(atob(scriptUrl)).load();
+    const moduleJs = await new Request(scriptUrl).load();
     if (moduleJs) {
       fm.write(modulePath, moduleJs);
       if (moduleFiles) moduleFiles.forEach(file => fm.remove(fm.joinPath(moduleDir, file)));
@@ -74,8 +74,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  await importedModule.main();
-};
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
+    await importedModule.main();
+  }
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
