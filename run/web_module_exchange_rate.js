@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: sort-numeric-down;
+// icon-color: deep-purple; icon-glyph: sort-numeric-down;
 /**
  * 组件名称: 人民币汇率
  * 组件作者: 95度茅台
@@ -60,8 +60,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  await importedModule.main();
-};
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
+    await importedModule.main();
+  }
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
