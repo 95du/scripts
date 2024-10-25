@@ -118,7 +118,7 @@ const getMovieList = async () => {
     ],
     userName: `douban  -  ${Device.systemName()} ${Device.systemVersion()}`
   });
-  await req.loadJSON();
+  req.loadJSON();
   
   const url = atob('aHR0cHM6Ly9tLmRvdWJhbi5jb20vcmV4eGFyL2FwaS92Mi9zdWJqZWN0X2NvbGxlY3Rpb24vbW92aWVfdG9wMjUwL2l0ZW1zP3N0YXJ0PTAmY291bnQ9MjUwJml0ZW1zX29ubHk9MSZmb3JfbW9iaWxlPTE=');
   const headers = {
