@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: pink; icon-glyph: cloud-download-alt;
 /**
  * 组件名称: 95du_ScriptStore
  * 组件作者: 95du茅台
@@ -28,8 +31,7 @@ const downloadModule = async () => {
   const [moduleFiles, moduleLatestFile] = getModuleVersions();
 
   try {
-    const req = new Request(scriptUrl);
-    const moduleJs = await req.load();
+    const moduleJs = await new Request(scriptUrl).load();
     if (moduleJs) {
       fm.write(modulePath, moduleJs);
       if (moduleFiles) moduleFiles.forEach(file => fm.remove(fm.joinPath(moduleDir, file)));
@@ -57,13 +59,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  try {
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
     await importedModule.main();
-  } catch(e) {
-    console.log(e);
-    fm.remove(moduleDir);
   }
-};
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
