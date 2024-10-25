@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-purple; icon-glyph: car;
+// icon-color: deep-brown; icon-glyph: car;
 /**
  * 组件名称: 交管12123 (支付宝小程序)
  * 组件作者: 95度茅台
@@ -78,8 +78,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  await importedModule.main();
-};
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
+    await importedModule.main();
+  }
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
