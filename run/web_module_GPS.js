@@ -12,7 +12,7 @@
 */
 
 const scriptName = '95du_GPS';
-const scriptUrl = 'https://raw.githubusercontent.com/95du/scripts/master/main/web_main_GPS';
+const scriptUrl = 'https://raw.githubusercontent.com/95du/scripts/master/main/web_main_GPS.js';
 
 const fm = FileManager.local();
 const runPath = fm.joinPath(fm.documentsDirectory(), scriptName);
@@ -62,8 +62,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  await importedModule.main();
-};
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
+    await importedModule.main();
+  }
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
