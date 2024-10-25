@@ -60,13 +60,13 @@ const getModuleVersions = () => {
   return [null, null];
 };
 
-const modulePath = await downloadModule();
-if (modulePath) {
-  const importedModule = await importModule(modulePath);
-  try {
+await (async () => {
+  const modulePath = await downloadModule();
+  if (modulePath) {
+    const importedModule = await importModule(modulePath);
     await importedModule.main();
-  } catch(e) {
-    console.log(e)
-    fm.remove(moduleDir);
   }
-};
+})().catch((e) => {
+  console.log(e);
+  fm.remove(moduleDir);
+});
