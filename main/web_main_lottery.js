@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '全国彩开奖结果'
-  const version = '1.0.4'
-  const updateDate = '2023年09月21日'
+  const version = '1.1.0'
+  const updateDate = '2024年10月25日'
   
   const pathName = '95du_lottery';
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
