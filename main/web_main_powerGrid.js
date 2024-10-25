@@ -9,7 +9,7 @@ async function main() {
   const pathName = '95du_powerGrid';
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
 
-  const [scrName, scrUrl] = ['powerGrid_2.js', `${rootUrl}/api/web_powerGrid_2.js`];
+  const [scrName, scrUrl] = ['powerGrid_2.js', `${rootUrl}/api/web_powerGrid.js`];
 
   /**
    * 创建，获取存储路径
