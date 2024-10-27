@@ -110,7 +110,7 @@ async function main() {
   // 预览组件，获取版本名称和链接
   const previewWidget = async () => {
     await importModule(await webModule(scrName, scrUrl)).main();
-    shimoFormData();
+    //shimoFormData();
   };
   
   const shimoFormData = () => {
@@ -292,7 +292,7 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    if (!response.includes('!DOCTYPE')) {  
+    if (!response.includes('404')) {
       cache.writeString(cssFileName, response);
     }
     return response;
