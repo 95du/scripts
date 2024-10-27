@@ -281,7 +281,7 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    if (!response.includes('!DOCTYPE')) {  
+    if (!response.includes('404')) {
       cache.writeString(cssFileName, response);
     }
     return response;
