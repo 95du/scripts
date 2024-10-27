@@ -126,7 +126,7 @@ async function main() {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
-    shimoFormData(`Count: ${settings.count} - ${family}`);
+    //shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
@@ -297,7 +297,7 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    if (!response.includes('!DOCTYPE')) {  
+    if (!response.includes('404')) {  
       cache.writeString(cssFileName, response);
     }
     return response;
@@ -589,7 +589,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
 
     const style =`  
     :root {
