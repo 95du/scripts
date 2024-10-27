@@ -2063,7 +2063,7 @@ async function main() {
                 icon: 'message'
               },
               {
-                label: 'GetToken',
+                label: 'Get Sign',
                 name: 'token',
                 type: 'cell',
                 desc: settings.sign ? '已储存' : '已过期',
