@@ -155,7 +155,9 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (!response.includes('404')) {
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -300,6 +302,7 @@ async function main() {
   const getAppDetails = async (appStoreLink) => {  
     const appId = appStoreLink.match(/\/id(\d+)/)[1];
     const { results } = await new Request(`https://itunes.apple.com/cn/lookup?id=${appId}&${Date.now()}`).loadJSON();
+    
     const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
   
     const match = trackName.match(/(.+)-/);
@@ -338,7 +341,7 @@ async function main() {
         {
           label: '中国联通',
           desc: '剩余流量、语音、余额',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_china_unicom.js`,
@@ -347,7 +350,7 @@ async function main() {
         {
           label: '中国电信_3',
           desc: '剩余流量、语音、余额',
-          version: '1.0.2',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_china_telecom_3.js`,
@@ -362,7 +365,7 @@ async function main() {
         {
           label: '交管12123',
           desc: '违章信息、驾驶证信息',
-          version: '1.1.2',
+          version: '1.2.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_12123.js`,
@@ -371,7 +374,7 @@ async function main() {
         {
           label: '全国油价_2',
           desc: '每日油价，油价预警',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_oil_price.js`,
@@ -380,7 +383,7 @@ async function main() {
         {
           label: '高德智慧交通',
           desc: '普通、快速、高速路通行实况',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/congest_4.js`,
@@ -389,7 +392,7 @@ async function main() {
         {
           label: '高德家人地图',
           desc: '位置、天气、步数、状态',
-          version: '1.0.2',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -399,7 +402,7 @@ async function main() {
         {
           label: '高德会员',
           desc: '会员福利中心',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           scrUrl: `${rootUrl}/run/web_module_amap_vip.js`,
           icon: `${rootUrl}/img/icon/aMap_vip.png`
@@ -407,7 +410,7 @@ async function main() {
         {
           label: '重点区域实况',
           desc: '旅游景区，客运枢纽、购物中心',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -417,7 +420,7 @@ async function main() {
         {
           label: '城市通行实况',
           desc: '城市实时拥堵，早晚高峰',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/congest_2.js`,
@@ -426,7 +429,7 @@ async function main() {
         {
           label: '景区通行实况',
           desc: '重点城市景区实时拥堵',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/congest_1.js`,
@@ -435,7 +438,7 @@ async function main() {
         {
           label: '百度智慧交通',
           desc: '全国重点城市实时拥堵',
-          version: '1.0.2',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/congest.js`,
@@ -444,7 +447,7 @@ async function main() {
         {
           label: '车辆_GPS',
           desc: '行车速度，实时定位',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -460,7 +463,7 @@ async function main() {
         {
           label: '节日倒计时',
           desc: '节日，西方节日，节气',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/festival.js`,
@@ -469,7 +472,7 @@ async function main() {
         {
           label: '开奖结果',
           desc: '体育彩票、福利彩票',
-          version: '1.0.4',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/web_module_lottery.js`,
@@ -478,7 +481,7 @@ async function main() {
         {
           label: '中国电信_2',
           desc: '剩余流量、语音、余额',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_china_telecom.js`,
@@ -487,7 +490,7 @@ async function main() {
         {
           label: '市值股票',
           desc: '美股港股全球 Top80',
-          version: '1.0.4',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -497,7 +500,7 @@ async function main() {
         {
           label: '豆瓣电影_Top250',
           desc: '随机显示250部电影',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -507,7 +510,7 @@ async function main() {
         {
           label: '人民币汇率',
           desc: '常用国际货币汇率',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/run/web_module_exchange_rate.js`,
@@ -516,7 +519,7 @@ async function main() {
         {
           label: '埃隆·马斯克',
           desc: '最新前沿科技资讯',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -558,7 +561,7 @@ async function main() {
         {
           label: '负一屏底栏',
           desc: '显示未来两小时天气',
-          version: '1.3.1',
+          version: '1.5.0',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/bottomBar.js`,
@@ -567,7 +570,7 @@ async function main() {
         {
           label: '南网在线',
           desc: '昨日用电量，账单',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -577,7 +580,7 @@ async function main() {
         {
           label: '澳门六合彩',
           desc: '新旧版每日开奖结果',
-          version: '1.0.2',
+          version: '1.1.0',
           type: 'button',
           scrUrl: `${rootUrl}/run/module_macaujc.js`,
           icon: `${rootUrl}/img/icon/macaujc.png`
@@ -627,7 +630,7 @@ async function main() {
         {
           label: '京东收支账单',
           desc: '每月收支账单、白条',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -637,7 +640,7 @@ async function main() {
         {
           label: '京东小白鹅',
           desc: '白条信息、白条等级',
-          version: '1.0.1',
+          version: '1.1.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -647,7 +650,7 @@ async function main() {
         {
           label: '京东小金库',
           desc: '资产，累积收益',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           scrUrl: `${rootUrl}/run/web_module_jingDong_treasury.js`,
           icon: `${rootUrl}/img/jingdong/finance.png`,
@@ -655,7 +658,7 @@ async function main() {
         {
           label: '京东汪汪',
           desc: '汪汪庄园30张Joy图',
-          version: '1.0.0',
+          version: '1.1.0',
           type: 'button',
           scrUrl: `${rootUrl}/run/module_jd_Joy.js`,
           icon: `${rootUrl}/img/icon/jd_wangWang.png`
