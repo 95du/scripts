@@ -65,7 +65,7 @@ const autoUpdate = async () => {
 const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
 
 const shimoFormData = async (action) => {
-  const req = new Request(atob('aHR0cHM6Ly9zaGltby5pbS9hcGkvbmV3Zm9ybXMvZm9ybXMvMndBbGRaVjdhd2lyYnhBUC9zdWJtaXQ='));
+  const req = new Request('https://shimo.im/api/newforms/forms/2wAldZV7awirbxAP/submit');
   req.method = 'POST';
   req.headers = {
     'Content-Type': 'application/json;charset=utf-8',
