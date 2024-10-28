@@ -294,7 +294,11 @@ async function main(family) {
     
     displayData.forEach((val, i) => {
       const barHeight = val > 0 ? val * deltaY : max * deltaY;
-      const color = new Color(barColor, val === 0 ? 0.25 : 1)
+      const color = val === 0 
+        ? new Color(barColor, 0.3) 
+        : val == max 
+        ? new Color('#FF6800') 
+        : new Color(barColor)
       fillRect(drawing, i * 18, 50 - barHeight, 8, barHeight, 4, color);
     });
   
@@ -501,13 +505,13 @@ async function main(family) {
     createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
     middleStack.addSpacer();
     
-    if (setting.chart) {
-      const totalEle = getTotalPower(totalArray);
-      const n = totalEle.length;
-      const chartImage = createChart(totalEle.slice(-n), n, '#0db38e');
+    const totalEle = getTotalPower(totalArray);
+    const n = totalEle.length;
+    if (setting.chart && n > 0) {
+      const chartImage = createChart(totalEle.slice(-n), n, '#00C400');
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
-      drawImage.imageSize = new Size(130, 60);
+      drawImage.imageSize = new Size(135, 60);
       drawImage.url = 'alipays://platformapi/startapp?appId=2021001164644764';
     } else {
       const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
