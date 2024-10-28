@@ -497,8 +497,8 @@ async function main(family) {
    * @param {string} string
    */
   const progressBar = async (mainStack) => {
-    const tempBarWidth = progressWidth;
-    const tempBarHeight = 16;
+    const width = progressWidth;
+    const height = 16;
     
     const prgsStack = mainStack.addStack();  
     prgsStack.layoutHorizontally();
@@ -508,35 +508,32 @@ async function main(family) {
     curScoreText.font = Font.boldSystemFont(13);
     prgsStack.addSpacer();
       
-    const imgProgress = prgsStack.addImage(creatProgress());
-    imgProgress.centerAlignImage();
-    imgProgress.imageSize = new Size(tempBarWidth, tempBarHeight);
+    const progress = prgsStack.addImage(creatProgress());
+    progress.centerAlignImage();
+    progress.imageSize = new Size(width, height);
       
     function creatProgress() {
-      const draw = new DrawContext();
-      draw.opaque = false;
-      draw.respectScreenScale = true;
-      draw.size = new Size(tempBarWidth, tempBarHeight);
+      const isPercent = Math.max(0, Math.min(1, totalPower / total));
+      
+      const cxt = new DrawContext();
+      cxt.opaque = false;
+      cxt.respectScreenScale = true;
+      cxt.size = new Size(width, height);
       
       const barPath = new Path();
-      const barHeight = tempBarHeight - 10;
-      barPath.addRoundedRect(new Rect(0, 5, tempBarWidth, barHeight), barHeight / 2, barHeight / 2);
-      draw.addPath(barPath);
+      const barHeight = height - 10;
+      barPath.addRoundedRect(new Rect(0, 5, width, barHeight), barHeight / 2, barHeight / 2);
+      cxt.addPath(barPath);
       // progressColor
-      draw.setFillColor(barColor);
-      draw.fillPath();
+      cxt.setFillColor(barColor);
+      cxt.fillPath();
       
       const currPath = new Path();
-      let isPercent = totalPower / total;
-      if (isPercent > 1) {
-        isPercent = 1
-      }
-      currPath.addEllipse(new Rect((tempBarWidth - tempBarHeight) * isPercent, 0, tempBarHeight, tempBarHeight));
-      draw.addPath(currPath);
-      // Circle Color
-      draw.setFillColor(new Color("#FAFCFB"));
-      draw.fillPath();
-      return draw.getImage();
+      currPath.addEllipse(new Rect((width - height) * isPercent, 0, height, height));
+      cxt.addPath(currPath);
+      cxt.setFillColor(new Color("#FAFCFB"));
+      cxt.fillPath();
+      return cxt.getImage();
     };
       
     prgsStack.addSpacer();
