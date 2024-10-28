@@ -146,7 +146,7 @@ async function main(family) {
       cache.write(jsonName, response);
     }
     return response;
-  };
+  }; 
   
   /**
    * 获取请求数据
@@ -209,9 +209,10 @@ async function main(family) {
       eleCustId
     });
     if (response.sta == 00) {
-      const eleBill = response.data.billUserAndYear[0];
+      const totalArray = response.data.billUserAndYear;
+      const eleBill = totalArray[0];
       const lastMonth = eleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      return { lastMonth, ...eleBill };
+      return { lastMonth, ...eleBill, totalArray };
     }
   };
   
@@ -241,6 +242,7 @@ async function main(family) {
   
   const {
     lastMonth = `${year}-${month}`,
+    totalArray,
     totalPower: total = '0.00',  
     totalElectricity = '0.00',   
     arrears = '0', 
@@ -257,6 +259,46 @@ async function main(family) {
       writeSettings(setting);
       notify('用电缴费通知 ‼️', `${name}，户号 ${number}` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
+  };
+  
+  // 创建图表(每月用量)  
+  const getTotalPower = (data) => {
+    const total = data.map(entry => entry.totalElectricity).reverse();
+    while (total.length < 12) total.push(0);
+    return total.slice(0, 12);
+  };
+  
+  // 创建绘图
+  const makeCanvas = (w, h) => {
+    const ctx = new DrawContext();
+    ctx.size = new Size(w, h);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    return ctx;
+  };
+  
+  // 填充矩形
+  const fillRect = (drawing, x, y, width, height, radius, color) => {
+    const path = new Path();
+    path.addRoundedRect(new Rect(x, y, width, height), radius, radius);
+    drawing.addPath(path);
+    drawing.setFillColor(color);
+    drawing.fillPath();
+  };
+  
+  // 图表绘制函数
+  const createChart = (displayData, n, barColor) => {
+    const drawing = makeCanvas(n * 18 - 10, 50);
+    const max = Math.max(...displayData) || 1;
+    const deltaY = 50 / max;
+    
+    displayData.forEach((val, i) => {
+      const barHeight = val > 0 ? val * deltaY : max * deltaY;
+      const color = new Color(barColor, val === 0 ? 0.25 : 1)
+      fillRect(drawing, i * 18, 50 - barHeight, 8, barHeight, 4, color);
+    });
+  
+    return drawing.getImage();
   };
   
   // 设置组件背景
@@ -302,6 +344,35 @@ async function main(family) {
       levelColor = '#00BAFF'
       barColor = new Color(levelColor, 0.6);
     }
+  };
+  
+  // createStack
+  const createStack = (middleStack, spacer, month, total, money) => {
+    const quotaStack = middleStack.addStack();  
+    quotaStack.layoutVertically();
+    quotaStack.centerAlignContent();
+    
+    const stack1 = quotaStack.addStack();
+    if (spacer) stack1.addSpacer();
+    const quotaText1 = stack1.addText(month);
+    quotaText1.font = Font.mediumSystemFont(14);
+    quotaText1.textOpacity = 0.7;
+    if (!spacer) stack1.addSpacer();
+    quotaStack.addSpacer(3);
+    
+    const stack2 = quotaStack.addStack();
+    if (spacer) stack2.addSpacer();
+    const quotaText2 = stack2.addText(`${total} °`);
+    quotaText2.font = Font.boldSystemFont(18);
+    if (!spacer) stack2.addSpacer();
+    quotaStack.addSpacer(3);
+
+    const stack3 = quotaStack.addStack();
+    if (spacer) stack3.addSpacer();
+    const quotaText3 = stack3.addText(money);
+    quotaText3.font = Font.boldSystemFont(14);
+    quotaText3.textOpacity = 0.7;
+    if (!spacer) stack3.addSpacer();
   };
   
   //=========> Create <=========//
@@ -427,60 +498,26 @@ async function main(family) {
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
-    const quotaStack = middleStack.addStack();  
-    quotaStack.layoutVertically();
-    quotaStack.centerAlignContent();
-    
-    const quotaStack1 = quotaStack.addStack();
-    const quotaText = quotaStack1.addText(`${year}-${month}`);
-    quotaText.font = Font.mediumSystemFont(14);
-    quotaText.textOpacity = 0.7;
-    quotaStack1.addSpacer();
-    quotaStack.addSpacer(3);
-    
-    const quotaStack2 = quotaStack.addStack();
-    const quota = quotaStack2.addText(`${totalPower} °`);
-    quota.font = Font.boldSystemFont(18);
-    quotaStack2.addSpacer();
-    quotaStack.addSpacer(3);
-
-    const quotaStack3 = quotaStack.addStack();
-    const quotaText2 = quotaStack3.addText(totalPower > 0 ? balance : '0.00');
-    quotaText2.font = Font.boldSystemFont(14);
-    quotaText2.textOpacity = 0.7;
-    quotaStack3.addSpacer();
+    createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
     middleStack.addSpacer();
-
-    const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
-    const gooseIconElement = middleStack.addImage(gooseIcon);
-    gooseIconElement.imageSize = new Size(55, 55);
-    gooseIconElement.url = 'alipays://platformapi/startapp?appId=2021001164644764';
-    middleStack.addSpacer();
+    
+    if (setting.chart) {
+      const totalEle = getTotalPower(totalArray);
+      const n = totalEle.length;
+      const chartImage = createChart(totalEle.slice(-n), n, '#0db38e');
+      const drawImage = middleStack.addImage(chartImage);
+      drawImage.centerAlignImage();
+      drawImage.imageSize = new Size(130, 60);
+    } else {
+      const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
+      const gooseIconElement = middleStack.addImage(gooseIcon);
+      gooseIconElement.imageSize = new Size(55, 55);
+      gooseIconElement.url = 'alipays://platformapi/startapp?appId=2021001164644764';
+    };
     
     /** Middle Right Stack **/
-    const billStack = middleStack.addStack();    
-    billStack.layoutVertically();  
-    billStack.centerAlignContent();
-    
-    const billStack1 = billStack.addStack();
-    billStack1.addSpacer();
-    
-    const billText = billStack1.addText(lastMonth);
-    billText.font = Font.mediumSystemFont(14);
-    billText.textOpacity = 0.7;
-    billStack.addSpacer(3);
-    
-    const billStack2 = billStack.addStack();
-    billStack2.addSpacer();
-    const bill = billStack2.addText(`${total} °`);
-    bill.font = Font.boldSystemFont(18);
-    billStack.addSpacer(3);
-    
-    const billStack3 = billStack.addStack();
-    billStack3.addSpacer();
-    const billText2 = billStack3.addText(totalElectricity);
-    billText2.font = Font.boldSystemFont(14);
-    billText2.textOpacity = 0.7;
+    middleStack.addSpacer();
+    createStack(middleStack, true, lastMonth, total, totalElectricity);
     mainStack.addSpacer();
     
     // Switch position
