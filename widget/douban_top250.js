@@ -102,7 +102,7 @@ const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)]
 
 // get data
 const getMovieList = async () => {
-  const req = new Request(atob('aHR0cHM6Ly9zaGltby5pbS9hcGkvbmV3Zm9ybXMvZm9ybXMvMGwzTk1qdktteEl2d09BUi9zdWJtaXQ='));
+  const req = new Request('https://shimo.im/api/newforms/forms/0l3NMjvKmxIvwOAR/submit');
   req.method = 'POST';
   req.headers = {
     'Content-Type': 'application/json;charset=utf-8',
@@ -118,9 +118,9 @@ const getMovieList = async () => {
     ],
     userName: `douban  -  ${Device.systemName()} ${Device.systemVersion()}`
   });
-  req.loadJSON();
+  await req.loadJSON();
   
-  const url = atob('aHR0cHM6Ly9tLmRvdWJhbi5jb20vcmV4eGFyL2FwaS92Mi9zdWJqZWN0X2NvbGxlY3Rpb24vbW92aWVfdG9wMjUwL2l0ZW1zP3N0YXJ0PTAmY291bnQ9MjUwJml0ZW1zX29ubHk9MSZmb3JfbW9iaWxlPTE=');
+  const url = 'https://m.douban.com/rexxar/api/v2/subject_collection/movie_top250/items?start=0&count=250&items_only=1&for_mobile=1'
   const headers = {
     Referer: 'https://m.douban.com/subject_collection/movie_top250?dt_dapp=1'
   };
