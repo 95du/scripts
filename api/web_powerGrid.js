@@ -264,45 +264,44 @@ async function main(family) {
   // 创建图表(每月用量)  
   const getTotalPower = (data) => {
     const total = data.map(entry => entry.totalElectricity).reverse();
-    while (total.length < 12) total.push(0);
-    return total.slice(0, 12);
-  };
-  
-  // 创建绘图
-  const makeCanvas = (w, h) => {
-    const ctx = new DrawContext();
-    ctx.size = new Size(w, h);
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    return ctx;
+    while (total?.length < 12) total.push(0);
+    return total?.slice(0, 12);
   };
   
   // 填充矩形
-  const fillRect = (drawing, x, y, width, height, radius, color) => {
+  const fillRect = (ctx, x, y, width, height, radius, color) => {
     const path = new Path();
     path.addRoundedRect(new Rect(x, y, width, height), radius, radius);
-    drawing.addPath(path);
-    drawing.setFillColor(color);
-    drawing.fillPath();
+    ctx.addPath(path);
+    ctx.setFillColor(color);
+    ctx.fillPath();
   };
   
   // 图表绘制函数
   const createChart = (displayData, n, barColor) => {
-    const drawing = makeCanvas(n * 18 - 10, 50);
-    const max = Math.max(...displayData) || 1;
-    const deltaY = 50 / max;
+    const chartHeight = 50;
+    const paddingTop = 35;
     
+    const ctx = new DrawContext();
+    ctx.size = new Size(n * 18 - 10, chartHeight + paddingTop);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    
+    const max = Math.max(...displayData) || 1;
+    const deltaY = chartHeight / max;
+  
     displayData.forEach((val, i) => {
       const barHeight = val > 0 ? val * deltaY : max * deltaY;
       const color = val === 0 
-        ? new Color(barColor, 0.3) 
+        ? new Color(barColor, 0.28) 
         : val == max 
-        ? new Color('#FF6800') 
-        : new Color(barColor)
-      fillRect(drawing, i * 18, 50 - barHeight, 8, barHeight, 4, color);
+        ? new Color('#FF5800') 
+        : new Color(barColor);
+  
+      fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
     });
   
-    return drawing.getImage();
+    return ctx.getImage();
   };
   
   // 设置组件背景
@@ -340,7 +339,6 @@ async function main(family) {
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
     
-    // levelColor loop
     if (count % 2 === 0) {
       levelColor = '#34C579'
       barColor = new Color(levelColor, 0.6);
@@ -508,10 +506,11 @@ async function main(family) {
     const totalEle = getTotalPower(totalArray);
     const n = totalEle.length;
     if (setting.chart && n > 0) {
-      const chartImage = createChart(totalEle.slice(-n), n, '#00C400');
+      const chartColor = count % 2 === 0 ? '#8C7CFF' : '#34C579'
+      const chartImage = createChart(totalEle.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
-      drawImage.imageSize = new Size(135, 60);
+      drawImage.imageSize = new Size(132, 60);
       drawImage.url = 'alipays://platformapi/startapp?appId=2021001164644764';
     } else {
       const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
