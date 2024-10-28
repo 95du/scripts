@@ -508,6 +508,7 @@ async function main(family) {
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(130, 60);
+      drawImage.url = 'alipays://platformapi/startapp?appId=2021001164644764';
     } else {
       const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
       const gooseIconElement = middleStack.addImage(gooseIcon);
