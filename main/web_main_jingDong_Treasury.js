@@ -8,8 +8,7 @@ async function main() {
   const updateDate = '2023年09月11日'
   const pathName = '95du_jd_treasury'
   
-  const rootUrl = atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9mcmFtZXdvcmsvcmF3L21hc3Rlci8=');
-
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const [scrName, scrUrl] = ['baiTiao.js', 'https://gitcode.net/4qiao/scriptable/raw/master/table/web_jingDong_treasury.js'];
 
   /**
@@ -138,7 +137,7 @@ async function main() {
   
   /** download store **/
   const myStore = async () => {
-    const script = await getString('https://gitcode.net/4qiao/scriptable/raw/master/api/95duScriptStore.js');
+    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
     const fm = FileManager.iCloud();
     fm.writeString(
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
@@ -248,7 +247,9 @@ async function main() {
     const cssString = cache.readString(cssFileName);
     if (cssString) return cssString;
     const response = await getString(cssFileUrl);
-    cache.writeString(cssFileName, response);
+    if (response.includes('{')) {
+      cache.writeString(cssFileName, response);
+    }
     return response;
   };
   
@@ -491,20 +492,20 @@ async function main() {
       previewImage
     } = options;
 
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}img/picture/appleHub_black.png`);
+    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
 
-    const appImage = await getCacheImage('whiteGoose1.png', 'https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/whiteGoose1.png');
+    const appImage = await getCacheImage('whiteGoose1.png', `${rootUrl}/img/jingdong/whiteGoose1.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png',`${rootUrl}img/picture/collectionCode.jpeg`);
+    const collectionCode = await getCacheImage('collection.png',`${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}web/clock.html`);
+    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}web/${script}?ver=7.4.2`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
       return `<script>${content}</script>`;
     }));
     
@@ -535,7 +536,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}web/style.css`);  
+    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
 
     const style =`  
     :root {
@@ -742,7 +743,7 @@ async function main() {
     
     previewImgHtml = async () => {
       const displayStyle = settings.clock ? 'none' : 'block';
-      const pictureArr = Array.from({ length: 2 }, (_, index) => `${rootUrl}img/picture/treasury_${index}.png`);
+      const pictureArr = Array.from({ length: 2 }, (_, index) => `${rootUrl}/img/picture/treasury_${index}.png`);
       
       if ( settings.topStyle ) {
         const previewImgs = await Promise.all(pictureArr.map(async (item) => {
@@ -1253,17 +1254,11 @@ async function main() {
           cookie.push(value);
       });
       
-      const sign = new Request('https://api.m.jd.com/client.action?functionId=signBeanAct&appid=ld');
-      sign.method = 'POST'
-      sign.headers = { Referer: 'https://h5.m.jd.com/' }
-      const { code } = await sign.loadJSON();
-      if (code === '0') {
-        settings.cookie = cookie.join(';');
-        settings.code = 0;
-        notify('Cookie获取/更新成功', settings.cookie);
-        writeSettings(settings);
-        innerTextElementById(name, cookie ? '已登录' : '未登录');
-      }
+      settings.cookie = cookie.join(';');
+      settings.code = 0;
+      notify('Cookie获取/更新成功', settings.cookie);
+      writeSettings(settings);
+      innerTextElementById(name, cookie ? '已登录' : '未登录');
     };
     
     // appleOS 推送时段
@@ -1397,10 +1392,15 @@ async function main() {
           }
           break;
         case 'background':
-          await importModule(await webModule('background.js', 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground.js')).main();
+          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
+          if (modulePath != null) {
+            await importModule(await modulePath).main(cacheImg);
+            await previewWidget();
+          }
           break;
         case 'store':
-          importModule(await webModule('store.js', 'https://gitcode.net/4qiao/framework/raw/master/mian/module_95du_storeScript.js')).main();
+          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          await importModule(await storeModule).main();
           await myStore();
           break;
         case 'install':
@@ -1484,29 +1484,6 @@ async function main() {
         type: 'group',
         items: [
           {
-            label: 'AppleOS',
-            name: 'appleOS',
-            type: 'switch',
-            icon: `${rootUrl}img/symbol/notice.png`
-          },
-          {
-            label: '推送时段',
-            name: 'period',
-            type: 'cell',
-            isAdd: true,
-            icon: {
-              name: 'deskclock.fill',
-              color: '#0096FF'
-            },
-            message: 'iOS 最新系统版本更新通知\n默认 04:00 至 06:00',
-            desc: settings.startTime || settings.endTime ? '已设置' : '默认'
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
             label: '组件商店',
             name: 'store',
             type: 'cell',
@@ -1524,7 +1501,7 @@ async function main() {
             name: "donate",
             label: "打赏作者",
             type: "cell",
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/weChat.png'
+            icon: `${rootUrl}/img/icon/weChat.png`
           }
         ]
       }
@@ -1553,7 +1530,7 @@ async function main() {
             name: 'refresh',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/refresh.png`,  
+            icon: `${rootUrl}/img/symbol/refresh.png`,  
             message: '设置桌面组件的时长\n( 单位: 分钟 )',
             desc: settings.refresh
           },
@@ -1578,7 +1555,7 @@ async function main() {
             name: "textLightColor",
             label: "白天文字",
             type: "color",
-            icon: `${rootUrl}img/symbol/title.png`
+            icon: `${rootUrl}/img/symbol/title.png`
           },
           {
             name: "textDarkColor",
@@ -1674,7 +1651,7 @@ async function main() {
             name: 'transparency',
             type: 'cell',
             input: true,
-            icon: `${rootUrl}img/symbol/masking_2.png`,  
+            icon: `${rootUrl}/img/symbol/masking_2.png`,  
             message: '渐变颜色透明度，完全透明设置为 0',
             desc: settings.transparency
           },
@@ -1682,7 +1659,7 @@ async function main() {
             label: '透明背景',
             name: 'background',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/transparent.png`
+            icon: `${rootUrl}/img/symbol/transparent.png`
           },
           {
             label: '遮罩透明',
@@ -1701,14 +1678,14 @@ async function main() {
             name: 'chooseBgImg',
             type: 'file',
             isAdd: true,
-            icon: `${rootUrl}img/symbol/bgImage.png`,
+            icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
           {
             label: '清除背景',
             name: 'clearBgImg',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/clearBg.png`
+            icon: `${rootUrl}/img/symbol/clearBg.png`
           }
         ]
       },
@@ -1719,7 +1696,7 @@ async function main() {
             label: '自动更新',
             name: 'update',
             type: 'switch',
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           },
           {
             label: '背景音乐',
@@ -1748,13 +1725,13 @@ async function main() {
             label: '设置头像',
             name: 'setAvatar',
             type: 'cell',
-            icon: `${rootUrl}img/icon/camera.png`
+            icon: `${rootUrl}/img/icon/camera.png`
           },
           {
             label: 'Telegram',
             name: 'telegram',
             type: 'cell',
-            icon: 'https://gitcode.net/4qiao/scriptable/raw/master/img/icon/NicegramLogo.png'
+            icon: `${rootUrl}/img/icon/Swiftgram.png`
           }
         ]
       },
@@ -1766,14 +1743,14 @@ async function main() {
             name: 'cookie',
             type: 'cell',
             isAdd: true,
-            icon: `${rootUrl}img/icon/jd_green.png`,
+            icon: `${rootUrl}/img/icon/jd_green.png`,
             desc: settings.code === 0 ? '已登录' : settings.code === 3 ? '已过期' : '未登录'
           },
           {
             label: '重置所有',
             name: 'reset',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/reset.png`
+            icon: `${rootUrl}/img/symbol/reset.png`
           },
           {
             label: '清除缓存',
@@ -1814,7 +1791,7 @@ async function main() {
             label: '预览组件',
             name: 'preview',
             type: 'cell',
-            icon: `${rootUrl}img/symbol/preview.png`
+            icon: `${rootUrl}/img/symbol/preview.png`
           }
         ]
       },
@@ -1835,7 +1812,7 @@ async function main() {
             name: "updateCode",
             label: "更新代码",
             type: "cell",
-            icon: `${rootUrl}img/symbol/update.png`
+            icon: `${rootUrl}/img/symbol/update.png`
           }
         ]
       }
