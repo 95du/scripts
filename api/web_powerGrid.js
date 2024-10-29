@@ -504,19 +504,19 @@ async function main(family) {
     createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
     middleStack.addSpacer();
     
-    const totalEle = getTotalPower(totalArray);
-    const n = totalEle.length;
+    const totalItems = getTotalPower(totalArray);
+    const n = totalItems.length;
     
     if (setting.chart && n > 0) {
       const chartColor = count % 2 === 0 ? '#8C7CFF' : '#34C579'
-      const chartImage = createChart(totalEle.slice(-n), n, chartColor);
+      const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(132, 60);
       drawImage.url = alipayUrl;
     } else {
       const icon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
-      const iconElement = middleStack.addImage(gooseIcon);
+      const iconElement = middleStack.addImage(icon);
       iconElement.imageSize = new Size(55, 55);
       iconElement.url = alipayUrl;
     };
