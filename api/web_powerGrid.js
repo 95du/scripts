@@ -294,7 +294,7 @@ async function main(family) {
     displayData.forEach((val, i) => {
       const barHeight = val > 0 ? val * deltaY : max * deltaY;
       const color = val === 0 
-        ? new Color(barColor, 0.28) 
+        ? new Color(barColor, 0.35) 
         : val == max 
         ? new Color('#FF5800') 
         : new Color(barColor);
@@ -354,28 +354,20 @@ async function main(family) {
     const quotaStack = middleStack.addStack();  
     quotaStack.layoutVertically();
     quotaStack.centerAlignContent();
-    
-    const stack1 = quotaStack.addStack();
-    if (spacer) stack1.addSpacer();
-    const quotaText1 = stack1.addText(month);
-    quotaText1.font = Font.mediumSystemFont(14);
-    quotaText1.textOpacity = 0.7;
-    if (!spacer) stack1.addSpacer();
-    quotaStack.addSpacer(3);
-    
-    const stack2 = quotaStack.addStack();
-    if (spacer) stack2.addSpacer();
-    const quotaText2 = stack2.addText(`${total} °`);
-    quotaText2.font = Font.boldSystemFont(18);
-    if (!spacer) stack2.addSpacer();
-    quotaStack.addSpacer(3);
 
-    const stack3 = quotaStack.addStack();
-    if (spacer) stack3.addSpacer();
-    const quotaText3 = stack3.addText(money);
-    quotaText3.font = Font.boldSystemFont(14);
-    quotaText3.textOpacity = 0.7;
-    if (!spacer) stack3.addSpacer();
+    const addTextStack = (text, font, opacity, addSpacer) => {
+      const stack = quotaStack.addStack();
+      if (spacer) stack.addSpacer();
+      const quotaText = stack.addText(text);
+      quotaText.font = font;
+      if (opacity) quotaText.textOpacity = opacity;
+      if (!spacer) stack.addSpacer();
+      if (!addSpacer) quotaStack.addSpacer(3);
+    };
+
+    addTextStack(month, Font.mediumSystemFont(14), 0.7);
+    addTextStack(`${total} °`, Font.boldSystemFont(18));
+    addTextStack(money, Font.boldSystemFont(14), 0.7, true);
   };
   
   //=========> Create <=========//
