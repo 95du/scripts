@@ -88,7 +88,7 @@ async function main() {
   // 预览组件
   const previewWidget = async () => {
     await importModule(await webModule(scrName, scrUrl)).main();
-    //shimoFormData(settings.province);
+    shimoFormData(settings.province);
   };
   
   const shimoFormData = (action) => {
