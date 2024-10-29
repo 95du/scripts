@@ -342,7 +342,7 @@ console.log(codeString)
       return cssString;
     }
     const response = await getString(cssFileUrl);
-    if (!response.includes('!DOCTYPE')) {  
+    if (response.includes('{')) {
       cache.writeString(cssFileName, response);
     }
     return response;
