@@ -12,7 +12,8 @@ async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_powerGrid');
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-
+  const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
+  
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
   const [ settingPath, cacheImg, cacheStr ] = [
@@ -328,7 +329,7 @@ async function main(family) {
         new Color('#00000000')
       ];
       widget.backgroundGradient = gradient;
-    } else if (!Appearance) {
+    } else if (!Appearance && !setting.bwTheme) {
       widget.backgroundImage = await getCacheImage("bg.png", `${rootUrl}/img/picture/background_image_1.png`);
     } else {
       const baiTiaoUrl = [`${rootUrl}/img/background/glass_2.png`];
@@ -505,18 +506,19 @@ async function main(family) {
     
     const totalEle = getTotalPower(totalArray);
     const n = totalEle.length;
+    
     if (setting.chart && n > 0) {
       const chartColor = count % 2 === 0 ? '#8C7CFF' : '#34C579'
       const chartImage = createChart(totalEle.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(132, 60);
-      drawImage.url = 'alipays://platformapi/startapp?appId=2021001164644764';
+      drawImage.url = alipayUrl;
     } else {
-      const gooseIcon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
-      const gooseIconElement = middleStack.addImage(gooseIcon);
-      gooseIconElement.imageSize = new Size(55, 55);
-      gooseIconElement.url = 'alipays://platformapi/startapp?appId=2021001164644764';
+      const icon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
+      const iconElement = middleStack.addImage(gooseIcon);
+      iconElement.imageSize = new Size(55, 55);
+      iconElement.url = alipayUrl;
     };
     
     /** Middle Right Stack **/
@@ -552,7 +554,7 @@ async function main(family) {
     const progress = prgsStack.addImage(creatProgress());
     progress.centerAlignImage();
     progress.imageSize = new Size(width, height);
-      
+    
     function creatProgress() {
       const isPercent = Math.max(0, Math.min(1, totalPower / total));
       
@@ -565,15 +567,22 @@ async function main(family) {
       const barHeight = height - 10;
       barPath.addRoundedRect(new Rect(0, 5, width, barHeight), barHeight / 2, barHeight / 2);
       cxt.addPath(barPath);
-      // progressColor
+      cxt.setFillColor(new Color(levelColor, 0.25));
+      cxt.fillPath();
+    
+      const currPath = new Path();
+      currPath.addRoundedRect(new Rect(0, 5, width * isPercent, barHeight), barHeight / 2, barHeight / 2);
+      cxt.addPath(currPath);
       cxt.setFillColor(barColor);
       cxt.fillPath();
-      
-      const currPath = new Path();
-      currPath.addEllipse(new Rect((width - height) * isPercent, 0, height, height));
-      cxt.addPath(currPath);
-      cxt.setFillColor(new Color("#FAFCFB"));
+    
+      const circlePath = new Path();
+      const diameter = height * 0.85;
+      circlePath.addEllipse(new Rect((width - diameter) * isPercent, (height - diameter) / 2, diameter, diameter));
+      cxt.addPath(circlePath);
+      cxt.setFillColor(new Color(levelColor));
       cxt.fillPath();
+      
       return cxt.getImage();
     };
       
