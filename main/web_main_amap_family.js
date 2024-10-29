@@ -110,7 +110,7 @@ async function main() {
   // 预览组件，获取版本名称和链接
   const previewWidget = async () => {
     await importModule(await webModule(scrName, scrUrl)).main();
-    //shimoFormData();
+    shimoFormData();
   };
   
   const shimoFormData = () => {
