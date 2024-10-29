@@ -261,7 +261,7 @@ async function main() {
   
   // ===========图表============ //
   const headers = {
-    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzE4NjQyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiSUpBajdiQzZLZTF0ckZxczJacWFrdW1uc0xPWEdjR2U4MFpza3ZETkJ2S1RoQWt3cTAifQ.KI5ZPsp9y-MXCwecNWKzUHVRD8epU4MDg7raL3jTPRLHc7nIMNzQ4C2-_DxLNuTDjfGqG-ettdZETI_3doH2nA'
+    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzI3MjgyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiUjVNUHlibUM5Z0VRNWNQUzJvZ2VTVkJlcGpuemp1YnNJb2xDSE1PUXR2dFJ5eVdrWlIifQ.YGQAbrY4_YkBUK-rwlbN2HpQ4qCUoXeMBqaRvHcBAbgCJfwTIZyJvowr4SYp2uSowTjvuMB5hmyBLh6aLtTHbQ'
   };
   
   const getColor = (value) => {
