@@ -54,7 +54,7 @@ const run = 'scriptable:///run/' + encodeURIComponent(Script.name());
 const getString = async (url) => await new Request(url).loadString();
 
 const autoUpdate = async () => {
-  const script = await getString('https://gitcode.net/4qiao/scriptable/raw/master/api/apple_id.js');
+  const script = await getString('https://raw.githubusercontent.com/95du/scripts/master/widget/apple_id.js');
   fm.writeString(module.filename, script);
 };
 
@@ -141,10 +141,10 @@ const createButtonStack = (buttonStack, color, text, url) => {
 
 const themeMode = () => {
     const theme = Device.isUsingDarkAppearance() ? 'white' : 'dark';
-    return [`${theme}.png`, `https://gitcode.net/4qiao/framework/raw/master/img/icon/chatGPT_${theme}.png`];
+    return [`${theme}.png`, `https://raw.githubusercontent.com/95du/scripts/master/img/icon/chatGPT_${theme}.png`];
 };
 
-const randomImgUrl = (useRandom) => useRandom === 0 ? ['button.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/button_false.png'] : themeMode();
+const randomImgUrl = (useRandom) => useRandom === 0 ? ['button.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/button_false.png'] : themeMode();
 
 // 组件
 const createWidget = async () => {
@@ -188,7 +188,7 @@ const getAppleIdWeb = async () => {
   
   const name = randomImg.split('/').pop();
   const image = await getCacheImage(name, randomImg, toBase64);
-  const chatGPT_icon = await getCacheImage('chatGPT_icon.png', 'https://gitcode.net/4qiao/framework/raw/master/img/icon/chatGPT_white.png', toBase64);
+  const chatGPT_icon = await getCacheImage('chatGPT_icon.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/chatGPT_white.png', toBase64);
   
   const rankCircle = `
   <head>
