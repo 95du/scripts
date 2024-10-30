@@ -280,8 +280,8 @@ async function main(family) {
   
   // 图表绘制函数
   const createChart = (displayData, n, barColor) => {
-    const chartHeight = 50;
-    const paddingTop = 35;
+    const chartHeight = setting.chartHeight || 70;
+    const paddingTop = 88 - chartHeight;
     
     const ctx = new DrawContext();
     ctx.size = new Size(n * 18 - 10, chartHeight + paddingTop);
@@ -296,7 +296,7 @@ async function main(family) {
       const color = val === 0 
         ? new Color(barColor, 0.35) 
         : val == max 
-        ? new Color('#FF5800') 
+        ? new Color('#FF6800') 
         : new Color(barColor);
   
       fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
@@ -494,7 +494,6 @@ async function main(family) {
     middleStack.centerAlignContent();
     
     createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
-    middleStack.addSpacer();
     
     const totalItems = getTotalPower(totalArray);
     const n = totalItems.length;
@@ -504,17 +503,17 @@ async function main(family) {
       const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
-      drawImage.imageSize = new Size(132, 60);
+      drawImage.imageSize = new Size(127, 60);
       drawImage.url = alipayUrl;
     } else {
       const icon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
       const iconElement = middleStack.addImage(icon);
       iconElement.imageSize = new Size(55, 55);
+      iconElement.centerAlignImage();
       iconElement.url = alipayUrl;
     };
     
     /** Middle Right Stack **/
-    middleStack.addSpacer();
     createStack(middleStack, true, lastMonth, total, totalElectricity);
     mainStack.addSpacer();
     
