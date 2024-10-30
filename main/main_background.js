@@ -100,10 +100,9 @@ async function main(cacheImg) {
   }
   
   function cropImage(image) {
-    let draw = new DrawContext();
-    let rect = new Rect(crop.x,crop.y,crop.w,crop.h);
-    draw.size = new Size(rect.width, rect.height);
-    draw.drawImageAtPoint(image,new Point(-rect.x, -rect.y));
+    const draw = new DrawContext();
+    draw.size = new Size(crop.w, crop.h)
+    draw.drawImageAtPoint(img,new Point(-crop.x, -crop.y))
     return draw.getImage();
   }
   
