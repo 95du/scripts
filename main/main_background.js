@@ -4,96 +4,86 @@
 // 原版脚本: https://raw.githubusercontent.com/mzeryck/Widget-Blur/main/widget-blur.js
 
 
-async function main(cacheImg) {
+async function main(cacheImg) {  
   const askUserForScreenshotAction = async () => {
     const message = '请在主屏幕上长按，滑动到最右边的空白页截图。';
-    const actions = { select: '已有截图', exit: '没有截图' };
-    const options = [actions.select, actions.exit];
+    const options = [
+      '已有截图', 
+      '没有截图'
+    ];
     return await generateAlert(message, options);
   };
   
   // 导出图像
   const exportImage = async (img) => {
     const message = '保存图像的位置';
-    const exports = { photos: '导出到照片', files: '导出到文件' };
-    const exportOptions = [exports.photos, exports.files];
-    const response = await generateAlert(message, exportOptions);
-    const exportValue = response.value;
+    const exportOptions = ['导出到照片', '导出到文件', '不保存'];
+    const action = await generateAlert(message, exportOptions);
   
-    if (exportValue === exports.photos) {
+    if (action.index === 0) {
       Photos.save(img);
-    } else if (exportValue === exports.files) {
+    } else if (action.index === 1) {
       await DocumentPicker.exportImage(img);
     }
   };
   
-  // 主函数
-  await (async () => {
-    const actionResponse = await askUserForScreenshotAction();
-    if (actionResponse.value === '没有截图') return;
+  // 获取手机类型
+  const getPhoneType = async (height) => {
+    const fm = FileManager.local();
+    const path = fm.joinPath(fm.libraryDirectory(), 'mz-phone-type');
+    
+    if (fm.fileExists(path)) {
+      const type = fm.readString(path);
+      return phone[type];
+    } else {
+      const message = '你使用的是什么类型的 iPhone？';
+      const typeOptions = [
+        { key: 'mini', value: 'iPhone 13 mini 或 12 mini' },
+        { key: 'x', value: 'iPhone 11 Pro, XS 或 X' }
+      ];
+      const typeResponse = await generateAlert(message, typeOptions);
+      const phoneType = phone[typeResponse.key];
+      fm.writeString(path, typeResponse.key);
+      return phoneType;
+    }
+  };
   
-    let img = await Photos.fromLibrary();
-    const height = img.size.height;
-    let phone = phoneSizes(height);
-    if (!phone) {
-      const message = '看起来您选择的图像不是 iPhone 截图，或者您的 iPhone 不受支持。请尝试使用不同的图像。';
-      return await generateAlert(message, ['OK']);
-    };
-  
-    // 处理2436型号手机的情况
-    if (height == 2436) {
-      const fm = FileManager.local();
-      const path = fm.joinPath(fm.libraryDirectory(), 'mz-phone-type');
-  
-      if (fm.fileExists(path)) {
-        const type = fm.readString(path);
-        phone = phone[type];
-      } else {
-        const message = '你使用的是什么类型的 iPhone？';
-        const typeOptions = [
-          { key: 'mini', value: 'iPhone 13 mini 或 12 mini' },
-          { key: 'x', value: 'iPhone 11 Pro, XS 或 X' }
-        ];
-        const typeResponse = await generateAlert(message, typeOptions);
-        phone = phone[typeResponse.key];
-        fm.writeString(path, typeResponse.key);
-      }
-    };
-  
-    // 检查主屏幕是否有文本标签
+  // 询问图标大小
+  const askForIconSize = async (phone) => {
     if (phone.text) {
       const message = '你的主屏幕图标是什么大小？';
       const textOptions = [{ key: 'text', value: '小 (有标签)' }, { key: 'notext', value: '大 (无标签)' }];
       const textResponse = await generateAlert(message, textOptions);
-      phone = phone[textResponse.key];
-    };
+      return phone[textResponse.key];
+    }
+    return phone;
+  };
   
-    // 询问小部件尺寸
-    message = '小组件尺寸';
+  // 询问小部件尺寸和位置
+  const askForWidgetSizeAndPosition = async () => {
     const sizes = { 
       small: '小号', 
       medium: '中号', 
       large: '大号' 
     };
-    const sizeOptions = [sizes.small, sizes.medium, sizes.large];
-    const sizeResponse = await generateAlert(message, sizeOptions);
+    const sizeResponse = await generateAlert('小组件尺寸', Object.values(sizes));
     const size = sizeResponse.value;
-  
-    // 询问位置
-    message = '小组件位置';
+    
     const positions = size === sizes.small
       ? ['左上', '右上', '左中', '右中', '左下', '右下']
       : size === sizes.medium
         ? ['顶部', '中间', '底部']
         : ['顶部', '底部'];
   
-    const positionResponse = await generateAlert(message, positions);
-    const position = positionResponse.key;
+    const positionResponse = await generateAlert('小组件位置', positions);
+    return { size, position: positionResponse.key };
+  };
   
-    // 计算裁剪参数
-    const crop = {
-      w: size === sizes.small ? phone.small : (size === sizes.large ? phone.large : phone.medium),
-      h: size === sizes.large ? phone.large : phone.small,
+  // 计算裁剪参数
+  const calculateCropParams = (size, position, phone) => {
+    return {
+      w: size === '小号' ? phone.small : (size === '大号' ? phone.large : phone.medium),
+      h: size === '大号' ? phone.large : phone.small,
       x: phone[{ 
         '左上': 'left', 
         '右上': 'right', 
@@ -117,11 +107,13 @@ async function main(cacheImg) {
         '底部': 'bottom' 
       }[position]]
     };
+  };
   
-    // 应用模糊效果
+  // 应用模糊效果
+  const applyBlurEffect = async (image) => {
     const blurMessage = '您希望小组件是完全透明，还是半透明模糊效果？';
     const blurOptions = {
-      none: '透明背景',
+      none: '完全透明',
       light: '轻度模糊',
       dark: '深色模糊',
       blur: '完全模糊'
@@ -129,22 +121,49 @@ async function main(cacheImg) {
     const blurResponse = await generateAlert(blurMessage, Object.values(blurOptions));
   
     if (blurResponse.value !== blurOptions.none) {
-      img = await blurImage(img, Object.keys(blurOptions).find(key => blurOptions[key] === blurResponse.value));
-    };
+      image = await blurImage(image, Object.keys(blurOptions).find(key => blurOptions[key] === blurResponse.value));
+    }
+    return image;
+  };
   
+  // 主函数
+  await (async () => {
+    const actionResponse = await askUserForScreenshotAction();
+    if (actionResponse.value === '没有截图') return;
+
+    let image = await Photos.fromLibrary();
+    const height = image.size.height;
+    let phone = phoneSizes(height);
+    if (!phone) {
+      const message = '⚠️ 您选择的图像不是 iPhone 截图，或者您的 iPhone 不支持，请尝试使用不同的图像';
+      return await generateAlert(message, ['OK']);
+    }
+  
+    // 处理2436型号手机的情况
+    if (height == 2436) {
+      phone = await getPhoneType(height);
+    }
+  
+    phone = await askForIconSize(phone);
+    const { size, position } = await askForWidgetSizeAndPosition();
+    const crop = calculateCropParams(size, position, phone);
+    
+    // 应用模糊背景
+    image = await applyBlurEffect(image);
+    
     // 裁剪图像
     const draw = new DrawContext();
     draw.size = new Size(crop.w, crop.h);
-    draw.drawImageAtPoint(img, new Point(-crop.x, -crop.y));
-    img = draw.getImage();
-  
-    // 如果有缓存路径则保存到缓存，否则导出
+    draw.drawImageAtPoint(image, new Point(-crop.x, -crop.y));
+    image = draw.getImage();
+    
+    // 导出图片，保存到组件缓存
     if (cacheImg) {
       const fm = FileManager.local();
       const bgImage = fm.joinPath(cacheImg, Script.name());
-      fm.writeImage(bgImage, img);
+      fm.writeImage(bgImage, image);
     } else {
-      await exportImage(img);
+      await exportImage(image);
     }
   })().catch(e => {
     console.log(e.message);
@@ -161,8 +180,8 @@ async function main(cacheImg) {
       index,
       value: isObject ? options[index].value : options[index],
       key: isObject ? options[index].key : options[index]
-    }
-  };
+    };
+  }
   
   /**
    Supported devices
