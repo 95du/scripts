@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: purple; icon-glyph: images;
+// icon-color: deep-brown; icon-glyph: images;
 
 async function main(cacheImg) {
   const askUserForScreenshotAction = async () => {
@@ -178,7 +178,7 @@ async function main(cacheImg) {
       // 保存背景图片到 cacheImg
       const fm = FileManager.local();
       const bgImage = fm.joinPath(cacheImg, Script.name());
-      fm.writeImage(bgImage, imgCrop)
+      fm.writeImage(bgImage, img);
     } else {
       await exportImage(img);
     }
