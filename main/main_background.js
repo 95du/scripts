@@ -489,7 +489,7 @@ The remaining properties can be determined using a single screenshot of a home s
 */
 
   function phoneSizes() {
-    return { 
+    let phones = { 
     
       /*
     
@@ -769,6 +769,7 @@ The remaining properties can be determined using a single screenshot of a home s
         bottom: 399
       }
     }
+    return phones;
   }
 };
 module.exports = { main }
