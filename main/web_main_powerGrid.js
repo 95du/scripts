@@ -1793,6 +1793,27 @@ async function main() {
             default: true
           },
           {
+            label: '显示图表',
+            name: 'chart',
+            type: 'switch',
+            icon: {
+              name: 'align.vertical.bottom.fill',
+              color: '#FF4500'
+            }
+          },
+          {
+            label: '图表高度',
+            name: 'chartHeight',
+            type: 'cell',
+            input: true,
+            icon: {
+              name: 'chart.bar.fill',
+              color: '#0088F4'
+            },
+            message: '建议将值设置在 50 至 90 之间',
+            desc: settings.chartHeight
+          },
+          {
             label: '修改头像',
             name: 'avatar',
             type: 'cell',
@@ -1876,6 +1897,15 @@ async function main() {
       {
         type: 'group',
         items: [
+          {
+            name: "bwTheme",
+            label: "黑白背景",
+            type: "switch",
+            icon: {
+              name: 'moon.fill',  
+              color: '#AD40FF'
+            }
+          },
           {
             name: "solidColor",
             label: "渐变背景",
