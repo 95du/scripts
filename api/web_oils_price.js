@@ -290,7 +290,7 @@ async function main() {
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
     
-    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 75 || date < 1 ? '' : ` 【 剩余 ${date} 天 】`));
+    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 90 || date < 1 ? '' : ` 【 剩余 ${date} 天 】`));
     oilTipsText.textColor = textColor
     oilTipsText.font = Font.mediumSystemFont(tipsGap ? font : 14);
     oilTipsText.leftAlignText();
