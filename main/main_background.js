@@ -1,112 +1,193 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: purple; icon-glyph: kaaba;
+// icon-color: purple; icon-glyph: images;
 
 async function main(cacheImg) {
-  message = "请在主屏幕上长按，滑动到最右边的空白页截图。";
-  let exitOptions = ["已有截图", "没有截图"];
-  let shouldExit = await generateAlert(message, exitOptions);
-  if (shouldExit) return;
+  const askUserForScreenshotAction = async () => {
+    const message = '请在主屏幕上长按，滑动到最右边的空白页截图。';
+    const actions = { select: '已有截图', exit: '没有截图' };
+    const options = [actions.select, actions.exit];
+    return await generateAlert(message, options);
+  };
   
-  let img = await Photos.fromLibrary();
-  let height = img.size.height;
-  let phone = phoneSizes()[height];
-  if (!phone) {
-    message = "您似乎选择了非 iPhone 屏幕截图的图像，或者不支持您的 iPhone，请使用其他图像。";
-    await generateAlert(message, ["现在去截图"]);
-    return;
-  }
-  
-  if (height == 2436) {
-    let fm = FileManager.local();
-    let cacheName = "95du-phone-type"
-    let cachePath = fm.joinPath(files.libraryDirectory(), cacheName);
-  
-    if (fm.fileExists(cachePath)) {
-      let typeString = fm.readString(cachePath);
-      phone = phone[typeString];
-    } else { 
-      message = "你的 iPhone 型号？";
-      let types = ["iPhone 12 mini", "iPhone 11 Pro, XS, X"];
-      let typeIndex = await generateAlert(message, types);
-      let type = (typeIndex == 0) ? "mini" : "x";
-      phone = phone[type];
-      fm.writeString(cachePath, type)
+  // 处理2436型号手机的情况
+  const handle2436PhoneSize = async (phone, height) => {
+    if (height === 2436) {
+      const files = FileManager.local();
+      const cache = files.joinPath(files.libraryDirectory(), "mz-phone-type");
+      if (files.fileExists(cache)) {
+        const type = files.readString(cache);
+        return phone[type];
+      } else {
+        const typeResponse = await phoneType();
+        files.writeString(cache, typeResponse.key);
+        return phone[typeResponse.key];
+      }
     }
-  }
+    return phone;
+  };
   
-  message = "小组件尺寸";
-  let sizes = ["小号", "中号", "大号"];
-  let size = await generateAlert(message, sizes);
-  let widgetSize = sizes[size];
+  // 询问用户iPhone型号
+  const phoneType = async () => {
+    const message = '你使用的是什么类型的 iPhone？';
+    const typeOptions = [
+      { key: 'mini', value: 'iPhone 13 mini 或 12 mini' },
+      { key: 'x', value: 'iPhone 11 Pro, XS 或 X' }
+    ];
+    return await generateAlert(message, typeOptions);
+  };
   
-  message = "小组件位置";
-  message += height == 1136 ? " (请注意，您的设备仅支持两行小组件，因此中间和底部选项相同。)" : "";
-  
-  let crop = { w: "", h: "", x: "", y: "" }
-  
-  if (widgetSize == "小号") {
-    crop.w = phone.小号;
-    crop.h = phone.小号;
-    let positions = ["顶部 左边", "顶部 右边", "中间 左边", "中间 右边", "底部 左边", "底部 右边"];
-    let position = await generateAlert(message, positions);
-    
-    let keys = positions[position].toLowerCase().split(' ');
-    crop.y = phone[keys[0]];
-    crop.x = phone[keys[1]];
-    
-  } else if (widgetSize == "中号") {
-    crop.w = phone.中号;
-    crop.h = phone.小号;
-    crop.x = phone.左边;
-    let positions = ["顶部", "中间", "底部"];
-    let position = await generateAlert(message, positions);
-    let key = positions[position].toLowerCase();
-    crop.y = phone[key];
-  } else if (widgetSize == "大号") {
-    crop.w = phone.中号;
-    crop.h = phone.大号;
-    crop.x = phone.左边;
-    let positions = ["顶部", "底部"];
-    let position = await generateAlert(message, positions);
-    crop.y = position ? phone.中间 : phone.顶部;
-  }
-  
-  // Prompt for blur style.
-  message = "背景图效果"
-  let blurOptions = ["透明背景", "浅色模糊", "深色模糊", "完全模糊"];
-  let blurred = await generateAlert(message, blurOptions);
-  let imgCrop = cropImage(img);
-  if (blurred) {
-    const styles = ["", "light", "dark", "none"]
-    const style = styles[blurred];
-    imgCrop = await blurImage(img, imgCrop, style);
-  }
-  
-  // 储存背景图片
-  const fm = FileManager.local();
-  const bgImage = fm.joinPath(cacheImg, Script.name());
-  fm.writeImage(bgImage, imgCrop);
-  
-  // Generate an alert with the provided array of options.
-  async function generateAlert(message,options) {
-    let alert = new Alert();
-    alert.message = message;
-    for (const option of options) {
-      alert.addAction(option);
+  // 询问图标大小
+  const iconSize = async (phone) => {
+    if (phone.text) {
+      const message = '你的主屏幕图标是什么大小？';
+      const textOptions = [{ key: 'text', value: '小 (有标签)' }, { key: 'notext', value: '大 (无标签)' }];
+      const textResponse = await generateAlert(message, textOptions);
+      return phone[textResponse.key];
     }
-    let response = await alert.presentAlert();
-    return response;
-  }
+    return phone;
+  };
   
-  function cropImage(image) {
+  // 询问小部件大小
+  const widgetSize = async () => {
+    const message = '小组件尺寸';
+    const sizes = { small: '小号', medium: '中号', large: '大号' };
+    const sizeOptions = [sizes.small, sizes.medium, sizes.large];
+    const response = await generateAlert(message, sizeOptions);
+    return response.value;
+  };
+  
+  // 询问小部件位置
+  const widgetPosition = async (size, height) => {
+    let message = '小组件位置';
+    message += (height === 1136 ? '（注意：您的设备仅支持两行小部件，因此中间和底部选项是相同的。）' : '');
+  
+    let positions;
+    if (size === '小号') {
+      positions = ['左上', '右上', '左中', '右中', '左下', '右下'];
+    } else if (size === '中号') {
+      positions = ['顶部', '中间', '底部'];
+    } else if (size === '大号') {
+      positions = [{ key: 'top', value: '顶部' }, { key: 'middle', value: '底部' }];
+    }
+    
+    const response = await generateAlert(message, positions);
+    return response.key;
+  };
+  
+  // 计算裁剪参数
+  const calculateCropParameters = (size, position, phone) => {
+    const keys = {
+      '左上': { x: 'left', y: 'top' },
+      '右上': { x: 'right', y: 'top' },
+      '左中': { x: 'left', y: 'middle' },
+      '右中': { x: 'right', y: 'middle' },
+      '左下': { x: 'left', y: 'bottom' },
+      '右下': { x: 'right', y: 'bottom' },
+      '顶部': { x: 'left', y: 'top' },
+      '中间': { x: 'left', y: 'middle' },
+      '底部': { x: 'left', y: 'bottom' }
+    };
+  
+    return {
+      w: (size === '小号' ? phone.small : phone.medium),
+      h: (size === '大号' ? phone.large : phone.small),
+      x: phone[keys[position].x],
+      y: phone[keys[position].y]
+    };
+  };
+  
+  // 应用模糊效果
+  const applyBlurEffect = async (img) => {
+    const message = '背景图片效果';
+    const blurs = { 
+      none: '透明背景', 
+      light: '轻度模糊', 
+      dark: '深色模糊', 
+      blur: '完全模糊' 
+    };
+    const blurOptions = [blurs.none, blurs.light, blurs.dark, blurs.blur];
+    const blurResponse = await generateAlert(message, blurOptions);
+      
+    return blurResponse.value !== blurs.none ? await blurImage(img, blurResponse.key) : img;
+  };
+  
+  // 裁剪图像
+  const cropImage = (img, crop) => {
     const draw = new DrawContext();
-    draw.size = new Size(crop.w, crop.h)
-    draw.drawImageAtPoint(img,new Point(-crop.x, -crop.y))
+    draw.size = new Size(crop.w, crop.h);
+    draw.drawImageAtPoint(img, new Point(-crop.x, -crop.y));
     return draw.getImage();
-  }
+  };
   
-  async function blurImage(img, imgCrop, style, blur = 150) {
+  // 导出图像
+  const exportImage = async (img) => {
+    const message = '保存图像的位置'
+    const exports = { photos: '导出到照片', files: '导出到文件' };
+    const exportOptions = [exports.photos, exports.files];
+    const response = await generateAlert(message, exportOptions)
+    const exportValue = (response).value;
+  
+    if (exportValue === exports.photos) {
+      Photos.save(img);
+    } else if (exportValue === exports.files) {
+      await DocumentPicker.exportImage(img);
+    }
+  };
+  
+  // 生成警报
+  const generateAlert = async (message, options) => {
+    const alert = new Alert();
+    alert.message = message;
+  
+    const isObject = options[0].value;
+     options.forEach(option => alert.addAction(isObject ? option.value : option));
+    const index = await alert.presentAlert();
+    return {
+      index,
+      value: isObject ? options[index].value : options[index],
+      key: isObject ? options[index].key : options[index]
+    };
+  };
+  
+  
+  // 执行主函数
+  await (async () => {
+    const actionResponse = await askUserForScreenshotAction();
+    if (actionResponse.value === '没有截图') return;
+  
+    let img = await Photos.fromLibrary();
+    const height = img.size.height;
+    let phone = phoneSizes(height);
+  
+    if (!phone) {
+      await generateAlert('看起来您选择的图像不是 iPhone 截图，或者您的 iPhone 不受支持。请尝试使用不同的图像。', ["OK"]);
+      return;
+    }
+  
+    phone = await handle2436PhoneSize(phone, height);
+    phone = await iconSize(phone);
+    const size = await widgetSize();
+    const position = await widgetPosition(size, height);
+  
+    const crop = calculateCropParameters(size, position, phone);
+    img = await applyBlurEffect(img);
+      
+    img = cropImage(img, crop);
+    if (cacheImg) {
+      // 保存背景图片到 cacheImg
+      const fm = FileManager.local();
+      const bgImage = fm.joinPath(cacheImg, Script.name());
+      fm.writeImage(bgImage, imgCrop)
+    } else {
+      await exportImage(img);
+    }
+  })().catch((e) => {
+    console.log(e.message);
+  });
+  
+  // Blur an image using the optional specified style.
+  async function blurImage(img, style, blur = 150) {
     const js = `
 var mul_table = [512, 512, 456, 512, 328, 456, 335, 512, 405, 328, 271, 456, 388, 335, 292, 512, 454, 405, 364, 328, 298, 271, 496, 456, 420, 388, 360, 335, 312, 292, 273, 512, 482, 454, 428, 405, 383, 364, 345, 328, 312, 298, 284, 271, 259, 496, 475, 456, 437, 420, 404, 388, 374, 360, 347, 335, 323, 312, 302, 292, 282, 273, 265, 512, 497, 482, 468, 454, 441, 428, 417, 405, 394, 383, 373, 364, 354, 345, 337, 328, 320, 312, 305, 298, 291, 284, 278, 271, 265, 259, 507, 496, 485, 475, 465, 456, 446, 437, 428, 420, 412, 404, 396, 388, 381, 374, 367, 360, 354, 347, 341, 335, 329, 323, 318, 312, 307, 302, 297, 292, 287, 282, 278, 273, 269, 265, 261, 512, 505, 497, 489, 482, 475, 468, 461, 454, 447, 441, 435, 428, 422, 417, 411, 405, 399, 394, 389, 383, 378, 373, 368, 364, 359, 354, 350, 345, 341, 337, 332, 328, 324, 320, 316, 312, 309, 305, 301, 298, 294, 291, 287, 284, 281, 278, 274, 271, 268, 265, 262, 259, 257, 507, 501, 496, 491, 485, 480, 475, 470, 465, 460, 456, 451, 446, 442, 437, 433, 428, 424, 420, 416, 412, 408, 404, 400, 396, 392, 388, 385, 381, 377, 374, 370, 367, 363, 360, 357, 354, 350, 347, 344, 341, 338, 335, 332, 329, 326, 323, 320, 318, 315, 312, 310, 307, 304, 302, 299, 297, 294, 292, 289, 287, 285, 282, 280, 278, 275, 273, 271, 269, 267, 265, 263, 261, 259];
 
@@ -448,47 +529,22 @@ if (style == "dark") {
 canvas.toDataURL();
 `;
     
-    let blurImgData = Data.fromPNG(img).toBase64String()
-    let html = `
-  <img id="blurImg" src="data:image/png;base64,${blurImgData}" />
-  <canvas id="mainCanvas" />
-  `
+    const blurImgData = Data.fromPNG(img).toBase64String()
+    const html = `
+    <img id="blurImg" src="data:image/png;base64,${blurImgData}" />
+    <canvas id="mainCanvas" />
+    `;
     
-    let view = new WebView()
+    const view = new WebView()
     await view.loadHTML(html)
-    let returnValue = await view.evaluateJavaScript(js);
-    let imageDataString = returnValue.slice(22)
-    let imageData = Data.fromBase64String(imageDataString)
-    let imageFromData = Image.fromData(imageData)
-    return cropImage(imageFromData)
-  }
+    const returnValue = await view.evaluateJavaScript(js)
+    const imageData = Data.fromBase64String(returnValue.slice(22));
+    return Image.fromData(imageData);
+  };
   
-/*
-
-How phoneSizes() works
-======================
-This function takes the pixel height value of an iPhone screenshot and provides information about the sizes and locations of widgets on that iPhone. The "text" and "notext" properties refer to whether the home screen is set to Small (with text labels) or Large (no text labels).
-
-The remaining properties can be determined using a single screenshot of a home screen with 6 small widgets on it. You can see a visual representation of these properties by viewing this image: https://github.com/mzeryck/Widget-Blur/blob/main/measurements.png
-
-* The following properties define widget sizes:
-  - small: The height of a small widget.
-  - medium: From the left of the leftmost widget to the right of the rightmost widget.
-  - large: From the top of a widget in the top row to the bottom of a widget in the middle row.
-
-* The following properties measure the distance from the left edge of the screen: 
-  - left: The distance to the left edge of widgets in the left column.
-  - right: The distance to the left edge of widgets in the right column.
-  
-* The following properties measure the distance from the top edge of the screen: 
-  - top: The distance to the top edge of widgets in the top row.
-  - middle: The distance to the top edge of widgets in the middle row.
-  - bottom: The distance to the top edge of widgets in the bottom row.
-
-*/
-
-  function phoneSizes() {
-    let phones = { 
+  // phoneSizes(inputHeight)
+  function phoneSizes(inputHeight) {
+    return { 
     
       /*
     
@@ -620,7 +676,7 @@ The remaining properties can be determined using a single screenshot of a home s
       },
       
       // 13 mini, 12 mini in Display Zoom mode
-      "2079": {
+      2079: {
         small: 423,
         medium: 875,
         large: 933,
@@ -632,7 +688,7 @@ The remaining properties can be determined using a single screenshot of a home s
       },
     
       // SE3, SE2
-      "1334": {
+      1334: {
         text: {
           small: 296,
           medium: 642,
@@ -767,8 +823,7 @@ The remaining properties can be determined using a single screenshot of a home s
         middle: 399,
         bottom: 399
       }
-    }
-    return phones;
+    }[inputHeight]
   }
 };
 module.exports = { main }
