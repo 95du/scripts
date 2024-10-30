@@ -1,6 +1,8 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-brown; icon-glyph: images;
+// 原版脚本: https://raw.githubusercontent.com/mzeryck/Widget-Blur/main/widget-blur.js
+
 
 async function main(cacheImg) {
   const askUserForScreenshotAction = async () => {
@@ -36,7 +38,7 @@ async function main(cacheImg) {
     if (!phone) {
       const message = '看起来您选择的图像不是 iPhone 截图，或者您的 iPhone 不受支持。请尝试使用不同的图像。';
       return await generateAlert(message, ['OK']);
-    }
+    };
   
     // 处理2436型号手机的情况
     if (height == 2436) {
@@ -56,7 +58,7 @@ async function main(cacheImg) {
         phone = phone[typeResponse.key];
         fm.writeString(path, typeResponse.key);
       }
-    }
+    };
   
     // 检查主屏幕是否有文本标签
     if (phone.text) {
@@ -64,7 +66,7 @@ async function main(cacheImg) {
       const textOptions = [{ key: 'text', value: '小 (有标签)' }, { key: 'notext', value: '大 (无标签)' }];
       const textResponse = await generateAlert(message, textOptions);
       phone = phone[textResponse.key];
-    }
+    };
   
     // 询问小部件尺寸
     message = '小组件尺寸';
@@ -128,7 +130,7 @@ async function main(cacheImg) {
   
     if (blurResponse.value !== blurOptions.none) {
       img = await blurImage(img, Object.keys(blurOptions).find(key => blurOptions[key] === blurResponse.value));
-    }
+    };
   
     // 裁剪图像
     const draw = new DrawContext();
