@@ -10,123 +10,13 @@ async function main(cacheImg) {
     return await generateAlert(message, options);
   };
   
-  // 处理2436型号手机的情况
-  const handle2436PhoneSize = async (phone, height) => {
-    if (height === 2436) {
-      const files = FileManager.local();
-      const cache = files.joinPath(files.libraryDirectory(), "mz-phone-type");
-      if (files.fileExists(cache)) {
-        const type = files.readString(cache);
-        return phone[type];
-      } else {
-        const typeResponse = await phoneType();
-        files.writeString(cache, typeResponse.key);
-        return phone[typeResponse.key];
-      }
-    }
-    return phone;
-  };
-  
-  // 询问用户iPhone型号
-  const phoneType = async () => {
-    const message = '你使用的是什么类型的 iPhone？';
-    const typeOptions = [
-      { key: 'mini', value: 'iPhone 13 mini 或 12 mini' },
-      { key: 'x', value: 'iPhone 11 Pro, XS 或 X' }
-    ];
-    return await generateAlert(message, typeOptions);
-  };
-  
-  // 询问图标大小
-  const iconSize = async (phone) => {
-    if (phone.text) {
-      const message = '你的主屏幕图标是什么大小？';
-      const textOptions = [{ key: 'text', value: '小 (有标签)' }, { key: 'notext', value: '大 (无标签)' }];
-      const textResponse = await generateAlert(message, textOptions);
-      return phone[textResponse.key];
-    }
-    return phone;
-  };
-  
-  // 询问小部件大小
-  const widgetSize = async () => {
-    const message = '小组件尺寸';
-    const sizes = { small: '小号', medium: '中号', large: '大号' };
-    const sizeOptions = [sizes.small, sizes.medium, sizes.large];
-    const response = await generateAlert(message, sizeOptions);
-    return response.value;
-  };
-  
-  // 询问小部件位置
-  const widgetPosition = async (size, height) => {
-    let message = '小组件位置';
-    message += (height === 1136 ? '（注意：您的设备仅支持两行小部件，因此中间和底部选项是相同的。）' : '');
-  
-    let positions;
-    if (size === '小号') {
-      positions = ['左上', '右上', '左中', '右中', '左下', '右下'];
-    } else if (size === '中号') {
-      positions = ['顶部', '中间', '底部'];
-    } else if (size === '大号') {
-      positions = [{ key: 'top', value: '顶部' }, { key: 'middle', value: '底部' }];
-    }
-    
-    const response = await generateAlert(message, positions);
-    return response.key;
-  };
-  
-  // 计算裁剪参数
-  const calculateCropParameters = (size, position, phone) => {
-    const keys = {
-      '左上': { x: 'left', y: 'top' },
-      '右上': { x: 'right', y: 'top' },
-      '左中': { x: 'left', y: 'middle' },
-      '右中': { x: 'right', y: 'middle' },
-      '左下': { x: 'left', y: 'bottom' },
-      '右下': { x: 'right', y: 'bottom' },
-      '顶部': { x: 'left', y: 'top' },
-      '中间': { x: 'left', y: 'middle' },
-      '底部': { x: 'left', y: 'bottom' }
-    };
-  
-    return {
-      w: (size === '小号' ? phone.small : phone.medium),
-      h: (size === '大号' ? phone.large : phone.small),
-      x: phone[keys[position].x],
-      y: phone[keys[position].y]
-    };
-  };
-  
-  // 应用模糊效果
-  const applyBlurEffect = async (img) => {
-    const message = '背景图片效果';
-    const blurs = { 
-      none: '透明背景', 
-      light: '轻度模糊', 
-      dark: '深色模糊', 
-      blur: '完全模糊' 
-    };
-    const blurOptions = [blurs.none, blurs.light, blurs.dark, blurs.blur];
-    const blurResponse = await generateAlert(message, blurOptions);
-      
-    return blurResponse.value !== blurs.none ? await blurImage(img, blurResponse.key) : img;
-  };
-  
-  // 裁剪图像
-  const cropImage = (img, crop) => {
-    const draw = new DrawContext();
-    draw.size = new Size(crop.w, crop.h);
-    draw.drawImageAtPoint(img, new Point(-crop.x, -crop.y));
-    return draw.getImage();
-  };
-  
   // 导出图像
   const exportImage = async (img) => {
-    const message = '保存图像的位置'
+    const message = '保存图像的位置';
     const exports = { photos: '导出到照片', files: '导出到文件' };
     const exportOptions = [exports.photos, exports.files];
-    const response = await generateAlert(message, exportOptions)
-    const exportValue = (response).value;
+    const response = await generateAlert(message, exportOptions);
+    const exportValue = response.value;
   
     if (exportValue === exports.photos) {
       Photos.save(img);
@@ -135,23 +25,7 @@ async function main(cacheImg) {
     }
   };
   
-  // 生成警报
-  const generateAlert = async (message, options) => {
-    const alert = new Alert();
-    alert.message = message;
-  
-    const isObject = options[0].value;
-     options.forEach(option => alert.addAction(isObject ? option.value : option));
-    const index = await alert.presentAlert();
-    return {
-      index,
-      value: isObject ? options[index].value : options[index],
-      key: isObject ? options[index].key : options[index]
-    };
-  };
-  
-  
-  // 执行主函数
+  // 主函数
   await (async () => {
     const actionResponse = await askUserForScreenshotAction();
     if (actionResponse.value === '没有截图') return;
@@ -159,32 +33,410 @@ async function main(cacheImg) {
     let img = await Photos.fromLibrary();
     const height = img.size.height;
     let phone = phoneSizes(height);
-  
     if (!phone) {
-      await generateAlert('看起来您选择的图像不是 iPhone 截图，或者您的 iPhone 不受支持。请尝试使用不同的图像。', ["OK"]);
-      return;
+      const message = '看起来您选择的图像不是 iPhone 截图，或者您的 iPhone 不受支持。请尝试使用不同的图像。';
+      return await generateAlert(message, ['OK']);
     }
   
-    phone = await handle2436PhoneSize(phone, height);
-    phone = await iconSize(phone);
-    const size = await widgetSize();
-    const position = await widgetPosition(size, height);
+    // 处理2436型号手机的情况
+    if (height == 2436) {
+      const fm = FileManager.local();
+      const path = fm.joinPath(fm.libraryDirectory(), 'mz-phone-type');
   
-    const crop = calculateCropParameters(size, position, phone);
-    img = await applyBlurEffect(img);
-      
-    img = cropImage(img, crop);
+      if (fm.fileExists(path)) {
+        const type = fm.readString(path);
+        phone = phone[type];
+      } else {
+        const message = '你使用的是什么类型的 iPhone？';
+        const typeOptions = [
+          { key: 'mini', value: 'iPhone 13 mini 或 12 mini' },
+          { key: 'x', value: 'iPhone 11 Pro, XS 或 X' }
+        ];
+        const typeResponse = await generateAlert(message, typeOptions);
+        phone = phone[typeResponse.key];
+        fm.writeString(path, typeResponse.key);
+      }
+    }
+  
+    // 检查主屏幕是否有文本标签
+    if (phone.text) {
+      const message = '你的主屏幕图标是什么大小？';
+      const textOptions = [{ key: 'text', value: '小 (有标签)' }, { key: 'notext', value: '大 (无标签)' }];
+      const textResponse = await generateAlert(message, textOptions);
+      phone = phone[textResponse.key];
+    }
+  
+    // 询问小部件尺寸
+    message = '小组件尺寸';
+    const sizes = { 
+      small: '小号', 
+      medium: '中号', 
+      large: '大号' 
+    };
+    const sizeOptions = [sizes.small, sizes.medium, sizes.large];
+    const sizeResponse = await generateAlert(message, sizeOptions);
+    const size = sizeResponse.value;
+  
+    // 询问位置
+    message = '小组件位置';
+    const positions = size === sizes.small
+      ? ['左上', '右上', '左中', '右中', '左下', '右下']
+      : size === sizes.medium
+        ? ['顶部', '中间', '底部']
+        : ['顶部', '底部'];
+  
+    const positionResponse = await generateAlert(message, positions);
+    const position = positionResponse.key;
+  
+    // 计算裁剪参数
+    const crop = {
+      w: size === sizes.small ? phone.small : (size === sizes.large ? phone.large : phone.medium),
+      h: size === sizes.large ? phone.large : phone.small,
+      x: phone[{ 
+        '左上': 'left', 
+        '右上': 'right', 
+        '左中': 'left', 
+        '右中': 'right', 
+        '左下': 'left', 
+        '右下': 'right', 
+        '顶部': 'left', 
+        '中间': 'left', 
+        '底部': 'left' 
+      }[position]],
+      y: phone[{ 
+        '左上': 'top', 
+        '右上': 'top', 
+        '左中': 'middle', 
+        '右中': 'middle', 
+        '左下': 'bottom', 
+        '右下': 'bottom', 
+        '顶部': 'top', 
+        '中间': 'middle', 
+        '底部': 'bottom' 
+      }[position]]
+    };
+  
+    // 应用模糊效果
+    const blurMessage = '您希望小组件是完全透明，还是半透明模糊效果？';
+    const blurOptions = {
+      none: '透明背景',
+      light: '轻度模糊',
+      dark: '深色模糊',
+      blur: '完全模糊'
+    };
+    const blurResponse = await generateAlert(blurMessage, Object.values(blurOptions));
+  
+    if (blurResponse.value !== blurOptions.none) {
+      img = await blurImage(img, Object.keys(blurOptions).find(key => blurOptions[key] === blurResponse.value));
+    }
+  
+    // 裁剪图像
+    const draw = new DrawContext();
+    draw.size = new Size(crop.w, crop.h);
+    draw.drawImageAtPoint(img, new Point(-crop.x, -crop.y));
+    img = draw.getImage();
+  
+    // 如果有缓存路径则保存到缓存，否则导出
     if (cacheImg) {
-      // 保存背景图片到 cacheImg
       const fm = FileManager.local();
       const bgImage = fm.joinPath(cacheImg, Script.name());
       fm.writeImage(bgImage, img);
     } else {
       await exportImage(img);
     }
-  })().catch((e) => {
+  })().catch(e => {
     console.log(e.message);
   });
+  
+  // 生成警报
+  async function generateAlert(message, options) {
+    const alert = new Alert();
+    alert.message = message;
+    const isObject = typeof options[0] === 'object';
+    options.forEach(option => alert.addAction(isObject ? option.value : option));
+    const index = await alert.presentAlert();
+    return {
+      index,
+      value: isObject ? options[index].value : options[index],
+      key: isObject ? options[index].key : options[index]
+    }
+  };
+  
+  /**
+   Supported devices
+   =================
+   The following device measurements have been confirmed in iOS 18.
+   */
+  function phoneSizes(inputHeight) {
+    return {
+      // 16 Pro Max
+      2868: {
+        text: {
+          small: 510,
+          medium: 1092,
+          large: 1146,
+          left: 114,
+          right: 696,
+          top: 276,
+          middle: 912,
+          bottom: 1548
+        },
+        notext: {
+          small: 530,
+          medium: 1138,
+          large: 1136,
+          left: 91,
+          right: 699,
+          top: 276,
+          middle: 882,
+          bottom: 1488
+        } 
+      },
+      
+      // 16 Plus, 15 Plus, 15 Pro Max, 14 Pro Max
+      2796: {
+        text: {
+          small: 510,
+          medium: 1092,
+          large: 1146,
+          left: 98,
+          right: 681,
+          top: 252,
+          middle: 888,
+          bottom: 1524
+        },
+        notext: {
+          small: 530,
+          medium: 1139,
+          large: 1136,
+          left: 75,
+          right: 684,
+          top: 252,
+          middle: 858,
+          bottom: 1464
+        }
+      },
+      
+      // 16 Pro
+      2622: {
+        text: {
+          small: 486,
+          medium: 1032,
+          large: 1098,
+          left: 87,
+          right: 633,
+          top: 261,
+          middle: 872,
+          bottom: 1485
+        },
+        notext: {
+          small: 495,
+          medium: 1037,
+          large: 1035,
+          left: 84,
+          right: 626,
+          top: 270,
+          middle: 810,
+          bottom: 1350
+        } 
+      },
+  
+      // 16, 15, 15 Pro, 14 Pro
+      2556: {
+        text: {
+          small: 474,
+          medium: 1017,
+          large: 1062,
+          left: 81,
+          right: 624,
+          top: 240,
+          middle: 828,
+          bottom: 1416
+        },
+        notext: {
+          small: 495,
+          medium: 1047,
+          large: 1047,
+          left: 66,
+          right: 618,
+          top: 243,
+          middle: 795,
+          bottom: 1347
+        }
+      },
+      
+      // 13 mini, 12 mini / 11 Pro, XS, X
+      // Note that only the mini has been confirmed for iOS 18
+      2436: {
+        x: {
+          small: 465,
+          medium: 987,
+          large: 1035,
+          left: 69,
+          right: 591,
+          top: 213,
+          middle: 783,
+          bottom: 1353
+        },
+        mini: {
+          small: 465,
+          medium: 987,
+          large: 1035,
+          left: 69,
+          right: 591,
+          top: 231,
+          middle: 801,
+          bottom: 1371
+        } 
+      },
+      
+      // 13 mini, 12 mini in Display Zoom mode
+      2079: {
+        small: 423,
+        medium: 875,
+        large: 933,
+        left: 42,
+        right: 494,
+        top: 186,
+        middle: 696,
+        bottom: 1206
+      },
+    
+      // SE3, SE2
+      1334: {
+        text: {
+          small: 296,
+          medium: 642,
+          large: 648,
+          left: 54,
+          right: 400,
+          top: 60,
+          middle: 412,
+          bottom: 764
+        },
+        notext: {
+          small: 309,
+          medium: 667,
+          large: 667,
+          left: 41,
+          right: 399,
+          top: 67,
+          middle: 425,
+          bottom: 783
+        }
+      },
+      
+     /**
+      In-limbo devices
+      =================
+      The following device measurements were confirmed in older versions of iOS.
+      Please comment if you can confirm these for iOS 18.
+      */
+       
+      
+      // 14 Plus, 13 Pro Max, 12 Pro Max
+      2778: {
+        small: 510,
+        medium: 1092,
+        large: 1146,
+        left: 96,
+        right: 678,
+        top: 246,
+        middle: 882,
+        bottom: 1518
+      },
+  
+      // 11 Pro Max, XS Max
+      2688: {
+        small: 507,
+        medium: 1080,
+        large: 1137,
+        left: 81,
+        right: 654,
+        top: 228,
+        middle: 858,
+        bottom: 1488
+      },
+      
+      // 14, 13, 13 Pro, 12, 12 Pro
+      2532: {
+        small: 474,
+        medium: 1014,
+        large: 1062,
+        left: 78,
+        right: 618,
+        top: 231,
+        middle: 819,
+        bottom: 1407
+      },
+      
+      // 11, XR
+      1792: {
+        small: 338,
+        medium: 720,
+        large: 758,
+        left: 55,
+        right: 437,
+        top: 159,
+        middle: 579,
+        bottom: 999
+      },
+      
+      // 11 and XR in Display Zoom mode
+      1624: {
+        small: 310,
+        medium: 658,
+        large: 690,
+        left: 46,
+        right: 394,
+        top: 142,
+        middle: 522,
+        bottom: 902 
+      },
+      
+     /**
+      Older devices
+      =================
+      The following devices cannot be updated to iOS 18 or later.
+      */
+      
+      // Home button Plus phones
+      2208: {
+        small: 471,
+        medium: 1044,
+        large: 1071,
+        left: 99,
+        right: 672,
+        top: 114,
+        middle: 696,
+        bottom: 1278
+      },
+      
+      // Home button Plus in Display Zoom mode
+      2001 : {
+        small: 444,
+        medium: 963,
+        large: 972,
+        left: 81,
+        right: 600,
+        top: 90,
+        middle: 618,
+        bottom: 1146
+      },
+  
+      // SE1
+      1136: {
+        small: 282,
+        medium: 584,
+        large: 622,
+        left: 30,
+        right: 332,
+        top: 59,
+        middle: 399,
+        bottom: 399
+      }
+    }[inputHeight]
+  };
   
   // Blur an image using the optional specified style.
   async function blurImage(img, style, blur = 150) {
@@ -540,290 +792,6 @@ canvas.toDataURL();
     const returnValue = await view.evaluateJavaScript(js)
     const imageData = Data.fromBase64String(returnValue.slice(22));
     return Image.fromData(imageData);
-  };
-  
-  // phoneSizes(inputHeight)
-  function phoneSizes(inputHeight) {
-    return { 
-    
-      /*
-    
-      Supported devices
-      =================
-      The following device measurements have been confirmed in iOS 18.
-    
-      */
-    
-      // 16 Pro Max
-      2868: {
-        text: {
-          small: 510,
-          medium: 1092,
-          large: 1146,
-          left: 114,
-          right: 696,
-          top: 276,
-          middle: 912,
-          bottom: 1548
-        },
-        notext: {
-          small: 530,
-          medium: 1138,
-          large: 1136,
-          left: 91,
-          right: 699,
-          top: 276,
-          middle: 882,
-          bottom: 1488
-        } 
-      },
-      
-      // 16 Plus, 15 Plus, 15 Pro Max, 14 Pro Max
-      2796: {
-        text: {
-          small: 510,
-          medium: 1092,
-          large: 1146,
-          left: 98,
-          right: 681,
-          top: 252,
-          middle: 888,
-          bottom: 1524
-        },
-        notext: {
-          small: 530,
-          medium: 1139,
-          large: 1136,
-          left: 75,
-          right: 684,
-          top: 252,
-          middle: 858,
-          bottom: 1464
-        }
-      },
-      
-      // 16 Pro
-      2622: {
-        text: {
-          small: 486,
-          medium: 1032,
-          large: 1098,
-          left: 87,
-          right: 633,
-          top: 261,
-          middle: 872,
-          bottom: 1485
-        },
-        notext: {
-          small: 495,
-          medium: 1037,
-          large: 1035,
-          left: 84,
-          right: 626,
-          top: 270,
-          middle: 810,
-          bottom: 1350
-        } 
-      },
-  
-      // 16, 15, 15 Pro, 14 Pro
-      2556: {
-        text: {
-          small: 474,
-          medium: 1017,
-          large: 1062,
-          left: 81,
-          right: 624,
-          top: 240,
-          middle: 828,
-          bottom: 1416
-        },
-        notext: {
-          small: 495,
-          medium: 1047,
-          large: 1047,
-          left: 66,
-          right: 618,
-          top: 243,
-          middle: 795,
-          bottom: 1347
-        }
-      },
-      
-      // 13 mini, 12 mini / 11 Pro, XS, X
-      // Note that only the mini has been confirmed for iOS 18
-      2436: {
-        x: {
-          small: 465,
-          medium: 987,
-          large: 1035,
-          left: 69,
-          right: 591,
-          top: 213,
-          middle: 783,
-          bottom: 1353
-        },
-        mini: {
-          small: 465,
-          medium: 987,
-          large: 1035,
-          left: 69,
-          right: 591,
-          top: 231,
-          middle: 801,
-          bottom: 1371
-        } 
-      },
-      
-      // 13 mini, 12 mini in Display Zoom mode
-      2079: {
-        small: 423,
-        medium: 875,
-        large: 933,
-        left: 42,
-        right: 494,
-        top: 186,
-        middle: 696,
-        bottom: 1206
-      },
-    
-      // SE3, SE2
-      1334: {
-        text: {
-          small: 296,
-          medium: 642,
-          large: 648,
-          left: 54,
-          right: 400,
-          top: 60,
-          middle: 412,
-          bottom: 764
-        },
-        notext: {
-          small: 309,
-          medium: 667,
-          large: 667,
-          left: 41,
-          right: 399,
-          top: 67,
-          middle: 425,
-          bottom: 783
-        }
-      },
-      
-      /*
-    
-      In-limbo devices
-      =================
-      The following device measurements were confirmed in older versions of iOS.
-      Please comment if you can confirm these for iOS 18.
-    
-      */
-       
-      // 14 Plus, 13 Pro Max, 12 Pro Max
-      2778: {
-        small: 510,
-        medium: 1092,
-        large: 1146,
-        left: 96,
-        right: 678,
-        top: 246,
-        middle: 882,
-        bottom: 1518
-      },
-  
-      // 11 Pro Max, XS Max
-      2688: {
-        small: 507,
-        medium: 1080,
-        large: 1137,
-        left: 81,
-        right: 654,
-        top: 228,
-        middle: 858,
-        bottom: 1488
-      },
-      
-      // 14, 13, 13 Pro, 12, 12 Pro
-      2532: {
-        small: 474,
-        medium: 1014,
-        large: 1062,
-        left: 78,
-        right: 618,
-        top: 231,
-        middle: 819,
-        bottom: 1407
-      },
-      
-      // 11, XR
-      1792: {
-        small: 338,
-        medium: 720,
-        large: 758,
-        left: 55,
-        right: 437,
-        top: 159,
-        middle: 579,
-        bottom: 999
-      },
-      
-      // 11 and XR in Display Zoom mode
-      1624: {
-        small: 310,
-        medium: 658,
-        large: 690,
-        left: 46,
-        right: 394,
-        top: 142,
-        middle: 522,
-        bottom: 902 
-      },
-      
-      /*
-    
-      Older devices
-      =================
-      The following devices cannot be updated to iOS 18 or later.
-    
-      */
-    
-      // Home button Plus phones
-      2208: {
-        small: 471,
-        medium: 1044,
-        large: 1071,
-        left: 99,
-        right: 672,
-        top: 114,
-        middle: 696,
-        bottom: 1278
-      },
-      
-      // Home button Plus in Display Zoom mode
-      2001 : {
-        small: 444,
-        medium: 963,
-        large: 972,
-        left: 81,
-        right: 600,
-        top: 90,
-        middle: 618,
-        bottom: 1146
-      },
-  
-      // SE1
-      1136: {
-        small: 282,
-        medium: 584,
-        large: 622,
-        left: 30,
-        right: 332,
-        top: 59,
-        middle: 399,
-        bottom: 399
-      }
-    }[inputHeight]
   }
 };
 module.exports = { main }
