@@ -127,7 +127,7 @@ async function main(cacheImg) {
   };
   
   // 主函数
-  await (async () => {
+  (async () => {
     const actionResponse = await askUserForScreenshotAction();
     if (actionResponse.value === '没有截图') return;
 
@@ -148,10 +148,8 @@ async function main(cacheImg) {
     const { size, position } = await askForWidgetSizeAndPosition();
     const crop = calculateCropParams(size, position, phone);
     
-    // 应用模糊背景
-    image = await applyBlurEffect(image);
-    
     // 裁剪图像
+    image = await applyBlurEffect(image);
     const draw = new DrawContext();
     draw.size = new Size(crop.w, crop.h);
     draw.drawImageAtPoint(image, new Point(-crop.x, -crop.y));
@@ -169,7 +167,6 @@ async function main(cacheImg) {
     console.log(e.message);
   });
   
-  // 生成警报
   async function generateAlert(message, options) {
     const alert = new Alert();
     alert.message = message;
