@@ -188,14 +188,14 @@
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
       "userRatingCountForCurrentVersion": 1213524,
-      "isGameCenterEnabled": false,
       "appletvScreenshotUrls": [],
+      "isGameCenterEnabled": false,
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "averageUserRatingForCurrentVersion": 4.871060000000002,
       "genreIds": [
         "6007",
         "6002"
       ],
-      "averageUserRatingForCurrentVersion": 4.871060000000002,
-      "releaseDate": "2023-05-18T07:00:00Z",
       "trackId": 6448311069,
       "wrapperType": "software",
       "minimumOsVersion": "16.4",
