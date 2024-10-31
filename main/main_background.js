@@ -127,7 +127,7 @@ async function main(cacheImg) {
   };
   
   // 主函数
-  (async () => {
+  await (async () => {
     const actionResponse = await askUserForScreenshotAction();
     if (actionResponse.value === '没有截图') return;
 
