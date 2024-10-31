@@ -13,7 +13,7 @@ async function main() {
   const appStoreLink = [
     'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
     'https://apps.apple.com/cn/app/携程旅行-订酒店机票火车票/id379395415',
-    'https://apps.apple.com/cn/app/swiftgram/id6471879502',
+    'https://apps.apple.com/cn/app/大众点评-美食旅游攻略逛吃必备/id351091731',
   ];
   
   /**
@@ -36,9 +36,6 @@ async function main() {
    */
   const writeSettings = async (settings) => {
     fm.writeString(getSettingPath(), JSON.stringify(settings, null, 2));
-    console.log(JSON.stringify(
-      settings, null, 2)
-    )
   };
   
   /**
@@ -299,17 +296,28 @@ async function main() {
   };
   
   // apple appStore Details
-  const getAppDetails = async (appStoreLink) => {  
+  const getAppDetails = async (appStoreLink) => {
     const appId = appStoreLink.match(/\/id(\d+)/)[1];
-    const { results } = await new Request(`https://itunes.apple.com/cn/lookup?id=${appId}&${Date.now()}`).loadJSON();
-    
-    const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
+    const url = `https://itunes.apple.com/cn/lookup?id=${appId}&timestamp=${Date.now()}`;
+    let results;
   
+    try {
+      const response = await new Request(url).loadJSON();
+      results = response.results;
+    } catch (error) {
+      console.log("iTunes API 请求失败，改用备用链接。");
+      // 从备用链接获取数据
+      const backupUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
+      const backup = await new Request(backupUrl).loadJSON();
+      results = backup.results;
+    }
+  
+    const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
     const match = trackName.match(/(.+)-/);
-    const trackname = match ? match[1].trim() : trackName.trim();  
+    const trackname = match ? match[1].trim() : trackName.trim();
     const date = currentVersionReleaseDate.replace(/(\d{4})-(\d{2})-(\d{2}).*/, '$1年$2月$3日');
     const randomScreenshots = screenshotUrls.sort(() => 0.5 - Math.random()).slice(0, 3);
-    
+  
     return {
       ...results[0],
       trackName: trackname,
@@ -319,7 +327,13 @@ async function main() {
   };
   
   const appStoreUrl = getRandomItem(appStoreLink);
-  const { trackName, version: _version, artworkUrl512, currentVersionReleaseDate: releaseDate, screenshotUrls } = await getAppDetails(appStoreUrl);
+  const {
+    trackName,
+    version: _version,
+    artworkUrl512,
+    currentVersionReleaseDate: releaseDate,
+    screenshotUrls
+  } = await getAppDetails(appStoreUrl);
   
   const tracknameImage = await getCacheImage(`${trackName}.png`, artworkUrl512);
 
@@ -841,10 +855,14 @@ async function main() {
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
+    const scriptTags = scripts.map(path => `<script type='text/javascript' src='https://demo.zibll.com/wp-content/themes/zibll/js/${path}?ver=8.0.1'></script>`);
+
+    /**
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
+      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0.1`);
       return `<script>${content}</script>`;
     }));
+    */
     
     const getAndBuildIcon = async (item) => {
       const { icon } = item;
