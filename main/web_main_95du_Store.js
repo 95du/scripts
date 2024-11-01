@@ -855,14 +855,10 @@ async function main() {
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-    const scriptTags = scripts.map(path => `<script type='text/javascript' src='https://demo.zibll.com/wp-content/themes/zibll/js/${path}?ver=8.0.1'></script>`);
-
-    /**
     const scriptTags = await Promise.all(scripts.map(async (script) => {
       const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0.1`);
       return `<script>${content}</script>`;
     }));
-    */
     
     const getAndBuildIcon = async (item) => {
       const { icon } = item;
