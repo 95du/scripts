@@ -49,15 +49,6 @@ async function main(family) {
   // 获取随机数组元素
   const getRandomItem = async (array) => array[Math.floor(Math.random() * array.length)];
   
-  /**
-   * 该函数获取当前的年份和月份
-   * @returns {Promise}
-   */
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-  const currentYear = month === '01' ? year - 1 : year;
-  
   /**  
   * 弹出通知
   * @param {string} title
@@ -150,6 +141,15 @@ async function main(family) {
   }; 
   
   /**
+   * 该函数获取当前的年份和月份
+   * @returns {Promise}
+   */
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const currentYear = month === '01' ? year - 1 : year;
+  
+  /**
    * 获取请求数据
    * @param {string} - string
    * @returns {image} - url
@@ -187,6 +187,7 @@ async function main(family) {
       areaCode,
       eleCustNumberList: [{ areaCode, eleCustId }]
     });
+    
     // totalPower & yesterday
     if (pointResponse.sta == 00) {
       const { meteringPointId } = pointResponse?.data[0];
@@ -209,6 +210,7 @@ async function main(family) {
       areaCode,
       eleCustId
     });
+    
     if (response.sta == 00) {
       const totalArray = response.data.billUserAndYear;
       const eleBill = totalArray[0];
@@ -237,28 +239,50 @@ async function main(family) {
   const balance = await getUserBalance(areaCode, eleCustId);
   
   // totalPower & Yesterday
-  const { totalPower, result } = await getMonthData(areaCode, eleCustId) || { totalPower: '0.00', result: [] };
+  const { totalPower = '0.00', result = [] } = await getMonthData(areaCode, eleCustId) || {};
   const ystdayPower = result.length > 0 ? result.pop().power : '0.00';
   const beforeYesterday = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   
   const {
     lastMonth = `${year}-${month}`,
     totalArray,
-    totalPower: total = '0.00',  
+    totalPower: total = '0.00',
     totalElectricity = '0.00',   
     arrears = '0', 
     isArrears = '0'
   } = await getEleBill(areaCode, eleCustId) || {};
+  
+  // 根据当前月份和用电量返回电费信息
+  const getElectricityPrice = (totalPower) => {
+    const isSummer = new Date().getMonth() + 1 >= 4 && new Date().getMonth() + 1 <= 10;
+    // 电价档次设定
+    const tiers = [
+      { limit: isSummer ? 220 : 160, rate: 0.6083, name: '第一档' },
+      { limit: isSummer ? 360 : 290, rate: 0.6583, name: '第二档' },
+      { rate: 0.9083, name: '第三档' }
+    ];
+    // 根据用电量判断所属档次
+    const tier = tiers.find((t, i) => totalPower <= t.limit || i === tiers.length - 1);
+  
+    return {
+      tier: tier.name,
+      rate: tier.rate,
+      cost: (totalPower * tier.rate).toFixed(2)
+    }
+  };
   
   // 欠费时每12小时通知一次
   const arrearsNotice = () => {
     const pushTime = Date.now() - setting.updateTime;
     const duration = pushTime % (24 * 3600 * 1000);
     const hours_duration = Math.floor(duration / (3600 * 1000));
+    
     if (hours_duration >= 12 && isArrears == 1) {
       setting.updateTime = Date.now()
       writeSettings(setting);
-      notify('用电缴费通知 ‼️', `${name}，户号 ${number}` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
+      
+      const { tier, rate } = getElectricityPrice(total);
+      notify('用电缴费通知 ‼️', `${name}，${tier} ( 电价 ${rate} 元/度` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
@@ -296,8 +320,8 @@ async function main(family) {
       const color = val === 0 
         ? new Color(barColor, 0.35) 
         : val == max 
-        ? new Color('#FF6800') 
-        : new Color(barColor);
+          ? new Color('#FF6800') 
+          : new Color(barColor);
   
       fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
     });
