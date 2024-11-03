@@ -7,39 +7,43 @@ async function main() {
   const version = '1.2.0'
   const updateDate = '2024年10月23日'
   const pathName = '95du_12123';
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const [scrName, scrUrl] = [`12123.js`, `${rootUrl}/api/web_12123_4.js`];
   
   const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
-
+  
   /**
    * 创建，获取存储路径
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), pathName);
-
-  const getCachePath = (dirName) => {
-    if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
-    const dirPath = fm.joinPath(mainPath, dirName);
-    if (!fm.fileExists(dirPath)) fm.createDirectory(dirPath);
-    return dirPath;
-  };
+  const dir = fm.documentsDirectory();
+  const depPath = fm.joinPath(dir, '95du_module');
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   
-  const [ cacheImg, cacheStr, cacheCar ] = [
-    'cache_image',
-    'cache_string',
-    'cache_vehicle'
-  ].map(getCachePath);
-
+  const isDev = false;
+  
+  /** ------- 导入模块 ------- */
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? '_95du' : `${depPath}/_95du`);
+  
+  const module = new _95du(pathName);  
+  const {
+    notify, 
+    settingPath,
+    cacheImg, 
+    cacheStr, 
+    cacheCar 
+  } = module;
+  
   /**
    * 存储当前设置
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(settingPath(), JSON.stringify(settings, null, 4));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 4));
     console.log(JSON.stringify(
       settings, null, 2
     ));
@@ -105,28 +109,26 @@ async function main() {
     botStr: screenSize < 926 ? '保持良好的驾驶习惯，遵守交通规则' : '保持良好驾驶习惯，务必遵守交通规则'
   };
   
-  const getSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return JSON.parse(fm.readString(file));
-    } else {
-      const settings = DEFAULT;
-      writeSettings(settings);
-      return settings;
-    }
+  const initSettings = (file) => {
+    const settings = DEFAULT;
+    module.writeSettings(settings);
+    return settings;
   };
   
-  const settingPath = () => fm.joinPath(mainPath, 'setting.json')
-  settings = await getSettings(settingPath());
+  const settings = fm.fileExists(settingPath) 
+    ? module.getSettings() 
+    : initSettings(settingPath);
   
   // ScriptableRun
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
   // 预览组件
   const previewWidget = async (family = 'medium') => {
+    download95duModule(rootUrl);
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
-    shimoFormData(`Count: ${settings.count} - ${family}`);
+    //shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
@@ -142,19 +144,6 @@ async function main() {
   };
   
   /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'piano_', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
-  /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
@@ -167,6 +156,23 @@ async function main() {
   // 获取头像图片
   const getAvatarImg = () => {
     return fm.joinPath(cacheImg, 'userSetAvatar.png');
+  };
+  
+  // 检查并下载远程依赖文件
+  const download95duModule = async (rootUrl) => {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const moduleExists = fm.fileExists(modulePath);
+    
+    const getTime = fm.creationDate(modulePath).getTime()
+    const cacheTime = moduleExists ? (Date.now() - getTime) / (60 * 60 * 1000) >= 2 : null;
+    
+    if (!moduleExists || cacheTime) {
+      const dependencyUrl = `${rootUrl}/update/_95du.js`;
+      const moduleJs = await new Request(dependencyUrl).load();
+      if (moduleJs) fm.write(modulePath, moduleJs);
+    } else {
+      console.log('模块已存在');
+    }
   };
   
   /**
@@ -187,20 +193,12 @@ async function main() {
     }
   };
   
-  /** download store **/
-  const myStore = async () => {
-    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
-    const fm = FileManager.iCloud();
-    fm.writeString(
-      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-  };
-  
   /**
    * 版本更新时弹出窗口
    * @returns {String} string
    */
   const updateVerPopup = () => {
-    const creationDate = fm.creationDate(settingPath());
+    const creationDate = fm.creationDate(settingPath);
     if (creationDate) {
       isInitialized = Date.now() - creationDate.getTime() > 300000;
     }
@@ -1590,7 +1588,7 @@ async function main() {
         case 'store':
           const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
           await importModule(await storeModule).main();
-          await myStore();
+          module.myStore();
           break;
         case 'install':
           await updateString();
