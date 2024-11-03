@@ -9,65 +9,48 @@
  */
 
 async function main(family) {
-  const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_12123');
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
+  const isDev = true;
+  const fm = FileManager.local();  
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   
-  const [ settingPath, cacheImg, cacheStr, cacheCar ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-    'cache_vehicle'
-  ].map(getCachePath);
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? '_95du' : `${depPath}/_95du`);
+  
+  const pathName = '95du_12123';
+  const module = new _95du(pathName);  
+  const setting = module.getSettings();
+  
+  const { 
+    rootUrl,
+    notify, 
+    settingPath, 
+    cacheImg, 
+    cacheStr, 
+    cacheCar 
+  } = module;
   
   /**
    * 读取储存的设置
    * @param {string} file - JSON
    * @returns {object} - JSON
    */
-  const getSettings = (file) => {
-    return fm.fileExists(file) ? { verifyToken, myPlate, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = JSON.parse(fm.readString(file)) : {}
-  };
-  const setting = getSettings(settingPath);
+  const { verifyToken, myPlate, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting;
   
-  /**
-   * 存储当前设置
-   * @param { JSON } string
-   */
-  const writeSettings = async (setting) => {
-    fm.writeString(settingPath, JSON.stringify(setting, null, 2));
-    console.log(JSON.stringify(
-      setting, null, 2
-    ));
-  };
-  
+  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData('api.json', `${rootUrl}/update/12123.json`, true);
+
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
-  /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, opts = {}) => {
-    if (!setting.notify) return;
-    const n = Object.assign(new Notification(), { title, body, sound: 'piano_', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
+  
   
   /**
    * 阴影图片
    * @param {Image} img 要处理的图片
    * @returns {Promise<Image>}
-   */
+   *
   async function shadowImage(img) {
     const ctx = new DrawContext();
     ctx.size = img.size
@@ -76,6 +59,8 @@ async function main(family) {
     ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
     return await ctx.getImage();
   };
+  */
+  
   
   /**
    * Get boxjs Data
@@ -99,55 +84,6 @@ async function main(family) {
   };
   
   /**
-   * 读取和写入缓存的文本和图片数据
-   * @param {object} options
-   * @param {number}  - number
-   * @returns {object} - Object
-   */
-  const useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? cacheStr : cacheImg;
-    return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime || !useCache) {
-            fm.remove(path);
-          } else if (useCache) {
-            return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-          }
-        }
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
-  };
-  
-  /**
-   * 获取请求数据并缓存
-   * @param {string} - string
-   * @returns {image} - url
-   */
-  const getCacheData = async (name, url, type) => {
-    const cache = useFileManager({ type });
-    const cacheData = cache.read(name);
-    if (cacheData) return cacheData;
-    const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
-    if (response) {
-      cache.write(name, response);
-    }
-    return response;
-  };
-  
-  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await getCacheData('api.json', `${rootUrl}/update/12123.json`, true);
-  
-  /**
    * 获取车辆图片并使用缓存
    * @param {string} File Extension
    * @returns {image} - Request
@@ -169,7 +105,7 @@ async function main(family) {
    * @returns {object} - 返回 JSON
    */
   const getCacheString = async (jsonName, api, params) => {
-    const cache = useFileManager({ cacheTime: setting.cacheTime, type: true });
+    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type: true });
     const json = cache.read(jsonName);
     if (json) return json;
     const response = await requestInfo(api, params);
@@ -263,7 +199,7 @@ async function main(family) {
     
     if (setting.sign) {
       delete setting.sign;
-      writeSettings(setting);
+      module.writeSettings(setting);
     }
   };
   
@@ -277,7 +213,7 @@ async function main(family) {
   // 违章变动通知
   const newViolation = (surveils, plate, count) => {
     setting.count = count;
-    writeSettings(setting);
+    module.writeSettings(setting);
     
     const { violationTime, violationAddress, violationDescribe, fine } = surveils[0] || {};
         
@@ -320,7 +256,7 @@ async function main(family) {
     const timeDiffer = (Date.now() - lastWriteTime) / (60 * 60 * 1000);
     if (data && timeDiffer >= 24 || !setting.integral) {
       setting.integral = data;
-      writeSettings(setting);
+      module.writeSettings(setting);
     }
   };
   
@@ -531,9 +467,9 @@ async function main(family) {
     
     if (setting.carImg) {
       const name = setting.carImg.split('/').pop();
-      vehicleImg = await getCacheData(name, setting.carImg);
+      vehicleImg = await module.getCacheData(name, setting.carImg);
     } else {
-      vehicleImg = await getRandomImage() || await getCacheData('carImg.png', getRandomItem(maybach));
+      vehicleImg = await getRandomImage() || await module.getCacheData('carImg.png', getRandomItem(maybach));
     };
     
     const imageCar = carStack.addImage(vehicleImg);
