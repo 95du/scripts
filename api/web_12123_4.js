@@ -9,9 +9,10 @@
  */
 
 async function main(family) {
-  const isDev = true;
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  
+  const isDev = false;
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? '_95du' : `${depPath}/_95du`);
@@ -44,45 +45,6 @@ async function main(family) {
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
-  
-  
-  /**
-   * 阴影图片
-   * @param {Image} img 要处理的图片
-   * @returns {Promise<Image>}
-   *
-  async function shadowImage(img) {
-    const ctx = new DrawContext();
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
-    return await ctx.getImage();
-  };
-  */
-  
-  
-  /**
-   * Get boxjs Data
-   * 依赖：Quantumult-X / Surge
-   */
-  const fetchData = async (key) => {
-    try {
-      const response = await new Request(`http://boxjs.com/query/data/${key}`).loadJSON();
-      return { sign, verifyToken } = JSON.parse(response?.val) || {};
-    } catch (e) {
-      console.log('boxjs' + e);
-      notify('Boxjs_数据获取失败 ⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
-    }
-  };
-  
-  const getBoxjsData = async () => {
-    const { verifyToken, sign } = await fetchData('body_12123') || {};
-    if (setting.sign !== sign) {
-      writeSettings({ ...setting, sign, verifyToken });
-    }
-  };
-  
   /**
    * 获取车辆图片并使用缓存
    * @param {string} File Extension
@@ -93,6 +55,15 @@ async function main(family) {
     const index = Math.floor(Math.random() * count);
     const cacheCarPath = cacheCar + '/' + imgArr[index];
     return await fm.readImage(cacheCarPath);
+  };
+  
+  /**
+   * Get boxjs Data
+   * 依赖：Quantumult-X / Surge
+   */
+  const getBoxjsData = async () => {
+    const { verifyToken, sign } = await module.boxjsData('body_12123');
+    if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
   };
   
   // 获取随机数组元素
