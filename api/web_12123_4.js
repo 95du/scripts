@@ -313,7 +313,8 @@ async function main(family) {
   const setBackground = async (widget) => {
     const bgImage = getBgImage();
     if (fm.fileExists(bgImage)) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
+      const shadowImg = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(shadowImg);
     } else {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
