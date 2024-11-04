@@ -11,7 +11,6 @@
 async function main(family) {
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  
   const isDev = false;
   
   if (typeof require === 'undefined') require = importModule;
@@ -23,11 +22,10 @@ async function main(family) {
   
   const { 
     rootUrl,
-    notify, 
     settingPath, 
     cacheImg, 
     cacheStr, 
-    cacheCar 
+    cacheCar,
   } = module;
   
   /**
@@ -163,9 +161,9 @@ async function main(family) {
     const code = ['B100501', 'AUTHENTICATION_CREDENTIALS_NOT_EXIST', 'SECURITY_INFO_ABNORMAL', 'SYSTEM_ERROR'];
   
     if (code.includes(resultCode) || code.includes(errorCode)) {
-      notify(`${resultMsg} ⚠️`, '点击【通知框】或【车图】跳转到支付宝12123页面重新获取，请确保已打开辅助工具', alipayUrl);
+      module.notify(`${resultMsg} ⚠️`, '点击【通知框】或【车图】跳转到支付宝12123页面重新获取，请确保已打开辅助工具', alipayUrl);
     } else {
-      notify(resultCode, resultMsg);
+      module.notify(resultCode, resultMsg);
     };
     
     if (setting.sign) {
@@ -191,7 +189,7 @@ async function main(family) {
     const creationDate = fm.creationDate(settingPath);
     const isInitialized = (Date.now() - creationDate.getTime() > 300000);  
     if (isInitialized) {
-      notify(`${plate} 🚫`, `${violationAddress}，${violationDescribe}，\n罚款 ${fine}元，${violationTime}`);  
+      module.notify(`${plate} 🚫`, `${violationAddress}，${violationDescribe}，\n罚款 ${fine}元，${violationTime}`);  
       // fm.remove(cacheStr)
       deleteJsonFiles(cacheStr);
     }
