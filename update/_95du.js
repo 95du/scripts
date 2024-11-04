@@ -46,6 +46,37 @@ class _95du {
   };
   
   /**
+   * 标准化 API 请求函数
+   * 
+   * @param {string} url
+   * @param {string} method ('GET', 'POST', 'PUT', 'DELETE')
+   * @param {object} headers
+   * @param {object} data
+   * @param {string} customBody
+   * @returns {Promise<object>}
+   */
+  apiRequest = async (
+    url, 
+    method = 'GET', 
+    headers = {}, 
+    data = null, 
+    formBody = null
+  ) => {
+    const request = new Request(url);
+    request.method = method;  
+    request.headers = headers;
+    request.body = formBody || (data ? JSON.stringify(data) : null);
+  
+    try {
+      const response = await request.loadJSON();
+      return response;
+    } catch (error) {
+      console.log(`API 请求失败:  ${error}`);
+      return { success: false, message: '请求失败', error: error.message };
+    }
+  };
+  
+  /**
    * 根据类型发起 HTTP 请求并加载内容。
    *
    * @param {string} url
