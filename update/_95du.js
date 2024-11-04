@@ -13,14 +13,14 @@ class _95du {
   // 初始化目录和路径
   initPaths() {
     const mainPath = this.fm.joinPath(this.fm.documentsDirectory(), this.pathName);
-    this.fm.createDirectory(mainPath, true);
-  
+    
+    this.mainPath = mainPath;
     this.settingPath = this.fm.joinPath(mainPath, 'setting.json');
     this.cacheImg = this.fm.joinPath(mainPath, 'cache_image');
     this.cacheStr = this.fm.joinPath(mainPath, 'cache_string');
     this.cacheCar = this.fm.joinPath(mainPath, 'cache_vehicle');
     
-    [this.cacheImg, this.cacheStr, this.cacheCar].forEach(path => this.fm.createDirectory(path, true));
+    [this.mainPath, this.cacheImg, this.cacheStr, this.cacheCar].forEach(path => this.fm.createDirectory(path, true));
   };
 
   /**
@@ -38,12 +38,11 @@ class _95du {
    * @param { JSON } setting
    */
   async writeSettings(setting) {
+    const json = JSON.stringify(setting, null, 2);
     this.fm.writeString(
-      this.settingPath, JSON.stringify(setting, null, 2)
-     );
-    console.log(JSON.stringify(  
-      setting, null, 2  
-    ))  
+      this.settingPath, json
+    );
+    console.log(json);
   };
   
   /**
