@@ -21,8 +21,12 @@ async function main() {
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), pathName);
+  const directory = fm.documentsDirectory();
+  const depPath = fm.joinPath(directory, '95du_module')
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
+  download95duModule(rootUrl);
   
+  const mainPath = fm.joinPath(directory, pathName);
   const getSettingPath = () => {
     if (!fm.fileExists(mainPath)) {
       fm.createDirectory(mainPath);
@@ -274,6 +278,26 @@ async function main() {
     const img = await drawSFIcon(name);
     cache.writeImage(name, img);
     return toBase64(img);
+  };
+  
+  /**
+   * 检查并下载远程依赖文件
+   * Downloads or updates the `_95du.js` module hourly.
+   * @param {string} rootUrl - The base URL for the module file.
+   */
+  async function download95duModule(rootUrl) {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
+    const currentDate = new Date().toISOString().slice(0, 13);
+  
+    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
+  
+    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
+      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
+      fm.write(modulePath, moduleJs);
+      fm.writeString(timestampPath, currentDate);
+      console.log('Module updated');
+    }
   };
   
   // shimoFormData(action)
