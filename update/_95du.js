@@ -231,11 +231,11 @@ class _95du {
    * @param {string} body
    * @param {string} url
    */
-  async notify(title, body, url) {
+  async notify(title, body, url, sound = 'event') {
     if (!this.settings.notify) return
-    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
+    const n = Object.assign(new Notification(), { title, body, sound });
     if (url) n.openURL = url;
-    await n.schedule();
+    n.schedule();
   };
   
   /**
