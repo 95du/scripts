@@ -233,10 +233,7 @@ class _95du {
    */
   async notify(title, body, url) {
     if (!this.settings.notify) return
-    const n = new Notification();
-    n.title = title;
-    n.body = body;
-    n.sound = 'event';
+    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
     if (url) n.openURL = url;
     await n.schedule();
   };
