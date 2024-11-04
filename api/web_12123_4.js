@@ -11,7 +11,7 @@
 async function main(family) {
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = false;
+  const isDev = true;
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? '_95du' : `${depPath}/_95du`);
@@ -35,7 +35,7 @@ async function main(family) {
    */
   const { verifyToken, myPlate, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting;
   
-  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData('api.json', `${rootUrl}/update/12123.json`, true);
+  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData('api.json', `${rootUrl}/update/12123.json`, 'json');
 
   /**
    * 获取背景图片存储目录路径
@@ -73,14 +73,13 @@ async function main(family) {
    * @param {object} params
    * @returns {object} - 返回 JSON
    */
-  const getCacheString = async (jsonName, api, params) => {
-    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type: true });
-    const json = cache.read(jsonName);
-    if (json) return json;
+  const getCacheString = async (name, api, params) => {
+    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type: 'json' });
+    const json = cache.readJSON(name);
+    if (json && !cache.hasExpired(name)) return json;
+    if (json) fm.remove(cache.safePath(name));
     const response = await requestInfo(api, params);
-    if (response.success) {
-      cache.write(jsonName, response)
-    }
+    if (response.success) cache.writeJSON(name, response);
     return response;
   };
   
@@ -437,9 +436,9 @@ async function main(family) {
     
     if (setting.carImg) {
       const name = setting.carImg.split('/').pop();
-      vehicleImg = await module.getCacheData(name, setting.carImg);
+      vehicleImg = await module.getCacheData(name, setting.carImg, 'image');
     } else {
-      vehicleImg = await getRandomImage() || await module.getCacheData('carImg.png', getRandomItem(maybach));
+      vehicleImg = await getRandomImage() || await module.getCacheData('carImg.png', getRandomItem(maybach), 'image');
     };
     
     const imageCar = carStack.addImage(vehicleImg);
