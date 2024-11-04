@@ -93,15 +93,6 @@ class _95du {
     return await (loadMethods[type] || loadMethods.string)();
   };
   
-  /** download store **/
-  async myStore() {
-    const url = `${this.rootUrl}/run/web_module_95duScript.js`;
-    const script = await this.httpRequest(url);
-    const fm = FileManager.iCloud();
-    fm.writeString(
-      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-  };
-  
   /**
    * 获取图片、string并使用缓存
    * @param {string} File Extension
@@ -310,7 +301,16 @@ class _95du {
       console.log('boxjs' + e);
       this.notify('Boxjs_数据获取失败 ⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
     }
-  }
+  };
+  
+  /** download store **/
+  async myStore() {
+    const url = `${this.rootUrl}/run/web_module_95duScript.js`;
+    const script = await this.httpRequest(url);
+    const fm = FileManager.iCloud();
+    fm.writeString(
+      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
+  };
 };
 
 module.exports = { _95du };
