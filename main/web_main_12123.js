@@ -20,6 +20,7 @@ async function main() {
    */
   const fm = FileManager.local();
   const dir = fm.documentsDirectory();
+  const mainPath = fm.joinPath(dir, pathName);
   const depPath = fm.joinPath(dir, '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   
@@ -128,7 +129,7 @@ async function main() {
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
-    //shimoFormData(`Count: ${settings.count} - ${family}`);
+    shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
