@@ -75,44 +75,132 @@ class _95du {
    * 获取图片、string并使用缓存
    * @param {string} File Extension
    * @returns {image} - Request
-   */
+   */  
   useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? this.cacheStr : this.cacheImg;
     const fm = this.fm;
+    const basePath = (type === 'string' || type === 'json') 
+      ? this.cacheStr 
+      : this.cacheImg;
     
-    const hasExpired = (filePath) =>
-      (Date.now() - fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;
+    const hasExpired = (name) => {
+      const filePath = fm.joinPath(basePath, name);
+      return (Date.now() - fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
+    };
 
+    /**
+     * 安全路径处理函数，移除末尾的 '/'
+     * @param {string} filePath
+     */
+    const safePath = (name) => fm.joinPath(basePath, name).replace(/\/+$/, '');
+  
+    /**
+     * 写入字符串文件
+     * @param {string} filePath
+     * @param {string} content
+     */
+    const writeString = (filePath, content) => {
+      const fullPath = safePath(filePath);
+      fm.writeString(fullPath, content);
+    };
+  
+    /**
+     * 写入 JSON 数据
+     * @param {string} filePath
+     * @param {*} jsonData
+     */
+    const writeJSON = (filePath, jsonData) => writeString(filePath, JSON.stringify(jsonData));
+  
+    /**
+     * 写入图片文件
+     * @param {string} filePath
+     * @param {Image} image
+     */
+    const writeImage = (filePath, image) => {
+      const fullPath = safePath(filePath);
+      fm.writeImage(fullPath, image);
+    };
+  
+    /**
+     * 读取字符串内容
+     * @param {string} filePath
+     * @returns {string|null}
+     */
+    const readString = (filePath) => {
+      const fullPath = safePath(filePath);
+      return fm.fileExists(fullPath) ? fm.readString(fullPath) : null;
+    };
+  
+    /**
+     * 读取 JSON 数据
+     * @param {string} filePath
+     * @returns {*|null}
+     */
+    const readJSON = (filePath) => {
+      const data = readString(filePath);
+      return data ? JSON.parse(data) : null;
+    };
+  
+    /**
+     * 读取图片文件
+     * @param {string} filePath
+     * @returns {Image|null}
+     */
+    const readImage = (filePath) => {
+      const fullPath = safePath(filePath);
+      return fm.fileExists(fullPath) ? fm.readImage(fullPath) : null;
+    };
+  
     return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (!fm.fileExists(path)) return null;
-        if (!hasExpired(path)) {
-          return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-        }
-        fm.remove(path);
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    }
+      writeString,
+      writeJSON,
+      writeImage,
+      readString,
+      readJSON,
+      readImage,
+      hasExpired,
+      safePath
+    };
   };
   
   /**
    * 获取请求数据并缓存
-   * @param {string} - string
-   * @returns {image} - url
-   */
+   * @param {string} name
+   * @param {string} url
+   * @param {string} type（json, string, image）
+   * @returns {*} - 返回缓存数据
+   */  
   getCacheData = async (name, url, type) => {
     const cache = this.useFileManager({ type });
-    const cacheData = cache.read(name);
+    // 定义读取和写入方法的映射
+    const cacheMethods = {
+      json: {
+        read: () => cache.readJSON(name),
+        write: (data) => cache.writeJSON(name, data),
+      },
+      string: {
+        read: () => cache.readString(name),
+        write: (data) => cache.writeString(name, data),
+      },
+      image: {
+        read: () => cache.readImage(name),
+        write: (data) => cache.writeImage(name, data),
+      },
+    };
+  
+    const { read, write } = cacheMethods[type];
+    const cacheData = read();
     if (cacheData) return cacheData;
-    const data = await this.httpRequest(url, type ? 'json' : 'image');
-    if (!data.statusCode === 404) {
-      cache.write(name, data);
-    }
-    return data;
+    
+    try {
+      const data = await this.httpRequest(url, type);
+      if (data.statusCode !== 404) {
+        write(data);
+        return data;
+      }
+    } catch (error) {
+      console.log(name + '请求失败，返回缓存数据: \n' + error);
+    };
+    return cacheData;
   };
   
   /**  
@@ -191,7 +279,7 @@ class _95du {
       console.log('boxjs' + e);
       this.notify('Boxjs_数据获取失败 ⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
     }
-  };
-}
+  }
+};
 
 module.exports = { _95du };
