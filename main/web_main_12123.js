@@ -15,15 +15,13 @@ async function main() {
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
   
   /**
-   * 创建，获取存储路径
+   * 创建，获取模块路径
    * @returns {string} - string
    */
   const fm = FileManager.local();
   const dir = fm.documentsDirectory();
-  const mainPath = fm.joinPath(dir, pathName);
   const depPath = fm.joinPath(dir, '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
-  
   const isDev = false;
   
   /** ------- 导入模块 ------- */
@@ -32,11 +30,11 @@ async function main() {
   
   const module = new _95du(pathName);  
   const {
-    notify, 
+    mainPath,
     settingPath,
     cacheImg, 
     cacheStr, 
-    cacheCar 
+    cacheCar
   } = module;
   
   /**
@@ -44,7 +42,7 @@ async function main() {
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(settingPath, JSON.stringify(settings, null, 4));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 2));
     console.log(JSON.stringify(
       settings, null, 2
     ));
@@ -226,7 +224,7 @@ async function main() {
     const modulePath = fm.joinPath(cacheStr, scrName);
     const str = await getString(scrUrl);
     if (!str.includes('95度茅台')) {
-      notify('更新失败 ⚠️', '请检查网络或稍后再试');
+      module.notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
       const moduleDir = fm.joinPath(mainPath, 'Running');
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
@@ -247,7 +245,7 @@ async function main() {
         const html = await new Request(atob('aHR0cHM6Ly9kZXZlbG9wZXIuYXBwbGUuY29tL25ld3MvcmVsZWFzZXMvcnNzL3JlbGVhc2VzLnJzcw==')).loadString();
         const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
         if (settings.push !== iOS) {
-          notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
+          module.notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
           settings.push = iOS
           writeSettings(settings);
         }
