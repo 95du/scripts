@@ -11,15 +11,15 @@
   "api3": "biz.vio.peccancyUnhandleInfoList.query",
   "detailsUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/vehicle-illegal-detail/index?__appxPageId%3D12%26",
   "maybach": [
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-0.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-1.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-2.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-3.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-4.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-5.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-6.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-7.png",
-    "https://gitcode.net/4qiao/scriptable/raw/master/img/car/Maybach-8.png"
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-0.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-1.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-2.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-3.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-4.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-5.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-6.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-7.png",
+    "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-8.png"
   ],
   "api2": "biz.vio.peccancyChannelList.query",
   "queryDetailUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/vehicle-illegal-querydetail/index?__appxPageId%3D2%26"
