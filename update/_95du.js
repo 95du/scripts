@@ -123,6 +123,7 @@ class _95du {
    * @param {string} url
    */
   async notify(title, body, url) {
+    if (!this.settings.notify) return
     const n = new Notification();
     n.title = title;
     n.body = body;
