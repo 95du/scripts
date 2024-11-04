@@ -19,9 +19,9 @@ async function main() {
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const dir = fm.documentsDirectory();
-  const depPath = fm.joinPath(dir, '95du_module');
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
+  await download95duModule(rootUrl);
   const isDev = false;
   
   /** ------- 导入模块 ------- */
@@ -118,12 +118,31 @@ async function main() {
     ? module.getSettings() 
     : initSettings(settingPath);
   
+  /**
+   * 检查并下载远程依赖文件
+   * Downloads or updates the `_95du.js` module hourly.
+   * @param {string} rootUrl - The base URL for the module file.
+   */
+  async function download95duModule(rootUrl) {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
+    const currentDate = new Date().toISOString().slice(0, 13);
+  
+    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
+  
+    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
+      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
+      fm.write(modulePath, moduleJs);
+      fm.writeString(timestampPath, currentDate);
+      console.log('Module updated');
+    }
+  };
+  
   // ScriptableRun
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
   // 预览组件
   const previewWidget = async (family = 'medium') => {
-    download95duModule(rootUrl);
     const moduleJs = await webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
@@ -155,23 +174,6 @@ async function main() {
   // 获取头像图片
   const getAvatarImg = () => {
     return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  // 检查并下载远程依赖文件
-  const download95duModule = async (rootUrl) => {
-    const modulePath = fm.joinPath(depPath, '_95du.js');
-    const moduleExists = fm.fileExists(modulePath);
-    
-    const getTime = fm.creationDate(modulePath).getTime()
-    const cacheTime = moduleExists ? (Date.now() - getTime) / (60 * 60 * 1000) >= 2 : null;
-    
-    if (!moduleExists || cacheTime) {
-      const dependencyUrl = `${rootUrl}/update/_95du.js`;
-      const moduleJs = await new Request(dependencyUrl).load();
-      if (moduleJs) fm.write(modulePath, moduleJs);
-    } else {
-      console.log('模块已存在');
-    }
   };
   
   /**
