@@ -25,10 +25,8 @@ $.is_debug = $.getdata('is_debug');
       
       if (!$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
-        $.msg($.name, ``, '验证令牌/签名获取成功。');
+        $.msg($.name, `验证令牌/签名获取成功。`, $.rest_body.sign);
       }
-    } else {
-      $.msg($.name, ``, 'Body未获取，清空后台，重新获取🚫');
     }
   };
 
