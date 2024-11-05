@@ -825,6 +825,8 @@ button .iconfont {
     border-radius: 10px;
     /* appearance: none; 原生外观 */
     /* max-width: 75px; 添加最大宽度 */
+    padding-right: 6px;
+    text-align-last: right;
     background-color: var(--card-background);
 }
 
