@@ -282,7 +282,7 @@ async function main(family) {
       writeSettings(setting);
       
       const { tier, rate } = getElectricityPrice(total);
-      notify('用电缴费通知 ‼️', `${name}，${tier} ( 电价 ${rate} 元/度` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
+      notify('用电缴费通知 ‼️', `${name}，${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
