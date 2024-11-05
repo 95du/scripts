@@ -9,7 +9,7 @@ class _95du {
     this.initPaths();
     this.settings = this.getSettings();
   };
-
+  
   // 初始化目录和路径
   initPaths() {
     const mainPath = this.fm.joinPath(this.fm.documentsDirectory(), this.pathName);
@@ -65,7 +65,9 @@ class _95du {
     const request = new Request(url);
     request.method = method;  
     request.headers = headers;
-    request.body = formBody || (data ? JSON.stringify(data) : null);
+    if (method !== 'GET') {
+      request.body = formBody || (data ? JSON.stringify(data) : null);  
+    }
   
     try {
       const response = await request.loadJSON();
