@@ -122,23 +122,21 @@ class _95du {
    * @returns {Object} - read，write
    */
   useFileManager = ({ cacheTime, type = 'string'} = options) => {
-    const fm = this.fm;
     const basePath = type === 'image' 
       ? this.cacheImg 
       : this.cacheStr;
-    
+    const filePath = (name) => this.fm.joinPath(basePath, name);
     const { readFile, writeFile } = this.getMethods(type);
-    const filePath = (name) => fm.joinPath(basePath, name);
-    
+
     const isExpired = (filePath) => {
-      return (Date.now() - fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
+      return (Date.now() - this.fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
     };
     
     const read = (name) => {
       const path = filePath(name);
-      if (fm.fileExists(path)) {
+      if (this.fm.fileExists(path)) {
         if (!isExpired(path)) return readFile(path);
-        fm.remove(path);
+        this.fm.remove(path);
       }
       return null;
     };
@@ -267,7 +265,6 @@ class _95du {
         "${url}, tag=${tagName}, update-interval=172800, opt-parser=true, enabled=true"
       ]
     }`;
-    
     const encode = encodeURIComponent(config);
     return `quantumult-x:///add-resource?remote-resource=${encode}`;
   };
