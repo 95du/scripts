@@ -154,7 +154,7 @@ class _95du {
    * @param {string} type（json, string, image）
    * @returns {*} - 返回缓存数据
    */  
-  getCacheData = async (name, url, type, cacheTime = 0.01) => {
+  getCacheData = async (name, url, type, cacheTime = 240) => {
     const cache = this.useFileManager({ 
       cacheTime, type
     });
