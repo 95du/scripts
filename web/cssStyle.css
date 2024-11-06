@@ -818,16 +818,19 @@ button .iconfont {
 }
 
 .form-item input select,
-  .form-item select {
-    outline: none;
-    font-size: 16px;
-    border: var(--select);
-    border-radius: 10px;
-    /* appearance: none; 原生外观 */
-    /* max-width: 75px; 添加最大宽度 */
-    padding-right: 6px;
-    text-align-last: right;
-    background-color: var(--card-background);
+.form-item select {
+  outline: none;
+  font-size: 16px;
+  border: var(--select);
+  border-radius: 10px;
+  padding-right: 6px;
+  text-align-last: right;
+  white-space: nowrap; /* 防止换行 */
+  overflow: hidden; /* 隐藏溢出 */
+  background-color: var(--card-background);
+  /* appearance: none; 原生外观 */
+  /* width: auto; */
+  /* text-overflow: ellipsis; 若文字超出，显示省略号 */
 }
 
 .icon-arrow_right {
