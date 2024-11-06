@@ -84,6 +84,24 @@ async function main() {
   
   const settingPath = () => fm.joinPath(mainPath, 'setting.json')
   settings = await getSettings(settingPath());
+  
+  /**
+   * 指定模块页面
+   * @param { string } time
+   * @param { string } color
+   * @param { string } module
+   */
+  const webModule = async (scriptName, url) => {
+    const modulePath = fm.joinPath(cacheStr, scriptName);
+    if (!settings.update && fm.fileExists(modulePath)) {
+      return modulePath;
+    } else {
+      const moduleJs = await getCacheString(scriptName, url);
+      if (moduleJs) {
+        return modulePath;
+      }
+    }
+  };
 
   // ScriptableRun
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
@@ -138,39 +156,6 @@ async function main() {
     const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
     if (url) n.openURL = url;
     n.schedule();
-  };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
-  };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  /**
-   * 指定模块页面
-   * @param { string } time
-   * @param { string } color
-   * @param { string } module
-   */
-  const webModule = async (scriptName, url) => {
-    const modulePath = fm.joinPath(cacheStr, scriptName);
-    if (!settings.update && fm.fileExists(modulePath)) {
-      return modulePath;
-    } else {
-      const moduleJs = await getCacheString(scriptName, url);
-      if (moduleJs) {
-        return modulePath;
-      }
-    }
   };
   
   /** download store **/
@@ -238,6 +223,46 @@ async function main() {
         writeSettings(settings);
       }
     }
+  };
+  
+  /**
+   * 运行 Widget 脚本
+   * 组件版本、iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
+  if (config.runsInWidget) {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    
+    if (version !== settings.version && !settings.update && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，桌面组件布局调整，清除缓存再更新代码。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    };
+    
+    try {
+      await previewWidget();
+      await appleOS();
+    } catch (error) {
+      console.error("Error running widget script:", error);
+    } finally {
+      return null;
+    }
+  };
+  
+  /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
+  // 获取头像图片
+  const getAvatarImg = () => {
+    return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
   
   /**
@@ -493,27 +518,6 @@ async function main() {
     });
     return await alert.presentAlert();
   };
-    
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  if (config.runsInWidget) {
-    const hours = Math.floor((Date.now() - settings.updateTime) % (24 * 3600 * 1000) / (3600 * 1000));
-    
-    if (version !== settings.version && !settings.update && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，桌面组件布局调整，清除缓存再更新代码。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    await previewWidget();
-    await appleOS();
-    return null;
-  };
-  
   
   // ====== web start ======= //
   const renderAppView = async (options) => {
@@ -878,7 +882,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = item.multiple ? '99px' : '68px';
+        select.style.width = '200px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup')
