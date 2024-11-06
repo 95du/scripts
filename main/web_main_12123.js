@@ -1508,7 +1508,7 @@ async function main() {
           options = ['取消', '恢复']
         );
         if ( action === 1 ) {
-          fm.remove(settingPath());
+          fm.remove(settingPath);
           ScriptableRun();
         }
       } else if (code === 'app') {
