@@ -23,9 +23,9 @@ $.is_debug = $.getdata('is_debug');
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
-      const { success } = await getSuccess(request.body);
+      $.req = await getSuccess(request.body);
       
-      if (success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
+      if ($req.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
@@ -42,19 +42,27 @@ $.is_debug = $.getdata('is_debug');
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
 
+$.req = await getSuccess(request.body);
+
 async function getSuccess(body) {
-  let opt = {
-    url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz'
+  const opt = {
+    url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `params=${encodeURIComponent(body.params)}`, // 确保 body.params 已编码
   };
   
   return new Promise(resolve => {
-    $.post(opt, async (error, response, data) => {
+    $.post(opt, (error, response, data) => {
       try {
-        let result = $.toObj(data) || response.body;
-        // 返回用户信息
-        resolve(result.success);
-      } catch (error) {
-        $.log(error);
+        // 解析响应数据
+        const result = $.toObj(data) || $.toObj(response.body);
+        // 返回成功状态
+        resolve(result?.success ?? null);
+      } catch (err) {
+        $.log(`Error parsing response: ${err}`);
         resolve(null);
       }
     });
