@@ -599,7 +599,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-4.5%' : '-2%') : (avatarInfo ? '-8.5%' : '-1%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-4.5%' : '-2%') : (avatarInfo ? '-11.5%' : '-1%')};
     }
     
     ${settings.animation ? `
