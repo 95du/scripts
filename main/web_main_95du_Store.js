@@ -13,7 +13,7 @@ async function main() {
   const appStoreLink = [
     'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
     'https://apps.apple.com/cn/app/携程旅行-订酒店机票火车票/id379395415',
-    'https://apps.apple.com/cn/app/大众点评-美食旅游攻略逛吃必备/id351091731',
+    'https://apps.apple.com/cn/app/复游会-我家的度假管家-复星旅文旗下全球会员俱乐部/id1296210667',
   ];
   
   /**
@@ -2013,8 +2013,8 @@ document.getElementById('telegram').addEventListener('click', () => {
         title: label,
         message: message,
         options: [{
-          hint: '请输入',
-          value: ''
+          hint: '请输入Github仓库链接',
+          value: Pasteboard.paste()
         }]
       }, 
       async ([{ value }]) => {
