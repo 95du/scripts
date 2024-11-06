@@ -499,7 +499,7 @@ async function main() {
    * @param {string} notice 
    */
   if (config.runsInWidget) {
-    const hours = Math.floor((Date.now() - settings.updateTime) % (24 * 3600 * 1000) / (3600 * 1000));
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
     if (version !== settings.version && !settings.update && hours >= 12) {
       settings.updateTime = Date.now();
@@ -507,9 +507,14 @@ async function main() {
       notify(`${scriptName}‼️`, `新版本更新 Version ${version}，桌面组件布局调整，清除缓存再更新代码。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     };
     
-    await previewWidget();
-    await appleOS();
-    return null;
+    try {
+      await previewWidget();
+      await appleOS();
+    } catch (error) {
+      console.error("Error running widget script:", error);
+    } finally {
+      return null;
+    }
   };
   
   
@@ -887,7 +892,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = item.multiple ? '99px' : '85px';
+        select.style.width = '200px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup')
