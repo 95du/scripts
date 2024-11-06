@@ -9,7 +9,7 @@ async function main() {
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const [scrName, scrUrl] = [`12123.js`, `${rootUrl}/api/web_12123_4.js`];
+  const [scrName, scrUrl] = [`12123.js`, `${rootUrl}/api/web_12123.js`];
   
   const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
@@ -26,7 +26,7 @@ async function main() {
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
-  const { _95du } = require(isDev ? '_95du' : `${depPath}/_95du`);
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
   const module = new _95du(pathName);  
   const {
