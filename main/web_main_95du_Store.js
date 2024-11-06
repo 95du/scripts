@@ -13,7 +13,7 @@ async function main() {
   const appStoreLink = [
     'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
     'https://apps.apple.com/cn/app/携程旅行-订酒店机票火车票/id379395415',
-    'https://apps.apple.com/cn/app/复游会-我家的度假管家-复星旅文旗下全球会员俱乐部/id1296210667',
+    'https://apps.apple.com/cn/app/小红书-你的生活指南/id741292507',
   ];
   
   /**
@@ -1048,7 +1048,7 @@ console.log(repoItems)
     
     .modal {
       position: fixed;
-      top: 0;
+      top: -5%;
       right: 0;
       bottom: 0;
       left: 0;
