@@ -23,10 +23,10 @@ $.is_debug = $.getdata('is_debug');
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
-      $.req = await getSuccess(request.body);
-      $.msg($.name, ``, $req.success);
+      $.success = await getSuccess(request.body);
+      $.msg($.name, ``, $.success);
       
-      if ($req.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
+      if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
@@ -54,7 +54,7 @@ async function getSuccess(body) {
   };
   
   return new Promise(resolve => {
-    $.post(opt, (error, response, data) => {
+    $.post(opt, async (error, response, data) => {
       try {
         const result = $.toObj(data) || $.toObj(response.body);
         resolve(result?.success);
