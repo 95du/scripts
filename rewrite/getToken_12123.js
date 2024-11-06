@@ -50,16 +50,15 @@ async function getSuccess(body) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
+      // 可根据需要添加其他请求头
     },
-    body: `params=${encodeURIComponent(body.params)}`, // 确保 body.params 已编码
+    body: body  // 直接使用 URL 编码的 body 字符串
   };
   
   return new Promise(resolve => {
     $.post(opt, (error, response, data) => {
       try {
-        // 解析响应数据
         const result = $.toObj(data) || $.toObj(response.body);
-        // 返回成功状态
         resolve(result?.success ?? null);
       } catch (err) {
         $.log(`Error parsing response: ${err}`);
