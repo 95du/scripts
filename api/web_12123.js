@@ -33,7 +33,7 @@ async function main(family) {
    * @param {string} file - JSON
    * @returns {object} - JSON
    */
-  const { verifyToken, myPlate, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting;
+  const { myPlate, verifyToken, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting || {};
   
   const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData('api.json', `${rootUrl}/update/12123.json`, 'json')
 
@@ -60,7 +60,7 @@ async function main(family) {
    * 依赖：Quantumult-X / Surge
    */
   const getBoxjsData = async () => {
-    const { verifyToken, sign } = await module.boxjsData('body_12123');
+    const { verifyToken, sign } = await module.boxjsData('body_12123') || {} || null;
     if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
   };
   
