@@ -24,6 +24,7 @@ $.is_debug = $.getdata('is_debug');
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
       $.req = await getSuccess(request.body);
+      $.msg($.name, ``, $req.success);
       
       if ($req.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
@@ -42,26 +43,23 @@ $.is_debug = $.getdata('is_debug');
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
 
-$.req = await getSuccess(request.body);
-
 async function getSuccess(body) {
   const opt = {
     url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      // 可根据需要添加其他请求头
     },
-    body: body  // 直接使用 URL 编码的 body 字符串
+    body: body
   };
   
   return new Promise(resolve => {
     $.post(opt, (error, response, data) => {
       try {
         const result = $.toObj(data) || $.toObj(response.body);
-        resolve(result?.success ?? null);
+        resolve(result?.success);
       } catch (err) {
-        $.log(`Error parsing response: ${err}`);
+        $.log(`获取错误❌❌❌Error parsing response: ${err}`);
         resolve(null);
       }
     });
