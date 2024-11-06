@@ -611,7 +611,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-13%' : '-2%') : (avatarInfo ? '-17%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-13%' : '-2%') : (avatarInfo ? '-20%' : '-4%')};
     }
 
     ${settings.animation ? `
