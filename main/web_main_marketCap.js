@@ -459,21 +459,6 @@ async function main() {
   };
   
   /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
-  };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  /**
    * 指定模块页面
    * @param { string } time
    * @param { string } color
@@ -556,6 +541,46 @@ async function main() {
         writeSettings(settings);
       }
     }
+  };
+    
+  /**
+   * 运行 Widget 脚本
+   * 组件版本、iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
+  if (config.runsInWidget) {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    
+    if (version !== settings.version && !settings.update && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加两个中号组件，分时图表和股市指数，在设置中查看更新。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    };
+    
+    try {
+      await previewWidget();
+      await appleOS();
+    } catch (error) {
+      console.error("Error running widget script:", error);
+    } finally {
+      return null;
+    }
+  };
+  
+  /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
+  // 获取头像图片
+  const getAvatarImg = () => {
+    return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
   
   /**
@@ -812,26 +837,6 @@ async function main() {
       option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
     });
     return await alert.presentAlert();
-  };
-    
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  if (config.runsInWidget) {
-    const hours = Math.floor((Date.now() - settings.updateTime) % (24 * 3600 * 1000) / (3600 * 1000));
-    
-    if (version !== settings.version && !settings.update && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加两个中号组件，分时图表和股市指数，在设置中查看更新。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    await previewWidget();
-    await appleOS();
-    return null;
   };
   
   
@@ -1204,20 +1209,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-      
-        const selectWidth = () => {
-          const selectedOption = item.options.flatMap(option => option.values).find(opt => opt.value === formData[item.name]);
-          const length = selectedOption?.label.length || 4;
-          const width = {
-            6: '111px',
-            5: '94px',
-            4: '77px',
-            3: '60px',
-            2: '43px',
-          };
-          select.style.width = item.multiple ? '99px' : width[Math.min(length, 6)] || '77px'
-        };
-        selectWidth();
+        select.style.width = '200px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
