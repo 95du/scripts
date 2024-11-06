@@ -3,12 +3,12 @@
 // icon-color: orange; icon-glyph: shopping-bag;
 
 async function main() {
-  const uri = Script.name();
   const scriptName = 'Script Store'
   const version = '1.0.1'
   const updateDate = '2023年07月09日'
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const myRepo = 'https://github.com/95du/scripts';
   const pathName = '95du_Store';
   const appStoreLink = [
     'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
@@ -56,7 +56,7 @@ async function main() {
   
   const getSettings = (file) => {
     if (fm.fileExists(file)) {
-      return JSON.parse(fm.readString(file));
+      return { urls } = JSON.parse(fm.readString(file));
     } else {
       settings = DEFAULT_SETTINGS;
       writeSettings(settings);
@@ -64,6 +64,11 @@ async function main() {
     }
   };
   settings = await getSettings(getSettingPath());
+  
+  // 运行组件
+  const ScriptableRun = (name = Script.name()) => {
+    Safari.open('scriptable:///run/' + encodeURIComponent(name));
+};
   
   // 获取头像图片
   const getAvatarImg = () => {
@@ -105,14 +110,37 @@ async function main() {
    * @param options 按键
    * @returns { Promise<number> }
    */
-  const generateAlert = async (title, message, options) => {
+  const generateAlert = async (title, message, options, destructive) => {
     const alert = new Alert();
-    alert.title = title
-    alert.message = message
-    for (const option of options) {
-      alert.addAction(option)
-    }
+    alert.message = message;
+    alert.title = title;
+    options.forEach((option, i) => {
+      i === 1 && destructive ? alert.addDestructiveAction(option) : alert.addAction(option);
+    });
     return await alert.presentAlert();
+  };
+  
+  /**
+   * 弹出输入框
+   * @param title 标题
+   * @param desc  描述
+   * @param opt   属性
+   * @returns { Promise<void> }
+   */
+  const generateInputAlert = async (options, confirm) => {
+    const { title, message, options: fieldArr } = options;
+    const inputAlert = new Alert();
+    inputAlert.title = title;
+    inputAlert.message = message;
+    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
+    inputAlert.addAction('取消');
+    inputAlert.addAction('确认');
+    const getIndex = await inputAlert.presentAlert();
+    if (getIndex === 1) {
+      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
+      confirm(inputObj);
+    }
+    return getIndex;
   };
   
   /**
@@ -360,7 +388,51 @@ async function main() {
   } = await getAppDetails(appStoreUrl);
   
   const tracknameImage = await getCacheImage(`${trackName}.png`, artworkUrl512);
-
+  
+  /**  
+   * 获取多个 GitHub 仓库的信息，包括用户名、更新时间、头像 URL 等。
+   */
+  const repoUrls = (urls.length > 0 ? urls : [myRepo]).map(url => {
+    const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
+    return match 
+      ? `https://api.github.com/repos/${match[1]}` 
+      : 'https://github.com/95du/scripts';
+  });
+  
+  const getRepoOwnerInfo = async (repoUrl) => {
+    const { updated_at, html_url, watchers, owner } = await new Request(repoUrl).loadJSON();
+    return { 
+      updated_at, 
+      html_url,
+      watchers,
+      userName: owner.login, 
+      avatarUrl: owner.avatar_url 
+    };
+  };
+  
+  const formatDate = (date) => new Date(new Date(date).getTime() + 28800000).toISOString().replace('T', '  ').replace('.000Z', '');
+  
+  const repoItems = (await Promise.all(  
+    repoUrls.map(async (url) => {
+      try {
+        const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(url);
+        return {
+          label: userName,
+          desc: formatDate(updated_at),
+          version: watchers,
+          name: 'repo',
+          type: 'button',
+          scrUrl: html_url,
+          icon: avatarUrl
+        };
+      } catch (e) {
+        console.log(`Error fetching data for ${url}: ${e}`);
+        return null;
+      }
+    })
+  )).filter(Boolean);
+console.log(repoItems)
+  
   // 组件列表
   const formItems = [
     {
@@ -371,6 +443,48 @@ async function main() {
         type: 'page',
         default: true
       }]
+    },
+    {
+      label: 'GitHub仓库',
+      type: 'group',
+      items: repoItems
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '添加仓库',
+          name: 'urls',
+          type: 'cell',
+          input: true,
+          message: '请输入仓库链接，可在此显示仓库更新时间，并支持添加多个链接',
+          icon: 'person.circle.fill'
+        },
+        {
+          label: '删减仓库',
+          name: 'removeRepo',
+          type: 'cell',
+          icon: 'trash.circle.fill'
+        },
+        {
+          label: '预览组件',
+          name: 'preview',
+          type: 'cell',
+          icon: 'questionmark.circle.fill'
+        },
+        {
+          label: '始终深色',
+          name: 'alwaysDark',
+          type: 'switch',
+          icon: 'moon.circle.fill'
+        },
+        {
+          label: '背景音乐',
+          name: 'music',
+          type: 'switch',
+          icon: 'speaker.wave.2.circle.fill'
+        }
+      ]
     },
     {
       label: '最新发布',
@@ -735,27 +849,13 @@ async function main() {
     },
     {
       type: 'group',
-      items: [
-        {
-          label: '预览组件',
-          name: 'preview',
-          type: 'cell',
-          icon: 'questionmark.circle.fill'
-        },
-        {
-          label: '始终深色',
-          name: 'alwaysDark',
-          type: 'switch',
-          icon: 'moon.circle.fill'
-        },
-        {
-          label: '背景音乐',
-          name: 'music',
-          type: 'switch',
-          icon: 'speaker.wave.2.circle.fill'
-        }
-      ]
-    }
+      items: [{
+        label: '退出登录',
+        name: 'exit',
+        type: 'restart',
+        default: true
+      }]
+    },
   ];
   
   // 获取recommend为true的对象
@@ -1252,9 +1352,15 @@ async function main() {
       color: #333;
       background: #f2f2f7;
     }
-
+    
+    .restart-text {
+      font-family: 'Roboto', sans-serif;
+      color: #0072FF;
+      font-weight: lighter;
+    }
+    
     button {
-      font-weight: 800;
+      font-weight: 600;
       font-size: 15px;
       border-radius: 20px;
       border: none;
@@ -1545,7 +1651,7 @@ async function main() {
       divTitle.innerText = item.label
       divWrapper.appendChild(divTitle);
       
-      if ( item.desc ) {
+      if (item.desc) {
         const divDesc = document.createElement("div");
         divDesc.className = 'form-label-desc';
         divDesc.innerText = item.desc
@@ -1553,7 +1659,7 @@ async function main() {
       }
       div.appendChild(divWrapper);
         
-      if (['cell', 'button', 'page'].includes(item.type)) {
+      if (['cell', 'button', 'page', 'restart'].includes(item.type)) {
         const labelClickHandler = ( e ) => {
           const { name } = item;
           const methodName = name === 'effect' ? 'itemClick' : name;
@@ -1566,6 +1672,10 @@ async function main() {
             const icon = document.createElement('i');
             icon.className = 'iconfont icon-arrow_right';
             label.appendChild(icon);
+          } else if (
+            item.type === 'restart'
+          ) {
+            label.classList.add('restart-text');
           } else {
             const cntr = document.createElement('div');
             
@@ -1894,6 +2004,61 @@ document.getElementById('telegram').addEventListener('click', () => {
     
     const webView = new WebView();
     await webView.loadHTML(html);
+
+    /**
+     * Input window
+     * @param data
+     * @returns {Promise<string>}
+     */
+    const input = async ({ label, name, message } = data) => {
+      await generateInputAlert({
+        title: label,
+        message: message,
+        options: [{
+          hint: '请输入',
+          value: ''
+        }]
+      }, 
+      async ([{ value }]) => {
+        if (value?.includes('https://github.com/') && !settings[name].includes(value)) {
+          settings[name] = settings[name] || [];
+          settings[name].push(value);
+          writeSettings(settings);
+          ScriptableRun();
+        } else {
+          notify('保存失败 ⚠️', '链接错误或已存在，请检查后再试');
+        }
+      })
+    };
+    
+    // 删减仓库链接
+    const removeRepo = async () => {
+      const subList = settings.urls;
+      while (subList.length) {
+        const alert = new Alert();
+        alert.message = '\n删减仓库❓'
+        subList.forEach(item => {
+          const name = item.match(/github\.com\/([\w-]+\/[\w-]+)/);
+          alert.addAction(name[1])
+        });
+        alert.addCancelAction('取消');
+        const menuId = await alert.presentSheet();
+        if (menuId === -1) break;
+        
+        const action = await generateAlert(  
+          '是否删除此仓库❓', 
+          subList[menuId], 
+          options = ['取消', '删除'],
+          true
+        );
+        if (action === 1) {
+          subList.splice(menuId, 1);
+          settings.urls = subList;
+          writeSettings(settings);
+          if (settings.urls.length < 1) ScriptableRun();
+        }
+      }
+    };
     
     // 清除缓存
     const clearCache = async () => {
@@ -1903,12 +2068,12 @@ document.getElementById('telegram').addEventListener('click', () => {
       );
       if ( action == 1 ) {
         fm.remove(mainPath);
-        Safari.open('scriptable:///run/' + encodeURIComponent(uri));
+        ScriptableRun();
       }
     };
     
     // install script
-    const installScript = async ({ label, scrUrl } = data) => {
+    const installScript = async ({ label, name, scrUrl } = data) => {
       if (label === 'jumpStore') {
         const match = /\/app\/([^\/]+)\//.exec(scrUrl);
         const encodedUrl = match 
@@ -1916,7 +2081,12 @@ document.getElementById('telegram').addEventListener('click', () => {
           : scrUrl;
         Safari.open(encodedUrl);
         return null;
-      }
+      };
+      
+      if (name === 'repo') {
+        Safari.openInApp(scrUrl, false);
+        return null;
+      };
       
       try {
         const fm = FileManager.iCloud();
@@ -1927,7 +2097,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           Pasteboard.copy(scrUrl);
           await shimoFormData(label);
           notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
-          Safari.open(`scriptable:///run/${encodeURIComponent(label)}`);
+          ScriptableRun(label);
         }
       } catch (e) {
         console.log(e)
@@ -1968,6 +2138,15 @@ document.getElementById('telegram').addEventListener('click', () => {
           break;
         case 'telegram':
           Timer.schedule(300, false, () => { Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false) });
+          break;
+        case 'exit':
+          ScriptableRun();
+          break
+        case 'urls':
+          await input(data);
+          break;
+        case 'removeRepo':
+          await removeRepo();
           break;
         case 'preview':
           await createWidget(newData);
