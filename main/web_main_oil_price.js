@@ -223,6 +223,32 @@ async function main() {
       } catch {};
     }
   };
+    
+  /**
+   * 运行 Widget 脚本
+   * 组件版本、iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
+  if (config.runsInWidget) {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    
+    if (version !== settings.version && !settings.update && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，随机两种油价预警内容`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    };
+    
+    try {
+      const family = config.widgetFamily;
+      await previewWidget(family);
+      await appleOS();
+    } catch (e) {
+      console.log(e);
+    } finally {
+      return null;
+    }
+  };
   
   /**
    * 获取css及js字符串和图片并使用缓存
@@ -478,27 +504,6 @@ async function main() {
     });
     return await alert.presentAlert();
   };
-    
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  if (config.runsInWidget) {
-    const hours = Math.floor((Date.now() - settings.updateTime) % (24 * 3600 * 1000) / (3600 * 1000));
-    
-    if (version !== settings.version && !settings.update && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，随机两种油价预警内容`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    await previewWidget();
-    await appleOS();
-    return null;
-  };
-  
   
   // ====== web start ======= //
   const renderAppView = async (options) => {
@@ -866,7 +871,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = item.multiple ? '99px' : '68px';
+        select.style.width = '200px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup')
@@ -942,25 +947,6 @@ async function main() {
             avatarFile(file, name);
           }
         });
-      } else if (item.type === 'number') {
-        const inputCntr = document.createElement("div");
-        inputCntr.className = 'form-item__input-container'
-  
-        const input = document.createElement("input");
-        input.className = 'form-item__input'
-        input.name = item.name
-        input.type = 'number'
-        input.value = Number(value)
-        input.addEventListener("change", (e) => {
-          formData[item.name] = Number(e.target.value);
-          invoke('changeSettings', formData);
-        });
-        inputCntr.appendChild(input);
-  
-        const icon = document.createElement('i');
-        icon.className = 'iconfont icon-arrow_right'
-        inputCntr.appendChild(icon);
-        label.appendChild(inputCntr);
       } else {
         const input = document.createElement("input")
         input.className = 'form-item__input'
@@ -1174,10 +1160,10 @@ async function main() {
             });
           });
         } else {
-          if ( !elBody ) {
+          if (!elBody) {
             const groupDiv = fragment.appendChild(document.createElement('div'));
             groupDiv.className = 'list'
-            if ( title ) {
+            if (title) {
               const elTitle = groupDiv.appendChild(document.createElement('div'));
               elTitle.className = 'list__header'
               elTitle.textContent = title;
