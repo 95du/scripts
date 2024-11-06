@@ -22,7 +22,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl);
-  const isDev = false;
+  const isDev = config.runsInApp;
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -138,6 +138,24 @@ async function main() {
     }
   };
   
+  /**
+   * 指定模块页面
+   * @param { string } time
+   * @param { string } color
+   * @param { string } module
+   */
+  const webModule = async (scriptName, url) => {
+    const modulePath = fm.joinPath(cacheStr, scriptName);
+    if (!settings.update && fm.fileExists(modulePath)) {
+      return modulePath;
+    } else {
+      const moduleJs = await getCacheString(scriptName, url);
+      if (moduleJs) {
+        return modulePath;
+      }
+    }
+  };
+  
   // ScriptableRun
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
@@ -159,39 +177,6 @@ async function main() {
       userName: `${settings.myPlate}  -  ${Device.systemName()} ${Device.systemVersion()}  ${action}`
     });
     req.load();
-  };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
-  };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  /**
-   * 指定模块页面
-   * @param { string } time
-   * @param { string } color
-   * @param { string } module
-   */
-  const webModule = async (scriptName, url) => {
-    const modulePath = fm.joinPath(cacheStr, scriptName);
-    if (!settings.update && fm.fileExists(modulePath)) {
-      return modulePath;
-    } else {
-      const moduleJs = await getCacheString(scriptName, url);
-      if (moduleJs) {
-        return modulePath;
-      }
-    }
   };
   
   /**
@@ -240,7 +225,10 @@ async function main() {
   
   const appleOS = async () => {
     const currentHour = new Date().getHours();
-    const { startHour = 4, endHour = 6 } = settings;
+    const { 
+      startHour = 4, 
+      endHour = 6 
+    } = settings;
 
     if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
       try { 
@@ -253,6 +241,85 @@ async function main() {
         }
       } catch {};
     }
+  };
+  
+  /**
+   * 运行 Widget 脚本
+   * 组件版本、iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
+  if (config.runsInWidget) {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    
+    if (version !== settings.version && !settings.update && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    };
+    
+    try {
+      const family = config.widgetFamily;
+      await previewWidget(family);
+      await appleOS();
+    } catch (e) {
+      console.log(e);
+    } finally {
+      return null;
+    }
+  };
+  
+  /**
+   * 弹出输入框
+   * @param title 标题
+   * @param desc  描述
+   * @param opt   属性
+   * @returns { Promise<void> }
+   */
+  const generateInputAlert = async (options, confirm) => {
+    const { title, message, options: fieldArr } = options;
+    const inputAlert = new Alert();
+    inputAlert.title = title;
+    inputAlert.message = message;
+    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
+    inputAlert.addAction('取消');
+    inputAlert.addAction('确认');
+    const getIndex = await inputAlert.presentAlert();
+    if (getIndex === 1) {
+      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
+      confirm(inputObj);
+    }
+    return getIndex;
+  };
+  
+  /**
+   * @param message 内容
+   * @param options 按键
+   * @returns { Promise<number> }
+   */
+  const generateAlert = async ( title, message = '', options, destructiveAction ) => {
+    const alert = new Alert();
+    alert.title = title;
+    alert.message = message ?? '';
+    for (const option of options) {
+      option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
+    }
+    return await alert.presentAlert();
+  };
+  
+  /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
+  // 获取头像图片
+  const getAvatarImg = () => {
+    return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
   
   /**
@@ -469,65 +536,6 @@ async function main() {
     const img = await drawSFIcon(name);
     cache.writeImage(name, img);
     return toBase64(img);
-  };
-  
-  /**
-   * 弹出输入框
-   * @param title 标题
-   * @param desc  描述
-   * @param opt   属性
-   * @returns { Promise<void> }
-   */
-  const generateInputAlert = async (options, confirm) => {
-    const { title, message, options: fieldArr } = options;
-    const inputAlert = new Alert();
-    inputAlert.title = title;
-    inputAlert.message = message;
-    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
-    inputAlert.addAction('取消');
-    inputAlert.addAction('确认');
-    const getIndex = await inputAlert.presentAlert();
-    if (getIndex === 1) {
-      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
-      confirm(inputObj);
-    }
-    return getIndex;
-  };
-  
-  /**
-   * @param message 内容
-   * @param options 按键
-   * @returns { Promise<number> }
-   */
-  const generateAlert = async ( title, message = '', options, destructiveAction ) => {
-    const alert = new Alert();
-    alert.title = title;
-    alert.message = message ?? '';
-    for (const option of options) {
-      option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
-    }
-    return await alert.presentAlert();
-  };
-  
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  if (config.runsInWidget) {
-    const hours = Math.floor((Date.now() - settings.updateTime) % (24 * 3600 * 1000) / (3600 * 1000));
-    
-    if (version !== settings.version && !settings.update && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    const family = config.widgetFamily;
-    await previewWidget(family);
-    await appleOS();
-    return null;
   };
   
   // ====== web start ======= //
@@ -907,14 +915,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-      
-        const selectWidth = () => {
-          const selectedOption = item.options.flatMap(option => option.values).find(opt => opt.value === formData[item.name]);
-          const length = selectedOption?.label.length || 4;
-          const width = { 4: '77px' }
-          select.style.width = item.multiple ? '99px' : width[Math.min(length, 6)] || '77px'
-        };
-        selectWidth();
+        select.style.width = '200px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
