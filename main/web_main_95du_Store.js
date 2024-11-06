@@ -394,9 +394,9 @@ async function main() {
    */
   const repoUrls = (urls.length > 0 ? urls : [myRepo]).map(url => {
     const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
-    return match 
-      ? `https://api.github.com/repos/${match[1]}` 
-      : 'https://github.com/95du/scripts';
+    if (match) {
+      return `https://api.github.com/repos/${match[1]}`;  
+    }
   });
   
   const getRepoOwnerInfo = async (repoUrl) => {
@@ -410,7 +410,7 @@ async function main() {
     };
   };
   
-  const formatDate = (date) => new Date(new Date(date).getTime() + 28800000).toISOString().replace('T', '  ').replace('.000Z', '');
+  const formatDate = (date) => new Date(new Date(date).getTime() + 28800000).toISOString().replace('T', ' . ').replace('.000Z', '');
   
   const repoItems = (await Promise.all(  
     repoUrls.map(async (url) => {
@@ -1360,7 +1360,7 @@ console.log(repoItems)
     }
     
     button {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 15px;
       border-radius: 20px;
       border: none;
@@ -1672,16 +1672,14 @@ console.log(repoItems)
             const icon = document.createElement('i');
             icon.className = 'iconfont icon-arrow_right';
             label.appendChild(icon);
-          } else if (
-            item.type === 'restart'
-          ) {
+          } else if (item.type === 'restart') {
             label.classList.add('restart-text');
           } else {
             const cntr = document.createElement('div');
             
             const button = document.createElement('button');
             button.name = 'button';
-            button.innerText = '获取';
+            button.innerText = item.name === 'repo' ? '打开' : '获取';
             button.className = 'iconfont icon-arrow_bottom';
             cntr.appendChild(button);
             
