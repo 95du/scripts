@@ -1,6 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-blue; icon-glyph: laugh-squint;
+
 /**
  * 脚本名称: 支付宝交管12123_token
  * author: 95du茅台
@@ -12,30 +13,31 @@ $.body = $.getdata($.body_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
-  if (typeof $request !== `undefined`) {
-    await GetCookie($request);
+  if (isGetCookie = typeof $request !== `undefined`) {
+    GetCookie($request);
   }
 
-  async function GetCookie(request) {
+  function GetCookie(request) {
     if (request && request.body && request.body.includes("sign")) {
       debug(request.body);
       $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
-
+      
       $.success = await getSuccess(request.body);
-      console.log($.success);
+      console.log($.success);  // 打印 success 值
 
+      // 如果获取成功且签名匹配
       if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
     }
-  }
+  };
 
   function debug(text) {
     if ($.is_debug === 'true') {
-      console.log(text);
+      console.log(text);  // 如果调试开关开启，则输出
     }
   }
 
@@ -58,8 +60,9 @@ async function getSuccess(body) {
       try {
         // 解析 JSON 响应体
         let result = JSON.parse(response.body);
-        console.log(result);
-        
+        console.log(JSON.stringify(result, null, 2)); // 格式化输出响应对象
+
+        // 返回 success 字段的值
         if (result.success) {
           resolve(true);  // 请求成功
         } else {
@@ -76,6 +79,7 @@ async function getSuccess(body) {
     });
   });
 }
+
 
 
 // prettier-ignore
