@@ -57,7 +57,7 @@ async function main() {
   
   const getSettings = (file) => {
     if (fm.fileExists(file)) {
-      return JSON.parse(fm.readString(file));
+      return { urls } = JSON.parse(fm.readString(file));
     } else {
       settings = DEFAULT_SETTINGS;
       writeSettings(settings);
@@ -395,10 +395,8 @@ async function main() {
    */
   const repoUrls = (settings.urls.length > 0 ? urls : [myRepo]).map(url => {
     const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
-    if (match) {
-      return `https://api.github.com/repos/${match[1]}`;  
-    }
-  });
+    if (match) return `https://api.github.com/repos/${match[1]}`;
+  }).filter(Boolean);
   
   const getRepoOwnerInfo = async (repoUrl) => {
     const { updated_at, html_url, watchers, owner } = await new Request(repoUrl).loadJSON();
@@ -2071,40 +2069,55 @@ document.getElementById('telegram').addEventListener('click', () => {
         ScriptableRun();
       }
     };
-    
-    // install script
-    const installScript = async ({ label, name, scrUrl } = data) => {
+      
+    /**
+     * 跳转、下载并安装指定脚本。
+     * 
+     * @param {Object} options
+     * @param {string} options.label
+     * @param {string} options.name
+     * @param {string} options.scrUrl
+     * @param {Object} options.data
+     * 
+     * @returns {Promise<void>}
+     */
+    const installScript = async ({ label, name, scrUrl, data } = data) => {
+      if (name === 'repo') {
+        Safari.openInApp(scrUrl);  
+        return null;
+      }
+      
+      if (data.name === 'ChatGPT') {  
+        Safari.open('https://chatgpt.com/?ref=dotcom');  
+        return null;
+      }
+      
       if (label === 'jumpStore') {
-        const match = /\/app\/([^\/]+)\//.exec(scrUrl);
-        const encodedUrl = match 
-          ? scrUrl.replace(match[1], encodeURIComponent(match[1])) 
-          : scrUrl;
+        const encodedUrl = scrUrl.replace(/\/app\/([^\/]+)\//, (match, p1) => `/app/${encodeURIComponent(p1)}/`);
         Safari.open(encodedUrl);
         return null;
-      };
-      
-      if (name === 'repo') {
-        Safari.openInApp(scrUrl, false);
-        return null;
-      };
-      
+      }
+    
       try {
-        const fm = FileManager.iCloud();
         const script = await getString(scrUrl);
-        if (script.includes('组件') && !script.includes('DOCTYPE')) {
-          const scriptPath = fm.documentsDirectory() + `/${label}.js`;
-          fm.writeString(scriptPath, script);
-          Pasteboard.copy(scrUrl);
-          await shimoFormData(label);
-          notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
-          ScriptableRun(label);
-        }
+        if (script.includes('组件') && !script.includes('DOCTYPE')) saveScript(label, script, scrUrl);
       } catch (e) {
-        console.log(e)
-        notify(label + ' ⚠️', '获取失败，请在设置中打开Sync Script Order');
+        console.log(e);
+        notify(`${label} ⚠️`, '获取失败，请在设置中打开Sync Script Order');
       }
     };
     
+    // 保存脚本函数
+    const saveScript = (label, script, scrUrl) => {
+      const fm = FileManager.iCloud()
+      const path = fm.documentsDirectory() + `/${label}.js`;
+      fm.writeString(path, script);
+      Pasteboard.copy(scrUrl);
+      shimoFormData(label);
+      notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
+      ScriptableRun(label);
+    };
+      
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
