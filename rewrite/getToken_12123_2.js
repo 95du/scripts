@@ -24,7 +24,7 @@ $.is_debug = $.getdata('is_debug');
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
       $.success = await getSuccess(request.body);
-      console.log(request.body)
+      console.log($.success)
       if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
@@ -50,7 +50,7 @@ async function getSuccess(body) {
   
   try {
     let result = await httpRequest(options(opt.url, opt.body);
-    debug(result);
+    console.log(result);
     if (result?.success) {
       resolve(result.success);
       console.log(result);
