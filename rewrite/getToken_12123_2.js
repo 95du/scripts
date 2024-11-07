@@ -12,25 +12,26 @@ $.body = $.getdata($.body_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
-  if (isGetCookie = typeof $request !== `undefined`) {
-    GetCookie($request);
+  if (typeof $request !== `undefined`) {
+    await GetCookie($request);
   }
 
-  function GetCookie(request) {
+  async function GetCookie(request) {
     if (request && request.body && request.body.includes("sign")) {
       debug(request.body);
       $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
-      
+
       $.success = await getSuccess(request.body);
-      console.log($.success)
+      console.log('获取的 success:', $.success);
+
       if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
     }
-  };
+  }
 
   function debug(text) {
     if ($.is_debug === 'true') {
@@ -45,32 +46,33 @@ $.is_debug = $.getdata('is_debug');
 async function getSuccess(body) {
   let opt = {
     url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
-    body: body,
+    body: body,  // 这里直接传递你的 body 参数（URL 编码后的数据）
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded', // 这里的请求头要确保是 application/x-www-form-urlencoded 格式
+      'Content-Type': 'application/x-www-form-urlencoded', // 确保请求头是 application/x-www-form-urlencoded
     }
   };
 
   return new Promise((resolve, reject) => {
-    $.post(opt, async (error, response, data) => {
-      if (error) {
-        console.log('请求失败: ', error);
-        resolve(null);  // 请求失败时返回 null
-        return;
-      }
-
+    // 使用 $task.fetch 发送 POST 请求
+    $task.fetch(opt).then(response => {
       try {
-        let result = $.toObj(data) || JSON.parse(response.body);
+        // 解析 JSON 响应体
+        let result = JSON.parse(response.body);
+        console.log('响应数据:', result);
+        
         if (result.success) {
-          resolve(true);  // 请求成功时返回 true
+          resolve(true);  // 请求成功
         } else {
           console.log('请求失败: ', result);
-          resolve(false);  // 请求失败时返回 false
+          resolve(false);  // 请求失败
         }
       } catch (e) {
         console.log('解析响应错误: ', e);
-        resolve(null);  // 如果解析出错，返回 null
+        resolve(null);  // 解析错误
       }
+    }).catch(error => {
+      console.log('请求失败: ', error);
+      resolve(null);  // 请求失败时返回 null
     });
   });
 }
