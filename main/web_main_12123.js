@@ -22,7 +22,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl);
-  const isDev = config.runsInApp;
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -915,7 +915,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = '200px'
+        select.style.width = '100px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
