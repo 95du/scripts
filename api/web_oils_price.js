@@ -204,10 +204,10 @@ async function main() {
   const getOilTips = async () => {
     const url = 'https://20121212.cn/ci/index.php/tips/get';  
     const [data] = await getCacheData('tips.json', url, true);
-    
-    const cleanText = (text) => text.replace(/\s+/g, ' ');
-    const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
     const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
+    const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
+    const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
+    
     return {
       date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
       oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
