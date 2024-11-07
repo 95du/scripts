@@ -412,7 +412,8 @@ async function main() {
   
   const formatDate = (date) => {
     const dateObj = new Date(new Date(date).getTime() + 28800000);
-    return dateObj.toISOString().slice(0, 16).replace('T', '. ');
+    const dateStr = dateObj.toISOString().slice(0, 16).replace('T', '日 ');
+    return dateStr.replace(/(\d{4})-(\d{2})-(\d{2})日 (\d{2}:\d{2})/, '$1年$2月$3日 $4');
   };
   
   const repoItems = (await Promise.all(  
@@ -777,8 +778,6 @@ console.log(repoItems)
           desc: '京豆、农场、签到等',
           version: '1.0.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/run/web_module_jingDong.js`,
           icon: `${rootUrl}/img/icon/jd.png`
         },
