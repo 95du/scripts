@@ -28,7 +28,7 @@ $.is_debug = $.getdata('is_debug');
       console.log($.success);  // 打印 success 值
 
       // 如果获取成功且签名匹配
-      if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
+      if (!$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
@@ -48,38 +48,34 @@ $.is_debug = $.getdata('is_debug');
 async function getSuccess(body) {
   let opt = {
     url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
-    body: body,  // 这里直接传递你的 body 参数（URL 编码后的数据）
+    body: body,
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded', // 确保请求头是 application/x-www-form-urlencoded
+      'Content-Type': 'application/x-www-form-urlencoded',
     }
   };
 
   return new Promise((resolve, reject) => {
-    // 使用 $task.fetch 发送 POST 请求
     $task.fetch(opt).then(response => {
+      console.log(response);  // 打印完整的响应
       try {
-        // 解析 JSON 响应体
         let result = JSON.parse(response.body);
-        console.log(JSON.stringify(result, null, 2)); // 格式化输出响应对象
-
-        // 返回 success 字段的值
+        console.log(JSON.stringify(result, null, 2));  // 格式化输出响应数据
         if (result.success) {
-          resolve(true);  // 请求成功
+          resolve(true);
         } else {
           console.log(result);
-          resolve(false);  // 请求失败
+          resolve(false);
         }
       } catch (e) {
         console.log(e);
         resolve(null);  // 解析错误
       }
     }).catch(error => {
-      console.log(error);
+      console.log(error);  // 打印请求失败的错误
       resolve(null);  // 请求失败时返回 null
     });
   });
 }
-
 
 
 // prettier-ignore
