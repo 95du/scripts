@@ -45,18 +45,26 @@ $.is_debug = $.getdata('is_debug');
 async function getSuccess(body) {
   let opt = {
     url: `https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz`,
+    headers: {
+      'Content-Type': 'application/json' // Adjust if necessary
+    },
     body: body
   };
   
   return new Promise(resolve => {
-    $.post(opt, async (error, response, data) => {
+    $.post(opt, (error, response, data) => {
       try {
-        let result = $.toObj(data) || response.body;
-        // 返回 true or false
-        resolve(result.success);
-      } catch (error) {
-        $.log(error);
-        resolve(null);
+        if (error) {
+          console.log(error);
+          resolve(false);
+        } else {
+          let result = $.toObj(data) || response.body;
+          console.log(result);
+          resolve(result.success === true);
+        }
+      } catch (err) {
+        console.log(err);
+        resolve(false);
       }
     });
   });
