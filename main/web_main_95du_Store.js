@@ -435,7 +435,6 @@ async function main() {
       }
     })
   )).filter(Boolean);
-
   
   // 组件列表
   const formItems = [
@@ -1083,7 +1082,8 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: 183%; /* 弹窗位置 每加一个组件 + 4 */
+      bottom: ${183 + (settings.urls.length * 4 )}%; 
+      /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
