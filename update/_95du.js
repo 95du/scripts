@@ -165,12 +165,15 @@ class _95du {
     const cache = this.useFileManager({ 
       cacheTime, type
     });
-    
     const cacheData = cache.read(name);
     if (cacheData) return cacheData;
     
     try {
       const data = await this.httpRequest(url, type);
+      if (data.message) {
+        console.log(data.message);
+        return null;
+      };
       if (data.statusCode !== 404) {
         cache.write(name, data);
         console.log("Data downloaded and cached");
@@ -188,8 +191,8 @@ class _95du {
    * @param {string} body
    * @param {string} url
    */
-  async notify(title, body, url, sound = 'default') {
-    if (!this.settings.notify) return
+  async notify(title, body, url, sound = 'default', notify = true) {
+    if (!notify) return;
     const n = Object.assign(new Notification(), { title, body, sound });
     if (url) n.openURL = url;
     n.schedule();
