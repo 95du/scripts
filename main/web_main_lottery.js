@@ -882,7 +882,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = '200px'
+        select.style.width = '100px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup')
