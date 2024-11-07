@@ -20,7 +20,12 @@ class _95du {
     this.cacheStr = this.fm.joinPath(mainPath, 'cache_string');
     this.cacheCar = this.fm.joinPath(mainPath, 'cache_vehicle');
     
-    [this.mainPath, this.cacheImg, this.cacheStr, this.cacheCar].forEach(path => this.fm.createDirectory(path, true));
+    [
+      this.mainPath, 
+      this.cacheImg, 
+      this.cacheStr, 
+      this.cacheCar
+    ].forEach(path => this.fm.createDirectory(path, true));
   };
 
   /**
@@ -74,7 +79,7 @@ class _95du {
       return response;
     } catch (error) {
       console.log(`API 请求失败:  ${error}`);
-      return { success: false, message: '请求失败', error: error.message };
+      return { success: true, error: error.message };
     }
   };
   
@@ -88,8 +93,10 @@ class _95du {
   async httpRequest(url, type) {
     const request = new Request(url);
     const { loadFile } = this.getMethods(type);
-    return loadFile ? await loadFile(request) : await request.loadString();
-  }
+    return loadFile 
+      ? await loadFile(request) 
+      : await request.loadString();
+  };
   
   // 根据类型返回加载、读取、写入对应方法  
   getMethods(type) {
@@ -112,8 +119,8 @@ class _95du {
       loadFile: loadMethods[type], 
       readFile: readMethods[type], 
       writeFile: writeMethods[type] 
-    };
-  }
+    }
+  };
   
   /**
    * 缓存文件管理器
@@ -170,7 +177,7 @@ class _95du {
         return data;
       }
     } catch (error) {
-      console.log(`${name} 请求失败，返回缓存数据: \n${error}`);
+      console.log(`${name} 请求失败。 \n${error}`);
     }
     return cacheData;
   };
@@ -181,7 +188,7 @@ class _95du {
    * @param {string} body
    * @param {string} url
    */
-  async notify(title, body, url, sound = 'event') {
+  async notify(title, body, url, sound = 'default') {
     if (!this.settings.notify) return
     const n = Object.assign(new Notification(), { title, body, sound });
     if (url) n.openURL = url;
@@ -247,6 +254,7 @@ class _95du {
   boxjsData = async (key) => {
     try {
       const response = await this.httpRequest(`http://boxjs.com/query/data/${key}`, 'json');
+      console.log(response)
       return JSON.parse(response?.val) || {};
     } catch (e) {
       console.log('boxjs' + e);
@@ -279,6 +287,17 @@ class _95du {
     fm.writeString(
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
   };
+  
+  /**
+   * Timestamp Formatter
+   * 11-05 21:59 (short) 
+   * 2024-11-05 21:59 (long)
+   * @param {number} timestamp
+   * @param {boolean} short (true)
+   */
+  formatDate(timestamp, short) {
+    return new Date(timestamp + 8 * 3600000).toISOString().slice(short ? 5 : 0, 16).replace('T', ' ');  
+  }
 };
 
 module.exports = { _95du };
