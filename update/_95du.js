@@ -79,7 +79,7 @@ class _95du {
       return response;
     } catch (error) {
       console.log(`API 请求失败:  ${error}`);
-      return { success: true, error: error.message };
+      return { success: false };
     }
   };
   
