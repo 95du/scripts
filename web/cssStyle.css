@@ -823,7 +823,7 @@ button .iconfont {
   font-size: 16px;
   border: var(--select);
   border-radius: 10px;
-  padding-right: 6px;
+  padding: 3px 6px;
   text-align-last: right;
   white-space: nowrap; /* 防止换行 */
   overflow: hidden; /* 隐藏溢出 */
