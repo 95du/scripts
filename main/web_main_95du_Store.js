@@ -37,7 +37,7 @@ async function main() {
   } = module;
   
   if (!fm.fileExists(settingPath)) {
-    module.notify('正在初始化...', '首次运行需加载数据，请等待 15 秒。');  
+    module.notify('正在初始化...', '首次运行需加载数据，请耐心等待。');  
   };
   
   /**
