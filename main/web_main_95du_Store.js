@@ -49,6 +49,7 @@ async function main() {
    */
   const DEFAULT_SETTINGS = {
     version,
+    urls: [],
     effect: true,
     music: true,
     alwaysDark: false
@@ -56,7 +57,7 @@ async function main() {
   
   const getSettings = (file) => {
     if (fm.fileExists(file)) {
-      return { urls } = JSON.parse(fm.readString(file)) || {}
+      return JSON.parse(fm.readString(file));
     } else {
       settings = DEFAULT_SETTINGS;
       writeSettings(settings);
@@ -392,7 +393,7 @@ async function main() {
   /**  
    * 获取多个 GitHub 仓库的信息，包括用户名、更新时间、头像 URL 等。
    */
-  const repoUrls = (urls.length > 0 ? urls : [myRepo]).map(url => {
+  const repoUrls = (settings.urls.length > 0 ? urls : [myRepo]).map(url => {
     const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
     if (match) {
       return `https://api.github.com/repos/${match[1]}`;  
@@ -1082,7 +1083,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${183 + (urls.length * 4 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${183 + (settings.urls.length * 4 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
