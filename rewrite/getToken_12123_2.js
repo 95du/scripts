@@ -43,13 +43,13 @@ $.is_debug = $.getdata('is_debug');
   .finally(() => $.done());
 
 async function getSuccess(body) {
-  let options = {
+  let opt = {
     url: `https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz`,
     body: body
   };
   
   try {
-    let result = await httpRequest(options);
+    let result = await httpRequest(options(opt.url, opt.body);
     debug(result);
     if (result?.success) {
       resolve(result.success);
