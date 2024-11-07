@@ -24,7 +24,7 @@ $.is_debug = $.getdata('is_debug');
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
       $.success = await getSuccess(request.body);
-      
+      console.log(request.body)
       if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
