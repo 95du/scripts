@@ -49,7 +49,7 @@ async function getSuccess(body) {
   };
   
   return new Promise(resolve => {
-    $.post(opt, (error, response, data) => {
+    $.post(opt, async (error, response, data) => {
       if (error) {
         $.logErr(`Request failed: ${error}`);
         return resolve(false); // resolve as false in case of an error
