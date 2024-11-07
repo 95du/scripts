@@ -45,25 +45,28 @@ $.is_debug = $.getdata('is_debug');
 async function getSuccess(body) {
   let opt = {
     url: `https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz`,
-    headers: {
-      'Content-Type': 'application/json' // Adjust if necessary
-    },
     body: body
   };
   
   return new Promise(resolve => {
     $.post(opt, (error, response, data) => {
+      if (error) {
+        $.logErr(`Request failed: ${error}`);
+        return resolve(false); // resolve as false in case of an error
+      }
       try {
-        if (error) {
-          console.log(error);
-          resolve(false);
+        // Directly parse response if it is JSON formatted
+        const result = JSON.parse(data || response.body);
+        
+        // Check for 'success' key
+        if (result && result.hasOwnProperty("success")) {
+          resolve(result.success);
         } else {
-          let result = $.toObj(data) || response.body;
-          console.log(result);
-          resolve(result.success === true);
+          $.log(`Unexpected response format: ${data || response.body}`);
+          resolve(false);
         }
-      } catch (err) {
-        console.log(err);
+      } catch (e) {
+        $.logErr(`Failed to parse response: ${e}`);
         resolve(false);
       }
     });
