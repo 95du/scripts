@@ -822,7 +822,7 @@ button .iconfont {
   outline: none;
   font-size: 16px;
   border: var(--select);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 3px 6px;
   text-align-last: right;
   white-space: nowrap; /* 防止换行 */
