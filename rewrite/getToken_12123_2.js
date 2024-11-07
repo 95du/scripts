@@ -13,31 +13,33 @@ $.body = $.getdata($.body_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
-  if (isGetCookie = typeof $request !== `undefined`) {
+  if (typeof $request !== 'undefined') {
+    // 如果是获取请求体的场景，解析请求体
     GetCookie($request);
   }
 
   function GetCookie(request) {
     if (request && request.body && request.body.includes("sign")) {
       debug(request.body);
-      $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
+      $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
-      
-      $.success = await getSuccess(request.body);
-      console.log($.success);  // 打印 success 值
 
-      // 如果获取成功且签名匹配
-      if (!$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
+      // 发起请求获取响应体并提取 success 字段
+      $.success = await getSuccess(request.body);
+      console.log($.success);
+
+      // 如果成功并且签名验证通过，则保存新的请求体
+      if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg($.name, ``, `验证令牌/签名获取成功。`);
       }
     }
-  };
+  }
 
   function debug(text) {
     if ($.is_debug === 'true') {
-      console.log(text);  // 如果调试开关开启，则输出
+      console.log(text);
     }
   }
 
@@ -48,34 +50,35 @@ $.is_debug = $.getdata('is_debug');
 async function getSuccess(body) {
   let opt = {
     url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
-    body: body,
+    body: body,  // 这里直接传递你的 body 参数（URL 编码后的数据）
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded', // 确保请求头是 application/x-www-form-urlencoded
     }
   };
 
   return new Promise((resolve, reject) => {
+    // 使用 $task.fetch 发送 POST 请求
     $task.fetch(opt).then(response => {
-      console.log(response);  // 打印完整的响应
       try {
+        // 解析 JSON 响应体
         let result = JSON.parse(response.body);
-        console.log(JSON.stringify(result, null, 2));  // 格式化输出响应数据
         if (result.success) {
-          resolve(true);
+          resolve(result.success);  // 如果成功，返回 true
         } else {
-          console.log(result);
-          resolve(false);
+          console.log('请求失败: ', result);
+          resolve(false);  // 如果失败，返回 false
         }
       } catch (e) {
-        console.log(e);
-        resolve(null);  // 解析错误
+        console.log('解析响应错误: ', e);
+        resolve(null);  // 解析错误时返回 null
       }
     }).catch(error => {
-      console.log(error);  // 打印请求失败的错误
+      console.log('请求失败: ', error);
       resolve(null);  // 请求失败时返回 null
     });
   });
 }
+
 
 
 // prettier-ignore
