@@ -20,7 +20,7 @@ async function main() {
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   download95duModule(rootUrl);
-  const isDev = true
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
