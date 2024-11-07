@@ -618,7 +618,7 @@ async function main() {
     .list {
       animation: fadeInUp ${settings.fadeInUp}s ease-in-out;
     }` : ''}
-    ${cssStyle}`;
+    ${cssStyle}`
     
     /**
      * 生成主菜单头像信息和弹窗的HTML内容
@@ -883,7 +883,7 @@ async function main() {
       div.className = 'form-label';
       label.appendChild(div);
       
-      if ( item.icon ) {
+      if (item.icon) {
         const img = document.createElement("img");
         img.src = item.icon;
         img.className = 'form-label-img';
@@ -900,7 +900,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = '200px'
+        select.style.width = '100px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
