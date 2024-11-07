@@ -56,15 +56,14 @@ async function main() {
   
   const getSettings = (file) => {
     if (fm.fileExists(file)) {
-      return { urls } = JSON.parse(fm.readString(file));
+      return { urls } = JSON.parse(fm.readString(file)) || {}
     } else {
       settings = DEFAULT_SETTINGS;
       writeSettings(settings);
       return settings;
     }
-    return {};
   };
-  settings = await getSettings(getSettingPath());
+  settings = await getSettings(getSettingPath()) || {};
   
   // 运行组件
   const ScriptableRun = (name = Script.name()) => {
