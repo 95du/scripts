@@ -48,34 +48,37 @@ $.is_debug = $.getdata('is_debug');
   .finally(() => $.done());
 
 async function getSuccess(body) {
+  // 准备POST请求的选项，设置URL和请求头
   let opt = {
-    url: 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz',
-    body: body,  // 这里直接传递你的 body 参数（URL 编码后的数据）
+    url: `https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz`,
+    body: body,
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded', // 确保请求头是 application/x-www-form-urlencoded
+      "Content-Type": "application/x-www-form-urlencoded" // 设置Content-Type
     }
   };
 
-  return new Promise((resolve, reject) => {
-    // 使用 $task.fetch 发送 POST 请求
-    $task.fetch(opt).then(response => {
+  // 使用post方法发送请求
+  post(opt, (error, response, data) => {
+    if (error) {
+      console.error("请求失败:", error);  // 请求失败时输出错误信息
+    } else {
+      // 请求成功时，输出返回的数据
+      console.log("响应数据:", data);
+      
+      // 尝试解析响应数据
       try {
-        // 解析 JSON 响应体
-        let result = JSON.parse(response.body);
-        if (result.success) {
-          resolve(result.success);  // 如果成功，返回 true
+        const jsonResponse = JSON.parse(data);  // 解析JSON格式的响应体
+        if (jsonResponse.success) {  // 如果请求成功
+          console.log("请求成功！");
+          console.log(jsonResponse);
+          
         } else {
-          console.log('请求失败: ', result);
-          resolve(false);  // 如果失败，返回 false
+          console.log(jsonResponse.resultCode);
         }
-      } catch (e) {
-        console.log('解析响应错误: ', e);
-        resolve(null);  // 解析错误时返回 null
+      } catch (parseError) {
+        console.error(parseError);  // 如果响应体解析失败，输出错误信息
       }
-    }).catch(error => {
-      console.log('请求失败: ', error);
-      resolve(null);  // 请求失败时返回 null
-    });
+    }
   });
 }
 
