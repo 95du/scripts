@@ -4,17 +4,12 @@
 
 async function main() {
   const scriptName = 'Script Store'
-  const version = '1.0.1'
-  const updateDate = '2023年07月09日'
+  const version = '1.0.5'
+  const updateDate = '2024年11月08日'
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const myRepo = 'https://github.com/95du/scripts';
-  const pathName = '95du_Store';
-  const appStoreLink = [
-    'https://apps.apple.com/cn/app/剪映-轻而易剪/id1458072671',
-    'https://apps.apple.com/cn/app/携程旅行-订酒店机票火车票/id379395415',
-    'https://apps.apple.com/cn/app/小红书-你的生活指南/id741292507',
-  ];
+  const chatGPT = 'https://chatgpt.com/?ref=dotcom';
   
   /**
    * 创建，获取存储路径
@@ -25,21 +20,32 @@ async function main() {
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   download95duModule(rootUrl);
+  const isDev = true
   
-  const mainPath = fm.joinPath(directory, pathName);
-  const getSettingPath = () => {
-    if (!fm.fileExists(mainPath)) {
-      fm.createDirectory(mainPath);
-    }
-    return fm.joinPath(mainPath, 'setting.json');
+  /** ------- 导入模块 ------- */
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
+  
+  const pathName = '95du_Store';
+  const module = new _95du(pathName);  
+  
+  let {
+    mainPath,
+    settingPath,
+    cacheImg, 
+    cacheStr
+  } = module;
+  
+  if (!fm.fileExists(settingPath)) {
+    module.notify('正在初始化...', '首次运行需加载数据，请等待 15 秒。');  
   };
-
+  
   /**
    * 存储当前设置
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(getSettingPath(), JSON.stringify(settings, null, 2));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 2));
   };
   
   /**
@@ -47,7 +53,7 @@ async function main() {
    * @param {string} file - JSON
    * @returns {object} - JSON
    */
-  const DEFAULT_SETTINGS = {
+  const DEFAULT = {
     version,
     urls: [],
     effect: true,
@@ -55,16 +61,16 @@ async function main() {
     alwaysDark: false
   };
   
-  const getSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return { urls } = JSON.parse(fm.readString(file));
-    } else {
-      settings = DEFAULT_SETTINGS;
-      writeSettings(settings);
-      return settings;
-    }
+  const initSettings = (file) => {
+    const settings = DEFAULT;
+    module.writeSettings(settings);
+    return settings;
   };
-  settings = await getSettings(getSettingPath()) || {};
+  const settings = fm.fileExists(settingPath) 
+    ? module.getSettings() 
+    : initSettings(settingPath);
+  
+  const { urls } = settings;
   
   // 运行组件
   const ScriptableRun = (name = Script.name()) => {
@@ -81,19 +87,6 @@ async function main() {
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
   /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */  
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'piano_', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
-  /**
    * 版本更新时弹出窗口
    * @returns {String} string
    */
@@ -107,106 +100,19 @@ async function main() {
   };
   
   /**
-   * @param message 内容
-   * @param options 按键
-   * @returns { Promise<number> }
-   */
-  const generateAlert = async (title, message, options, destructive) => {
-    const alert = new Alert();
-    alert.message = message;
-    alert.title = title;
-    options.forEach((option, i) => {
-      i === 1 && destructive ? alert.addDestructiveAction(option) : alert.addAction(option);
-    });
-    return await alert.presentAlert();
-  };
-  
-  /**
-   * 弹出输入框
-   * @param title 标题
-   * @param desc  描述
-   * @param opt   属性
-   * @returns { Promise<void> }
-   */
-  const generateInputAlert = async (options, confirm) => {
-    const { title, message, options: fieldArr } = options;
-    const inputAlert = new Alert();
-    inputAlert.title = title;
-    inputAlert.message = message;
-    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
-    inputAlert.addAction('取消');
-    inputAlert.addAction('确认');
-    const getIndex = await inputAlert.presentAlert();
-    if (getIndex === 1) {
-      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
-      confirm(inputObj);
-    }
-    return getIndex;
-  };
-  
-  /**
-   * 获取css及js字符串和图片并使用缓存
-   * @param {string} File Extension
-   * @param {Image} Base64 
-   * @returns {string} - Request
-   */
-  const cache = fm.joinPath(mainPath, 'cache_path');
-  if (!fm.fileExists(cache)) {
-    notify('正在初始化...', '首次运行需加载数据，请等待 15 秒。');
-    fm.createDirectory(cache);
-  };
-  
-  const useFileManager = () => {
-    return {
-      readString: (name) => {
-        const path = fm.joinPath(cache, name);
-        return fm.fileExists(path) ? fm.readString(path) : null
-      },
-      writeString: (name, content) => fm.writeString(fm.joinPath(cache, name), content),  
-      // cache Image
-      readImage: (name) => {
-        const path = fm.joinPath(cache, name);
-        return fm.fileExists(path) ? fm.readImage(path) : null;
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cache, name), image)
-    }
-  };
-      
-  /**
-   * 获取css，js字符串并使用缓存
-   * @param {string} string
-   */
-  const getString = async (url) => {
-    return await new Request(url).loadString();
-  };
-  
-  const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager();
-    const cssString = cache.readString(cssFileName);
-    if (cssString) return cssString;
-    const response = await getString(cssFileUrl);
-    if (response.includes('{')) {
-      cache.writeString(cssFileName, response);
-    }
-    return response;
-  };
-  
-  /**
    * 获取网络图片并使用缓存
    * @param {Image} url
    */
   const toBase64 = (img) => {
     return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
   };
-    
-  const getImage = async (url) => await new Request(url).loadImage();
   
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
+  const getCacheImage = async (name, url, type = 'image') => {
+    const cache = module.useFileManager({ type });
+    const image = cache.read(name);
     if (image) return toBase64(image);
-    const img = await getImage(url);
-    cache.writeImage(name, img);
+    const img = await module.httpRequest(url, type);
+    cache.write(name, img);
     return toBase64(img);
   };
   
@@ -215,12 +121,12 @@ async function main() {
    * @param { Image } image
    * @param { string } string
    */  
-  const getCacheMaskSFIcon = async (name, color) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
+  const getCacheMaskSFIcon = async (name, color, type = 'image') => {
+    const cache = module.useFileManager({ type });
+    const image = cache.read(name);
     if ( image ) return toBase64(image);
     const img = await drawTableIcon(name, color);
-    cache.writeImage(name, img);
+    cache.write(name, img);
     return toBase64(img);
   };
   
@@ -300,12 +206,12 @@ async function main() {
   };
   
   // 缓存并读取原生 SFSymbol icon
-  const getCacheDrawSFIcon = async (name) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
+  const getCacheDrawSFIcon = async (name, type = 'image') => {
+    const cache = module.useFileManager({ type });
+    const image = cache.read(name);
     if (image) return toBase64(image);
     const img = await drawSFIcon(name);
-    cache.writeImage(name, img);
+    cache.write(name, img);
     return toBase64(img);
   };
   
@@ -345,26 +251,13 @@ async function main() {
       }],
       userName: `${scriptName}  -  ${Device.systemName()} ${Device.systemVersion()}  ${action}`
     });
-    await req.loadJSON();
+    req.load();
   };
   
   // apple appStore Details
-  const getAppDetails = async (appStoreLink) => {
-    const appId = appStoreLink.match(/\/id(\d+)/)[1];
-    const url = `https://itunes.apple.com/cn/lookup?id=${appId}&timestamp=${Date.now()}`;
-    let results;
-  
-    try {
-      const response = await new Request(url).loadJSON();
-      results = response.results;
-    } catch (error) {
-      console.log("iTunes API 请求失败，改用备用链接。");
-      // 从备用链接获取数据
-      const backupUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
-      const backup = await new Request(backupUrl).loadJSON();
-      results = backup.results;
-    }
-  
+  const getAppDetails = async () => {
+    const backupUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
+    const { results } = await module.getCacheData('ChatGPT.json', backupUrl, 'json', 24);
     const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
     const match = trackName.match(/(.+)-/);
     const trackname = match ? match[1].trim() : trackName.trim();
@@ -379,14 +272,13 @@ async function main() {
     };
   };
   
-  const appStoreUrl = getRandomItem(appStoreLink);
   const {
     trackName,
     version: _version,
     artworkUrl512,
     currentVersionReleaseDate: releaseDate,
     screenshotUrls
-  } = await getAppDetails(appStoreUrl);
+  } = await getAppDetails();
   
   const tracknameImage = await getCacheImage(`${trackName}.png`, artworkUrl512);
   
@@ -399,7 +291,8 @@ async function main() {
   }).filter(Boolean);
   
   const getRepoOwnerInfo = async (repoUrl) => {
-    const { updated_at, html_url, watchers, owner } = await new Request(repoUrl).loadJSON();
+    const name = repoUrl.match(/repos\/(\w+)/)?.[1];
+    const { updated_at, html_url, watchers, owner } = await module.getCacheData(`${name}.json`, repoUrl, 'json', 24);
     return { 
       updated_at, 
       html_url,
@@ -689,7 +582,7 @@ async function main() {
         {
           label: 'jumpStore',
           type: 'app',
-          scrUrl: appStoreUrl,
+          scrUrl: chatGPT,
           data: {
             name: trackName,
             desc: `版本 ${_version}`,
@@ -980,7 +873,7 @@ async function main() {
     
     const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
     const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0.1`);
+      const content = await module.getCacheData(script, `${rootUrl}/web/${script}%3Fver%3D8.0.1`, 'string');
       return `<script>${content}</script>`;
     }));
     
@@ -1918,7 +1811,7 @@ document.getElementById('telegram').addEventListener('click', () => {
                   Version ${version}
                 </div>
               </a><br>
-              <div class="popup-content"> <li>${updateDate}&nbsp;</li> <li>Scriptable桌面小组件</li> <li>性能优化，改进用户体验</li>
+              <div class="popup-content"> <li>${updateDate}&nbsp;</li> <li>Scriptable桌面小组件</li><li>可自定义添加Github仓库</li><li>性能优化，改进用户体验</li>
               </div>
             </div>
             <div class="box-body">
@@ -2009,7 +1902,7 @@ document.getElementById('telegram').addEventListener('click', () => {
      * @returns {Promise<string>}
      */
     const input = async ({ label, name, message } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [{
@@ -2024,7 +1917,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           writeSettings(settings);
           ScriptableRun();
         } else {
-          notify('保存失败 ⚠️', '链接错误或已存在，请检查后再试');
+          module.notify('保存失败 ⚠️', '链接错误或已存在，请检查后再试');
         }
       })
     };
@@ -2060,12 +1953,12 @@ document.getElementById('telegram').addEventListener('click', () => {
     
     // 清除缓存
     const clearCache = async () => {
-      const action = await generateAlert(
+      const action = await module.generateAlert(
         '清除缓存', '是否确定删除所有缓存？\n离线数据及图片均会被清除。',
         options = ['取消', '清除']
       );
-      if ( action == 1 ) {
-        fm.remove(mainPath);
+      if (action == 1) {
+        fm.remove(cacheStr);
         ScriptableRun();
       }
     };
@@ -2087,8 +1980,8 @@ document.getElementById('telegram').addEventListener('click', () => {
         return null;
       }
       
-      if (data.name === 'ChatGPT') {  
-        Safari.open('https://chatgpt.com/?ref=dotcom');  
+      if (data?.name === 'ChatGPT') {  
+        Safari.openInApp(scrUrl);
         return null;
       }
       
@@ -2099,11 +1992,11 @@ document.getElementById('telegram').addEventListener('click', () => {
       }
     
       try {
-        const script = await getString(scrUrl);
+        const script = await new Request(scrUrl).loadString();
         if (script.includes('组件') && !script.includes('DOCTYPE')) saveScript(label, script, scrUrl);
       } catch (e) {
         console.log(e);
-        notify(`${label} ⚠️`, '获取失败，请在设置中打开Sync Script Order');
+        module.notify(`${label} ⚠️`, '获取脚本失败，请在 App 设置中打开 Sync Script Order');
       }
     };
     
@@ -2114,7 +2007,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       fm.writeString(path, script);
       Pasteboard.copy(scrUrl);
       shimoFormData(label);
-      notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
+      module.notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
       ScriptableRun(label);
     };
       
@@ -2139,7 +2032,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       });
       
       const { code, data } = event;
-      if (code === 'clearCache' && fm.fileExists(cache)) {
+      if (code === 'clearCache' && fm.fileExists(cacheStr)) {
         await clearCache();
       } else if (data?.type === 'button' || data?.type === 'app') {
         await installScript(data);
