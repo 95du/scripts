@@ -24,7 +24,7 @@ $.is_debug = $.getdata('is_debug');
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
 
       $.success = await getSuccess(request.body);
-      console.log('获取的 success:', $.success);
+      console.log($.success);
 
       if ($.success && !$.rest_body.hasOwnProperty('params') && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
@@ -58,20 +58,20 @@ async function getSuccess(body) {
       try {
         // 解析 JSON 响应体
         let result = JSON.parse(response.body);
-        console.log('响应数据:', result);
+        console.log(result);
         
         if (result.success) {
           resolve(true);  // 请求成功
         } else {
-          console.log('请求失败: ', result);
+          console.log(result);
           resolve(false);  // 请求失败
         }
       } catch (e) {
-        console.log('解析响应错误: ', e);
+        console.log(e);
         resolve(null);  // 解析错误
       }
     }).catch(error => {
-      console.log('请求失败: ', error);
+      console.log(error);
       resolve(null);  // 请求失败时返回 null
     });
   });
