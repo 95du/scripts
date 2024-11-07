@@ -429,13 +429,13 @@ async function main() {
           scrUrl: html_url,
           icon: avatarUrl
         };
-      } catch (e) {
-        console.log(`Error fetching data for ${url}: ${e}`);
+      } catch {
+        console.log(`API次数限制或网络出错无法请求数据，请稍后再试: ${url}\n`);
         return null;
       }
     })
   )).filter(Boolean);
-console.log(repoItems)
+
   
   // 组件列表
   const formItems = [
