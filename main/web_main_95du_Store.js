@@ -2055,7 +2055,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
-          Timer.schedule(1500, false, () => { ScriptableRun() });
+          Timer.schedule(1000, false, () => { ScriptableRun() });
         }
       }
     };
