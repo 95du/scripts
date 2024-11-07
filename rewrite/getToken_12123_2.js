@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-blue; icon-glyph: magic;
+// icon-color: deep-blue; icon-glyph: laugh-squint;
 /**
  * 脚本名称: 支付宝交管12123_token
  * author: 95du茅台
@@ -47,13 +47,13 @@ async function getSuccess(body) {
     url: `https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz`,
     body: body
   };
-  
+
   try {
-    let result = await httpRequest(options(opt.url, opt.body);
+    // 修正请求调用方式
+    let result = await $.http.post(opt.url, { body: opt.body });
     console.log(result);
     if (result?.success) {
-      resolve(result.success);
-      console.log(result);
+      return result.success;
     } else {
       console.log(`请求失败: ${$.toStr(result)}`);
     }
