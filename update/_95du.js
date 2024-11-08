@@ -191,8 +191,8 @@ class _95du {
    * @param {string} body
    * @param {string} url
    */
-  async notify(title, body, url, sound = 'default', notify = true) {
-    if (!notify) return;
+  async notify(title, body, url, sound = 'default') {
+    if (!this.settings.notify) return
     const n = Object.assign(new Notification(), { title, body, sound });
     if (url) n.openURL = url;
     n.schedule();
