@@ -11,7 +11,7 @@
 async function main(family) {
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = false
+  const isDev = true
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
@@ -35,8 +35,11 @@ async function main(family) {
    */
   const { myPlate, verifyToken, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting || {};
   
-  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData('api.json', `${rootUrl}/update/12123.json`, 'json')
-
+  const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData(`${rootUrl}/update/12123.json`);  
+  
+  // 获取随机数组元素
+  const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
+  
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
@@ -49,10 +52,9 @@ async function main(family) {
    * @returns {image} - Request
    */
   async function getRandomImage() {
-    const count = imgArr.length;
-    const index = Math.floor(Math.random() * count);
-    const cacheCarPath = cacheCar + '/' + imgArr[index];
-    return await fm.readImage(cacheCarPath);
+    const maybach = Array.from({ length: 9 }, (_, index) => `${rootUrl}/img/car/Maybach-${index}.png`);
+    const randomImg = module.getRandomItem(maybach);
+    return await module.getCacheData(randomImg);
   };
   
   /**
@@ -63,9 +65,6 @@ async function main(family) {
     const { verifyToken, sign } = await module.boxjsData('body_12123') || {} || null;
     if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
   };
-  
-  // 获取随机数组元素
-  const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
     
   /**
    * 获取缓存字符串
@@ -74,7 +73,8 @@ async function main(family) {
    * @returns {object} - 返回 JSON
    */
   const getCacheString = async (name, api, params) => {
-    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type: 'json' });
+    const type = module.getFileInfo(name);
+    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type });
     const json = cache.read(name);
     if (json) return json;
     const response = await requestInfo(api, params);
@@ -433,9 +433,9 @@ async function main(family) {
     
     if (setting.carImg) {
       const name = setting.carImg.split('/').pop();
-      vehicleImg = await module.getCacheData(name, setting.carImg, 'image');
+      vehicleImg = await module.getCacheData(setting.carImg);
     } else {
-      vehicleImg = await getRandomImage() || await module.getCacheData('carImg.png', getRandomItem(maybach), 'image');
+      vehicleImg = await getRandomImage() || await module.getCacheData(module.getRandomItem(maybach));
     };
     
     const imageCar = carStack.addImage(vehicleImg);
