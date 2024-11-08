@@ -11,9 +11,6 @@ async function main() {
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const scrUrl = `${rootUrl}/api/web_12123.js`;
   
-  const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
-  const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
-  
   /**
    * 创建，获取模块路径
    * @returns {string} - string
@@ -22,7 +19,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl);
-  const isDev = true
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -445,6 +442,9 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
+    const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
+  const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
+
     const buttonPopup = async () => {
       const a = `<div style="margin-bottom: 30px;">组件作者: 95du丶茅台</div>`;
       const b = `<div style="margin-bottom: 13px;">跳转到支付宝12123页面后<br>点击车牌号码或者点击查询，即可获取/更新</div>`;
