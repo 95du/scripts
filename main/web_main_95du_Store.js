@@ -943,7 +943,7 @@ async function main() {
     
     .modal {
       position: fixed;
-      top: -5%;
+      top: ${settings.urls.length > 0 ? '-5%' : '-6.5%'};
       right: 0;
       bottom: 0;
       left: 0;
