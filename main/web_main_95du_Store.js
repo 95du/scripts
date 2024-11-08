@@ -20,8 +20,7 @@ async function main() {
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
   await download95duModule(rootUrl);
-  
-  const isDev = false
+  const isDev = true
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -101,12 +100,9 @@ async function main() {
   
   // 获取头像图片
   const getAvatarImg = () => {
-    const avatarImgPath = fm.joinPath(fm.documentsDirectory(), pathName);
+    const avatarImgPath = fm.joinPath(directory, pathName);
     return fm.joinPath(avatarImgPath, 'userSetAvatar.png');
   };
-    
-  // 获取随机的值
-  const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
   /**
    * 版本更新时弹出窗口
@@ -119,122 +115,6 @@ async function main() {
       return '.signin-loader';
     }
     return null
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const toBase64 = (img) => {
-    return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
-  };
-  
-  const getCacheImage = async (name, url, type = 'image') => {
-    const cache = module.useFileManager({ type });
-    const image = cache.read(name);
-    if (image) return toBase64(image);
-    const img = await module.httpRequest(url, type);
-    cache.write(name, img);
-    return toBase64(img);
-  };
-  
-  /**
-   * Setting drawTableIcon
-   * @param { Image } image
-   * @param { string } string
-   */  
-  const getCacheMaskSFIcon = async (name, color, type = 'image') => {
-    const cache = module.useFileManager({ type });
-    const image = cache.read(name);
-    if ( image ) return toBase64(image);
-    const img = await drawTableIcon(name, color);
-    cache.write(name, img);
-    return toBase64(img);
-  };
-  
-  const drawTableIcon = async (
-    icon = 'square.grid.2x2',
-    color = '#e8e8e8',
-    cornerWidth = 39
-  ) => {
-    const sfi = SFSymbol.named(icon);
-    sfi.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    const imgData = Data.fromPNG(sfi.image).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-      
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      const size = sourceImg.width > sourceImg.height ? sourceImg.width : sourceImg.height;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(sourceImg, (canvas.width - sourceImg.width) / 2, (canvas.height - sourceImg.height) / 2);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pix = imgData.data;
-      for (var i=0, n = pix.length; i < n; i+= 4){
-        pix[i] = 255;
-        pix[i+1] = 255;
-        pix[i+2] = 255;
-        pix[i+3] = pix[i+3];
-      }
-      ctx.putImageData(imgData,0,0);
-      silhouetteImg.src = canvas.toDataURL();
-      output=canvas.toDataURL()
-    `;
-  
-    let wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    const iconImage = await new Request(base64Image).loadImage();
-    const size = new Size(160, 160);
-    const ctx = new DrawContext();
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    ctx.size = size;
-    const path = new Path();
-    const rect = new Rect(0, 0, size.width, size.width);
-  
-    path.addRoundedRect(rect, cornerWidth, cornerWidth);
-    path.closeSubpath();
-    ctx.setFillColor(new Color(color));
-    ctx.addPath(path);
-    ctx.fillPath();
-    const rate = 36;
-    const iw = size.width - rate;
-    const x = (size.width - iw) / 2;
-    ctx.drawImageInRect(iconImage, new Rect(x, x, iw, iw));
-    return ctx.getImage();
-  };
-  
-  /**
-   * SFIcon 转换为base64
-   * @param {*} icon SFicon
-   * @returns base64 string
-   */
-  const drawSFIcon = async ( icon = name ) => {
-    let sf = SFSymbol.named(icon);
-    if (sf === null) sf = SFSymbol.named('message');
-    sf.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    return sf.image;
-  };
-  
-  // 缓存并读取原生 SFSymbol icon
-  const getCacheDrawSFIcon = async (name, type = 'image') => {
-    const cache = module.useFileManager({ type });
-    const image = cache.read(name);
-    if (image) return toBase64(image);
-    const img = await drawSFIcon(name);
-    cache.write(name, img);
-    return toBase64(img);
   };
   
   // shimoFormData(action)
@@ -259,7 +139,7 @@ async function main() {
   // apple appStore Details
   const getAppDetails = async () => {
     const backupUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
-    const { results } = await module.getCacheData('ChatGPT.json', backupUrl, 'json', 24);
+    const { results } = await module.getCacheData(backupUrl, 24);
     const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
     const match = trackName.match(/(.+)-/);
     const trackname = match ? match[1].trim() : trackName.trim();
@@ -282,7 +162,7 @@ async function main() {
     screenshotUrls
   } = await getAppDetails();
   
-  const tracknameImage = await getCacheImage(`${trackName}.png`, artworkUrl512);
+  const tracknameImage = await module.getCacheImage(artworkUrl512);
   
   /**  
    * 获取多个 GitHub 仓库的信息，包括用户名、更新时间、头像 URL 等。
@@ -294,7 +174,7 @@ async function main() {
   
   const getRepoOwnerInfo = async (repoUrl) => {
     const name = repoUrl.match(/repos\/(\w+)/)?.[1];
-    const { updated_at, html_url, watchers, owner } = await module.getCacheData(`${name}.json`, repoUrl, 'json', 5);
+    const { updated_at, html_url, watchers, owner } = await module.getCacheData(repoUrl, 5, `${name}.json`);
     return { 
       updated_at, 
       html_url,
@@ -782,7 +662,7 @@ async function main() {
   const resultArray = findChangedVersion(settings.items, recommended).length > 0 ? recommended : settings.items;
   
   const randomObjects = resultArray.filter(({ random }) => random);
-  const randomObject = getRandomItem(randomObjects);
+  const randomObject = module.getRandomItem(randomObjects);
   const newData = resultArray.filter(item => !item.random).concat(randomObject);
   
   // 获取排列样式
@@ -868,34 +748,31 @@ async function main() {
     
     const themeColor = Device.isUsingDarkAppearance() ? 'dark' : 'white';
 
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
+    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
-    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-    const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await module.getCacheData(script, `${rootUrl}/web/${script}%3Fver%3D8.0.1`, 'string');
-      return `<script>${content}</script>`;
-    }));
+    const scriptTags = await module.scriptTags();
     
     const getAndBuildIcon = async (item) => {
       const { icon } = item;
       if (icon?.name) {
         const { name, color } = icon;
-        item.icon = await getCacheMaskSFIcon(name, color);
+        item.icon = await module.getCacheMaskSFIcon(name, color);
       } else if (icon?.startsWith('https')) {
         const name = icon.split('/').pop();
-        item.icon = await getCacheImage(name, icon);
+        const fileName = name.includes('.') ? null : module.hash(name) + '.png';
+        item.icon = await module.getCacheImage(icon, fileName);
       } else if (icon) {
-        item.icon = await getCacheDrawSFIcon(icon);
+        item.icon = await module.getCacheDrawSFIcon(icon);
       }
     };
     
     const getAndBuildImage = async (item, urls) => {
       item.data.images = await Promise.all(urls.map(async (url) => {
-        const name = /\/([^/]+\.(?:jpeg|png|jpg))/.exec(url)?.[1];
-        return await getCacheImage(name, url);
+        const name = url.match(/(\d+_\d+\.png)/)?.[1];
+        return await module.getCacheImage(url, name);
       }));
     };
     
@@ -903,6 +780,137 @@ async function main() {
       for (const item of i.items) {
         (item.data?.images?.length) ? await getAndBuildImage(item, item.data.images) : await getAndBuildIcon(item);
       }
+    };
+    
+    // 主菜单头像信息
+    const mainMenuTop = async () => {
+      const avatarHtml = `      
+      <div class="list">
+        <form class="list__body" action="javascript:void(0);">
+          <img class="gif signin-loader" data-src="https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif">
+          <div class="form-item-auth form-item--link">
+            <div class="form-label">
+              <img class="signin-loader form-label-author-avatar" src="${authorAvatar}" />
+              <div id="telegram">
+                <div class="form-item-auth-name">95du丶茅台</div>
+                <a class="but form-item-auth-desc chat-message"></a>
+              </div>
+            </div>
+            <div class="form-label">
+              <button id="plus" class="but jb-vip">PLUS</button>
+              <div id="popup" class="popup"><p>加载中...</p>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <script>
+        const loadGif = () => {
+          const gif = document.querySelector('.gif');
+          gif.setAttribute('src', gif.getAttribute('data-src'));
+          gif.style.display = 'block'
+        };
+        window.onload = loadGif;
+        document.querySelector('#plus').addEventListener('click', (e) => {
+          e.preventDefault();
+          const popupTips = document.getElementById("popup").classList;
+          popupTips.add("show", "fd")
+          setTimeout(() => {
+            popupTips.remove("fd");
+            setTimeout(() => popupTips.remove("show"), 1000);
+          }, 1800);
+          invoke('plus');
+        });
+        
+        const message = 'Scriptable 组件脚本交流群';
+        const chatMessage = document.querySelector(".chat-message");
+        chatMessage.textContent = ''
+        
+        let currentChar = 0;
+        function typeNextChar() {
+          if (currentChar < message.length) {
+            chatMessage.textContent += message[currentChar++];
+            chatMessage.scrollTop = chatMessage.scrollHeight;
+            setTimeout(typeNextChar, 100);
+          }
+        }
+        typeNextChar();
+      </script>`;
+      
+      //弹窗
+      const popup = `      
+      <div class="modal fade" id="u_sign" role="dialog">
+        <div class="modal-dialog">
+          <div class="scriptable-widget blur-bg">
+            <div id="appleHub" class="box-body sign-logo">
+              <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+            </div>
+            <div class="box-body">
+              <div class="title-h-center popup-title">
+                ${scriptName}
+              </div>
+              <a id="version" class="popup-version">
+                <div class="but">
+                  Version ${version}
+                </div>
+              </a><br>
+              <div class="popup-content"> <li>${updateDate}&nbsp;</li> <li>Scriptable桌面小组件</li><li>可自定义添加Github仓库</li><li>性能优化，改进用户体验</li>
+              </div>
+            </div>
+            <div class="box-body">
+              <div id="sign-in">
+                <button class="but radius jb-yellow btn-block" id="clearCache">清除缓存</button>
+              </div>
+            </div>
+            <p class="separator">
+              95du丶茅台</p>
+          </div>
+        </div>
+      </div>
+      <script>
+        setTimeout(function() {
+          $('${updateVersionNotice()}').click();
+        }, 1200);
+        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
+      </script>`;
+      
+      const songId = [
+        '8fk9B72BcV2',
+        '8duPZb8BcV2',
+        '6pM373bBdV2',
+        '6NJHhd6BeV2',
+        '4yhGxb6CJV2',
+        '2ihRd27CKV2',
+        'a2e7985CLV2',
+        'cwFCHbdCNV2',
+        'UxE30dCPV2',
+        '4Qs8h89CPV2'
+      ];
+      const randomId = module.getRandomItem(songId);
+      const music = `
+      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
+      </iframe>
+      <script>
+        const iframe = document.querySelector('.custom-iframe');
+        iframe.src = iframe.getAttribute('data-src');
+      </script>
+      `;
+      
+      return `
+        ${settings.music === true ? music : ''}
+        ${avatarHtml}
+        ${popup}
+        ${scriptTags}
+      `
+    };
+    
+    // 组件效果图
+    const previewEffectImgHtml = async () => {
+      const previewImgUrl = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/Example_${index}.png`);
+      const previewImgs = await Promise.all(previewImgUrl.map(
+        async (item) => await module.getCacheImage(item)  
+      ));
+      return `<div>${previewImgs.map((img) => `<img src="${img}">`).join('')}</div>`
     };
     
     /**
@@ -913,7 +921,6 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    
     const style =`  
     :root {
       --color-primary: #007aff;
@@ -1740,143 +1747,6 @@ document.getElementById('telegram').addEventListener('click', () => {
     });
     
     })()`;
-
-    // 主菜单头像信息
-    const mainMenuTop = async () => {
-      const avatarHtml = `      
-      <div class="list">
-        <form class="list__body" action="javascript:void(0);">
-          <img class="gif signin-loader" data-src="https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif">
-          <div class="form-item-auth form-item--link">
-            <div class="form-label">
-              <img class="signin-loader form-label-author-avatar" src="${authorAvatar}" />
-              <div id="telegram">
-                <div class="form-item-auth-name">95du丶茅台</div>
-                <a class="but form-item-auth-desc chat-message"></a>
-              </div>
-            </div>
-            <div class="form-label">
-              <button id="plus" class="but jb-vip">PLUS</button>
-              <div id="popup" class="popup"><p>加载中...</p>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-      <script>
-        const loadGif = () => {
-          const gif = document.querySelector('.gif');
-          gif.setAttribute('src', gif.getAttribute('data-src'));
-          gif.style.display = 'block'
-        };
-        window.onload = loadGif;
-        document.querySelector('#plus').addEventListener('click', (e) => {
-          e.preventDefault();
-          const popupTips = document.getElementById("popup").classList;
-          popupTips.add("show", "fd")
-          setTimeout(() => {
-            popupTips.remove("fd");
-            setTimeout(() => popupTips.remove("show"), 1000);
-          }, 1800);
-          invoke('plus');
-        });
-        
-        const message = 'Scriptable 组件脚本交流群';
-        const chatMessage = document.querySelector(".chat-message");
-        chatMessage.textContent = ''
-        
-        let currentChar = 0;
-        function typeNextChar() {
-          if (currentChar < message.length) {
-            chatMessage.textContent += message[currentChar++];
-            chatMessage.scrollTop = chatMessage.scrollHeight;
-            setTimeout(typeNextChar, 100);
-          }
-        }
-        typeNextChar();
-      </script>`;
-      
-      //弹窗
-      const popup = `      
-      <div class="modal fade" id="u_sign" role="dialog">
-        <div class="modal-dialog">
-          <div class="scriptable-widget blur-bg">
-            <div id="appleHub" class="box-body sign-logo">
-              <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
-            </div>
-            <div class="box-body">
-              <div class="title-h-center popup-title">
-                ${scriptName}
-              </div>
-              <a id="version" class="popup-version">
-                <div class="but">
-                  Version ${version}
-                </div>
-              </a><br>
-              <div class="popup-content"> <li>${updateDate}&nbsp;</li> <li>Scriptable桌面小组件</li><li>可自定义添加Github仓库</li><li>性能优化，改进用户体验</li>
-              </div>
-            </div>
-            <div class="box-body">
-              <div id="sign-in">
-                <button class="but radius jb-yellow btn-block" id="clearCache">清除缓存</button>
-              </div>
-            </div>
-            <p class="separator">
-              95du丶茅台</p>
-          </div>
-        </div>
-      </div>
-      <script>
-        setTimeout(function() {
-          $('${updateVersionNotice()}').click();
-        }, 1200);
-        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
-      </script>`;
-      
-      const songId = [
-        '8fk9B72BcV2',
-        '8duPZb8BcV2',
-        '6pM373bBdV2',
-        '6NJHhd6BeV2',
-        '4yhGxb6CJV2',
-        '2ihRd27CKV2',
-        'a2e7985CLV2',
-        'cwFCHbdCNV2',
-        'UxE30dCPV2',
-        '4Qs8h89CPV2'
-      ];
-      const randomId = songId[Math.floor(Math.random() * songId.length)];
-      const music = `
-      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
-      </iframe>
-      <script>
-        const iframe = document.querySelector('.custom-iframe');
-        iframe.src = iframe.getAttribute('data-src');
-      </script>
-      `;
-      
-      return `
-        ${settings.music === true ? music : ''}
-        ${avatarHtml}
-        ${popup}
-        ${scriptTags.join('\n')}
-      `
-    };
-    
-    // 组件效果图
-    const previewEffectImgHtml = async () => {
-      const previewImgUrl = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/Example_${index}.png`);
-
-      const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
-        const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
-        const previewImg = await getCacheImage(imgName, item);
-        return previewImg;
-      }));
-      return `
-      <div>
-        ${previewImgs.map((img) => `<img src="${img}">`).join('')}
-      </div>`
-    };
     
     // =======  HTML  =======//
     const html =`
