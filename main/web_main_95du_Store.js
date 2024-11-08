@@ -1931,14 +1931,14 @@ document.getElementById('telegram').addEventListener('click', () => {
         const alert = new Alert();
         alert.message = '删减仓库❓'
         subList.forEach(item => {
-          const name = item.match(/github\.com\/([\w-]+\/[\w-]+)/);
-          alert.addAction(name[1])
+          const name = item.match(/github\.com\/(.+)/)?.[1];
+          alert.addAction(name)
         });
         alert.addCancelAction('取消');
         const menuId = await alert.presentSheet();
         if (menuId === -1) break;
         
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '是否删除此仓库❓', 
           subList[menuId], 
           options = ['取消', '删除'],
