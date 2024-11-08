@@ -1574,7 +1574,7 @@ async function main() {
             
             const button = document.createElement('button');
             button.name = 'button';
-            button.innerText = item.name === 'repo' || item.label === 'jump' ? '打开' : '获取';
+            button.innerText = item.name == 'repo' ? '打开' : '获取';
             button.className = 'iconfont icon-arrow_bottom';
             cntr.appendChild(button);
             
@@ -1651,7 +1651,7 @@ async function main() {
                 <div class="app-desc">\${desc}</div>
                 <div class="app-score">\${date}</div>
               </div>
-              <button class="iconfont icon-arrow_bottom">获取</button>
+              <button class="iconfont icon-arrow_bottom">打开</button>
             </div>
           </div>
           <div class="app-imgs">
