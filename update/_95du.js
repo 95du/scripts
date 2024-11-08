@@ -18,14 +18,8 @@ class _95du {
     this.settingPath = this.fm.joinPath(mainPath, 'setting.json');
     this.cacheImg = this.fm.joinPath(mainPath, 'cache_image');
     this.cacheStr = this.fm.joinPath(mainPath, 'cache_string');
-    this.cacheCar = this.fm.joinPath(mainPath, 'cache_vehicle');
     
-    [
-      this.mainPath, 
-      this.cacheImg, 
-      this.cacheStr, 
-      this.cacheCar
-    ].forEach(path => this.fm.createDirectory(path, true));
+    [this.mainPath, this.cacheImg, this.cacheStr].forEach(path => this.fm.createDirectory(path, true));
   };
 
   /**
@@ -90,9 +84,10 @@ class _95du {
    * @param {string} type ('string' | 'json' | 'image')。
    * @returns {Promise<string | object | Image>}
    */
-  async httpRequest(url, type) {
+  httpRequest = async (url, type = null) => {
     const request = new Request(url);
-    const { loadFile } = this.getMethods(type);
+    const fileType = type || this.getFileInfo(url).type;
+    const { loadFile } = this.getMethods(fileType);
     return loadFile 
       ? await loadFile(request) 
       : await request.loadString();
@@ -137,10 +132,6 @@ class _95du {
     const filePath = (name) => this.fm.joinPath(basePath, name);
     const { readFile, writeFile } = this.getMethods(type);
 
-    const isExpired = (filePath) => {
-      return (Date.now() - this.fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
-    };
-    
     const read = (name) => {
       const path = filePath(name);
       if (this.fm.fileExists(path)) {
@@ -151,7 +142,36 @@ class _95du {
     };
     const write = (name, content) => writeFile(filePath(name), content);
     
+    const isExpired = (filePath) => {
+      return (Date.now() - this.fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
+    };
     return { read, write };
+  };
+  
+  /**
+   * 将字符串哈希化以创建唯一标识符。
+   * @param {string} str - 要进行哈希处理的数据。
+   */
+  hash = (str) => {
+    const number =  [...str].reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
+    return `hash_${number}`;
+  };
+  
+  /**
+   * 根据文件扩展名判断类型
+   * @param {string} url
+   * @returns {Object} 
+   *  - name {string}: 如果文件名长度大于等于 20 则返回哈希值，否则返回原始文件名。
+   *  - type {string}: 'image'、'json' 或 'string'。
+   */
+  getFileInfo = (url) => {
+    const name = decodeURIComponent(url).split('/').pop().split('?')[0];
+    const type = name.match(/\.(png|jpeg|jpg|bmp|webp)$/i) 
+      ? 'image' 
+      : name.endsWith('.json') 
+      ? 'json' 
+      : 'string';
+    return { name, type };
   };
   
   /**
@@ -161,7 +181,8 @@ class _95du {
    * @param {string} type（json, string, image）
    * @returns {*} - 返回缓存数据
    */  
-  getCacheData = async (name, url, type, cacheTime = 240) => {
+  getCacheData = async (url, cacheTime = 240, filename) => {
+    const { name, type } = this.getFileInfo(filename || url);
     const cache = this.useFileManager({ 
       cacheTime, type
     });
@@ -169,20 +190,296 @@ class _95du {
     if (cacheData) return cacheData;
     
     try {
-      const data = await this.httpRequest(url, type);
+      const data = await this.httpRequest(url);
       if (data.message) {
         console.log(data.message);
         return null;
       };
       if (data.statusCode !== 404) {
         cache.write(name, data);
-        console.log("Data downloaded and cached");
+        console.log(`${name}: Data downloaded and cached`);
         return data;
       }
     } catch (error) {
       console.log(`${name} 请求失败。 \n${error}`);
     }
     return cacheData;
+  };
+  
+  /**
+   * 将图片转换为 Base64 格式
+   * @param {Image} img
+   * @returns {string} Base64
+   */
+  toBase64 = (img) => {
+    return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
+  };
+  
+  /**
+   * 获取远程图片并使用缓存 toBase64
+   * @param {Image} url
+   */
+  getCacheImage = async (url, filename) => {
+    const { name, type } = this.getFileInfo(filename || url);
+    const cache = this.useFileManager({ type });
+    const image = cache.read(name);
+    if (image) {
+      return this.toBase64(image);
+    }
+    const img = await this.httpRequest(url);
+    cache.write(name, img);
+    return this.toBase64(img);
+  };
+  
+  /**
+   * Setting drawTableIcon
+   * @param { Image } image
+   * @param { string } string
+   */  
+  getCacheMaskSFIcon = async (name, color, type = 'image') => {
+    const cache = this.useFileManager({ type });
+    const image = cache.read(name);
+    if (image) {
+      return this.toBase64(image);
+    }
+    const img = await this.drawTableIcon(name, color);
+    cache.write(name, img);
+    return this.toBase64(img);
+  };
+  
+  // drawTableIcon
+  drawTableIcon = async (
+    icon = name,
+    color = '#ff6800',
+    cornerWidth = 42
+  ) => {
+    let sfi = SFSymbol.named(icon);
+    if (sfi === null) sfi = SFSymbol.named('message.fill');
+    sfi.applyFont(  
+      Font.mediumSystemFont(30)
+    );
+    const imgData = Data.fromPNG(sfi.image).toBase64String();
+    const html = `
+      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
+      <img id="silhouetteImg" src="" />
+      <canvas id="mainCanvas" />`;
+      
+    const js = `
+      const canvas = document.createElement("canvas");
+      const sourceImg = document.getElementById("sourceImg");
+      const silhouetteImg = document.getElementById("silhouetteImg");
+      const ctx = canvas.getContext('2d');
+      const size = sourceImg.width > sourceImg.height ? sourceImg.width : sourceImg.height;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.drawImage(sourceImg, (canvas.width - sourceImg.width) / 2, (canvas.height - sourceImg.height) / 2);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pix = imgData.data;
+      for (var i=0, n = pix.length; i < n; i+= 4){
+        pix[i] = 255;
+        pix[i+1] = 255;
+        pix[i+2] = 255;
+        pix[i+3] = pix[i+3];
+      }
+      ctx.putImageData(imgData,0,0);
+      silhouetteImg.src = canvas.toDataURL();
+      output=canvas.toDataURL()
+    `;
+  
+    let wv = new WebView();
+    await wv.loadHTML(html);
+    const base64Image = await wv.evaluateJavaScript(js);
+    const iconImage = await new Request(base64Image).loadImage();
+    const size = new Size(160, 160);
+    const ctx = new DrawContext();
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    ctx.size = size;
+    const path = new Path();
+    const rect = new Rect(0, 0, size.width, size.width);
+  
+    path.addRoundedRect(rect, cornerWidth, cornerWidth);
+    path.closeSubpath();
+    ctx.setFillColor(new Color(color));
+    ctx.addPath(path);
+    ctx.fillPath();
+    const rate = 36;
+    const iw = size.width - rate;
+    const x = (size.width - iw) / 2;
+    ctx.drawImageInRect(iconImage, new Rect(x, x, iw, iw));
+    return ctx.getImage();
+  };
+  
+  /**
+   * drawSquare
+   * @param { Image } image
+   * @param { string } string
+   */
+  drawSquare = async (img) => {
+    const imgData = Data.fromPNG(img).toBase64String();
+    const html = `
+      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
+      <img id="silhouetteImg" src="" />
+      <canvas id="mainCanvas" />`;
+    const js = `
+      const canvas = document.createElement("canvas");
+      const sourceImg = document.getElementById("sourceImg");
+      const silhouetteImg = document.getElementById("silhouetteImg");
+      const ctx = canvas.getContext('2d');
+      // 裁剪成正方形
+      const size = Math.min(sourceImg.width, sourceImg.height);
+      canvas.width = canvas.height = size;
+      ctx.drawImage(sourceImg, (sourceImg.width - size) / 2, (sourceImg.height - size) / 2, size, size, 0, 0, size, size);
+      
+      // 压缩图像
+      const maxFileSize = 200 * 1024
+      const quality = Math.min(1, Math.sqrt(maxFileSize / (canvas.toDataURL('image/jpeg', 1).length * 0.75)));
+      const compressedCanvas = document.createElement("canvas");
+      const compressedCtx = compressedCanvas.getContext('2d');
+      compressedCanvas.width = compressedCanvas.height = 400;
+      compressedCtx.drawImage(canvas, 0, 0, size, size, 0, 0, 400, 400);
+      
+      silhouetteImg.src = canvas.toDataURL();
+      output = compressedCanvas.toDataURL('image/jpeg', quality);
+    `;
+    
+    const wv = new WebView();
+    await wv.loadHTML(html);
+    const base64Image = await wv.evaluateJavaScript(js);
+    return await new Request(base64Image).loadImage();  
+  };
+  
+  /**
+   * SFIcon 转换为base64
+   * @param {*} icon SFicon
+   * @returns base64 string
+   */
+  drawSFIcon = (icon = name) => {
+    let sf = SFSymbol.named(icon);
+    if (sf === null) sf = SFSymbol.named('message');
+    sf.applyFont(  
+      Font.mediumSystemFont(30)
+    );
+    return sf.image;
+  };
+  
+  // 缓存并读取原生 SFSymbol icon
+  getCacheDrawSFIcon = async (name, type = 'image') => {
+    const cache = this.useFileManager({ type });
+    const image = cache.read(name);
+    if (image) {
+      return this.toBase64(image);
+    }
+    const img = await this.drawSFIcon(name);
+    cache.write(name, img);
+    return this.toBase64(img);
+  };
+  
+  /**
+   * 为图片添加遮罩效果
+   * @param {Image} img
+   * @returns {Promise<Image>}
+   */
+  shadowImage = async (img) => {
+    let ctx = new DrawContext();
+    ctx.size = img.size
+    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
+    ctx.setFillColor(new Color("#000000", Number(this.settings.masking)));
+    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']));
+    return await ctx.getImage();
+  };
+  
+  /**
+   * 从远程下载 JavaScript 文件并缓存
+   * @returns {Promise<string[]>} 包含各个 JavaScript
+   */
+  async scriptTags() {
+    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
+    const js = await Promise.all(scripts.map(async (script) => {
+      const url = `${this.rootUrl}/web/${script}%3Fver%3D8.0.1`
+      const content = await this.getCacheData(url);
+      return `<script>${content}</script>`;
+    }));
+    return js.join('\n');
+  };
+  
+  /**
+   * 获取模块页面路径，如本地不存在或需更新则从远程获取
+   * @param {string} scriptName
+   * @param {string} url
+   * @returns {Promise<string|null>}
+   */
+  async webModule(url) {
+    const { name } = this.getFileInfo(url);
+    const modulePath = this.fm.joinPath(this.cacheStr, name);
+    if (!this.settings.update && this.fm.fileExists(modulePath)) {
+      return modulePath;
+    }
+    const moduleJs = await this.getCacheData(url)
+      .catch(() => null);
+    if (moduleJs) return modulePath;
+  };
+    
+  /**
+   * 获取 boxjs Data
+   * 依赖：Quantumult-X / Surge
+   */
+  boxjsData = async (key) => {
+    try {
+      const response = await this.httpRequest(`http://boxjs.com/query/data/${key}`, 'json');
+      const value = JSON.parse(response?.val);
+      console.log(value);
+      return value || {};
+    } catch (e) {
+      console.log('boxjs' + e);
+      this.notify('Boxjs_数据获取失败 ⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
+    }
+  };
+  
+  /**
+   * 生成 Quantumult X 重写配置
+   * @param {string} url
+   * @param {string} tagName - Quantumult X 中的标签名称
+   * @returns {string} - Quantumult X 添加重写的配置
+   */
+  quantumult = (tagName, url) => {
+    const config = `
+    {
+      "rewrite_remote": [
+        "${url}, tag=${tagName}, update-interval=172800, opt-parser=true, enabled=true"
+      ]
+    }`;
+    const encode = encodeURIComponent(config);
+    return `quantumult-x:///add-resource?remote-resource=${encode}`;
+  };
+  
+  /** download store **/
+  async myStore() {
+    const url = `${this.rootUrl}/run/web_module_95duScript.js`;
+    const script = await this.httpRequest(url);
+    const fm = FileManager.iCloud();
+    fm.writeString(
+      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
+  };
+  
+  async appleOS_update() {
+    const settings = this.settings;
+    const hour = new Date().getHours();
+    const { 
+      appleOS,
+      startHour = 4, 
+      endHour = 6 
+    } = settings;
+
+    if (appleOS && hour >= startHour && hour <= endHour) {
+      const html = await this.httpRequest('https://developer.apple.com/news/releases/rss/releases.rss');
+      const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
+      if (settings.push !== iOS) {
+        this.notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
+        settings.push = iOS
+        this.writeSettings(settings);
+      }
+    }
   };
   
   /**  
@@ -237,61 +534,6 @@ class _95du {
   };
   
   /**
-   * 为图片添加遮罩效果
-   * @param {Image} img
-   * @returns {Promise<Image>}
-   */
-  shadowImage = async (img) => {
-    let ctx = new DrawContext();
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
-    ctx.setFillColor(new Color("#000000", Number(this.settings.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']));
-    return await ctx.getImage();
-  };
-  
-  /**
-   * 获取 boxjs Data
-   * 依赖：Quantumult-X / Surge
-   */
-  boxjsData = async (key) => {
-    try {
-      const response = await this.httpRequest(`http://boxjs.com/query/data/${key}`, 'json');
-      console.log(response)
-      return JSON.parse(response?.val) || {};
-    } catch (e) {
-      console.log('boxjs' + e);
-      this.notify('Boxjs_数据获取失败 ⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
-    }
-  };
-  
-  /**
-   * 生成 Quantumult X 重写配置
-   * @param {string} url
-   * @param {string} tagName - Quantumult X 中的标签名称
-   * @returns {string} - Quantumult X 添加重写的配置
-   */
-  quantumult = (tagName, url) => {
-    const config = `
-    {
-      "rewrite_remote": [
-        "${url}, tag=${tagName}, update-interval=172800, opt-parser=true, enabled=true"
-      ]
-    }`;
-    const encode = encodeURIComponent(config);
-    return `quantumult-x:///add-resource?remote-resource=${encode}`;
-  };
-  
-  /** download store **/
-  async myStore() {
-    const url = `${this.rootUrl}/run/web_module_95duScript.js`;
-    const script = await this.httpRequest(url);
-    const fm = FileManager.iCloud();
-    fm.writeString(
-      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-  };
-  
-  /**
    * Timestamp Formatter
    * 11-05 21:59 (short) 
    * 2024-11-05 21:59 (long)
@@ -300,7 +542,18 @@ class _95du {
    */
   formatDate(timestamp, short) {
     return new Date(timestamp + 8 * 3600000).toISOString().slice(short ? 5 : 0, 16).replace('T', ' ');  
-  }
+  };
+  
+  /**  
+   * 获取数组中的随机值
+   * @param {Array} array - 输入的数组
+   * @returns {*} 返回数组中的一个随机元素，如果数组为空则返回 null
+   */
+  getRandomItem(array) {
+    if (!Array.isArray(array) || array.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * array.length);
+    return array[randomIndex];
+  };
 };
 
 module.exports = { _95du };
