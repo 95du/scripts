@@ -18,8 +18,9 @@ async function main() {
   const fm = FileManager.local();
   const directory = fm.documentsDirectory();
   const depPath = fm.joinPath(directory, '95du_module')
-  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
-  download95duModule(rootUrl);
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
+  await download95duModule(rootUrl);
+  
   const isDev = false
   
   /** ------- 导入模块 ------- */
@@ -58,6 +59,7 @@ async function main() {
     urls: [],
     effect: true,
     music: true,
+    notify: true,
     alwaysDark: false
   };
   
@@ -69,8 +71,27 @@ async function main() {
   const settings = fm.fileExists(settingPath) 
     ? module.getSettings() 
     : initSettings(settingPath);
-  
   const { urls } = settings;
+  
+  /**
+   * 检查并下载远程依赖文件
+   * Downloads or updates the `_95du.js` module hourly.
+   * @param {string} rootUrl - The base URL for the module file.
+   */
+  async function download95duModule(rootUrl) {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
+    const currentDate = new Date().toISOString().slice(0, 13);
+  
+    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
+  
+    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
+      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
+      fm.write(modulePath, moduleJs);
+      fm.writeString(timestampPath, currentDate);
+      console.log('Module updated');
+    }
+  };
   
   // 运行组件
   const ScriptableRun = (name = Script.name()) => {
@@ -215,26 +236,6 @@ async function main() {
     return toBase64(img);
   };
   
-  /**
-   * 检查并下载远程依赖文件
-   * Downloads or updates the `_95du.js` module hourly.
-   * @param {string} rootUrl - The base URL for the module file.
-   */
-  async function download95duModule(rootUrl) {
-    const modulePath = fm.joinPath(depPath, '_95du.js');
-    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
-    const currentDate = new Date().toISOString().slice(0, 13);
-  
-    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
-  
-    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
-      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
-      fm.write(modulePath, moduleJs);
-      fm.writeString(timestampPath, currentDate);
-      console.log('Module updated');
-    }
-  };
-  
   // shimoFormData(action)
   const shimoFormData = async (action) => {
     const req = new Request('https://shimo.im/api/newforms/forms/gXqmdJ0WaRiZJ03o/submit');
@@ -292,7 +293,7 @@ async function main() {
   
   const getRepoOwnerInfo = async (repoUrl) => {
     const name = repoUrl.match(/repos\/(\w+)/)?.[1];
-    const { updated_at, html_url, watchers, owner } = await module.getCacheData(`${name}.json`, repoUrl, 'json', 24);
+    const { updated_at, html_url, watchers, owner } = await module.getCacheData(`${name}.json`, repoUrl, 'json', 5);
     return { 
       updated_at, 
       html_url,
@@ -576,11 +577,11 @@ async function main() {
       ]
     },
     {
-      label: '推荐使用',
+      label: '人工智能',
       type: 'group',
       items: [
         {
-          label: 'jumpStore',
+          label: 'jump',
           type: 'app',
           scrUrl: chatGPT,
           data: {
@@ -1572,7 +1573,7 @@ async function main() {
             
             const button = document.createElement('button');
             button.name = 'button';
-            button.innerText = item.name === 'repo' ? '打开' : '获取';
+            button.innerText = item.name === 'repo' || item.label === 'jump' ? '打开' : '获取';
             button.className = 'iconfont icon-arrow_bottom';
             cntr.appendChild(button);
             
@@ -1974,26 +1975,15 @@ document.getElementById('telegram').addEventListener('click', () => {
      * 
      * @returns {Promise<void>}
      */
-    const installScript = async ({ label, name, scrUrl, data } = data) => {
-      if (name === 'repo') {
+    const installScript = async ({ label, name, scrUrl } = data) => {
+      if (name === 'repo' || label === 'jump') {
         Safari.openInApp(scrUrl);  
         return null;
       }
       
-      if (data?.name === 'ChatGPT') {  
-        Safari.openInApp(scrUrl);
-        return null;
-      }
-      
-      if (label === 'jumpStore') {
-        const encodedUrl = scrUrl.replace(/\/app\/([^\/]+)\//, (match, p1) => `/app/${encodeURIComponent(p1)}/`);
-        Safari.open(encodedUrl);
-        return null;
-      }
-    
       try {
         const script = await new Request(scrUrl).loadString();
-        if (script.includes('组件') && !script.includes('DOCTYPE')) saveScript(label, script, scrUrl);
+        if (script.includes('组件')) saveScript(label, script, scrUrl);
       } catch (e) {
         console.log(e);
         module.notify(`${label} ⚠️`, '获取脚本失败，请在 App 设置中打开 Sync Script Order');
