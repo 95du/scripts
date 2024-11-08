@@ -73,7 +73,7 @@ async function main(family) {
    * @returns {object} - 返回 JSON
    */
   const getCacheString = async (name, api, params) => {
-    const type = module.getFileInfo(name);
+    const { type } = module.getFileInfo(name);
     const cache = module.useFileManager({ cacheTime: setting.cacheTime, type });
     const json = cache.read(name);
     if (json) return json;
