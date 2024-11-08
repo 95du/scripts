@@ -9,7 +9,7 @@ async function main() {
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const [scrName, scrUrl] = [`12123.js`, `${rootUrl}/api/web_12123.js`];
+  const scrUrl = `${rootUrl}/api/web_12123.js`;
   
   const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
   const updateMsg = '点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️';
@@ -22,7 +22,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl);
-  const isDev = false
+  const isDev = true
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -83,7 +83,6 @@ async function main() {
     transparency: 0.5,
     masking: 0.3,
     gradient: ['#82B1FF'],
-    imgArr: [],
     update: true,
     topStyle: true,
     music: true,
@@ -139,21 +138,18 @@ async function main() {
   };
   
   /**
-   * 指定模块页面
-   * @param { string } time
-   * @param { string } color
-   * @param { string } module
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
    */
-  const webModule = async (scriptName, url) => {
-    const modulePath = fm.joinPath(cacheStr, scriptName);
-    if (!settings.update && fm.fileExists(modulePath)) {
-      return modulePath;
-    } else {
-      const moduleJs = await getCacheString(scriptName, url);
-      if (moduleJs) {
-        return modulePath;
-      }
-    }
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
+  // 获取头像图片
+  const getAvatarImg = () => {
+    return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
   
   // ScriptableRun
@@ -161,7 +157,7 @@ async function main() {
   
   // 预览组件
   const previewWidget = async (family = 'medium') => {
-    const moduleJs = await webModule(scrName, scrUrl);
+    const moduleJs = await module.webModule(scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
     shimoFormData(`Count: ${settings.count} - ${family}`);
@@ -198,7 +194,7 @@ async function main() {
    * @returns {Promise<void>}
    */
   const updateVersion = async () => {
-    const index = await generateAlert(
+    const index = await module.generateAlert(
       '更新代码',
       '更新后当前脚本代码将被覆盖\n但不会清除用户已设置的数据\n如预览组件未显示或桌面组件显示错误，可更新尝试自动修复',
       options = ['取消', '更新']
@@ -208,8 +204,9 @@ async function main() {
   };
   
   const updateString = async () => {
-    const modulePath = fm.joinPath(cacheStr, scrName);
-    const str = await getString(scrUrl);
+    const { name } = module.getFileInfo(scrUrl);
+    const modulePath = fm.joinPath(cacheStr, name);
+    const str = await module.httpRequest(scrUrl);
     if (!str.includes('95度茅台')) {
       module.notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
@@ -220,26 +217,6 @@ async function main() {
       writeSettings(settings);
       shimoFormData('update');
       ScriptableRun();
-    }
-  };
-  
-  const appleOS = async () => {
-    const currentHour = new Date().getHours();
-    const { 
-      startHour = 4, 
-      endHour = 6 
-    } = settings;
-
-    if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
-      try { 
-        const html = await new Request(atob('aHR0cHM6Ly9kZXZlbG9wZXIuYXBwbGUuY29tL25ld3MvcmVsZWFzZXMvcnNzL3JlbGVhc2VzLnJzcw==')).loadString();
-        const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
-        if (settings.push !== iOS) {
-          module.notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
-          settings.push = iOS
-          writeSettings(settings);
-        }
-      } catch {};
     }
   };
   
@@ -261,281 +238,12 @@ async function main() {
     try {
       const family = config.widgetFamily;
       await previewWidget(family);
-      await appleOS();
+      await module.appleOS_update();
     } catch (e) {
       console.log(e);
     } finally {
       return null;
     }
-  };
-  
-  /**
-   * 弹出输入框
-   * @param title 标题
-   * @param desc  描述
-   * @param opt   属性
-   * @returns { Promise<void> }
-   */
-  const generateInputAlert = async (options, confirm) => {
-    const { title, message, options: fieldArr } = options;
-    const inputAlert = new Alert();
-    inputAlert.title = title;
-    inputAlert.message = message;
-    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
-    inputAlert.addAction('取消');
-    inputAlert.addAction('确认');
-    const getIndex = await inputAlert.presentAlert();
-    if (getIndex === 1) {
-      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
-      confirm(inputObj);
-    }
-    return getIndex;
-  };
-  
-  /**
-   * @param message 内容
-   * @param options 按键
-   * @returns { Promise<number> }
-   */
-  const generateAlert = async ( title, message = '', options, destructiveAction ) => {
-    const alert = new Alert();
-    alert.title = title;
-    alert.message = message ?? '';
-    for (const option of options) {
-      option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
-    }
-    return await alert.presentAlert();
-  };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
-  };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  /**
-   * 获取css及js字符串和图片并使用缓存
-   * @param {string} File Extension
-   * @param {Image} Base64 
-   * @returns {string} - Request
-   */
-  const useFileManager = ({ cacheTime } = {}) => {
-    return {
-      readString: (name) => {
-        const path = fm.joinPath(cacheStr, name);  
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime) fm.remove(path);
-          else return fm.readString(path);
-        }
-      },
-      writeString: (name, content) => fm.writeString(fm.joinPath(cacheStr, name), content),
-      // cache image
-      readImage: (name) => {
-        const path = fm.joinPath(cacheImg, name);
-        return fm.fileExists(path) ? fm.readImage(path) : null;
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cacheImg, name), image),
-    };
-    
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000)
-    }
-  };
-  
-  /**
-   * 获取css，js字符串并使用缓存
-   * @param {string} string
-   */
-  const getString = async (url) => await new Request(url).loadString();
-  
-  const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager({ cacheTime: 240 });
-    const cssString = cache.readString(cssFileName);
-    if (cssString) return cssString;
-    const response = await getString(cssFileUrl);
-    if (response.includes('{')) {  
-      cache.writeString(cssFileName, response);
-    }
-    return response;
-  };
-  
-  /** 
-   * toBase64(img) string
-   * SFIcon蒙版后转base64
-   */
-  const toBase64 = (img) => {
-    return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getImage = async (url) => await new Request(url).loadImage();
-  
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await getImage(url);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  /**
-   * Setting drawTableIcon
-   * @param { Image } image
-   * @param { string } string
-   */  
-  const getCacheMaskSFIcon = async (name, color) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawTableIcon(name, color);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  // drawTableIcon
-  const drawTableIcon = async (
-    icon = name,
-    color = '#ff6800',
-    cornerWidth = 42
-  ) => {
-    let sfi = SFSymbol.named(icon);
-    if (sfi === null) sfi = SFSymbol.named('message.fill');
-    sfi.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    const imgData = Data.fromPNG(sfi.image).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-      
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      const size = sourceImg.width > sourceImg.height ? sourceImg.width : sourceImg.height;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(sourceImg, (canvas.width - sourceImg.width) / 2, (canvas.height - sourceImg.height) / 2);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pix = imgData.data;
-      for (var i=0, n = pix.length; i < n; i+= 4){
-        pix[i] = 255;
-        pix[i+1] = 255;
-        pix[i+2] = 255;
-        pix[i+3] = pix[i+3];
-      }
-      ctx.putImageData(imgData,0,0);
-      silhouetteImg.src = canvas.toDataURL();
-      output=canvas.toDataURL()
-    `;
-  
-    let wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    const iconImage = await new Request(base64Image).loadImage();
-    const size = new Size(160, 160);
-    const ctx = new DrawContext();
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    ctx.size = size;
-    const path = new Path();
-    const rect = new Rect(0, 0, size.width, size.width);
-  
-    path.addRoundedRect(rect, cornerWidth, cornerWidth);
-    path.closeSubpath();
-    ctx.setFillColor(new Color(color));
-    ctx.addPath(path);
-    ctx.fillPath();
-    const rate = 36;
-    const iw = size.width - rate;
-    const x = (size.width - iw) / 2;
-    ctx.drawImageInRect(iconImage, new Rect(x, x, iw, iw));
-    return ctx.getImage();
-  };
-  
-  /**
-   * drawSquare
-   * @param { Image } image
-   * @param { string } string
-   */
-  const drawSquare = async (img) => {
-    const imgData = Data.fromPNG(img).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      // 裁剪成正方形
-      const size = Math.min(sourceImg.width, sourceImg.height);
-      canvas.width = canvas.height = size;
-      ctx.drawImage(sourceImg, (sourceImg.width - size) / 2, (sourceImg.height - size) / 2, size, size, 0, 0, size, size);
-      
-      // 压缩图像
-      const maxFileSize = 200 * 1024
-      const quality = Math.min(1, Math.sqrt(maxFileSize / (canvas.toDataURL('image/jpeg', 1).length * 0.75)));
-      const compressedCanvas = document.createElement("canvas");
-      const compressedCtx = compressedCanvas.getContext('2d');
-      compressedCanvas.width = compressedCanvas.height = 400;
-      compressedCtx.drawImage(canvas, 0, 0, size, size, 0, 0, 400, 400);
-      
-      silhouetteImg.src = canvas.toDataURL();
-      output = compressedCanvas.toDataURL('image/jpeg', quality);
-    `;
-    
-    const wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    return await new Request(base64Image).loadImage();  
-  };
-  
-  /**
-   * SFIcon 转换为base64
-   * @param {*} icon SFicon
-   * @returns base64 string
-   */
-  const drawSFIcon = async ( icon = name ) => {
-    let sf = SFSymbol.named(icon);
-    if (sf === null) sf = SFSymbol.named('message');
-    sf.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    return sf.image;
-  };
-  
-  // 缓存并读取原生 SFSymbol icon
-  const getCacheDrawSFIcon = async (name) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawSFIcon(name);
-    cache.writeImage(name, img);
-    return toBase64(img);
   };
   
   // ====== web start ======= //
@@ -546,22 +254,18 @@ async function main() {
       previewImage
     } = options;
     
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
+    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await getCacheImage('appImage.png', `${rootUrl}/img/icon/12123.png`);
+    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/12123.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png', `${rootUrl}/img/picture/collectionCode.jpeg`);
+    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
+    const clockScript = await module.getCacheData(`${rootUrl}/web/clock.html`);
     
-    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-    const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
-      return `<script>${content}</script>`;
-    }));
+    const scriptTags = await module.scriptTags();
     
     // SFSymbol url icons
     const subArray = [];
@@ -569,12 +273,11 @@ async function main() {
       const { icon } = item;
       if (icon?.name) {
         const { name, color } = icon;
-        item.icon = await getCacheMaskSFIcon(name, color);
+        item.icon = await module.getCacheMaskSFIcon(name, color);
       } else if (icon?.startsWith('https')) {
-        const name = icon.split('/').pop();
-        item.icon = await getCacheImage(name, icon);
+        item.icon = await module.getCacheImage(icon);
       } else if (!icon?.startsWith('data')) {
-        item.icon = await getCacheDrawSFIcon(icon);
+        item.icon = await module.getCacheDrawSFIcon(icon);
       }
     };
     
@@ -596,7 +299,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
+    const cssStyle = await module.getCacheData(`${rootUrl}/web/cssStyle.css`);  
 
     const style =`  
     :root {
@@ -698,7 +401,7 @@ async function main() {
         '6pM373bBdV2',
         '6NJHhd6BeV2'
       ];
-      const randomId = songId[Math.floor(Math.random() * songId.length)];
+      const randomId = module.getRandomItem(songId);
       const music = `
       <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
       </iframe>
@@ -840,17 +543,15 @@ async function main() {
     previewImgHtml = async () => {
       const displayStyle = settings.clock ? 'none' : 'block';
       const pictureArr = Array.from({ length: 4 }, (_, index) => `${rootUrl}/img/picture/12123_${index}.png`);
-      const randomImageUrl = pictureArr[Math.floor(Math.random() * pictureArr.length)];
-      
+      const randomImageUrl = module.getRandomItem(pictureArr);
       const previewImgUrl = [
         randomImageUrl,
         `${rootUrl}/img/picture/12123_5.png`
       ];
       
-      if ( settings.topStyle ) {
+      if (settings.topStyle) {
         const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
-          const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
-          const previewImg = await getCacheImage(imgName, item);
+          const previewImg = await module.getCacheImage(item);
           return previewImg;
         }));
         return `${clockHtml()}
@@ -860,9 +561,8 @@ async function main() {
           </div>
         </div>`; 
       } else {
-        const randomUrl = previewImgUrl[Math.floor(Math.random() * previewImgUrl.length)];
-        const imgName = decodeURIComponent(randomUrl.substring(randomUrl.lastIndexOf("/") + 1));
-        const previewImg = await getCacheImage(imgName, randomUrl);
+        const randomUrl = module.getRandomItem(previewImgUrl);
+        const previewImg = await module.getCacheImage(randomUrl);
         return `${clockHtml()}
         <img id="store" src="${previewImg}" class="preview-img" style="display: ${displayStyle}">`
       }
@@ -957,7 +657,7 @@ async function main() {
       } else if (['cell', 'page', 'file'].includes(item.type)) {
         const { name, isAdd } = item
 
-        if ( item.desc ) {
+        if (item.desc) {
           const desc = document.createElement("div");
           desc.className = 'form-item-right-desc';
           desc.id = \`\${name}-desc\`
@@ -997,25 +697,6 @@ async function main() {
             avatarFile(file, name);
           }
         });
-      } else if (item.type === 'number') {
-        const inputCntr = document.createElement("div");
-        inputCntr.className = 'form-item__input-container'
-  
-        const input = document.createElement("input");
-        input.className = 'form-item__input'
-        input.name = item.name
-        input.type = 'number'
-        input.value = Number(value)
-        input.addEventListener("change", (e) => {
-          formData[item.name] = Number(e.target.value);
-          invoke('changeSettings', formData);
-        });
-        inputCntr.appendChild(input);
-  
-        const icon = document.createElement('i');
-        icon.className = 'iconfont icon-arrow_right'
-        inputCntr.appendChild(icon);
-        label.appendChild(inputCntr);
       } else {
         const input = document.createElement("input")
         input.className = 'form-item__input'
@@ -1310,7 +991,7 @@ async function main() {
         <section id="settings">
         </section>
         <script>${js}</script>
-        ${scriptTags.join('\n')}
+        ${scriptTags}
       </body>
     </html>`;
   
@@ -1350,7 +1031,7 @@ async function main() {
      * @returns {Promise<string>}
      */
     const input = async ({ label, name, message, input, display, isAdd, other } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1372,7 +1053,7 @@ async function main() {
         const isName = ['myPlate', 'logo', 'carImg'].includes(name);
         const inputStatus = result ? '已添加' : (display || other ? '未添加' : '默认');
         
-        if ( isAdd || display ) {
+        if (isAdd || display) {
           settings[`${name}_status`] = inputStatus;  
         }
         settings[name] = result;
@@ -1381,34 +1062,18 @@ async function main() {
       })
     };
     
-    // 获取车辆图片
-    const downloadCarImage = async (item) => {
-      const carImage = await getImage(item);
-      const imgName = item.split('/').pop();
-      const cachePath = fm.joinPath(cacheCar, imgName);
-      fm.writeImage(cachePath, carImage, { overwrite: true });
-      settings.imgArr.push(imgName);
-      writeSettings(settings);
-    };
-    
-    const loadPicture = async () => {
-      const maybach = Array.from({ length: 9 }, (_, index) => `${rootUrl}/img/car/Maybach-${index}.png`);
-      !settings.imgArr?.length && maybach.forEach(async (item) => await downloadCarImage(item));
-    };
-    
     const getToken = async () => {
-      const openAlipay = await generateAlert('交管 12123','自动获取请求体信息\n❗️重复进入12123页面两次❗️\n需要Quantumult-X 或 Surge 辅助，\n具体方法请查看小组件代码开头注释',
+      const openAlipay = await module.generateAlert('交管 12123','自动获取请求体信息\n❗️重复进入12123页面两次❗️\n需要Quantumult-X 或 Surge 辅助，\n具体方法请查看小组件代码开头注释',
         options = ['取消', '获取']
       );
       if (openAlipay === 1) {
         Safari.open('alipays://platformapi/startapp?appId=2019050964403523&page=pages/index/index');
-        if (!settings.sign) await loadPicture();
       }
     };
     
     // 修改组件布局
     const layout = async ({ label, message, name } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1431,13 +1096,13 @@ async function main() {
         settings.bottomSize = Number(inputArr[6].value);
         
         writeSettings(settings);
-        await generateAlert('设置成功', '桌面组件稍后将自动刷新', ['完成']);
+        await module.generateAlert('设置成功', '桌面组件稍后将自动刷新', ['完成']);
       });
     };
     
     // appleOS 推送时段
     const period = async ({ label, name, message, desc } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1456,9 +1121,6 @@ async function main() {
         innerTextElementById(name, inputStatus);
       })
     };
-    
-    // 其他模块
-    const getModule = async (jsName, jsUrl) => await importModule(await webModule(jsName, jsUrl)).main();
     
     // 注入监听器
     const injectListener = async () => {
@@ -1482,7 +1144,7 @@ async function main() {
       
       const { code, data } = event;
       if (code === 'clearCache') {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '清除缓存', '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
           options = ['取消', '清除']
         );
@@ -1492,7 +1154,7 @@ async function main() {
           ScriptableRun();
         }
       } else if (code === 'reset') {
-        const action = await generateAlert(
+        const action = await module.generateAlert(
           '清空所有数据', 
           '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据', 
           ['取消', '重置'], '重置'
@@ -1502,7 +1164,7 @@ async function main() {
           ScriptableRun();
         }
       } else if ( code === 'recover' ) {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '是否恢复设置 ？', 
           '用户登录的信息将重置\n设置的数据将会恢复为默认',   
           options = ['取消', '恢复']
@@ -1528,8 +1190,9 @@ async function main() {
       switch (code) {
         case 'setAvatar':
           const avatarImage = Image.fromData(Data.fromBase64String(data));
-          fm.writeImage(
-            getAvatarImg(), await drawSquare(avatarImage)
+          fm.writeImage(  
+            getAvatarImg(), 
+            await module.drawSquare(avatarImage)
           );
           break;
         case 'telegram':
@@ -1546,10 +1209,12 @@ async function main() {
           Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false);
           break;
         case 'rewrite':
-          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%20%20%7B%0A%20%20%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%20%20%22https%3A%2F%2Fraw.githubusercontent.com%2F95du%2Fscripts%2Fmaster%2Frewrite%2FgetToken_12123.sgmodule%2C%20tag%3D%E4%BA%A4%E7%AE%A112123%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%20%20%5D%0A%20%20%7D');
+          const rewrite123 = module.quantumult('交管12123', 'https://raw.githubusercontent.com/95du/scripts/main/rewrite/getToken_12123.sgmodule');
+          Safari.open(rewrite123);
           break;
         case 'boxjs_rewrite':
-          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%7B%0A%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%22https%3A%2F%2Fgithub.com%2Fchavyleung%2Fscripts%2Fraw%2Fmaster%2Fbox%2Frewrite%2Fboxjs.rewrite.quanx.conf%2C%20tag%3Dboxjs%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%5D%0A%7D');
+          const boxjs = module.quantumult('boxjs', 'https://github.com/chavyleung/scripts/raw/master/box/rewrite/boxjs.rewrite.quanx.conf');
+          Safari.open(boxjs);
           break;
         case 'updateCode':
           await updateVersion();
@@ -1581,14 +1246,14 @@ async function main() {
           }
           break;
         case 'background':
-          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
+          const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
           if (modulePath != null) {
             await importModule(await modulePath).main(cacheImg);
             await previewWidget();
           }
           break;
         case 'store':
-          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
           await importModule(await storeModule).main();
           module.myStore();
           break;
