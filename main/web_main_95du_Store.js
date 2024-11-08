@@ -37,9 +37,10 @@ async function main() {
     cacheStr
   } = module;
   
-  if (!fm.fileExists(settingPath)) {
-    module.notify('正在初始化...', '首次运行需加载数据，请耐心等待。');  
-  };
+  const contents = fm.listContents(cacheStr);
+  if (contents.length === 0) {
+    module.notify('正在初始化...', '首次运行需加载数据，请耐心等待。');
+  }
   
   /**
    * 存储当前设置
