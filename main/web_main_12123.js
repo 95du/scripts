@@ -264,29 +264,42 @@ async function main() {
     
     const scriptTags = await module.scriptTags();
     
-    // SFSymbol url icons
-    const subArray = [];
-    const getAndBuildIcon = async (item) => {
+    // 批量处理图标加载
+    const subArray = [];  
+    const getPromises = [];
+    const getBuildIcon = (item) => {
       const { icon } = item;
       if (icon?.name) {
         const { name, color } = icon;
-        item.icon = await module.getCacheMaskSFIcon(name, color);
+        return module.getCacheMaskSFIcon(name, color).then(iconData => {
+          item.icon = iconData;
+        });
       } else if (icon?.startsWith('https')) {
-        item.icon = await module.getCacheImage(icon);
+        return module.getCacheImage(icon).then(iconData => {
+          item.icon = iconData;
+        });
       } else if (!icon?.startsWith('data')) {
-        item.icon = await module.getCacheDrawSFIcon(icon);
+        return module.getCacheDrawSFIcon(icon).then(iconData => {
+          item.icon = iconData;
+        });
       }
     };
-    
+
     for (const i of formItems) {
       for (const item of i.items) {
-        if (item.item) for (const subItem of item.item) {
-          await getAndBuildIcon(subItem);
-          subArray.push(subItem);
+        if (item.item) {
+          for (const subItem of item.item) {
+            const arr = getBuildIcon(subItem);
+            getPromises.push(arr);
+            subArray.push(subItem);
+          }
         }
-        await getAndBuildIcon(item);
+        const array = getBuildIcon(item);
+        getPromises.push(array);
       }
     };
+    // 等待所有图标加载完成
+    await Promise.all(getPromises);
     
     /**
      * @param {string} style
