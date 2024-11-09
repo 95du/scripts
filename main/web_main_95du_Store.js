@@ -19,7 +19,7 @@ async function main() {
   const directory = fm.documentsDirectory();
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
-  await download95duModule(rootUrl);
+  //await download95duModule(rootUrl);
   const isDev = false
   
   /** ------- 导入模块 ------- */
@@ -1807,7 +1807,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           writeSettings(settings);
           ScriptableRun();
         } else {
-          module.notify('保存失败 ⚠️', '链接错误或已存在，请检查后再试');
+          module.notify('添加失败 ⚠️', '链接错误或已存在，请检查后再试');
         }
       })
     };
