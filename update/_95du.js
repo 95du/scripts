@@ -84,7 +84,7 @@ class _95du {
    * @param {string} type ('string' | 'json' | 'image')。
    * @returns {Promise<string | object | Image>}
    */
-  httpRequest = async (url, type = null) => {
+  httpRequest = async (url, type = 'string') => {
     const request = new Request(url);
     const fileType = type || this.getFileInfo(url).type;
     const { loadFile } = this.getMethods(fileType);
@@ -125,7 +125,7 @@ class _95du {
    * @param {string} [options.type='string'] - ('string', 'json', 'image')
    * @returns {Object} - read，write
    */
-  useFileManager = ({ cacheTime, type = 'string'} = options) => {
+  useFileManager = ({ cacheTime, type = 'string' } = options) => {
     const basePath = type === 'image' 
       ? this.cacheImg 
       : this.cacheStr;
@@ -150,7 +150,7 @@ class _95du {
   
   /**
    * 将字符串哈希化以创建唯一标识符。
-   * @param {string} str - 要进行哈希处理的数据。
+   * @param {string} str
    */
   hash = (str) => {
     const number =  [...str].reduce((acc, char) => (acc << 5) - acc + char.charCodeAt(0), 0)
@@ -158,11 +158,11 @@ class _95du {
   };
   
   /**
-   * 根据文件扩展名判断类型
+   * 根据文件扩展名判断文件类型
    * @param {string} url
    * @returns {Object} 
-   *  - name {string}: 如果文件名长度大于等于 20 则返回哈希值，否则返回原始文件名。
-   *  - type {string}: 'image'、'json' 或 'string'。
+   * @property {string} name
+   * @property {string} type - 文件类型（'image'、'json' 或 'string'）
    */
   getFileInfo = (url) => {
     const name = decodeURIComponent(url).split('/').pop().split('?')[0];
@@ -219,14 +219,15 @@ class _95du {
    * 获取远程图片并使用缓存 toBase64
    * @param {Image} url
    */
-  getCacheImage = async (url, filename) => {
-    const { name, type } = this.getFileInfo(filename || url);
+  getCacheImage = async (url, filename, type = 'image') => {
+    const { name } = this.getFileInfo(filename || url);
     const cache = this.useFileManager({ type });
     const image = cache.read(name);
     if (image) {
       return this.toBase64(image);
     }
-    const img = await this.httpRequest(url);
+    const img = await this.httpRequest(url, type);
+    console.log(`${name}: Data downloaded and cached`);
     cache.write(name, img);
     return this.toBase64(img);
   };
@@ -247,7 +248,13 @@ class _95du {
     return this.toBase64(img);
   };
   
-  // drawTableIcon
+  /**
+   * 绘制带背景颜色的表格图标
+   * @param {string} icon
+   * @param {string} color
+   * @param {number} cornerWidth
+   * @returns {Image} - image
+   */
   drawTableIcon = async (
     icon = name,
     color = '#ff6800',
@@ -453,7 +460,10 @@ class _95du {
     return `quantumult-x:///add-resource?remote-resource=${encode}`;
   };
   
-  /** download store **/
+  /**
+   * 下载安装 95du Script 脚本库
+   * @description 从指定 URL 下载 95度 Script 的最新版本并保存到本地文件系统中，方便用户访问和使用脚本库。
+   */
   async myStore() {
     const url = `${this.rootUrl}/run/web_module_95duScript.js`;
     const script = await this.httpRequest(url);
@@ -462,6 +472,11 @@ class _95du {
       fm.documentsDirectory() + '/95du_ScriptStore.js', script);
   };
   
+  /**
+   * 检查并推送 AppleOS 系统更新
+   * @example
+   * 检查设定时间内是否有新 iOS 版本发布，若有则推送更新通知并更新推送状态。
+   */
   async appleOS_update() {
     const settings = this.settings;
     const hour = new Date().getHours();
