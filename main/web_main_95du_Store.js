@@ -20,7 +20,7 @@ async function main() {
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
   await download95duModule(rootUrl);
-  const isDev = true
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   if (typeof require === 'undefined') require = importModule;
@@ -174,13 +174,14 @@ async function main() {
   
   const getRepoOwnerInfo = async (repoUrl) => {
     const name = repoUrl.match(/repos\/(\w+)/)?.[1];
-    const { updated_at, html_url, watchers, owner } = await module.getCacheData(repoUrl, 5, `${name}.json`);
+    const { updated_at, html_url, watchers, owner } = JSON.parse(await module.getCacheData(repoUrl, 5, `${name}.json`));
+
     return { 
       updated_at, 
       html_url,
       watchers,
       userName: owner.login, 
-      avatarUrl: owner.avatar_url 
+      avatarUrl: owner.avatar_url
     };
   };
   
@@ -194,6 +195,7 @@ async function main() {
     repoUrls.map(async (url) => {
       try {
         const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(url);
+
         return {
           label: userName,
           desc: formatDate(updated_at),
@@ -203,8 +205,8 @@ async function main() {
           scrUrl: html_url,
           icon: avatarUrl
         };
-      } catch {
-        console.log(`API次数限制或网络出错无法请求数据，请稍后再试: ${url}\n`);
+      } catch (e) {
+        console.log(`${e} ${url}\n`);
         return null;
       }
     })
@@ -761,8 +763,8 @@ async function main() {
         const { name, color } = icon;
         item.icon = await module.getCacheMaskSFIcon(name, color);
       } else if (icon?.startsWith('https')) {
-        const name = icon.split('/').pop();
-        const fileName = name.includes('.') ? null : module.hash(name) + '.png';
+        const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon);
+        const fileName = name ? icon : module.hash(icon) + '.png';
         item.icon = await module.getCacheImage(icon, fileName);
       } else if (icon) {
         item.icon = await module.getCacheDrawSFIcon(icon);
