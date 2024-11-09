@@ -19,7 +19,7 @@ async function main() {
   const directory = fm.documentsDirectory();
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
-  //await download95duModule(rootUrl);
+  await download95duModule(rootUrl);
   const isDev = false
   
   /** ------- 导入模块 ------- */
