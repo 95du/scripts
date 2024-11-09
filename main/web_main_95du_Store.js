@@ -174,7 +174,7 @@ async function main() {
   
   const getRepoOwnerInfo = async (repoUrl) => {
     const name = repoUrl.match(/repos\/(\w+)/)?.[1];
-    const { updated_at, html_url, watchers, owner } = JSON.parse(await module.getCacheData(repoUrl, 5, `${name}.json`));
+    const { updated_at, html_url, watchers, owner } = await module.getCacheData(repoUrl, 5, `${name}.json`)
 
     return { 
       updated_at, 
@@ -757,32 +757,40 @@ async function main() {
     
     const scriptTags = await module.scriptTags();
     
-    const getAndBuildIcon = async (item) => {
-      const { icon } = item;
-      if (icon?.name) {
-        const { name, color } = icon;
-        item.icon = await module.getCacheMaskSFIcon(name, color);
-      } else if (icon?.startsWith('https')) {
-        const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon);
-        const fileName = name ? icon : module.hash(icon) + '.png';
-        item.icon = await module.getCacheImage(icon, fileName);
-      } else if (icon) {
-        item.icon = await module.getCacheDrawSFIcon(icon);
-      }
-    };
-    
-    const getAndBuildImage = async (item, urls) => {
-      item.data.images = await Promise.all(urls.map(async (url) => {
-        const name = url.match(/(\d+_\d+\.png)/)?.[1];
-        return await module.getCacheImage(url, name);
+    /**
+     1.	批量加载和缓存：使用Promise.all()来并行加载所有图片，然后缓存结果，避免重复请求。
+	  2.	懒加载：在webView中，只加载当前视口范围内的图片，其他图片在用户滚动时加载，这样可以减少初始加载时间。
+	  3.	减少DOM操作：尽量减少对DOM的频繁操作，如多次创建和插入节点。可以先将图片数据加载到内存中，然后批量渲染至DOM中。
+	  4.	优化图片资源：确保图片资源尽可能小，例如通过压缩或选择合适的格式（如webp）
+    */
+    const loadCacheIcons = async (items) => {
+      return await Promise.all(items.map(async (item) => {
+        const { icon } = item;
+        if (icon?.name) {
+          const { name, color } = icon;
+          item.icon = await module.getCacheMaskSFIcon(name, color);
+        } else if (icon?.startsWith('https')) {
+          const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon) ? icon : module.hash(icon);
+          item.icon = await module.getCacheImage(icon, name);
+        } else if (icon) {
+          item.icon = await module.getCacheDrawSFIcon(icon);
+        }
       }));
     };
-    
-    for (const i of formItems) {
-      for (const item of i.items) {
-        (item.data?.images?.length) ? await getAndBuildImage(item, item.data.images) : await getAndBuildIcon(item);
+  
+    const loadCacheImages = async (items) => {
+      for (const item of items) {
+        if (item.data?.images?.length) {
+          item.data.images = await Promise.all(item.data.images.map(async (url) => {
+            const name = url.match(/(\d+_\d+\.png)/)?.[1];
+            return await module.getCacheImage(url, name);
+          }));
+        }
       }
     };
+    
+    await loadCacheIcons(formItems.flatMap(i => i.items));
+    await loadCacheImages(formItems.flatMap(i => i.items));
     
     // 主菜单头像信息
     const mainMenuTop = async () => {
