@@ -12,64 +12,56 @@ $.body = $.getdata($.body_key);
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
-  if (isGetCookie = typeof $request !== `undefined`) {
-    GetCookie($request);
-  }
-
-  async function GetCookie(request) {
-    if (request && request.body && request.body.includes("sign")) {
-      $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
-      $.new_body = JSON.stringify($.rest_body, null, 2);
-      $.boxjs_body = $.body ? JSON.parse($.body) : {};
-      
-      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
-      $.opt = getReq(request.body);
-      $.success = await httpRequest($.opt);
-      console.log($.success)
-      
-      if ($.api && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
-        $.setdata($.new_body, $.body_key);
-        $.msg($.name, ``, `验证令牌/签名获取成功。`);
-        console.log($.new_body);
-      }
-    }
+  if (typeof $request !== 'undefined') {
+    await GetCookie($request);
   }
 })()
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
 
+async function GetCookie(request) {
+  if (request && request.body && request.body.includes("sign")) {
+    $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));
+    $.new_body = JSON.stringify($.rest_body, null, 2);
+    $.boxjs_body = $.body ? JSON.parse($.body) : {};
+
+    if ($.rest_body.api === 'biz.user.msg.subscribe' && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
+      $.setdata($.new_body, $.body_key);
+      $.msg($.name, '', '验证令牌/签名获取成功。');
+      console.log($.new_body);
+    }
+  }
+}
 
 function getReq(body) {
-  const url = 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz'
-  let body = 
-  headers = {
+  const url = 'https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz';
+  const headers = {
     'Content-Type': 'application/x-www-form-urlencoded'
   };
   return { url, body, headers };
 }
 
-//二次封装
+// 封装请求方法
 async function httpRequest(options) {
   try {
-    options = options.url ? options : {
-      url: options
-    };
-    const _method = options?._method || ('body' in options ? 'post' : 'get');
-    const _respType = options?._respType || 'body';
-    const _timeout = options?._timeout || 15e3;
-    const _http = [new Promise((_, reject) => setTimeout(() => reject(`??请求超时:${options['url']}`), _timeout)), new Promise((resolve, reject) => {
-      debug(options, '[Request]');
-      $[_method.toLowerCase()](options, (error, response, data) => {
-        debug(data, '[响应body]');
-        error && $.log($.toStr(error));
-        if (_respType !== 'all') {
-          resolve($.toObj(response?.[_respType], response?.[_respType]));
+    const method = options._method || (options.body ? 'post' : 'get');
+    const timeout = options._timeout || 15000;
+    const responseType = options._respType || 'body';
+
+    const requestPromise = new Promise((resolve, reject) => {
+      $[method.toLowerCase()](options, (error, response, data) => {
+        if (error) {
+          $.log(`请求失败：${error}`);
+          reject(error);
         } else {
-          resolve(response);
+          const result = responseType === 'all' ? response : response[responseType];
+          resolve($.toObj(result, result));
         }
-      })
-    })];
-    return await Promise.race(_http);
+      });
+    });
+
+    const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(`请求超时: ${options.url}`), timeout));
+    return await Promise.race([requestPromise, timeoutPromise]);
   } catch (err) {
     $.logErr(err);
   }
