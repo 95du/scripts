@@ -24,7 +24,7 @@ $.is_debug = $.getdata('is_debug');
       
       $.api = $.rest_body.api === 'biz.user.msg.subscribe';
       $.opt = getReq(request.body);
-      $.success = await httpRequest(opt);
+      $.success = await httpRequest($.opt);
       console.log($.success)
       
       if ($.api && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
