@@ -1599,7 +1599,12 @@ async function main() {
             desc.className = 'form-item-right-desc';
             desc.innerText = item.version;
             cntr.appendChild(desc);
-            button.addEventListener('click', () => button.style.color = 'darkGray');
+            button.addEventListener('click', () => {
+              button.style.color = 'darkGray'; // 点击后变颜色
+              setTimeout(() => {
+                button.style.color = ''
+              }, 5000);
+            });
       
             label.appendChild(cntr);
           }
@@ -1678,16 +1683,19 @@ async function main() {
           </div>\`;
 
           const button = app.querySelector('.icon-arrow_bottom');
-          button.addEventListener('click', (e) => {
-            button.style.color = 'darkGrey';
+          button.addEventListener('click', () => {
+            button.style.color = 'darkGray'; // 点击后变颜色
             invoke('widget', item);
-          });
+            setTimeout(() => {
+              button.style.color = ''
+            }, 5000);
+          })
         } else {
-          if ( !elBody ) {
+          if (!elBody) {
             const groupDiv = fragment.appendChild(document.createElement('div'));
             groupDiv.className = 'list';
             
-            if ( title ) {
+            if (title) {
               const elTitle = groupDiv.appendChild(document.createElement('div'));
               elTitle.className = 'list__header';
               elTitle.textContent = title;
@@ -1858,7 +1866,7 @@ document.getElementById('telegram').addEventListener('click', () => {
      */
     const installScript = async ({ label, name, scrUrl } = data) => {
       if (name === 'repo' || label === 'jump') {
-        Safari.openInApp(scrUrl);  
+        Timer.schedule(400, false, () => { Safari.openInApp(scrUrl) });
         return null;
       }
       
