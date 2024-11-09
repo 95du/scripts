@@ -84,7 +84,7 @@ class _95du {
    * @param {string} type ('string' | 'json' | 'image')。
    * @returns {Promise<string | object | Image>}
    */
-  httpRequest = async (url, type = 'string') => {
+  async httpRequest(url, type) {
     const request = new Request(url);
     const fileType = type || this.getFileInfo(url).type;
     const { loadFile } = this.getMethods(fileType);
@@ -190,7 +190,7 @@ class _95du {
     if (cacheData) return cacheData;
     
     try {
-      const data = await this.httpRequest(url);
+      const data = await this.httpRequest(url, type);
       if (data.message) {
         console.log(data.message);
         return null;
