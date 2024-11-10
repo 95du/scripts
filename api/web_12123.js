@@ -33,7 +33,7 @@ async function main(family) {
    * @param {string} file - JSON
    * @returns {object} - JSON
    */
-  const { myPlate, verifyToken, sign, imgArr, useCache, setPadding, carImg, carTop, carBot, carLead, carTra } = setting || {};
+  const { myPlate, setPadding, carImg, carTop, carBot, carLead, carTra } = setting || {};
   
   const { apiUrl, productId, version, api0, api1, api2, api3, api4, api5, alipayUrl, statusUrl, queryDetailUrl, detailsUrl, maybach } = await module.getCacheData(`${rootUrl}/update/12123.json`);  
   
@@ -64,6 +64,7 @@ async function main(family) {
   const getBoxjsData = async () => {
     const { verifyToken, sign } = await module.boxjsData('body_12123') || {} || null;
     if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
+    return { verifyToken, sign };
   };
     
   /**
@@ -91,6 +92,7 @@ async function main(family) {
    * @returns {object} 响应结果对象
    */
   const requestInfo = async (api, params) => {
+    const { verifyToken, sign } = setting.sign ? setting : await getBoxjsData();
     const formBody = 'params=' + encodeURIComponent(JSON.stringify({ productId, api, sign, version, verifyToken, params }));
     const response = await module.apiRequest(apiUrl, 'POST', {}, null, formBody);
     return response;
@@ -139,7 +141,6 @@ async function main(family) {
   
   // 查询主函数
   const vioQueryMain = async () => {
-    if (!setting.sign) await getBoxjsData();
     const main = await getCacheString('main.json', api1);
     const { success, data } = main;
     if (!success) handleError(main);
@@ -258,7 +259,7 @@ async function main(family) {
     allowToDrive = 'C1', 
     reaccDate = '2099-12-29',
     validityEnd = '2099-12-30',
-    name: myName,
+    name: myName = '用户名',
     issueOrganizationName = setting.botStr
   } = drivingLicense;
 
