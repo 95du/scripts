@@ -104,7 +104,7 @@ async function main() {
     botStr: screenSize < 926 ? '保持良好的驾驶习惯，遵守交通规则' : '保持良好驾驶习惯，务必遵守交通规则'
   };
   
-  const initSettings = (file) => {
+  const initSettings = () => {
     const settings = DEFAULT;
     module.writeSettings(settings);
     return settings;
@@ -112,7 +112,7 @@ async function main() {
   
   const settings = fm.fileExists(settingPath) 
     ? module.getSettings() 
-    : initSettings(settingPath);
+    : initSettings();
   
   /**
    * 检查并下载远程依赖文件
@@ -127,7 +127,7 @@ async function main() {
     const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
   
     if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
-      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
+      const moduleJs = await new Request(`${rootUrl}/module/_95du.js`).load();
       fm.write(modulePath, moduleJs);
       fm.writeString(timestampPath, currentDate);
       console.log('Module updated');
@@ -668,13 +668,13 @@ async function main() {
         
         label.appendChild(selCont);
       } else if (['cell', 'page', 'file'].includes(item.type)) {
-        const { name, isAdd } = item
+        const { name, isDesc } = item
 
         if (item.desc) {
           const desc = document.createElement("div");
           desc.className = 'form-item-right-desc';
           desc.id = \`\${name}-desc\`
-          desc.innerText = isAdd ? (settings[\`\${name}_status\`] ?? item.desc) : settings[name];
+          desc.innerText = isDesc ? (settings[\`\${name}_status\`] ?? item.desc) : settings[name];
           label.appendChild(desc);
         };
       
@@ -1043,7 +1043,7 @@ async function main() {
      * @param data
      * @returns {Promise<string>}
      */
-    const input = async ({ label, name, message, input, display, isAdd, other } = data) => {
+    const input = async ({ label, name, message, input, display, isDesc, other } = data) => {
       await module.generateInputAlert({
         title: label,
         message: message,
@@ -1055,7 +1055,7 @@ async function main() {
         ]
       }, 
       async ([{ value }]) => {
-        if ( isAdd ) {
+        if ( isDesc ) {
           result = value.endsWith('.png') ? value : ''
         } else if ( display ) {
           result = /[a-z]+/.test(value) && /\d+/.test(value) ? value : ''
@@ -1066,7 +1066,7 @@ async function main() {
         const isName = ['myPlate', 'logo', 'carImg'].includes(name);
         const inputStatus = result ? '已添加' : (display || other ? '未添加' : '默认');
         
-        if (isAdd || display) {
+        if (isDesc || display) {
           settings[`${name}_status`] = inputStatus;  
         }
         settings[name] = result;
@@ -1258,12 +1258,14 @@ async function main() {
             await previewWidget();
           }
           break;
+        case 'file':
+          const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
+          await importModule(await fileModule).main();
+          break;
         case 'background':
           const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
-          if (modulePath != null) {
-            await importModule(await modulePath).main(cacheImg);
-            await previewWidget();
-          }
+          await importModule(await modulePath).main(cacheImg);
+          await previewWidget();
           break;
         case 'store':
           const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
@@ -1382,7 +1384,7 @@ async function main() {
             label: '推送时段',
             name: 'period',
             type: 'cell',
-            isAdd: true,
+            isDesc: true,
             icon: {
               name: 'deskclock.fill',
               color: '#0096FF'
@@ -1437,6 +1439,17 @@ async function main() {
               name: 'gearshape.fill',
               color: '#FF4D3D'
             }
+          },
+          {
+            label: '文件管理',
+            name: 'file',
+            type: 'cell',
+            isDesc: true,
+            icon: {
+              name: 'folder.fill',
+              color: '#B07DFF'
+            },
+            desc: 'Honye'
           },
           {
             label: '刷新时间',
@@ -1495,7 +1508,7 @@ async function main() {
             name: 'carImg',
             type: 'cell',
             input: true,
-            isAdd: true,
+            isDesc: true,
             message: '填入png格式的图片链接',
             desc: settings.carImg ? '已添加' : '默认',
             icon: {
@@ -1661,7 +1674,7 @@ async function main() {
             label: '图片背景',
             name: 'chooseBgImg',
             type: 'file',
-            isAdd: true,
+            isDesc: true,
             icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
