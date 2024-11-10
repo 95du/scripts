@@ -169,18 +169,19 @@ class _95du {
     const type = name.match(/\.(png|jpeg|jpg|bmp|webp)$/i) 
       ? 'image' 
       : name.endsWith('.json') 
-      ? 'json' 
-      : 'string';
+        ? 'json' 
+        : 'string';
     return { name, type };
   };
   
   /**
    * 获取请求数据并缓存
-   * @param {string} name
    * @param {string} url
+   * @param {string} hours
+   * @param {string} filename带扩展名， 当url中没有文件扩展名时，用于判断文件类型。
    * @param {string} type（json, string, image）
    * @returns {*} - 返回缓存数据
-   */  
+   */
   getCacheData = async (url, cacheTime = 240, filename) => {
     const { name, type } = this.getFileInfo(filename || url);
     const cache = this.useFileManager({ 
@@ -217,6 +218,7 @@ class _95du {
   
   /**
    * 获取远程图片并使用缓存 toBase64
+   * @param {string} filename带扩展名， 当url中没有文件扩展名时，用于判断文件类型。
    * @param {Image} url
    */
   getCacheImage = async (url, filename, type = 'image') => {
@@ -244,6 +246,32 @@ class _95du {
       return this.toBase64(image);
     }
     const img = await this.drawTableIcon(name, color);
+    cache.write(name, img);
+    return this.toBase64(img);
+  };
+  
+  /**
+   * SFIcon 转换为base64
+   * @param {*} icon SFicon
+   * @returns base64 string
+   */
+  drawSFIcon = (icon = name) => {
+    let sf = SFSymbol.named(icon);
+    if (sf === null) sf = SFSymbol.named('message');
+    sf.applyFont(  
+      Font.mediumSystemFont(30)
+    );
+    return sf.image;
+  };
+  
+  // 缓存并读取原生 SFSymbol icon
+  getCacheDrawSFIcon = async (name, type = 'image') => {
+    const cache = this.useFileManager({ type });
+    const image = cache.read(name);
+    if (image) {
+      return this.toBase64(image);
+    }
+    const img = await this.drawSFIcon(name);
     cache.write(name, img);
     return this.toBase64(img);
   };
@@ -354,32 +382,6 @@ class _95du {
     await wv.loadHTML(html);
     const base64Image = await wv.evaluateJavaScript(js);
     return await new Request(base64Image).loadImage();  
-  };
-  
-  /**
-   * SFIcon 转换为base64
-   * @param {*} icon SFicon
-   * @returns base64 string
-   */
-  drawSFIcon = (icon = name) => {
-    let sf = SFSymbol.named(icon);
-    if (sf === null) sf = SFSymbol.named('message');
-    sf.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    return sf.image;
-  };
-  
-  // 缓存并读取原生 SFSymbol icon
-  getCacheDrawSFIcon = async (name, type = 'image') => {
-    const cache = this.useFileManager({ type });
-    const image = cache.read(name);
-    if (image) {
-      return this.toBase64(image);
-    }
-    const img = await this.drawSFIcon(name);
-    cache.write(name, img);
-    return this.toBase64(img);
   };
   
   /**
