@@ -526,7 +526,7 @@ async function main() {
       };
     });
   
-    presentList({
+    await presentList({
       title: 'Local documents directory',
       list,
       directory: localDocumentsDir
