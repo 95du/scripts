@@ -10,7 +10,8 @@ async function main() {
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const myRepo = 'https://github.com/95du/scripts';
   const chatGPT = 'https://chatgpt.com/?ref=dotcom';
-  
+  const chatGptUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
+
   /**
    * 创建，获取存储路径
    * @returns {string} - string
@@ -138,8 +139,7 @@ async function main() {
   
   // apple appStore Details
   const getAppDetails = async () => {
-    const backupUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
-    const { results } = await module.getCacheData(backupUrl, 24);
+    const { results } = await module.getCacheData(chatGptUrl, 24);
     const { trackName, currentVersionReleaseDate, screenshotUrls } = results[0];
     const match = trackName.match(/(.+)-/);
     const trackname = match ? match[1].trim() : trackName.trim();
@@ -758,11 +758,8 @@ async function main() {
     const scriptTags = await module.scriptTags();
     
     /**
-     1.	批量加载和缓存：使用Promise.all()来并行加载所有图片，然后缓存结果，避免重复请求。
-	  2.	懒加载：在webView中，只加载当前视口范围内的图片，其他图片在用户滚动时加载，这样可以减少初始加载时间。
-	  3.	减少DOM操作：尽量减少对DOM的频繁操作，如多次创建和插入节点。可以先将图片数据加载到内存中，然后批量渲染至DOM中。
-	  4.	优化图片资源：确保图片资源尽可能小，例如通过压缩或选择合适的格式（如webp）
-    */
+     * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
+     */
     const loadCacheIcons = async (items) => {
       return await Promise.all(items.map(async (item) => {
         const { icon } = item;
@@ -1272,6 +1269,8 @@ async function main() {
     }
     
     button {
+      font-family: 'Roboto', sans-serif;
+      color: #0072FF;
       font-weight: 700;
       font-size: 15px;
       border-radius: 20px;
