@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '交管 12123'
-  const version = '1.2.0'
-  const updateDate = '2024年10月23日'
+  const version = '1.2.1'
+  const updateDate = '2024年11月10日'
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
