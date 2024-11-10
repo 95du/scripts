@@ -2,7 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: red; icon-glyph: folder-open;
 /**
- * 修改自 Honey 的脚本，直接进入本地文件目录，脚本发生错误时，供用户使用。
+ * 修改自 Honye 的脚本，直接进入本地文件目录，脚本发生错误时，供用户使用。
  * 仓库: https://github.com/Honye/scriptable-scripts
  * @param {string[]} fileURLs
  * @param {string} destPath
