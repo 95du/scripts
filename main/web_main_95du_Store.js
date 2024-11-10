@@ -87,7 +87,7 @@ async function main() {
     const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
   
     if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
-      const moduleJs = await new Request(`${rootUrl}/update/_95du.js`).load();
+      const moduleJs = await new Request(`${rootUrl}/module/_95du.js`).load();
       fm.write(modulePath, moduleJs);
       fm.writeString(timestampPath, currentDate);
       console.log('Module updated');
@@ -1818,7 +1818,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         const alert = new Alert();
         alert.message = '删减仓库❓'
         subList.forEach(item => {
-          const name = item.match(/github\.com\/(.+)/)?.[1];
+          const name = item.match(/github\.com\/([\w-]+\/[\w-]+)/)[1];
           alert.addAction(name)
         });
         alert.addCancelAction('取消');
