@@ -1635,82 +1635,85 @@ async function main() {
       }
       return label;
     };
-  
-    // 创建列表
-    const createList = (list, title) => {
+    
+    /** ☘️创建列表通用组容器☘️ **/
+    const createGroup = (fragment, title) => {
+      const groupDiv = fragment.appendChild(document.createElement('div'));
+      groupDiv.className = 'list';
+    
+      if (title) {
+        const elTitle = groupDiv.appendChild(document.createElement('div'));
+        elTitle.className = 'list__header';
+        elTitle.textContent = title;
+      }
+    
+      const elBody = groupDiv.appendChild(document.createElement('div'));
+      elBody.className = 'list__body';
+      return elBody;
+    };
+    
+    /** 创建 AppStore 样式元素 **/
+    const createAppElement = (elBody, item) => {
+      const { name, desc, date, appUrl, images } = item.data;
+      const app = elBody.appendChild(document.createElement('div'));
+      app.className = 'app';
+      app.innerHTML = 
+      \`<div class="app-head">
+        <img class="app-icon" src="\${appUrl}"></img>
+        <div class="app-right">
+          <div>
+            <div class="app-name">\${name}</div>
+            <div class="app-desc">\${desc}</div>
+            <div class="app-score">\${date}</div>
+          </div>
+          <button class="iconfont icon-arrow_bottom">打开</button>
+        </div>
+      </div>
+      <div class="app-imgs">
+        \${images.map((img) => (
+          \`<img class="app-img" src="\${img}"></img>\`
+        )).join('')}
+      </div>\`;
+    
+      const button = app.querySelector('.icon-arrow_bottom');
+      button.addEventListener('click', () => {
+        button.style.color = 'darkGray';
+        invoke('widget', item);
+        setTimeout(() => {
+          button.style.color = '';
+        }, 5000);
+      });
+    };
+    
+    //======== 创建列表 ========//
+    const createList = ( list, title ) => {
       const fragment = document.createDocumentFragment();
       let elBody;
-      let isHeaderAdded = false;
     
       for (const item of list) {
         if (item.type === 'group') {
           const grouped = createList(item.items, item.label);
           fragment.appendChild(grouped);
-        } else if (item.type === 'app') {
-          const groupDiv = fragment.appendChild(document.createElement('div'));
-          groupDiv.className = 'list'
-    
-          if (title && !isHeaderAdded) {
-            const elTitle = groupDiv.appendChild(document.createElement('div'));
-            elTitle.className = 'list__header';
-            elTitle.textContent = title;
-            isHeaderAdded = true;
-          }
-    
-          elBody = groupDiv.appendChild(document.createElement('div'));
-          elBody.className = 'list__body';
-    
-          const { name, desc, date, appUrl, images } = item.data;
-          const app = elBody.appendChild(document.createElement('div'));
-          app.className = 'app';
-          app.innerHTML =
-          \`<div class="app-head">
-            <img class="app-icon" src="\${appUrl}"></img>
-            <div class="app-right">
-              <div>
-                <div class="app-name">\${name}</div>
-                <div class="app-desc">\${desc}</div>
-                <div class="app-score">\${date}</div>
-              </div>
-              <button class="iconfont icon-arrow_bottom">打开</button>
-            </div>
-          </div>
-          <div class="app-imgs">
-          \${images.map((img) => (
-            \`<img class="app-img" src="\${img}"></img>\`
-          )).join('')}
-          </div>\`;
-
-          const button = app.querySelector('.icon-arrow_bottom');
-          button.addEventListener('click', () => {
-            button.style.color = 'darkGray'; // 点击后变颜色
-            invoke('widget', item);
-            setTimeout(() => {
-              button.style.color = ''
-            }, 5000);
-          })
+        } else if (
+          item.type === 'app'
+        ) {
+          elBody = createGroup(fragment, title);  
+          createAppElement(elBody, item);
         } else {
           if (!elBody) {
-            const groupDiv = fragment.appendChild(document.createElement('div'));
-            groupDiv.className = 'list';
-            
-            if (title) {
-              const elTitle = groupDiv.appendChild(document.createElement('div'));
-              elTitle.className = 'list__header';
-              elTitle.textContent = title;
-            }
-    
-            elBody = groupDiv.appendChild(document.createElement('div'));
-            elBody.className = 'list__body';
+            elBody = createGroup(fragment, title, 'list__header', 'list__body');
           }
-    
+          
+          if (item.name === 'repo') {
+            elBody.id = 'repo'
+          }
+          
           const label = createFormItem(item);
           elBody.appendChild(label);
         }
       }
-      return fragment;
+      return fragment
     };
-    
     const fragment = createList(formItems);
     document.getElementById('settings').appendChild(fragment);
     
@@ -1786,6 +1789,81 @@ document.getElementById('telegram').addEventListener('click', () => {
     await webView.loadHTML(html);
 
     /**
+     * 动态添加或删除项目并更新 WebView 显示的项目列表 (getElementById)
+     * @param {Object} item - 要添加的项目对象，包括 label, desc, version, name, type, scrUrl, icon 等属性。
+     * @param {string|null} deleteUrl - 要删除的项目 scrUrl。如果存在该 URL，则删除对应项目；否则添加新项目。
+     */
+    const updateRepoItems = async (item, deleteUrl) => {
+      const removeObj = (url) => {
+        const index = repoItems.findIndex(item => item.scrUrl === url);
+        if (index !== -1) repoItems.splice(index, 1);
+      };
+      
+      if (deleteUrl) {
+        removeObj(deleteUrl);
+      } else {
+        repoItems.push(item);
+      }
+  
+      await webView.evaluateJavaScript(`
+      (() => {    
+        const items = ${JSON.stringify(repoItems)};
+        const labelsContainer = document.getElementById('repo');
+          
+        const createLabelsHtml = (items) => items.map(item => \`
+          <label class="form-item" data-name="\${item.name}">
+            <div class="form-label">
+              <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wcAAwAB/afukV4AAAAASUVORK5CYII=" class="form-label-img" data-icon="\${item.icon}">
+              <div>
+                <div class="form-label-title">\${item.label}</div>
+                <div class="form-label-desc">\${item.desc}</div>
+              </div>
+            </div>
+            <div>
+              <button class="iconfont icon-arrow_bottom">打开</button>
+              <div class="form-item-right-desc">\${item.version}</div>
+            </div>
+          </label>
+          \`).join('');
+        
+        labelsContainer.innerHTML = createLabelsHtml(items);
+        document.getElementById('repo').querySelectorAll('.form-label-img').forEach(img => {
+          const iconUrl = img.getAttribute('data-icon');
+          const tempImg = new Image();
+          tempImg.src = iconUrl;
+
+          tempImg.onload = () => {
+            img.src = iconUrl;
+          };
+        });
+        document.getElementById('repo').querySelectorAll('button').forEach((button, index) => {
+          button.addEventListener('click', () => {
+            button.style.color = 'darkGray';
+            invoke('widget', items[index]); // 调用 invoke 并传递对应的 item.scrUrl
+            setTimeout(() => (button.style.color = ''), 5000);
+          });
+        })
+      })();`, false);
+    };
+    
+    // 获取新的仓库数据
+    const requestNewRepo = async (url) => {
+      const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
+      const repoUrl = `https://api.github.com/repos/${match[1]}`;    
+      const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(repoUrl);
+      return {
+        label: userName,
+        desc: formatDate(updated_at),
+        version: watchers,
+        name: 'repo',
+        id: 'repo',
+        type: 'button',
+        scrUrl: html_url,
+        icon: avatarUrl
+      };
+    }
+    
+    /**
      * Input window
      * @param data
      * @returns {Promise<string>}
@@ -1800,11 +1878,12 @@ document.getElementById('telegram').addEventListener('click', () => {
         }]
       }, 
       async ([{ value }]) => {
-        if (value?.includes('https://github.com/') && !settings[name].includes(value)) {
+        if (value?.includes('https://github.com/') && !value?.includes('?') &&  !settings[name].includes(value)) {
           settings[name] = settings[name] || [];
           settings[name].push(value);
           writeSettings(settings);
-          ScriptableRun();
+          const repoValue = await requestNewRepo(value);
+          await updateRepoItems(repoValue);
         } else {
           module.notify('添加失败 ⚠️', '链接错误或已存在，请检查后再试');
         }
@@ -1831,11 +1910,13 @@ document.getElementById('telegram').addEventListener('click', () => {
           options = ['取消', '删除'],
           true
         );
+        
         if (action === 1) {
+          await updateRepoItems(null, subList[menuId]);
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
-          Timer.schedule(1000, false, () => { ScriptableRun() });
+          if (subList.length < 1) ScriptableRun();
         }
       }
     };
@@ -1952,7 +2033,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           false
         );
       };
-      await injectListener();
+      Timer.schedule(1, false, () => { injectListener() });
     };
   
     injectListener().catch((e) => {
