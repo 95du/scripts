@@ -1794,19 +1794,12 @@ document.getElementById('telegram').addEventListener('click', () => {
      * @param {Object} item - 要添加的项目对象，包括 label, desc, version, name, type, scrUrl, icon 等属性。
      * @param {string|null} deleteUrl - 要删除的项目 scrUrl。如果存在该 URL，则删除对应项目；否则添加新项目。
      */
-    const updateRepoItem = async (param) => {
-      const repoItems = formItems.find(item => item.name === 'gitHub')?.items;
-      const num = repoItems.length !== settings.urls.length ? 1 : param;
-      
-      typeof param === 'object' 
-        ? repoItems.push(param) 
-        : repoItems.splice(num, 1)
-      
-      await webView.evaluateJavaScript(`
+    const updateRepoHtml = async (repoItems) => {
+      return await webView.evaluateJavaScript(`
       (() => {    
         const items = ${JSON.stringify(repoItems)};
         const labelsContainer = document.getElementById('repo');
-          
+        
         const createLabelsHtml = (items) => items.map(item => \`
           <label class="form-item" data-name="\${item.name}">
             <div class="form-label">
@@ -1824,6 +1817,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           \`).join('');
         
         labelsContainer.innerHTML = createLabelsHtml(items);
+        if (items.length < 1) document.querySelectorAll('.list__header').forEach(el => el.remove());
         document.getElementById('repo').querySelectorAll('.form-label-img').forEach(img => {
           const iconUrl = img.getAttribute('data-icon');
           const tempImg = new Image();
@@ -1841,6 +1835,15 @@ document.getElementById('telegram').addEventListener('click', () => {
           });
         })
       })();`, false);
+    };
+    
+    const updateRepoItem = async (param) => {
+      const repoItems = formItems.find(item => item.name === 'gitHub')?.items;
+      const num = repoItems.length !== settings.urls.length ? 1 : param;
+      typeof param === 'object' 
+        ? repoItems.push(param) 
+        : repoItems.splice(num, 1);
+      await updateRepoHtml(repoItems)
     };
     
     // 获取新的仓库数据
