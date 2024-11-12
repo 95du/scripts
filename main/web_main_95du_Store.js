@@ -237,7 +237,7 @@ async function main() {
           name: 'urls',
           type: 'cell',
           input: true,
-          message: '请输入仓库链接，可在此显示仓库更新时间，并支持添加多个链接',
+          message: '支持添加多个仓库',
           icon: 'person.circle.fill'
         },
         {
@@ -1896,7 +1896,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         const alert = new Alert();
         alert.message = '删减仓库❓'
         subList.forEach(item => {
-          const name = item.match(/github\.com\/([\w-]+\/[\w-]+)/)[1];
+          const name = item.match(/github.com\/(\w+)/)?.[1];
           alert.addAction(name)
         });
         alert.addCancelAction('取消');
