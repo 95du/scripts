@@ -1796,10 +1796,11 @@ document.getElementById('telegram').addEventListener('click', () => {
      */
     const updateRepoItem = async (param) => {
       const repoItems = formItems.find(item => item.name === 'gitHub')?.items;
+      const num = repoItems.length !== settings.urls.length ? 1 : param;
       
       typeof param === 'object' 
         ? repoItems.push(param) 
-        : repoItems.splice(param, 1) 
+        : repoItems.splice(num, 1)
       
       await webView.evaluateJavaScript(`
       (() => {    
@@ -1911,7 +1912,9 @@ document.getElementById('telegram').addEventListener('click', () => {
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
-          if (subList.length < 1) Timer.schedule(1000, false, () => { ScriptableRun() });
+          if (subList.length < 1 && repoItems.length < 1) {
+            Timer.schedule(500, false, () => { ScriptableRun() });
+          }
         }
       }
     };
