@@ -1817,15 +1817,13 @@ document.getElementById('telegram').addEventListener('click', () => {
           \`).join('');
         
         labelsContainer.innerHTML = createLabelsHtml(items);
-        if (items.length < 1) document.querySelectorAll('.list__header').forEach(el => el.remove());
         document.getElementById('repo').querySelectorAll('.form-label-img').forEach(img => {
           const iconUrl = img.getAttribute('data-icon');
           const tempImg = new Image();
           tempImg.src = iconUrl;
-
-          tempImg.onload = () => {
+          tempImg.onload = () => {  
             img.src = iconUrl;
-          };
+          }
         });
         document.getElementById('repo').querySelectorAll('button').forEach((button, index) => {
           button.addEventListener('click', () => {
@@ -1851,7 +1849,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
       const repoUrl = `https://api.github.com/repos/${match[1]}`;    
       const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(repoUrl);
-      return {
+      const param = {
         label: userName,
         desc: formatDate(updated_at),
         version: watchers,
@@ -1860,6 +1858,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         scrUrl: html_url,
         icon: avatarUrl
       };
+      return await updateRepoItem(param);
     }
     
     /**
@@ -1881,8 +1880,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           settings[name] = settings[name] || [];
           settings[name].push(value);
           writeSettings(settings);
-          const repoValue = await requestNewRepo(value);
-          await updateRepoItem(repoValue);
+          await requestNewRepo(value);
         } else {
           module.notify('添加失败 ⚠️', '链接错误或已存在，请检查后再试');
         }
@@ -1915,9 +1913,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
-          if (subList.length < 1 && repoItems.length < 1) {
-            Timer.schedule(500, false, () => { ScriptableRun() });
-          }
+          if (repoItems.length < 1) await requestNewRepo(myRepo);
         }
       }
     };
