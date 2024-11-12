@@ -1937,7 +1937,8 @@ document.getElementById('telegram').addEventListener('click', () => {
       
       try {
         const script = await new Request(scrUrl).loadString();
-        if (script.includes('组件')) saveScript(label, script, scrUrl);
+        if (script.includes('组件')) saveScript(label, script, scrUrl);  
+        else module.notify(script, '安装失败，脚本链接有误或已删除。');
       } catch (e) {
         console.log(e);
         module.notify(`${label} ⚠️`, '获取脚本失败，请在 App 设置中打开 Sync Script Order');
