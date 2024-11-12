@@ -407,7 +407,7 @@ async function main() {
           version: '1.1.0',
           type: 'button',
           recommend: true,
-          scrUrl: `${rootUrl}/widget/web_module_lottery.js`,
+          scrUrl: `${rootUrl}/run/web_module_lottery.js`,
           icon: `${rootUrl}/img/icon/lottery.png`
         },
         {
