@@ -226,6 +226,7 @@ async function main() {
     {
       label: 'GitHub仓库',
       type: 'group',
+      name: 'gitHub',
       items: repoItems
     },
     {
@@ -1793,18 +1794,13 @@ document.getElementById('telegram').addEventListener('click', () => {
      * @param {Object} item - 要添加的项目对象，包括 label, desc, version, name, type, scrUrl, icon 等属性。
      * @param {string|null} deleteUrl - 要删除的项目 scrUrl。如果存在该 URL，则删除对应项目；否则添加新项目。
      */
-    const updateRepoItems = async (item, deleteUrl) => {
-      const removeObj = (url) => {
-        const index = repoItems.findIndex(item => item.scrUrl === url);
-        if (index !== -1) repoItems.splice(index, 1);
-      };
+    const updateRepoItem = async (param) => {
+      const repoItems = formItems.find(item => item.name === 'gitHub')?.items;
       
-      if (deleteUrl) {
-        removeObj(deleteUrl);
-      } else {
-        repoItems.push(item);
-      }
-  
+      typeof param === 'object' 
+        ? repoItems.push(param) 
+        : repoItems.splice(param, 1) 
+      
       await webView.evaluateJavaScript(`
       (() => {    
         const items = ${JSON.stringify(repoItems)};
@@ -1839,7 +1835,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         document.getElementById('repo').querySelectorAll('button').forEach((button, index) => {
           button.addEventListener('click', () => {
             button.style.color = 'darkGray';
-            invoke('widget', items[index]); // 调用 invoke 并传递对应的 item.scrUrl
+            invoke('widget', items[index]);
             setTimeout(() => (button.style.color = ''), 5000);
           });
         })
@@ -1856,7 +1852,6 @@ document.getElementById('telegram').addEventListener('click', () => {
         desc: formatDate(updated_at),
         version: watchers,
         name: 'repo',
-        id: 'repo',
         type: 'button',
         scrUrl: html_url,
         icon: avatarUrl
@@ -1883,7 +1878,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           settings[name].push(value);
           writeSettings(settings);
           const repoValue = await requestNewRepo(value);
-          await updateRepoItems(repoValue);
+          await updateRepoItem(repoValue);
         } else {
           module.notify('添加失败 ⚠️', '链接错误或已存在，请检查后再试');
         }
@@ -1912,24 +1907,12 @@ document.getElementById('telegram').addEventListener('click', () => {
         );
         
         if (action === 1) {
-          await updateRepoItems(null, subList[menuId]);
+          await updateRepoItem(menuId);
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
-          if (subList.length < 1) ScriptableRun();
+          if (subList.length < 1) Timer.schedule(1000, false, () => { ScriptableRun() });
         }
-      }
-    };
-    
-    // 清除缓存
-    const clearCache = async () => {
-      const action = await module.generateAlert(
-        '清除缓存', '是否确定删除所有缓存？\n离线数据及图片均会被清除。',
-        options = ['取消', '清除']
-      );
-      if (action == 1) {
-        fm.remove(cacheStr);
-        ScriptableRun();
       }
     };
       
@@ -1969,7 +1952,19 @@ document.getElementById('telegram').addEventListener('click', () => {
       module.notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
       ScriptableRun(label);
     };
-      
+    
+    // 清除缓存
+    const clearCache = async () => {
+      const action = await module.generateAlert(
+        '清除缓存', '是否确定删除所有缓存？\n离线数据及图片均会被清除。',
+        options = ['取消', '清除']
+      );
+      if (action == 1) {
+        fm.remove(cacheStr);
+        ScriptableRun();
+      }
+    };
+    
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
