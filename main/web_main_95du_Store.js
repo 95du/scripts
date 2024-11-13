@@ -23,14 +23,14 @@ async function main() {
   await download95duModule(rootUrl);
   const isDev = false
   
-  /** ------- 导入模块 ------- */
+  /** ------- 导入模块 ------- **/
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
   const pathName = '95du_Store';
   const module = new _95du(pathName);  
   
-  let {
+  const {
     mainPath,
     settingPath,
     cacheImg, 
@@ -625,8 +625,7 @@ async function main() {
       items: [{
         label: '退出登录',
         name: 'exit',
-        type: 'restart',
-        default: true
+        type: 'blank'
       }]
     },
   ];
@@ -986,7 +985,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${183 + (settings.urls.length * 4 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${183 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
@@ -1258,7 +1257,7 @@ async function main() {
       background: #f2f2f7;
     }
     
-    .restart-text {
+    .exit-text {
       font-family: 'Roboto', sans-serif;
       color: #0072FF;
       font-weight: lighter;
@@ -1267,7 +1266,7 @@ async function main() {
     button {
       font-family: 'Roboto', sans-serif;
       color: #0072FF;
-      font-weight: 700;
+      font-weight: 600;
       font-size: 15px;
       border-radius: 20px;
       border: none;
@@ -1566,7 +1565,7 @@ async function main() {
       }
       div.appendChild(divWrapper);
         
-      if (['cell', 'button', 'page', 'restart'].includes(item.type)) {
+      if (['cell', 'button', 'page', 'blank'].includes(item.type)) {
         const labelClickHandler = ( e ) => {
           const { name } = item;
           const methodName = name === 'effect' ? 'itemClick' : name;
@@ -1579,8 +1578,10 @@ async function main() {
             const icon = document.createElement('i');
             icon.className = 'iconfont icon-arrow_right';
             label.appendChild(icon);
-          } else if (item.type === 'restart') {
-            label.classList.add('restart-text');
+          } else if (
+            item.type === 'blank'
+          ) {
+            label.classList.add('exit-text');
           } else {
             const cntr = document.createElement('div');
             
@@ -1694,12 +1695,10 @@ async function main() {
           createAppElement(elBody, item);
         } else {
           if (!elBody) {
-            elBody = createGroup(fragment, title, 'list__header', 'list__body');
+            elBody = createGroup(fragment, title, 'list__header', 'list__body');  
           }
           
-          if (item.name === 'repo') {
-            elBody.id = 'repo'
-          }
+          if (item.name === 'repo') elBody.id = 'repo';
           
           const label = createFormItem(item);
           elBody.appendChild(label);
@@ -1820,8 +1819,8 @@ document.getElementById('telegram').addEventListener('click', () => {
     };
     
     const updateRepoItem = async (param) => {
-      const repoItems = formItems.find(item => item.name === 'gitHub')?.items;
       const num = repoItems.length !== settings.urls.length ? 1 : param;
+
       typeof param === 'object' 
         ? repoItems.push(param) 
         : repoItems.splice(num, 1);
@@ -1877,7 +1876,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       const subList = settings.urls;
       while (subList.length) {
         const alert = new Alert();
-        alert.message = '删减仓库❓'
+        alert.message = '删减仓库列表'
         subList.forEach(item => {
           const name = item.match(/github.com\/(\w+)/)?.[1];
           alert.addAction(name)
