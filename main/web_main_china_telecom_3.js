@@ -7,35 +7,39 @@ async function main() {
   const version = '1.1.0'
   const updateDate = '2024年10月23日'
   const pathName = '95du_china_telecom_3';
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
-  const [scrName, scrUrl] = ['china_telecom_3.js', `${rootUrl}/api/web_china_telecom_3.js`];
-
+  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const scrUrl = `${rootUrl}/api/web_china_telecom_3.js`;
+  
   /**
-   * 创建，获取存储路径
+   * 创建，获取模块路径
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), pathName);
-
-  const getCachePath = (dirName) => {
-    if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
-    const dirPath = fm.joinPath(mainPath, dirName);
-    if (!fm.fileExists(dirPath)) fm.createDirectory(dirPath);
-    return dirPath;
-  };
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
+  await download95duModule(rootUrl);
+  const isDev = false
   
-  const [ cacheImg, cacheStr ] = [
-    'cache_image',
-    'cache_string'
-  ].map(getCachePath);
-
+  /** ------- 导入模块 ------- */
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
+  
+  const module = new _95du(pathName);  
+  const {
+    mainPath,
+    settingPath,
+    cacheImg, 
+    cacheStr, 
+    cacheCar
+  } = module;
+  
   /**
    * 存储当前设置
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(settingPath(), JSON.stringify(settings, null, 4));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 2));
     console.log(JSON.stringify(
       settings, null, 2
     ));
@@ -78,35 +82,49 @@ async function main() {
     rank: [{ name: '话费', value: 0 }, { name: '语音', value: 1 }, { name: '流量', value: 2 }]
   };
   
-  const getSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return JSON.parse(fm.readString(file));
-    } else {
-      const settings = DEFAULT;
-      writeSettings(settings);
-      return settings;
+  const initSettings = () => {
+    const settings = DEFAULT;
+    module.writeSettings(settings);
+    return settings;
+  };
+  
+  const settings = fm.fileExists(settingPath) 
+    ? module.getSettings() 
+    : initSettings();
+  
+  /**
+   * 检查并下载远程依赖文件
+   * Downloads or updates the `_95du.js` module hourly.
+   * @param {string} rootUrl - The base URL for the module file.
+   */
+  async function download95duModule(rootUrl) {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
+    const currentDate = new Date().toISOString().slice(0, 13);
+  
+    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
+  
+    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
+      const moduleJs = await new Request(`${rootUrl}/module/_95du.js`).load();
+      fm.write(modulePath, moduleJs);
+      fm.writeString(timestampPath, currentDate);
+      console.log('Module updated');
     }
   };
   
-  const settingPath = () => fm.joinPath(mainPath, 'setting.json')
-  settings = await getSettings(settingPath());
-  
   /**
-   * 指定模块页面
-   * @param { string } time
-   * @param { string } color
-   * @param { string } module
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
    */
-  const webModule = async (scriptName, url) => {
-    const modulePath = fm.joinPath(cacheStr, scriptName);
-    if (!settings.update && fm.fileExists(modulePath)) {
-      return modulePath;
-    } else {
-      const moduleJs = await getCacheString(scriptName, url);
-      if (moduleJs) {
-        return modulePath;
-      }
-    }
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
+  // 获取头像图片
+  const getAvatarImg = () => {
+    return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
   
   // ScriptableRun
@@ -121,7 +139,7 @@ async function main() {
   
   // 预览组件，获取版本名称和链接
   const previewWidget = async (family = 'medium') => {
-    const moduleJs = await webModule(scrName, scrUrl);
+    const moduleJs = await module.webModule(scrName, scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
     shimoFormData(family);
@@ -146,32 +164,11 @@ async function main() {
   };
   
   /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
-  /** download store **/
-  const myStore = async () => {
-    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
-    const fm = FileManager.iCloud();
-    fm.writeString(
-      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-  };
-  
-  /**
    * 版本更新时弹出窗口
    * @returns {String} string
    */
   const updateVerPopup = () => {
-    const creationDate = fm.creationDate(settingPath());
+    const creationDate = fm.creationDate(settingPath);
     if (creationDate) {
       isInitialized = Date.now() - creationDate.getTime() > 300000;
     }
@@ -210,22 +207,6 @@ async function main() {
     }
   };
   
-  const appleOS = async () => {
-    const currentHour = new Date().getHours();
-    const { startHour = 4, endHour = 6 } = settings;
-    if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
-      try { 
-        const html = await new Request(atob('aHR0cHM6Ly9kZXZlbG9wZXIuYXBwbGUuY29tL25ld3MvcmVsZWFzZXMvcnNzL3JlbGVhc2VzLnJzcw==')).loadString();
-        const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
-        if (settings.push !== iOS) {
-          notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
-          settings.push = iOS
-          writeSettings(settings);
-        }
-      } catch {};
-    }
-  };
-  
   /**
    * 运行 Widget 脚本
    * 组件版本、iOS系统更新提示
@@ -244,280 +225,12 @@ async function main() {
     try {
       const family = config.widgetFamily;
       await previewWidget(family);
-      await appleOS();
+      await module.appleOS_update();
     } catch (e) {
       console.log(e);
     } finally {
       return null;
     }
-  };
-  /**
-   * 弹出输入框
-   * @param title 标题
-   * @param desc  描述
-   * @param opt   属性
-   * @returns { Promise<void> }
-   */
-  const generateInputAlert = async (options, confirm) => {
-    const { title, message, options: fieldArr } = options;
-    const inputAlert = new Alert();
-    inputAlert.title = title;
-    inputAlert.message = message;
-    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
-    inputAlert.addAction('取消');
-    inputAlert.addAction('确认');
-    const getIndex = await inputAlert.presentAlert();
-    if (getIndex === 1) {
-      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
-      confirm(inputObj);
-    }
-    return getIndex;
-  };
-  
-  /**
-   * @param message 内容
-   * @param options 按键
-   * @returns { Promise<number> }
-   */
-  const generateAlert = async ( title, message = '', options, destructiveAction ) => {
-    const alert = new Alert();
-    alert.title = title;
-    alert.message = message ?? '';
-    for (const option of options) {
-      option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
-    }
-    return await alert.presentAlert();
-  };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
-  };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  /**
-   * 获取css及js字符串和图片并使用缓存
-   * @param {string} File Extension
-   * @param {Image} Base64 
-   * @returns {string} - Request
-   */
-  const useFileManager = ({ cacheTime } = {}) => {
-    return {
-      readString: (name) => {
-        const path = fm.joinPath(cacheStr, name);  
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime) fm.remove(path);
-          else return fm.readString(path);
-        }
-      },
-      writeString: (name, content) => fm.writeString(fm.joinPath(cacheStr, name), content),
-      // cache image
-      readImage: (name) => {
-        const path = fm.joinPath(cacheImg, name);
-        return fm.fileExists(path) ? fm.readImage(path) : null;
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cacheImg, name), image),
-    };
-    
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000)
-    }
-  };
-  
-  /**
-   * 获取css，js字符串并使用缓存
-   * @param {string} string
-   */
-  const getString = async (url) => await new Request(url).loadString();
-  
-  const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager({ cacheTime: 240 });
-    const cssString = cache.readString(cssFileName);
-    if (cssString) return cssString;
-    const response = await getString(cssFileUrl);
-    if (response.includes('{')) {
-      cache.writeString(cssFileName, response);
-    }
-    return response;
-  };
-  
-  /** 
-   * toBase64(img) string
-   * SFIcon蒙版后转base64
-   */
-  const toBase64 = (img) => {
-    return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getImage = async (url) => await new Request(url).loadImage();
-  
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await getImage(url);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  /**
-   * Setting drawTableIcon
-   * @param { Image } image
-   * @param { string } string
-   */  
-  const getCacheMaskSFIcon = async (name, color) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawTableIcon(name, color);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  // drawTableIcon
-  const drawTableIcon = async (
-    icon = name,
-    color = '#ff6800',
-    cornerWidth = 42
-  ) => {
-    let sfi = SFSymbol.named(icon);
-    if (sfi === null) sfi = SFSymbol.named('message.fill');
-    sfi.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    const imgData = Data.fromPNG(sfi.image).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-      
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      const size = sourceImg.width > sourceImg.height ? sourceImg.width : sourceImg.height;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(sourceImg, (canvas.width - sourceImg.width) / 2, (canvas.height - sourceImg.height) / 2);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pix = imgData.data;
-      for (var i=0, n = pix.length; i < n; i+= 4){
-        pix[i] = 255;
-        pix[i+1] = 255;
-        pix[i+2] = 255;
-        pix[i+3] = pix[i+3];
-      }
-      ctx.putImageData(imgData,0,0);
-      silhouetteImg.src = canvas.toDataURL();
-      output=canvas.toDataURL()
-    `;
-  
-    let wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    const iconImage = await new Request(base64Image).loadImage();
-    const size = new Size(160, 160);
-    const ctx = new DrawContext();
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    ctx.size = size;
-    const path = new Path();
-    const rect = new Rect(0, 0, size.width, size.width);
-  
-    path.addRoundedRect(rect, cornerWidth, cornerWidth);
-    path.closeSubpath();
-    ctx.setFillColor(new Color(color));
-    ctx.addPath(path);
-    ctx.fillPath();
-    const rate = 36;
-    const iw = size.width - rate;
-    const x = (size.width - iw) / 2;
-    ctx.drawImageInRect(iconImage, new Rect(x, x, iw, iw));
-    return ctx.getImage();
-  };
-  
-  /**
-   * drawSquare
-   * @param { Image } image
-   * @param { string } string
-   */
-  const drawSquare = async (img) => {
-    const imgData = Data.fromPNG(img).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      // 裁剪成正方形
-      const size = Math.min(sourceImg.width, sourceImg.height);
-      canvas.width = canvas.height = size;
-      ctx.drawImage(sourceImg, (sourceImg.width - size) / 2, (sourceImg.height - size) / 2, size, size, 0, 0, size, size);
-      
-      // 压缩图像
-      const maxFileSize = 200 * 1024
-      const quality = Math.min(1, Math.sqrt(maxFileSize / (canvas.toDataURL('image/jpeg', 1).length * 0.75)));
-      const compressedCanvas = document.createElement("canvas");
-      const compressedCtx = compressedCanvas.getContext('2d');
-      compressedCanvas.width = compressedCanvas.height = 400;
-      compressedCtx.drawImage(canvas, 0, 0, size, size, 0, 0, 400, 400);
-      
-      silhouetteImg.src = canvas.toDataURL();
-      output = compressedCanvas.toDataURL('image/jpeg', quality);
-    `;
-    
-    const wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    return await new Request(base64Image).loadImage();  
-  };
-  
-  /**
-   * SFIcon 转换为base64
-   * @param {*} icon SFicon
-   * @returns base64 string
-   */
-  const drawSFIcon = async ( icon = name ) => {
-    let sf = SFSymbol.named(icon);
-    if (sf === null) sf = SFSymbol.named('message');
-    sf.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    return sf.image;
-  };
-  
-  // 缓存并读取原生 SFSymbol icon
-  const getCacheDrawSFIcon = async (name) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawSFIcon(name);
-    cache.writeImage(name, img);
-    return toBase64(img);
   };
   
   // ====== web start ======= //
@@ -528,47 +241,55 @@ async function main() {
       previewImage
     } = options;
     
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
+    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await getCacheImage('telecom_5.png', `${rootUrl}/img/icon/telecom_1.png`);
+    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/telecom_1.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png', `${rootUrl}/img/picture/collectionCode.jpeg`);
+    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
+    const clockScript = await module.getCacheData(`${rootUrl}/web/clock.html`);
     
-    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-    const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
-      return `<script>${content}</script>`;
-    }));
+    const scriptTags = await module.scriptTags();
     
-    // SFSymbol url icons
-    const subArray = [];
-    const getAndBuildIcon = async (item) => {
+    // 批量处理图标加载
+    const subArray = [];  
+    const getPromises = [];
+    const getBuildIcon = (item) => {
       const { icon } = item;
       if (icon?.name) {
         const { name, color } = icon;
-        item.icon = await getCacheMaskSFIcon(name, color);
+        return module.getCacheMaskSFIcon(name, color).then(iconData => {
+          item.icon = iconData;
+        });
       } else if (icon?.startsWith('https')) {
-        const name = icon.split('/').pop();
-        item.icon = await getCacheImage(name, icon);
+        return module.getCacheImage(icon).then(iconData => {
+          item.icon = iconData;
+        });
       } else if (!icon?.startsWith('data')) {
-        item.icon = await getCacheDrawSFIcon(icon);
+        return module.getCacheDrawSFIcon(icon).then(iconData => {
+          item.icon = iconData;
+        });
       }
     };
-    
+
     for (const i of formItems) {
       for (const item of i.items) {
-        if (item.item) for (const subItem of item.item) {
-          await getAndBuildIcon(subItem);
-          subArray.push(subItem);
+        if (item.item) {
+          for (const subItem of item.item) {
+            const arr = getBuildIcon(subItem);
+            getPromises.push(arr);
+            subArray.push(subItem);
+          }
         }
-        await getAndBuildIcon(item);
+        const array = getBuildIcon(item);
+        getPromises.push(array);
       }
     };
+    // 等待所有图标加载完成
+    await Promise.all(getPromises);
     
     /**
      * @param {string} style
@@ -578,7 +299,7 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);
+    const cssStyle = await module.getCacheData(`${rootUrl}/web/cssStyle.css`);
 
     const style =`  
     :root {
@@ -697,7 +418,7 @@ async function main() {
         '6NJHhd6BeV2',
         'a2e7985CLV2'
       ];
-      const randomId = songId[Math.floor(Math.random() * songId.length)];
+      const randomId = module.getRandomItem(songId);
       const music = `
       <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
       </iframe>
@@ -836,10 +557,9 @@ async function main() {
         `${rootUrl}/img/picture/china_telecom_3.png`
       ];
       
-      if ( settings.topStyle ) {
+      if (settings.topStyle) {
         const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
-          const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
-          const previewImg = await getCacheImage(imgName, item);
+          const previewImg = await module.getCacheImage(item);
           return previewImg;
         }));
         return `${clockHtml()}
@@ -849,9 +569,8 @@ async function main() {
           </div>
         </div>`; 
       } else {
-        const randomUrl = previewImgUrl[Math.floor(Math.random() * previewImgUrl.length)];
-        const imgName = decodeURIComponent(randomUrl.substring(randomUrl.lastIndexOf("/") + 1));
-        const previewImg = await getCacheImage(imgName, randomUrl);
+        const randomUrl = module.getRandomItem(previewImgUrl);
+        const previewImg = await module.getCacheImage(randomUrl);
         return `${clockHtml()}
         <img id="store" src="${previewImg}" class="preview-img" style="display: ${displayStyle}">`
       }
@@ -913,7 +632,7 @@ async function main() {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = '200px'
+        select.style.width = '100px'
         
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
@@ -952,7 +671,7 @@ async function main() {
         
         label.appendChild(selCont);
       } else if (['cell', 'page', 'file'].includes(item.type)) {
-        const { name, isAdd, other, descColor } = item;
+        const { name, isDesc, other, descColor } = item;
 
         if (item.desc) {
           const desc = document.createElement("div");
@@ -962,7 +681,7 @@ async function main() {
           if (descColor) {
             desc.innerHTML = \`${addColorDesc()}\`;
           } else {
-            desc.innerText = isAdd ? (settings[\`\${name}_status\`] ??item.desc) : other ? item.desc : settings[name];
+            desc.innerText = isDesc ? (settings[\`\${name}_status\`] ??item.desc) : other ? item.desc : settings[name];
           };
           
           label.appendChild(desc);
@@ -1085,6 +804,136 @@ input.addEventListener("change", async (e) => {
       await fadeInOut(fadeIn, true);
     };
     
+    /** ☘️创建列表通用组容器☘️ **/
+    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body') => {
+      const groupDiv = fragment.appendChild(document.createElement('div'));
+      groupDiv.className = 'list';
+    
+      if (title) {
+        const elTitle = groupDiv.appendChild(document.createElement('div'));
+        elTitle.className = headerClass;
+        elTitle.textContent = title;
+      }
+    
+      const elBody = groupDiv.appendChild(document.createElement('div'));
+      elBody.className = bodyClass;
+      return elBody;
+    };
+    
+    /** 创建范围输入元素 **/
+    const createRange = (elBody, item) => {
+      const range = elBody.appendChild(document.createElement('div'));
+      range.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <div class="collapsible-value">${settings.angle || 90}</div>
+          </div>
+          <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <!-- 折叠取色器 -->
+        <div class="collapsible-range" id="content">
+          <hr class="range-separ2">
+          <label class="form-item">
+            <div class="form-label">
+              <img class="form-label-img" src="\${item.icon}"/>
+              <div class="form-label-title">渐变颜色</div>
+            </div>
+            <input type="color" value="\${settings.rangeColor}" id="color-input">
+          </label>
+        </div>\`;
+    
+      const icon = range.querySelector('.collapsible-label .icon-right-down');
+      const content = range.querySelector('.collapsible-range');
+      const colorInput = range.querySelector('#color-input');
+      const rangeInput = range.querySelector('#_range');
+      let isExpanded = false;
+    
+      const toggleShow = () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      };
+      range.querySelector('.collapsible-label').addEventListener('click', toggleShow);
+    
+      colorInput.addEventListener('change', (e) => {
+        const selectedColor = e.target.value;
+        settings.rangeColor = selectedColor;
+        updateRange();
+        formData[item.color] = selectedColor;
+        invoke('changeSettings', formData);
+      });
+    
+      const updateRange = () => {
+        const value = rangeInput.value;
+        const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
+        rangeInput.dataset.value = value;
+        rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
+        range.querySelector('.collapsible-value').textContent = value;
+      };
+    
+      rangeInput.addEventListener('input', updateRange);
+      rangeInput.addEventListener('change', (event) => {
+        formData[item.name] = event.target.value;
+        invoke('changeSettings', formData);
+      });
+      updateRange();
+    };
+    
+    /** 创建可折叠列表元素 **/  
+    const createCollapsible = (elBody, item) => {
+      const label = (item) => \`
+        <label id="\${item.name}" class="form-item">
+          <div class="form-label">
+            <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          \${item.desc ? \`
+          <div class="form-label">
+            <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
+            <i class="iconfont icon-arrow_right"></i>
+          </div>\` : \`
+          <i class="iconfont icon-arrow_right"></i>\`}
+        </label>\`;
+    
+      const collapsible = elBody.appendChild(document.createElement('div'));
+      collapsible.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <img class="form-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <hr class="separ">
+        <!-- 折叠列表 -->
+        <div class="collapsible-content" id="content">
+          <div class="coll__body">
+            \${item.item.map(item => label(item)).join('')}
+          </div>
+          <hr class="separ">
+        </div>\`;
+    
+      const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
+      const content = collapsible.querySelector('.collapsible-content');
+      let isExpanded = false;
+      
+      collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      });
+    
+      collapsible.querySelectorAll('.form-item').forEach((label, index) => {
+        label.addEventListener('click', () => {
+          const labelId = label.getAttribute('id');
+          invoke(labelId, item.item[index]);
+        });
+      })
+    };
+    
     //======== 创建列表 ========//
     const createList = ( list, title ) => {
       const fragment = document.createDocumentFragment();
@@ -1095,143 +944,14 @@ input.addEventListener("change", async (e) => {
           const grouped = createList(item.items, item.label);
           fragment.appendChild(grouped);
         } else if (item.type === 'range') {
-          const groupDiv = fragment.appendChild(document.createElement('div'));
-          groupDiv.className = 'list'
-          
-          const elTitle = groupDiv.appendChild(document.createElement('div'));
-          elTitle.className = 'el__header';
-          elTitle.textContent = title
-          
-          elBody = groupDiv.appendChild(document.createElement('div'));
-          elBody.className = 'el__body';
-          
-          const range = elBody.appendChild(document.createElement('div'));
-          range.innerHTML = \`
-          <label class="collapsible-label" for="collapse-toggle">
-            <div class="form-label">
-              <div class="collapsible-value">${settings.angle || 90}</div>
-            </div>
-            <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
-            <i class="fas fa-chevron-right icon-right-down"></i>
-          </label>
-          <!-- 折叠取色器 -->
-          <div class="collapsible-range" id="content">
-            <hr class="range-separ2">
-            <label class="form-item">
-              <div class="form-label">
-                <img class="form-label-img" src="\${item.icon}"/>
-                <div class="form-label-title">渐变颜色</div>
-              </div>
-              <input type="color" value="${settings.rangeColor}" id="color-input">
-            </label>
-          </div>\`;
-          
-          const icon = range.querySelector('.collapsible-label .icon-right-down');
-          const content = range.querySelector('.collapsible-range');
-          const colorInput = range.querySelector('#color-input');
-          const rangeInput = range.querySelector('#_range');
-          let isExpanded = false;
-          
-          const toggleShowContent = () => {
-            content.classList.toggle('show');
-            isExpanded = !isExpanded;
-            icon.style.transition = 'transform 0.4s';
-            icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-          };
-          range.querySelector('.collapsible-label').addEventListener('click', toggleShowContent);
-          
-          colorInput.addEventListener('change', (e) => {
-            const selectedColor = e.target.value;
-            settings.rangeColor = selectedColor;
-            updateRange();
-            formData[item.color] = selectedColor;
-            invoke('changeSettings', formData);
-          });
-          
-          const updateRange = () => {
-            const value = rangeInput.value;
-            const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
-            rangeInput.dataset.value = value;
-            rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
-            range.querySelector('.collapsible-value').textContent = value;
-          };
-          
-          rangeInput.addEventListener('input', updateRange);
-          rangeInput.addEventListener('change', (event) => {
-            formData[item.name] = event.target.value;
-            invoke('changeSettings', formData);
-          });
-          updateRange();
+          elBody = createGroup(fragment, title);  
+          createRange(elBody, item);
         } else if (item.type === 'collapsible') {
-          const groupDiv = fragment.appendChild(document.createElement('div'));
-          groupDiv.className = 'list'
-          
-          const elTitle = groupDiv.appendChild(document.createElement('div'));
-          elTitle.className = 'el__header';
-          elTitle.textContent = title
-          
-          elBody = groupDiv.appendChild(document.createElement('div'));
-          elBody.className = 'el__body';
-          
-          const label = (item) => \`
-          <label id="\${item.name}" class="form-item">
-            <div class="form-label">
-              <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
-              <div class="form-label-title">\${item.label}</div>
-            </div>
-            \${item.desc ? \`
-            <div class="form-label">
-              <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
-              <i class="iconfont icon-arrow_right"></i>
-            </div>\` : \`
-            <i class="iconfont icon-arrow_right"></i>\`}
-          </label>\`
-          
-          const collapsible = elBody.appendChild(document.createElement('div'));  
-          collapsible.innerHTML = \`
-          <label class="collapsible-label" for="collapse-toggle">
-            <div class="form-label">
-              <img class="form-label-img" src="\${item.icon}"/>
-              <div class="form-label-title">\${item.label}</div>
-            </div>
-            <i class="fas fa-chevron-right icon-right-down"></i>
-          </label>
-          <hr class="separ">
-            <!-- 折叠列表 -->
-          <div class="collapsible-content" id="content">
-            <div class="coll__body">
-              \${item.item.map(item => label(item)).join('')}
-            </div>
-            <hr class="separ">
-          </div>\`;
-        
-          const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
-          const content = collapsible.querySelector('.collapsible-content');
-          let isExpanded = false;
-          collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
-            content.classList.toggle('show');
-            isExpanded = !isExpanded;
-            icon.style.transition = 'transform 0.4s';
-            icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-          });
-          
-          collapsible.querySelectorAll('.form-item').forEach((label, index) => {
-            label.addEventListener( 'click', () => {
-              const labelId = label.getAttribute('id');
-              invoke(labelId, item.item[index]);
-            });
-          });
+          elBody = createGroup(fragment, title);
+          createCollapsible(elBody, item);
         } else {
           if (!elBody) {
-            const groupDiv = fragment.appendChild(document.createElement('div'));
-            groupDiv.className = 'list'
-            if (title) {
-              const elTitle = groupDiv.appendChild(document.createElement('div'));
-              elTitle.className = 'list__header'
-              elTitle.textContent = title;
-            }
-            elBody = groupDiv.appendChild(document.createElement('div'));
-            elBody.className = 'list__body'
+            elBody = createGroup(fragment, title, 'list__header', 'list__body');
           }
           const label = createFormItem(item);
           elBody.appendChild(label);
@@ -1302,7 +1022,7 @@ input.addEventListener("change", async (e) => {
         <section id="settings">
         </section>
         <script>${js}</script>
-        ${scriptTags.join('\n')}
+        ${scriptTags}
       </body>
     </html>`;
   
@@ -1342,19 +1062,17 @@ input.addEventListener("change", async (e) => {
      * @param data
      * @returns {Promise<string>}
      */
-    const input = async ({ label, name, message, input, display, isAdd, other } = data) => {
-      await generateInputAlert({
+    const input = async ({ label, name, message, input, display, isDesc, other } = data) => {
+      await module.generateInputAlert({
         title: label,
         message: message,
-        options: [
-          {
-            hint: settings[name] ? String(settings[name]) : '请输入',
-            value: String(settings[name]) ?? ''
-          }
-        ]
+        options: [{
+          hint: settings[name] ? String(settings[name]) : '请输入',
+          value: String(settings[name]) ?? ''
+        }]
       }, 
       async ([{ value }]) => {
-        if ( isAdd ) {
+        if ( isDesc ) {
           result = value.endsWith('.png') ? value : ''
         } else if ( display ) {
           result = /[a-z]+/.test(value) && /\d+/.test(value) ? value : ''
@@ -1416,7 +1134,7 @@ input.addEventListener("change", async (e) => {
     
     // 获取 url，cookie
     const getCookie = async ({ label, message } = data) => {
-      const openTelecom = await generateAlert(label, message,
+      const openTelecom = await module.generateAlert(label, message,
         options = ['取消', '获取']
       );
       if (openTelecom === 1) {
@@ -1426,7 +1144,7 @@ input.addEventListener("change", async (e) => {
     
     // appleOS 推送时段
     const period = async ({ label, name, message } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1471,7 +1189,7 @@ input.addEventListener("change", async (e) => {
       
       const { code, data } = event;
       if (code === 'clearCache') {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '清除缓存', '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
           options = ['取消', '清除']
         );
@@ -1480,7 +1198,7 @@ input.addEventListener("change", async (e) => {
           ScriptableRun();
         }
       } else if (code === 'reset') {
-        const action = await generateAlert(
+        const action = await module.generateAlert(
           '清空所有数据', 
           '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据', 
           ['取消', '重置'], '重置'
@@ -1490,13 +1208,13 @@ input.addEventListener("change", async (e) => {
           ScriptableRun();
         }
       } else if ( code === 'recover' ) {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '是否恢复设置 ？', 
           '用户登录的信息将重置\n设置的数据将会恢复为默认',   
           options = ['取消', '恢复']
         );
         if ( action === 1 ) {
-          fm.remove(settingPath());
+          fm.remove(settingPath);
           ScriptableRun();
         }
       } else if (code === 'app') {
@@ -1517,7 +1235,7 @@ input.addEventListener("change", async (e) => {
         case 'setAvatar':
           const avatarImage = Image.fromData(Data.fromBase64String(data));
           fm.writeImage(
-            getAvatarImg(), await drawSquare(avatarImage)
+            getAvatarImg(), await module.drawSquare(avatarImage)
           );
           break;
         case 'telegram':
@@ -1550,17 +1268,19 @@ input.addEventListener("change", async (e) => {
             await previewWidget();
           }
           break;
+        case 'file':
+          const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
+          await importModule(await fileModule).main();
+          break;
         case 'background':
-          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
-          if (modulePath != null) {
-            await importModule(await modulePath).main(cacheImg);
-            await previewWidget();
-          }
+          const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
+          await importModule(await modulePath).main(cacheImg);
+          await previewWidget();
           break;
         case 'store':
-          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
           await importModule(await storeModule).main();
-          await myStore();
+          module.myStore();
           break;
         case 'install':
           await updateString();
@@ -1574,11 +1294,13 @@ input.addEventListener("change", async (e) => {
         case 'getCookie':
           await getCookie(data);
           break;
-        case 'boxjs_rewrite':
-          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%7B%0A%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%22https%3A%2F%2Fgithub.com%2Fchavyleung%2Fscripts%2Fraw%2Fmaster%2Fbox%2Frewrite%2Fboxjs.rewrite.quanx.conf%2C%20tag%3Dboxjs%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%5D%0A%7D');
-          break;
         case 'rewrite':
-          Safari.open('quantumult-x:///add-resource?remote-resource=%0A%20%20%7B%0A%20%20%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%20%20%22https%3A%2F%2Fraw.githubusercontent.com%2F95du%2Fscripts%2Fmaster%2Frewrite%2Fget_10000_loginUrl.conf%2C%20tag%3D%E4%B8%AD%E5%9B%BD%E7%94%B5%E4%BF%A1%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%20%20%5D%0A%20%20%7D');
+          const rewrite123 = module.quantumult('中国电信', 'https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_10000_loginUrl.conf');
+          Safari.open(rewrite123);
+          break;
+        case 'boxjs_rewrite':
+          const boxjs = module.quantumult('boxjs', 'https://github.com/chavyleung/scripts/raw/master/box/rewrite/boxjs.rewrite.quanx.conf');
+          Safari.open(boxjs);
           break;
         case 'boxjs':
           Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false);
@@ -1756,7 +1478,7 @@ input.addEventListener("change", async (e) => {
             label: '推送时段',
             name: 'period',
             type: 'cell',
-            isAdd: true,
+            isDesc: true,
             icon: {
               name: 'deskclock.fill',
               color: '#0096FF'
@@ -1802,6 +1524,17 @@ input.addEventListener("change", async (e) => {
               name: 'arrow.triangle.2.circlepath',
               color: '#FF9500'
             }
+          },
+          {
+            label: '文件管理',
+            name: 'file',
+            type: 'cell',
+            isDesc: true,
+            icon: {
+              name: 'folder.fill',
+              color: '#B07DFF'
+            },
+            desc: 'Honye'
           },
           {
             label: '恢复设置',
@@ -2094,7 +1827,7 @@ input.addEventListener("change", async (e) => {
             label: '图片背景',
             name: 'chooseBgImg',
             type: 'file',
-            isAdd: true,
+            isDesc: true,
             icon: `${rootUrl}/img/symbol/bgImage.png`,
             desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
           },
@@ -2206,7 +1939,7 @@ input.addEventListener("change", async (e) => {
             label: '排列顺序',
             type: 'cell',
             name: 'rank',
-            isAdd: true,
+            isDesc: true,
             descColor: true,
             icon: {
               name: 'hand.draw.fill',
