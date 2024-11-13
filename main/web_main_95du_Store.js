@@ -37,11 +37,6 @@ async function main() {
     cacheStr
   } = module;
   
-  const contents = fm.listContents(cacheStr);
-  if (contents.length === 0) {
-    module.notify('正在初始化...', '首次运行需加载数据，请耐心等待。');
-  }
-  
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -1599,13 +1594,7 @@ async function main() {
             desc.className = 'form-item-right-desc';
             desc.innerText = item.version;
             cntr.appendChild(desc);
-            button.addEventListener('click', () => {
-              button.style.color = 'darkGray'; // 点击后变颜色
-              setTimeout(() => {
-                button.style.color = ''
-              }, 5000);
-            });
-      
+            handleButtonClick(button, () => invoke('widget', item));
             label.appendChild(cntr);
           }
         };
@@ -1637,7 +1626,16 @@ async function main() {
       return label;
     };
     
-    /** ☘️创建列表通用组容器☘️ **/
+    /** 点击按钮变色通用 **/
+    const handleButtonClick = (but, callback, color = 'darkGray') => {
+      but.addEventListener('click', () => {
+        but.style.color = color;
+        callback && callback();
+        setTimeout(() => { but.style.color = '' }, 5000);
+      });
+    };
+    
+    /** ♻️创建列表通用组容器♻️ **/
     const createGroup = (fragment, title) => {
       const groupDiv = fragment.appendChild(document.createElement('div'));
       groupDiv.className = 'list';
@@ -1675,15 +1673,9 @@ async function main() {
           \`<img class="app-img" src="\${img}"></img>\`
         )).join('')}
       </div>\`;
-    
+      
       const button = app.querySelector('.icon-arrow_bottom');
-      button.addEventListener('click', () => {
-        button.style.color = 'darkGray';
-        invoke('widget', item);
-        setTimeout(() => {
-          button.style.color = '';
-        }, 5000);
-      });
+      handleButtonClick(button, () => invoke('widget', item));
     };
     
     //======== 创建列表 ========//
@@ -1745,7 +1737,7 @@ async function main() {
       });
     });
     
-    // 切换 appleLogo 黑白主题
+    /** 切换 appleLogo 黑白主题 **/
     const appleLogos = document.querySelectorAll('.logo');
     const toggleLogo = (isDark) => {
       const newSrc = isDark ? appleLogos[0].dataset.darkSrc : appleLogos[0].dataset.lightSrc;
@@ -1757,7 +1749,7 @@ async function main() {
     toggleLogo(isDarkMode);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
     
-    // 监听其他 elementById
+    /** 监听其他 elementById **/
     
 document.getElementById('clearCache').addEventListener('click', () => {
       invoke('clearCache');
@@ -1819,19 +1811,11 @@ document.getElementById('telegram').addEventListener('click', () => {
         labelsContainer.innerHTML = createLabelsHtml(items);
         document.getElementById('repo').querySelectorAll('.form-label-img').forEach(img => {
           const iconUrl = img.getAttribute('data-icon');
-          const tempImg = new Image();
+          const tempImg = new Image()
           tempImg.src = iconUrl;
-          tempImg.onload = () => {  
-            img.src = iconUrl;
-          }
+          tempImg.onload = () => { img.src = iconUrl }
         });
-        document.getElementById('repo').querySelectorAll('button').forEach((button, index) => {
-          button.addEventListener('click', () => {
-            button.style.color = 'darkGray';
-            invoke('widget', items[index]);
-            setTimeout(() => (button.style.color = ''), 5000);
-          });
-        })
+        document.getElementById('repo').querySelectorAll('button').forEach((button, index) => button.addEventListener('click', () => { button.style.color = 'darkGray'; invoke('widget', items[index]); setTimeout(() => button.style.color = '', 5000); }));
       })();`, false);
     };
     
@@ -1858,6 +1842,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         scrUrl: html_url,
         icon: avatarUrl
       };
+
       return await updateRepoItem(param);
     }
     
@@ -2031,7 +2016,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           false
         );
       };
-      Timer.schedule(1, false, () => { injectListener() });
+      Timer.schedule(0, false, () => { injectListener() });
     };
   
     injectListener().catch((e) => {
