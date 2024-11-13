@@ -1130,7 +1130,7 @@ input.addEventListener("change", async (e) => {
       }
       const { items } = await request.loadJSON();
       const bill = (items[0].sumCharge) / 100;
-      notify('中国电信', `${items[0].acctName}，您当前账单 ${bill} 元。` );
+      module.notify('中国电信', `${items[0].acctName}，您当前账单 ${bill} 元。` );
     };
     
     // 获取 url，cookie
