@@ -4,33 +4,30 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 中国电信_3
- * 组件版本: Version 1.0.1
- * 发布日期: 2024-04-16 15:30
+ * 组件版本: Version 1.1.0
+ * 发布日期: 2024-10-24 15:30
  */
 
 async function main(family) {
-  const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_china_telecom_3');
+  const fm = FileManager.local();  
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  const isDev = false
   
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
-  const [ settingPath, cacheImg, cacheStr ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-  ].map(getCachePath);
+  const pathName = '95du_china_telecom_3';
+  const module = new _95du(pathName);  
   
-  /**
-   * 读取储存的设置
-   * @returns {object} - 设置对象
-   */
-  const getBotSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return { rank, bill, useCache } = JSON.parse(fm.readString(file));
-    }
-    return {};
-  };
-  const setting = await getBotSettings(settingPath);
+  const { 
+    rootUrl,
+    settingPath, 
+    cacheImg, 
+    cacheStr,
+  } = module;
+  
+  const setting = module.settings;
+  const { rank, bill } = setting;
   
   /**
    * 存储当前设置
@@ -42,82 +39,12 @@ async function main(family) {
       settings, null, 2
     ))
   };
-  
-  /**  
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, sound = 'event') => {
-    if (!setting.notify) return;
-    const n = Object.assign(new Notification(), { title, body, sound });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
     
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
-  // 图片遮罩
-  async function shadowImage(img) {
-    let ctx = new DrawContext();
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']));
-    return await ctx.getImage();
-  };
-  
-  // 获取随机数组元素
-  const getRandomItem = async (array) => array[Math.floor(Math.random() * array.length)];
-  
-  /**
-   * 获取图片、string并使用缓存
-   * @param {string} File Extension
-   * @returns {image} - Request
-   */
-  const useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? cacheStr : cacheImg;
-    return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime || !useCache) {  
-            fm.remove(path);
-          } else if (useCache) {  
-            return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-          }
-        }
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.read(name);
-    if (image) return image;
-    const img = await new Request(url).loadImage();
-    cache.write(name, img);
-    return img;
-  };
     
   /**
    * 获取缓存的 JSON 字符串
@@ -126,7 +53,8 @@ async function main(family) {
    * @returns {object} - JSON
    */
   const getCacheString = async (jsonName, jsonUrl) => {
-    const cache = useFileManager({ cacheTime: setting.cacheTime, type: true });
+    const { type } = module.getFileInfo(jsonName);
+    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type });
     const json = cache.read(jsonName);
     if (json) return json;
     
@@ -154,7 +82,7 @@ async function main(family) {
         return await updateCookie(loginUrl);
       }
     } catch (e) {
-      notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
+      module.notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
       return null;
     }
   };
@@ -162,12 +90,12 @@ async function main(family) {
   const updateCookie = async (loginUrl) => {
     const url = loginUrl.match(/(http.+)&sign/)?.[1] || loginUrl;
     const req = new Request(url);
-    await req.load();  
+    await req.load();
     const cookie = req.response.headers['Set-Cookie'];
     if (cookie) {
       setting.cookie = cookie;
       writeSettings(setting);
-      notify('中国电信_3', '天翼账号中心 Cookie 更新成功');
+      module.notify('中国电信_3', '天翼账号中心 Cookie 更新成功');
       return cookie;
     }
   };
@@ -279,7 +207,7 @@ async function main(family) {
     const timeDifference = (currentTime - lastWriteTime) / (60 * 60 * 1000);
     if (setting.cookie && (timeDifference >= setting.cacheTime || !setting.flowBalance)) {  
       const flowUesd = formatFlow(setting.flowBalance, flowBalance);
-      notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
+      module.notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
       writeSettings({ ...setting, flowBalance, voiceBalance });
     }
   };
@@ -290,7 +218,7 @@ async function main(family) {
     circle: scr < 926 ? 145 : 152
   });
   
-  const logo = await getCacheImage('telecom.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png');
+  const logo = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png');
   
   const subTitleColor = Color.dynamic(new Color(setting.subTitleColor), new Color('#FFFFFF'));
   
@@ -304,11 +232,12 @@ async function main(family) {
   const setBackground = async (widget) => {
     const bgImage = getBgImage();
     if (fm.fileExists(bgImage)) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
+      const shadowImg = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(shadowImg);
     } else if (!setting.solidColor && !Device.isUsingDarkAppearance()) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = await getRandomItem(color);
+      const randomColor = await module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
       const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
