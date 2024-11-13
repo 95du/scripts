@@ -1164,9 +1164,6 @@ input.addEventListener("change", async (e) => {
       })
     };
     
-    // 其他模块
-    const getModule = async (jsName, jsUrl) => await importModule(await webModule(jsName, jsUrl)).main();
-    
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
