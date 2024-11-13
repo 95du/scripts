@@ -192,10 +192,11 @@ async function main() {
   };
   
   const updateString = async () => {
-    const modulePath = fm.joinPath(cacheStr, scrName);
-    const str = await getString(scrUrl);
+    const { name } = module.getFileInfo(scrUrl);
+    const modulePath = fm.joinPath(cacheStr, name);
+    const str = await module.httpRequest(scrUrl);
     if (!str.includes('95度茅台')) {
-      notify('更新失败 ⚠️', '请检查网络或稍后再试');
+      module.notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
       const moduleDir = fm.joinPath(mainPath, 'Running');
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
