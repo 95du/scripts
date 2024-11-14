@@ -163,7 +163,7 @@ async function main() {
    * 获取多个 GitHub 仓库的信息，包括用户名、更新时间、头像 URL 等。
    */
   const repoUrls = (settings.urls.length > 0 ? urls : [myRepo]).map(url => {
-    const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
+    const match = url?.match(/github\.com\/([\w-]+\/[\w-]+)/);
     if (match) return `https://api.github.com/repos/${match[1]}`;
   }).filter(Boolean);
   
@@ -232,15 +232,26 @@ async function main() {
           name: 'urls',
           type: 'cell',
           input: true,
-          message: '支持添加多个仓库',
-          icon: 'person.circle.fill'
+          message: '支持添加多个 GitHub 仓库',
+          icon: 'message.circle.fill'
         },
         {
-          label: '删减仓库',
+          label: '删除仓库',
           name: 'removeRepo',
           type: 'cell',
           icon: 'trash.circle.fill'
         },
+        {
+          label: '排列仓库',
+          name: 'rank',
+          type: 'cell',
+          icon: 'eject.circle.fill'
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
         {
           label: '预览组件',
           name: 'preview',
@@ -1832,7 +1843,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
       const repoUrl = `https://api.github.com/repos/${match[1]}`;    
       const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(repoUrl);
-      const param = {
+      await updateRepoItem({
         label: userName,
         desc: formatDate(updated_at),
         version: watchers,
@@ -1840,10 +1851,8 @@ document.getElementById('telegram').addEventListener('click', () => {
         type: 'button',
         scrUrl: html_url,
         icon: avatarUrl
-      };
-
-      return await updateRepoItem(param);
-    }
+      })
+    };
     
     /**
      * Input window
@@ -1873,13 +1882,15 @@ document.getElementById('telegram').addEventListener('click', () => {
     
     // 删减仓库链接
     const removeRepo = async () => {
+      const repo = (url) => url.match(/github.com\/(\w+)/)?.[1];
+      
       const subList = settings.urls;
       while (subList.length) {
         const alert = new Alert();
-        alert.message = '删减仓库列表'
+        alert.message = '删除仓库 ♻️'
         subList.forEach(item => {
-          const name = item.match(/github.com\/(\w+)/)?.[1];
-          alert.addAction(name)
+          const name = repo(item);
+          alert.addAction(name);
         });
         alert.addCancelAction('取消');
         const menuId = await alert.presentSheet();
@@ -1894,14 +1905,48 @@ document.getElementById('telegram').addEventListener('click', () => {
         
         if (action === 1) {
           await updateRepoItem(menuId);
+          
+          const repoName = repo(subList[menuId]) + '.json';
+          const path = fm.joinPath(cacheStr, repoName);
+          if (fm.fileExists(path)) fm.remove(path);
+          
           subList.splice(menuId, 1);
           settings.urls = subList;
           writeSettings(settings);
+          
           if (repoItems.length < 1) await requestNewRepo(myRepo);
         }
       }
     };
-      
+    
+    // 排列仓库列表显示位置
+    const rankRepo = async () => {
+      while (repoItems.length > 1) {
+        const alert = new Alert();
+        alert.message = '排列仓库 ❓';
+        repoItems.forEach(item => {
+          alert.addAction(item.label)
+        });
+        alert.addCancelAction('取消');
+        const menuId = await alert.presentSheet();
+        if (menuId === -1) break;
+        
+        const seleRepo = repoItems.splice(menuId, 1)[0];
+        const urlList = settings.urls
+        let seleUrl = urlList.splice(menuId, 1)[0];
+        if (!seleUrl) {
+          seleUrl = myRepo;
+        }
+        repoItems.unshift(seleRepo);
+        urlList.unshift(seleUrl);
+        
+        repoItems.forEach((item, i) => item.value = i === 0 ? 0 : i );
+        settings.urls = urlList;
+        writeSettings(settings);
+        await updateRepoHtml(repoItems);
+      }
+    };
+    
     /**
      * 跳转、下载并安装指定脚本。
      * 
@@ -1995,6 +2040,9 @@ document.getElementById('telegram').addEventListener('click', () => {
         case 'removeRepo':
           await removeRepo();
           break;
+        case 'rank':
+          await rankRepo();
+          break;
         case 'preview':
           await createWidget(newData);
           break;
@@ -2015,7 +2063,7 @@ document.getElementById('telegram').addEventListener('click', () => {
           false
         );
       };
-      
+
       if (event.data.input) {
         Timer.schedule(2000, false, () => injectListener());
       } else {
