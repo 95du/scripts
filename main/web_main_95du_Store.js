@@ -1786,7 +1786,7 @@ document.getElementById('telegram').addEventListener('click', () => {
      * @param {string|null} deleteUrl - 要删除的项目 scrUrl。如果存在该 URL，则删除对应项目；否则添加新项目。
      */
     const updateRepoHtml = async (repoItems) => {
-      return await webView.evaluateJavaScript(`
+      webView.evaluateJavaScript(`
       (() => {    
         const items = ${JSON.stringify(repoItems)};
         const labelsContainer = document.getElementById('repo');
@@ -1824,7 +1824,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       typeof param === 'object' 
         ? repoItems.push(param) 
         : repoItems.splice(num, 1);
-      await updateRepoHtml(repoItems)
+      await updateRepoHtml(repoItems);
     };
     
     // 获取新的仓库数据
@@ -2009,13 +2009,18 @@ document.getElementById('telegram').addEventListener('click', () => {
       };
       
       // Remove Event Listener
-      if ( event ) {
+      if (event) {
         webView.evaluateJavaScript(
           "window.dispatchEvent(new CustomEvent('JWeb', { detail: { code: 'finishLoading' } }))",
           false
         );
       };
-      Timer.schedule(0, false, () => { injectListener() });
+      
+      if (event.data.input) {
+        Timer.schedule(2000, false, () => injectListener());
+      } else {
+        injectListener();
+      }
     };
   
     injectListener().catch((e) => {
