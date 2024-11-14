@@ -996,7 +996,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${183 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${187 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
@@ -2064,7 +2064,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         );
       };
 
-      if (event.data.input) {
+      if (event.code === 'urls') {
         Timer.schedule(2000, false, () => injectListener());
       } else {
         injectListener();
