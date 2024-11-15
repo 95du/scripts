@@ -1887,28 +1887,21 @@ document.getElementById('telegram').addEventListener('click', () => {
         const index = await alert.presentSheet();
         if (index === -1) break;
         
-        const action = await module.generateAlert(  
-          '是否删除此仓库❓', 
-          subList[index], 
-          options = ['取消', '删除'],
-          true
-        );
+        const name = repo(subList[index]);
+        const action = await module.generateAlert(`🤡 ${name} 的仓库`, subList[index], options = ['Cancel', 'Delete'], true);
         
         if (action === 1) {
           const num = repoItems.length !== settings.urls.length ? 1 : index;
           repoItems.splice(num, 1);
-          await updateRepoHtml(repoItems);
-          // 删除本地文件
-          const repoName = repo(subList[index]) + '.json';
-          const path = fm.joinPath(cacheStr, repoName);
-          if (fm.fileExists(path)) {
-            fm.remove(path);
-          }
-          
           subList.splice(index, 1);
           settings.urls = subList;
           writeSettings(settings);
           
+          await updateRepoHtml(repoItems);
+          // 删除本地文件
+          const path = fm.joinPath(cacheStr, `${name}.json`)
+          if (fm.fileExists(path)) fm.remove(path);
+          // 重新加载仓库
           if (repoItems.length < 1) await requestNewRepo(myRepo);
         }
       }
