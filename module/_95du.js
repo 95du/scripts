@@ -58,14 +58,14 @@ class _95du {
     url, 
     method = 'GET', 
     headers = {}, 
-    data = null, 
+    obj = null, 
     formBody = null
   ) => {
     const request = new Request(url);
     request.method = method;  
     request.headers = headers;
     if (method !== 'GET') {
-      request.body = formBody || (data ? JSON.stringify(data) : null);  
+      request.body = formBody || (obj ? JSON.stringify(obj) : null);  
     }
   
     try {
@@ -528,6 +528,26 @@ class _95du {
   };
   
   /**
+   * 弹窗输入多个值
+   * @param {string} title
+   * @param {string} message
+   * @param {Array<{ hint: string, value: string }>} fields - 输入框配置，包含提示文本和默认值
+   * @returns {Promise<Array<string>>} 返回数组
+   */
+  collectInputs = async (title, message, fields) => {
+    const alert = new Alert();
+    alert.title = title;
+    alert.message = message;
+    fields.forEach(({ hint, value }) => alert.addTextField(hint, value));
+    alert.addAction("取消");
+    alert.addAction("确认");
+    const getIndex = await alert.presentAlert();
+    if (getIndex === 1) {
+      return fields.map((_, index) => alert.textFieldValue(index));
+    }
+  };
+  
+  /**
    * 弹出输入框
    * @param title 标题
    * @param desc  描述
@@ -546,8 +566,8 @@ class _95du {
     if (getIndex === 1) {
       const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
       confirm(inputObj);
+      return getIndex;
     }
-    return getIndex;
   };
   
   /**
