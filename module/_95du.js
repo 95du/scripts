@@ -545,6 +545,7 @@ class _95du {
     if (getIndex === 1) {
       return fields.map((_, index) => alert.textFieldValue(index));
     }
+    return []; 
   };
   
   /**
