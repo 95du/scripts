@@ -1829,22 +1829,12 @@ document.getElementById('telegram').addEventListener('click', () => {
       })();`, false);
     };
     
-    const updateRepoItem = async (param) => {
-      if (param && typeof param === 'object') {
-        repoItems.push(param);
-      } else {
-        const num = repoItems.length !== settings.urls.length ? 1 : param;
-        repoItems.splice(num, 1);
-      }
-      await updateRepoHtml(repoItems);
-    };
-    
     // 获取新的仓库数据
     const requestNewRepo = async (url) => {
       const match = url.match(/github\.com\/([\w-]+\/[\w-]+)/);
       const repoUrl = `https://api.github.com/repos/${match[1]}`;    
       const { updated_at, html_url, watchers, userName, avatarUrl } = await getRepoOwnerInfo(repoUrl);
-      await updateRepoItem({
+      const param = {
         label: userName,
         desc: formatDate(updated_at),
         version: watchers,
@@ -1852,7 +1842,9 @@ document.getElementById('telegram').addEventListener('click', () => {
         type: 'button',
         scrUrl: html_url,
         icon: avatarUrl
-      })
+      }
+      repoItems.push(param);
+      await updateRepoHtml(repoItems)
     };
     
     /**
@@ -1903,8 +1895,10 @@ document.getElementById('telegram').addEventListener('click', () => {
         );
         
         if (action === 1) {
-          await updateRepoItem(index)
-          
+          const num = repoItems.length !== settings.urls.length ? 1 : index;
+          repoItems.splice(num, 1);
+          await updateRepoHtml(repoItems);
+          // 删除本地文件
           const repoName = repo(subList[index]) + '.json';
           const path = fm.joinPath(cacheStr, repoName);
           if (fm.fileExists(path)) {
