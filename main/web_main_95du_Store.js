@@ -21,7 +21,7 @@ async function main() {
   const depPath = fm.joinPath(directory, '95du_module')
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
   await download95duModule(rootUrl);
-  const isDev = false
+  const isDev = true
   
   /** ------- 导入模块 ------- **/
   if (typeof require === 'undefined') require = importModule;
@@ -1859,26 +1859,24 @@ document.getElementById('telegram').addEventListener('click', () => {
      * Input window
      * @param data
      * @returns {Promise<string>}
-     */
-    const input = async ({ label, name, message } = data) => {
-      await module.generateInputAlert({
-        title: label,
-        message: message,
-        options: [{
-          hint: '请输入Github仓库链接',
-          value: Pasteboard.paste()
-        }]
-      }, 
-      async ([{ value }]) => {
-        if (value?.includes('https://github.com/') && !value?.includes('?') &&  !settings[name].includes(value)) {
-          settings[name] = settings[name] || [];
-          settings[name].push(value);
-          writeSettings(settings);
-          await requestNewRepo(value);
-        } else {
-          module.notify('添加失败 ⚠️', '链接错误或已存在，请检查后再试');
-        }
-      })
+     */  
+    const input = async ({ label, name, message } = {}) => {
+      const fields = [{
+        hint: "输入 GitHub 仓库链接",
+        value: Pasteboard.paste()
+      }];
+    
+      const inputs = await module.collectInputs(label, message, fields);
+      if (!inputs.length) return;
+      const value = inputs[0];
+      
+      if (value?.startsWith("https://github.com/") && !value.includes("?") && !settings.urls.includes(value)) {
+        settings.urls.push(value);
+        writeSettings(settings);
+        await requestNewRepo(value);
+      } else {
+        module.notify("添加失败 ⚠️", "链接错误或已存在，请检查后再试");
+      }
     };
     
     // 删减仓库链接
@@ -1894,24 +1892,26 @@ document.getElementById('telegram').addEventListener('click', () => {
           alert.addAction(name);
         });
         alert.addCancelAction('取消');
-        const menuId = await alert.presentSheet();
-        if (menuId === -1) break;
+        const index = await alert.presentSheet();
+        if (index === -1) break;
         
         const action = await module.generateAlert(  
           '是否删除此仓库❓', 
-          subList[menuId], 
+          subList[index], 
           options = ['取消', '删除'],
           true
         );
         
         if (action === 1) {
-          await updateRepoItem(menuId);
+          await updateRepoItem(index)
           
-          const repoName = repo(subList[menuId]) + '.json';
+          const repoName = repo(subList[index]) + '.json';
           const path = fm.joinPath(cacheStr, repoName);
-          if (fm.fileExists(path)) fm.remove(path);
+          if (fm.fileExists(path)) {
+            fm.remove(path);
+          }
           
-          subList.splice(menuId, 1);
+          subList.splice(index, 1);
           settings.urls = subList;
           writeSettings(settings);
           
@@ -2065,12 +2065,8 @@ document.getElementById('telegram').addEventListener('click', () => {
           false
         );
       };
-
-      if (event.code === 'urls') {
-        Timer.schedule(2000, false, () => injectListener());
-      } else {
-        injectListener();
-      }
+      // 监听器
+      injectListener();
     };
   
     injectListener().catch((e) => {
