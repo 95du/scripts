@@ -1830,11 +1830,12 @@ document.getElementById('telegram').addEventListener('click', () => {
     };
     
     const updateRepoItem = async (param) => {
-      const num = repoItems.length !== settings.urls.length ? 1 : param;
-
-      typeof param === 'object' 
-        ? repoItems.push(param) 
-        : repoItems.splice(num, 1);
+      if (param && typeof param === 'object') {
+        repoItems.push(param);
+      } else {
+        const num = repoItems.length !== settings.urls.length ? 1 : param;
+        repoItems.splice(num, 1);
+      }
       await updateRepoHtml(repoItems);
     };
     
@@ -1925,22 +1926,23 @@ document.getElementById('telegram').addEventListener('click', () => {
         const alert = new Alert();
         alert.message = '排列仓库 ❓';
         repoItems.forEach(item => {
-          alert.addAction(item.label)
+          alert.addAction(item.label);
         });
         alert.addCancelAction('取消');
         const menuId = await alert.presentSheet();
         if (menuId === -1) break;
         
-        const seleRepo = repoItems.splice(menuId, 1)[0];
         const urlList = settings.urls
-        let seleUrl = urlList.splice(menuId, 1)[0];
-        if (!seleUrl) {
-          seleUrl = myRepo;
+        if (urlList.length < repoItems.length) {
+          urlList.unshift(myRepo);
         }
+    
+        const seleRepo = repoItems.splice(menuId, 1)[0];
+        const seleUrl = urlList.splice(menuId, 1)[0];
         repoItems.unshift(seleRepo);
         urlList.unshift(seleUrl);
-        
-        repoItems.forEach((item, i) => item.value = i === 0 ? 0 : i );
+        repoItems.forEach((item, i) => item.value = i === 0 ? 0 : i);
+    
         settings.urls = urlList;
         writeSettings(settings);
         await updateRepoHtml(repoItems);
