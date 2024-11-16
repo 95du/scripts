@@ -149,7 +149,7 @@ const getLocation = async () => {
  */
 const getWeather = async ({ location } = opts) => {
   try {
-    const request = new Request(atob('aHR0cHM6Ly9zc2ZjLmFwaS5tb2ppLmNvbS9zZmMvanNvbi9ub3djYXN0'));
+    const request = new Request('https://ssfc.api.moji.com/sfc/json/nowcast');
     request.method = 'POST'
     request.body = JSON.stringify({
       common: {
@@ -221,34 +221,36 @@ const shimoFormData = async (title, content) => {
  * @returns {Promise<Array>} object
  */
 const getSolarTerm = async () => {
-  const year = new Date().getFullYear();
-  const html = await getCacheData(`${year}jieqi.html`, `http://jieqi.xuenb.com/?nian=${year}`, 240);
+  const html = await new Request('https://m.xpcha.com/jieqi/').loadString();
   const webView = new WebView();
   await webView.loadHTML(html);
 
   const solarTermData = await webView.evaluateJavaScript(`
     (() => {
-      const dnumberElements = Array.from(document.querySelectorAll('.dnumber'));
+      const year = document.querySelector('input[name="n"]').value;
       const groups = [];
+      const items = document.querySelectorAll('.special.hotkey.scroll li');
 
-      for (let i = 0; i < dnumberElements.length; i += 5) {
-        const solarTerm = dnumberElements[i + 1].textContent.trim();
-        const dateStr = dnumberElements[i + 2].textContent.trim();
-        const date = new Date(dateStr);
-
-        const daysUntil = (date - new Date()) / (1000 * 60 * 60 * 24);
-        if (daysUntil >= -5) {
-          const hoursUntil = Math.floor((date - new Date()) / (1000 * 60 * 60));
-          const formattedDate = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
-          const dayOfWeek = date.toLocaleDateString('zh-CN', { weekday: 'short' });
-
-          groups.push({ solarTerm, date: dateStr, daysUntil, hoursUntil, dayOfWeek, formattedDate });
+      items.forEach(item => {
+        const spanElement = item.querySelector('span.blue.b');
+        const solarTerm = spanElement ? spanElement.textContent.trim() : '';
+        
+        if (solarTerm !== '') {
+          const dateStr = item.textContent.replace(solarTerm, '').trim();
+          const date = new Date(\`\${year}-\${dateStr}\`);
+          if (date >= new Date()) {
+            const formattedDate = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
+            const dayOfWeek = date.toLocaleDateString('zh-CN', { weekday: 'short' });
+            const daysUntil = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
+            groups.push({ solarTerm, formattedDate, dayOfWeek, daysUntil, date: dateStr });
+          }
         }
-      }
+      });
+
       return groups;
     })();
   `);
-  
+
   const sortedArray = solarTermData.sort((a, b) => new Date(a.date) - new Date(b.date));
   const res = sortedArray.slice(0, 2)
   return res.length === 0 ? await getSolarTerm(year + 1) : res;
