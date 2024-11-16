@@ -19,7 +19,7 @@ async function main() {
   const fm = FileManager.local();
   const directory = fm.documentsDirectory();
   const depPath = fm.joinPath(directory, '95du_module')
-  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);    
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl);
   const isDev = false
   
@@ -770,7 +770,7 @@ async function main() {
       return await Promise.all(items.map(async (item) => {
         const { icon } = item;
         if (icon?.name) {
-          const { name, color } = icon;
+          const {name, color} = icon;
           item.icon = await module.getCacheMaskSFIcon(name, color);
         } else if (icon?.startsWith('https')) {
           const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon) ? icon : module.hash(icon);
@@ -1862,7 +1862,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       if (!inputs.length) return;
       const value = inputs[0];
       
-      if (value?.startsWith("https://github.com/") && !value.includes("?") && !settings.urls.includes(value)) {
+      if (value.startsWith("https://github.com/") && !value.includes("?") && !urls.includes(value)) {
         settings.urls.push(value);
         writeSettings(settings);
         await requestNewRepo(value);
@@ -1874,11 +1874,11 @@ document.getElementById('telegram').addEventListener('click', () => {
     // 删减仓库链接
     const removeRepo = async () => {
       const repo = (url) => url.match(/github.com\/(\w+)/)?.[1];
-      
       const subList = settings.urls;
-      while (subList.length) {
+      
+      while (subList.length > 0) {
         const alert = new Alert();
-        alert.message = '删除仓库 ♻️'
+        alert.message = '删除仓库 ❓'
         subList.forEach(item => {
           const name = repo(item);
           alert.addAction(name);
@@ -1893,7 +1893,7 @@ document.getElementById('telegram').addEventListener('click', () => {
         if (action === 1) {
           const num = repoItems.length !== settings.urls.length ? 1 : index;
           repoItems.splice(num, 1);
-          subList.splice(index, 1);
+          subList.splice(index, 1);          
           settings.urls = subList;
           writeSettings(settings);
           
@@ -1911,9 +1911,9 @@ document.getElementById('telegram').addEventListener('click', () => {
     const rankRepo = async () => {
       while (repoItems.length > 1) {
         const alert = new Alert();
-        alert.message = '排列仓库 ❓';
+        alert.message = '排列仓库';
         repoItems.forEach(item => {
-          alert.addAction(item.label);
+          alert.addAction(item.label)
         });
         alert.addCancelAction('取消');
         const menuId = await alert.presentSheet();
