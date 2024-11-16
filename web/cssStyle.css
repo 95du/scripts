@@ -113,9 +113,6 @@ a:focus, a:hover {
   color: var(--this-color);
   background: var(--this-bg);
   --this-color: #fff;
-}
-
-.jb-blue, .jb-cyan, .jb-green, .jb-pink, .jb-purple, .jb-red, .jb-vip1, .jb-vip2, .jb-yellow {
   border: none;
 }
 
@@ -1053,32 +1050,6 @@ input[type="range"]:after {
 
   100% {
     transform: rotate(1turn);
-  }
-}
-
-/** 右边加载动画 **/
-.loading-cont {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-    
-.loading-right {
-  width: 20px;
-  height: 20px;
-  border: 1.5px solid #0D82FF;
-  border-top-color: transparent;
-  border-radius: 100%;
-  margin-bottom: 4px;
-  animation: circle-loading 0.5s infinite linear;
-}
-
-@keyframes circle-loading {
-  0% {
-    transform: rotate(0);
-  }
-  100% {
-    transform: rotate(360deg);
   }
 }
 
