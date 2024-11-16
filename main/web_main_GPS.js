@@ -202,7 +202,8 @@ async function main() {
   const updateString = async () => {
     const modulePath = fm.joinPath(cacheStr, scrName);
     const codeString = await getString(scrUrl);
-    if (!codeString.includes('95度茅台')) {
+console.log(codeString)
+    if (!codeString.includes('95du茅台')) {
       notify('更新失败 ⚠️', '请检查网络或稍后再试');
     } else {
       const moduleDir = fm.joinPath(mainPath, 'Running');
