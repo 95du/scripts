@@ -2,11 +2,11 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-purple; icon-glyph: mercury;
 /**
- * 组件作者: 95度茅台
- * 组件名称: 城市通行实况
+ * 组件作者: 95du茅台
+ * 组件名称: 实物黄金价格
  * 组件版本: Version 1.0.0
- * 发布时间: 2024-03-03 15:30
- * 组件内容: 全国重点城市 (实时前 10) 拥堵道路排行，早高峰、晚高峰。
+ * 发布时间: 2024-11-17 15:30
+ * https://t.me/+CpAbO_q_SGo2ZWE1
  */
 
 const formatDate = (timestamp, short) => new Date(timestamp + 8 * 3600000).toISOString().slice(short ? 5 : 0, 16).replace('T', ' ');
@@ -176,6 +176,7 @@ const createWidget = async () => {
   
   if (config.runsInApp) {
     widget.presentMedium();
+    autoUpdate();
   } else {
     Script.setWidget(widget);
     Script.complete();
