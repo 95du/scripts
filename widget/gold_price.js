@@ -53,7 +53,7 @@ const getShopInfo = async () => {
 };
 
 // 获取黄金价格
-const getGoldPrice = async (code) => {
+const extractGoldPrice = async (code) => {
   const url = `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${code},&_=${Date.now()}`;
   
   try {
@@ -68,12 +68,12 @@ const getGoldPrice = async (code) => {
   }
 };
 
-// 提取黄金价格数据
+// 
 const fetchAndExtract = async () => {
   const symbolArr = await getShopInfo();
   
   const shopInfoArr = await Promise.all(symbolArr.map(async (shop) => {
-    const goldPriceData = await getGoldPrice(shop.gold);
+    const goldPriceData = await extractGoldPrice(shop.gold);
     const goldPrices = goldPriceData[shop.gold];
     goldPrices.title = shop.title;
     return goldPrices;
