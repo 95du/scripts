@@ -158,12 +158,11 @@ const createWidget = async () => {
   
   const nameText = topStack.addText('黄金时价');
   nameText.font = Font.boldSystemFont(17);
-  topStack.addSpacer();
+  topStack.addSpacer(20);
   
   const dateText = topStack.addText(`更新于 ${updateTime}`);
   dateText.font = Font.systemFont(14.5);
   dateText.textOpacity = 0.75;
-  topStack.addSpacer();
   mainStack.addSpacer();
   
   const stackItems = widget.addStack();
