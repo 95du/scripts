@@ -763,44 +763,59 @@ async function main() {
     
     const scriptTags = await module.scriptTags();
     
+    // 下载或读取缓存 GIF 图片  
+    const getCacheGif = async () => {
+      const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
+      const fileName = 'widget.gif';
+      const filePath = fm.joinPath(depPath, fileName);
+      if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
+      const gifBase64 = fm.read(filePath).toBase64String();
+      return `data:image/gif;base64,${gifBase64}`;
+    };
+    
+    const gifImage = await getCacheGif();
+    
     /**
      * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
-     */
-    const loadCacheIcons = async (items) => {
-      return await Promise.all(items.map(async (item) => {
-        const { icon } = item;
-        if (icon?.name) {
-          const {name, color} = icon;
-          item.icon = await module.getCacheMaskSFIcon(name, color);
-        } else if (icon?.startsWith('https')) {
-          const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon) ? icon : module.hash(icon);
-          item.icon = await module.getCacheImage(icon, name);
-        } else if (icon) {
-          item.icon = await module.getCacheDrawSFIcon(icon);
+     */  
+    const loadCacheAssets = async (items) => {
+      return await Promise.all(
+        items.map(async (item) => {
+        const { icon, data } = item;
+        
+        if (icon) {
+          if (icon.name) {
+            const { name, color } = icon
+            item.icon = await module.getCacheMaskSFIcon(name, color);
+          } else if (icon.startsWith('https')) {
+            const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon) ? icon : module.hash(icon);
+            item.icon = await module.getCacheImage(icon, name);
+          } else {
+            item.icon = await module.getCacheDrawSFIcon(icon);
+          }
+        }
+    
+        // 处理图片逻辑
+        if (data?.images?.length) {
+          data.images = await Promise.all(data.images.map(
+          async (url) => {
+            const name = url.match(/(\d+_\d+\.png)/)?.[1];
+            return module.getCacheImage(url, name);
+          }));
         }
       }));
     };
-  
-    const loadCacheImages = async (items) => {
-      for (const item of items) {
-        if (item.data?.images?.length) {
-          item.data.images = await Promise.all(item.data.images.map(async (url) => {
-            const name = url.match(/(\d+_\d+\.png)/)?.[1];
-            return await module.getCacheImage(url, name);
-          }));
-        }
-      }
-    };
     
-    await loadCacheIcons(formItems.flatMap(i => i.items));
-    await loadCacheImages(formItems.flatMap(i => i.items));
+    // 批量加载所有资源
+    const flatItems = formItems.flatMap(i => i.items);
+    await loadCacheAssets(flatItems);
     
     // 主菜单头像信息
     const mainMenuTop = async () => {
       const avatarHtml = `      
       <div class="list">
         <form class="list__body" action="javascript:void(0);">
-          <img class="gif signin-loader" data-src="https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif">
+          <img class="gif signin-loader" data-src="${gifImage}">
           <div class="form-item-auth form-item--link">
             <div class="form-label">
               <img class="signin-loader form-label-author-avatar" src="${authorAvatar}" />
@@ -1068,13 +1083,10 @@ async function main() {
     }
     
     .jb-blue,.jb-cyan,.jb-green,.jb-pink,.jb-purple,.jb-red,.jb-vip,.jb-vip2,.jb-yellow {
+      border: none;
       color: var(--this-color);
       background: var(--this-bg);
       --this-color: #fff;
-    }
-    
-    .jb-blue,.jb-cyan,.jb-green,.jb-pink,.jb-purple,.jb-red,.jb-vip,.jb-vip2,.jb-yellow {
-      border: none;
     }
     
     .jb-yellow{
@@ -1968,9 +1980,7 @@ document.getElementById('telegram').addEventListener('click', () => {
       const fm = FileManager.iCloud()
       const path = fm.documentsDirectory() + `/${label}.js`;
       fm.writeString(path, script);
-      Pasteboard.copy(scrUrl);
       shimoFormData(label);
-      module.notify(`已拷贝（${label}）可用于随机/循环组件`, scrUrl);
       ScriptableRun(label);
     };
     
