@@ -221,39 +221,42 @@ const shimoFormData = async (title, content) => {
  * @returns {Promise<Array>} object
  */
 const getSolarTerm = async () => {
-  const html = await getCacheData('solarTerm.html', 'https://m.xpcha.com/jieqi/', 240);
+  const html = await getCacheData('solarTerm.html', 'https://www.iamwawa.cn/jieqi.html', 240, 'string');
   const webView = new WebView();
   await webView.loadHTML(html);
 
   const solarTermData = await webView.evaluateJavaScript(`
     (() => {
-      const year = document.querySelector('input[name="n"]').value;
-      const groups = [];
-      const items = document.querySelectorAll('.special.hotkey.scroll li');
-
-      items.forEach(item => {
-        const spanElement = item.querySelector('span.blue.b');
-        const solarTerm = spanElement ? spanElement.textContent.trim() : '';
-        
-        if (solarTerm !== '') {
-          const dateStr = item.textContent.replace(solarTerm, '').trim();
-          const date = new Date(\`\${year}-\${dateStr}\`);
-          if (date >= new Date()) {
+      const rows = document.querySelectorAll('table.table tbody tr');  
+      const currentDate = new Date();
+      const result = [];
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 4) {
+          const solarTerm = cells[0].textContent.trim();
+          const dateStr = cells[1].textContent.trim();
+          const timeStr = cells[3].textContent.trim();
+          
+          const fullDateStr = \`\${dateStr} \${timeStr}\`.replace(/[年月日时分秒]/g, match => ({ '年': '-', '月': '-', '日': '', '时': ':', '分': ':', '秒': '' }[match]));
+          
+          const date = new Date(fullDateStr);
+          if (date >= currentDate) {
             const formattedDate = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
             const dayOfWeek = date.toLocaleDateString('zh-CN', { weekday: 'short' });
-            const daysUntil = Math.floor((date - new Date()) / (1000 * 60 * 60 * 24));
-            groups.push({ solarTerm, formattedDate, dayOfWeek, daysUntil, date: dateStr });
+            const daysUntil = Math.ceil((date - currentDate) / (1000 * 60 * 60 * 24));
+
+            result.push({ solarTerm, dayOfWeek, formattedDate, daysUntil, date: fullDateStr });
           }
         }
       });
 
-      return groups;
+      return result;
     })();
   `);
 
   const sortedArray = solarTermData.sort((a, b) => new Date(a.date) - new Date(b.date));
-  const res = sortedArray.slice(0, 2)
-  return res.length === 0 ? await getSolarTerm(year + 1) : res;
+  return sortedArray.slice(0, 2);
 };
 
 // Column Chart
@@ -445,7 +448,7 @@ const createWidget = async () => {
     Script.complete();
   };
   
-  await shimoFormData(title, content);
+  shimoFormData(title, content);
   return widget;
 };
 
