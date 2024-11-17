@@ -89,6 +89,16 @@ async function main() {
     }
   };
   
+  // 下载或读取缓存 GIF 图片  
+    const getCacheGif = async () => {
+      const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
+      const fileName = 'widget.gif';
+      const filePath = fm.joinPath(depPath, fileName);
+      if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
+      const gifBase64 = fm.read(filePath).toBase64String();
+      return `data:image/gif;base64,${gifBase64}`;
+    };
+  
   // 运行组件
   const ScriptableRun = (name = Script.name()) => {
     Safari.open('scriptable:///run/' + encodeURIComponent(name));
@@ -276,6 +286,15 @@ async function main() {
       label: '最新发布',
       type: 'group',
       items: [
+        {
+          label: '黄金时价',
+          desc: '十大珠宝品牌黄金价格',
+          version: '1.0.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/widget/gold_price.js`,
+          icon: `${rootUrl}/img/icon/gold_price.png`
+        },
         {
           label: '中国联通',
           desc: '剩余流量、语音、余额',
@@ -760,20 +779,8 @@ async function main() {
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
-    
-    const scriptTags = await module.scriptTags();
-    
-    // 下载或读取缓存 GIF 图片  
-    const getCacheGif = async () => {
-      const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
-      const fileName = 'widget.gif';
-      const filePath = fm.joinPath(depPath, fileName);
-      if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
-      const gifBase64 = fm.read(filePath).toBase64String();
-      return `data:image/gif;base64,${gifBase64}`;
-    };
-    
     const gifImage = await getCacheGif();
+    const scriptTags = await module.scriptTags();
     
     /**
      * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
@@ -785,7 +792,7 @@ async function main() {
         
         if (icon) {
           if (icon.name) {
-            const { name, color } = icon
+            const { name, color } = icon;
             item.icon = await module.getCacheMaskSFIcon(name, color);
           } else if (icon.startsWith('https')) {
             const name = /\.(png|jpeg|jpg|bmp|webp)$/i.test(icon) ? icon : module.hash(icon);
@@ -1011,7 +1018,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${187 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${183 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
