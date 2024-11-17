@@ -40,7 +40,6 @@ const getShopInfo = async () => {
           shops.push({
             title: img.getAttribute('title') || img.getAttribute('alt'),
             url: anchor.getAttribute('href'),
-            img: img.getAttribute('src'),
             gold,
             silver
           });
@@ -54,7 +53,7 @@ const getShopInfo = async () => {
 
 // 获取黄金价格
 const extractGoldPrice = async (code) => {
-  const url = `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=${code},&_=${Date.now()}`;
+  const url = `https://api.jijinhao.com/quoteCenter/realTime.htm?codes=JO_92233,${code},&_=${Date.now()}`;
   
   try {
     const req = new Request(url);
@@ -71,11 +70,12 @@ const extractGoldPrice = async (code) => {
 // 
 const fetchAndExtract = async () => {
   const symbolArr = await getShopInfo();
-  
+
   const shopInfoArr = await Promise.all(symbolArr.map(async (shop) => {
     const goldPriceData = await extractGoldPrice(shop.gold);
     const goldPrices = goldPriceData[shop.gold];
     goldPrices.title = shop.title;
+    goldPrices.index = goldPriceData['JO_92233'].q80;
     return goldPrices;
   }));
 
@@ -127,7 +127,7 @@ const addItem = async (widget, item, max, index) => {
   if (item.q2 === max) {
     stack.addSpacer(10);
     const barStack = stack.addStack();
-    barStack.size = new Size(10, 10);
+    barStack.size = new Size(9, 9);
     barStack.cornerRadius = 50;
     barStack.backgroundColor = Color.red();
   };
@@ -136,8 +136,10 @@ const addItem = async (widget, item, max, index) => {
 
 // Create Component Instance
 const createWidget = async () => {
-  const goldArr = await fetchAndExtract();
-  const updateTime = formatDate(goldArr[0].time, true);
+  const data = await fetchAndExtract();
+  const updateTime = formatDate(data[0].time, true);
+  const index = (data[0].index).toPrecision(2);
+  const max = Math.max(...data.map(item => item.q2));
   
   const widget = new ListWidget();
   widget.setPadding(15, 15, 15, 15);
@@ -158,19 +160,25 @@ const createWidget = async () => {
   
   const nameText = topStack.addText('黄金时价');
   nameText.font = Font.boldSystemFont(17);
-  topStack.addSpacer(20);
+  topStack.addSpacer(10);
+  
+  const indexText = topStack.addText(index + '%');
+  indexText.font = Font.boldSystemFont(17);
+  indexText.textOpacity = 0.8;
+  indexText.textColor = index >= 0 ? Color.red() : Color.green();
+  topStack.addSpacer();
   
   const dateText = topStack.addText(`更新于 ${updateTime}`);
   dateText.font = Font.systemFont(14.5);
   dateText.textOpacity = 0.75;
+  topStack.addSpacer();
   mainStack.addSpacer();
   
   const stackItems = widget.addStack();
   const { add } = await getRank(stackItems, { column: 2 });
-  const max = Math.max(...goldArr.map(item => item.q2));
   
   for (let i = 0; i < 10; ++i) {
-    await add(stack => addItem(stack, goldArr[i], max, i + 1));
+    await add(stack => addItem(stack, data[i], max, i + 1));
   };
   
   if (config.runsInApp) {
