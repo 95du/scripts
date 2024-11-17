@@ -221,7 +221,7 @@ const shimoFormData = async (title, content) => {
  * @returns {Promise<Array>} object
  */
 const getSolarTerm = async () => {
-  const html = await new Request('https://m.xpcha.com/jieqi/').loadString();
+  const html = await getCacheData('solarTerm.html', 'https://m.xpcha.com/jieqi/', 240);
   const webView = new WebView();
   await webView.loadHTML(html);
 
