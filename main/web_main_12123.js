@@ -242,7 +242,7 @@ async function main() {
     const {
       formItems = [],
       avatarInfo,
-      previewImage = true
+      previewImage
     } = options;
     
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
