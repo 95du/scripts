@@ -68,7 +68,8 @@ async function main() {
     textDarkColor: '#FFFFFF',
     rangeColor: '#3F8BFF',
     interval: screenSize < 926 ? 3 : 0,
-    province: '海南'
+    province: '海南',
+    oils: ['海南']
   };
   
   const getSettings = (file) => {
