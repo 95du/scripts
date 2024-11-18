@@ -549,22 +549,16 @@ async function main() {
    * @param {object} config - Scriptable 配置对象
    * @param {string} notice 
    */
-  if (config.runsInWidget) {
+  const runWidget = async () => {
+    await previewWidget();
+    await appleOS();
+    
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
     if (version !== settings.version && !settings.update && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加两个中号组件，分时图表和股市指数，在设置中查看更新。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    try {
-      await previewWidget();
-      await appleOS();
-    } catch (error) {
-      console.error("Error running widget script:", error);
-    } finally {
-      return null;
     }
   };
   
@@ -845,7 +839,7 @@ async function main() {
     const {
       formItems = [],
       avatarInfo,
-      previewImage
+      previewImage = true
     } = options;
 
     const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
@@ -1374,8 +1368,138 @@ input.addEventListener("change", async (e) => {
       await fadeInOut(fadeIn, true);
     };
     
-    //========= 创建列表 =========//
-    const createList = (list, title) => {
+    /** ☘️创建列表通用组容器☘️ **/
+    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body') => {
+      const groupDiv = fragment.appendChild(document.createElement('div'));
+      groupDiv.className = 'list';
+    
+      if (title) {
+        const elTitle = groupDiv.appendChild(document.createElement('div'));
+        elTitle.className = headerClass;
+        elTitle.textContent = title;
+      }
+    
+      const elBody = groupDiv.appendChild(document.createElement('div'));
+      elBody.className = bodyClass;
+      return elBody;
+    };
+    
+    /** 创建范围输入元素 **/
+    const createRange = (elBody, item) => {
+      const range = elBody.appendChild(document.createElement('div'));
+      range.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <div class="collapsible-value">${settings.angle || 90}</div>
+          </div>
+          <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <!-- 折叠取色器 -->
+        <div class="collapsible-range" id="content">
+          <hr class="range-separ2">
+          <label class="form-item">
+            <div class="form-label">
+              <img class="form-label-img" src="\${item.icon}"/>
+              <div class="form-label-title">渐变颜色</div>
+            </div>
+            <input type="color" value="\${settings.rangeColor}" id="color-input">
+          </label>
+        </div>\`;
+    
+      const icon = range.querySelector('.collapsible-label .icon-right-down');
+      const content = range.querySelector('.collapsible-range');
+      const colorInput = range.querySelector('#color-input');
+      const rangeInput = range.querySelector('#_range');
+      let isExpanded = false;
+    
+      const toggleShow = () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      };
+      range.querySelector('.collapsible-label').addEventListener('click', toggleShow);
+    
+      colorInput.addEventListener('change', (e) => {
+        const selectedColor = e.target.value;
+        settings.rangeColor = selectedColor;
+        updateRange();
+        formData[item.color] = selectedColor;
+        invoke('changeSettings', formData);
+      });
+    
+      const updateRange = () => {
+        const value = rangeInput.value;
+        const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
+        rangeInput.dataset.value = value;
+        rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
+        range.querySelector('.collapsible-value').textContent = value;
+      };
+    
+      rangeInput.addEventListener('input', updateRange);
+      rangeInput.addEventListener('change', (event) => {
+        formData[item.name] = event.target.value;
+        invoke('changeSettings', formData);
+      });
+      updateRange();
+    };
+    
+    /** 创建可折叠列表元素 **/  
+    const createCollapsible = (elBody, item) => {
+      const label = (item) => \`
+        <label id="\${item.name}" class="form-item">
+          <div class="form-label">
+            <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          \${item.desc ? \`
+          <div class="form-label">
+            <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
+            <i class="iconfont icon-arrow_right"></i>
+          </div>\` : \`
+          <i class="iconfont icon-arrow_right"></i>\`}
+        </label>\`;
+    
+      const collapsible = elBody.appendChild(document.createElement('div'));
+      collapsible.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <img class="form-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <hr class="separ">
+        <!-- 折叠列表 -->
+        <div class="collapsible-content" id="content">
+          <div class="coll__body">
+            \${item.item.map(item => label(item)).join('')}
+          </div>
+          <hr class="separ">
+        </div>\`;
+    
+      const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
+      const content = collapsible.querySelector('.collapsible-content');
+      let isExpanded = false;
+      
+      collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      });
+    
+      collapsible.querySelectorAll('.form-item').forEach((label, index) => {
+        label.addEventListener('click', () => {
+          const labelId = label.getAttribute('id');
+          invoke(labelId, item.item[index]);
+        });
+      })
+    };
+    
+    //======== 创建列表 ========//
+    const createList = ( list, title ) => {
       const fragment = document.createDocumentFragment();
       let elBody;
     
@@ -1384,150 +1508,20 @@ input.addEventListener("change", async (e) => {
           const grouped = createList(item.items, item.label);
           fragment.appendChild(grouped);
         } else if (item.type === 'range') {
-          const groupDiv = fragment.appendChild(document.createElement('div'));
-          groupDiv.className = 'list'
-          
-          const elTitle = groupDiv.appendChild(document.createElement('div'));
-          elTitle.className = 'el__header';
-          elTitle.textContent = title
-          
-          elBody = groupDiv.appendChild(document.createElement('div'));
-          elBody.className = 'el__body';
-          
-          const range = elBody.appendChild(document.createElement('div'));
-          range.innerHTML = \`
-          <label class="collapsible-label" for="collapse-toggle">
-            <div class="form-label">
-              <div class="collapsible-value">${settings.angle || 90}</div>
-            </div>
-            <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
-            <i class="fas fa-chevron-right icon-right-down"></i>
-          </label>
-          <!-- 折叠取色器 -->
-          <div class="collapsible-range" id="content">
-            <hr class="range-separ1">
-            <label class="form-item">
-              <div class="form-label">
-                <img class="form-label-img" src="\${item.icon}"/>
-                <div class="form-label-title">渐变颜色</div>
-              </div>
-              <input type="color" value="${settings.rangeColor}" id="color-input">
-            </label>
-          </div>\`;
-          
-          const icon = range.querySelector('.collapsible-label .icon-right-down');
-          const content = range.querySelector('.collapsible-range');
-          const colorInput = range.querySelector('#color-input');
-          const rangeInput = range.querySelector('#_range');
-          let isExpanded = false;
-          
-          const toggleShowContent = () => {
-            content.classList.toggle('show');
-            isExpanded = !isExpanded;
-            icon.style.transition = 'transform 0.4s';
-            icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-          };
-          range.querySelector('.collapsible-label').addEventListener('click', toggleShowContent);
-          
-          colorInput.addEventListener('change', (e) => {
-            const selectedColor = e.target.value;
-            settings.rangeColor = selectedColor;
-            updateRange();
-            formData[item.color] = selectedColor;
-            invoke('changeSettings', formData);
-          });
-          
-          const updateRange = () => {
-            const value = rangeInput.value;
-            const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
-            rangeInput.dataset.value = value;
-            rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
-            range.querySelector('.collapsible-value').textContent = value;
-          };
-          
-          rangeInput.addEventListener('input', updateRange);
-          rangeInput.addEventListener('change', (event) => {
-            formData[item.name] = event.target.value;
-            invoke('changeSettings', formData);
-          });
-          updateRange();
+          elBody = createGroup(fragment, title);  
+          createRange(elBody, item);
         } else if (item.type === 'collapsible') {
-          const groupDiv = fragment.appendChild(document.createElement('div'));
-          groupDiv.className = 'list'
-          
-          const elTitle = groupDiv.appendChild(document.createElement('div'));
-          elTitle.className = 'el__header';
-          elTitle.textContent = title
-          
-          elBody = groupDiv.appendChild(document.createElement('div'));
-          elBody.className = 'el__body';
-          
-          const label = (item) => \`
-          <label id="\${item.name}" class="form-item">
-            <div class="form-label">
-              <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
-              <div class="form-label-title">\${item.label}</div>
-            </div>
-            \${item.desc ? \`
-            <div class="form-label">
-              <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
-              <i class="iconfont icon-arrow_right"></i>
-            </div>\` : \`
-            <i class="iconfont icon-arrow_right"></i>\`}
-          </label>\`
-          
-          const collapsible = elBody.appendChild(document.createElement('div'));  
-          collapsible.innerHTML = \`
-          <label class="collapsible-label" for="collapse-toggle">
-            <div class="form-label">
-              <img class="form-label-img" src="\${item.icon}"/>
-              <div class="form-label-title">\${item.label}</div>
-            </div>
-            <i class="fas fa-chevron-right icon-right-down"></i>
-          </label>
-          <hr class="separ">
-            <!-- 折叠列表 -->
-          <div class="collapsible-content" id="content">
-            <div class="coll__body">
-              \${item.item.map(item => label(item)).join('')}
-            </div>
-            <hr class="separ">
-          </div>\`;
-        
-          const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
-          const content = collapsible.querySelector('.collapsible-content');
-          let isExpanded = false;
-          collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
-            content.classList.toggle('show');
-            isExpanded = !isExpanded;
-            icon.style.transition = 'transform 0.4s';
-            icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-          });
-          
-          collapsible.querySelectorAll('.form-item').forEach((label, index) => {
-            label.addEventListener( 'click', () => {
-              const labelId = label.getAttribute('id');  
-              invoke(labelId, item.item[index]);
-            });
-          });
+          elBody = createGroup(fragment, title);
+          createCollapsible(elBody, item);
         } else {
           if (!elBody) {
-            const groupDiv = fragment.appendChild(document.createElement('div'));
-            groupDiv.className = 'list'
-            if (title) {
-              const elTitle = groupDiv.appendChild(document.createElement('div'));
-              elTitle.className = 'list__header'
-              elTitle.textContent = title;
-            }
-            elBody = groupDiv.appendChild(document.createElement('div'));
-            elBody.className = 'list__body'
-          };
-          
+            elBody = createGroup(fragment, title, 'list__header', 'list__body');
+          }
           const label = createFormItem(item);
           elBody.appendChild(label);
         }
-      };
-      return fragment;
+      }
+      return fragment
     };
     const fragment = createList(formItems);
     document.getElementById('settings').appendChild(fragment);
@@ -1611,7 +1605,6 @@ input.addEventListener("change", async (e) => {
           const valuesArr = ${JSON.stringify(valuesItems)};
           const selectElement = document.querySelector('[name="selected"]');
           selectElement.innerHTML = valuesArr.map(val => \`<option value="\${val.value}">\${val.label}</option>\`).join('');
-          
           const length = valuesArr[0].label.length || 4;
           const width = {
             7: '128px',
@@ -1622,6 +1615,7 @@ input.addEventListener("change", async (e) => {
             2: '43px'
           };
           selectElement.style.width = width[Math.min(length, 7)] || '77px'
+
         })()`, false
       ).catch(console.error);
     };
@@ -1663,12 +1657,10 @@ input.addEventListener("change", async (e) => {
       await generateInputAlert({
         title: label,
         message: message,
-        options: [
-          {
-            hint: settings[name] ? String(settings[name]) : '请输入',
-            value: String(settings[name]) ?? ''
-          }
-        ]
+        options: [{
+          hint: settings[name] ? String(settings[name]) : '请输入',
+          value: String(settings[name]) ?? ''
+        }]
       }, 
       async ([{ value }]) => {
         const result = value === '0' || other ? value : !isNaN(value) ? Number(value) : settings[name];
@@ -2429,9 +2421,8 @@ input.addEventListener("change", async (e) => {
   })();
   
   // 主菜单
-  await renderAppView({
-    avatarInfo: true,
-    formItems: [
+  const formItems = (() => {
+    const mainFormItems = [
       {
         type: 'group',
         items: [
@@ -2553,7 +2544,15 @@ input.addEventListener("change", async (e) => {
           }
         ]
       }
-    ]
-  });
+    ];
+    return mainFormItems;
+  })();
+  
+  // render Widget
+  if (!config.runsInApp) {
+    await runWidget();
+  } else {
+    await renderAppView({ avatarInfo: true, formItems });
+  }
 }
 module.exports = { main }
