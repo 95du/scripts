@@ -214,23 +214,17 @@ async function main() {
    * @param {object} config - Scriptable 配置对象
    * @param {string} notice 
    */
-  if (config.runsInWidget) {
+  const runWidget = async () => {
+    const family = config.widgetFamily;
+    await previewWidget(family);
+    await module.appleOS_update();
+    
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
     if (version !== settings.version && !settings.update && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       notify(`${scriptName}‼️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    try {
-      const family = config.widgetFamily;
-      await previewWidget(family);
-      await module.appleOS_update();
-    } catch (e) {
-      console.log(e);
-    } finally {
-      return null;
     }
   };
   
@@ -1863,9 +1857,8 @@ input.addEventListener("change", async (e) => {
   })();
   
   // 主菜单
-  await renderAppView({
-    avatarInfo: true,
-    formItems: [
+  const formItems = (() => {
+    const mainFormItems = [
       {
         type: 'group',
         items: [
@@ -2011,6 +2004,14 @@ input.addEventListener("change", async (e) => {
         ]
       },
     ]
-  }, true);
+    return mainFormItems;
+  })();
+  
+  // render Widget
+  if (!config.runsInApp) {
+    await runWidget();
+  } else {
+    await renderAppView({ avatarInfo: true, formItems });
+  }
 }
 module.exports = { main }
