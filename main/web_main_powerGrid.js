@@ -509,7 +509,7 @@ async function main() {
     const {
       formItems = [],
       avatarInfo,
-      previewImage = true
+      previewImage
     } = options;
 
     const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
