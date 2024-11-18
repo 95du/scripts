@@ -63,7 +63,7 @@ const extractGoldPrice = async (code) => {
     const jsonData = JSON.parse(jsonString);
     return jsonData;
   } catch (err) {
-    console.error(err);
+    console.log(err);
   }
 };
 
@@ -73,7 +73,7 @@ const fetchAndExtract = async () => {
 
   const shopInfoItems = await Promise.all(symbolArr.map(async (shop) => {
     const goldPriceData = await extractGoldPrice(shop.gold);
-    const gold = goldPriceData[shop.gold] || {};
+    const gold = goldPriceData[shop.gold];
     const current = goldPriceData['JO_92233'] || {};
     gold.title = shop.title;
     return { gold, current };
@@ -173,22 +173,21 @@ const createWidget = async () => {
   topStack.addSpacer(10);
   
   const nameText = topStack.addText(name).font = Font.boldSystemFont(17);
+  topStack.addSpacer(15);
   
-  if (random === 0) {
-    topStack.addSpacer(15);
-    const indexText = topStack.addText(`${currentPrice}   |   ${percent}%`);
-    indexText.font = Font.mediumSystemFont(17);
-    indexText.textOpacity = 0.8;
-    indexText.textColor = percent >= 0 ? Color.red() : Color.green();
-  } else {
-    topStack.addSpacer();
-    const dateText = topStack.addText(`更新于 ${updateTime}`);
+  const indexText = topStack.addText((random === 0 ? `${currentPrice}， ` : '') + `${percent}%`);
+  indexText.font = Font.mediumSystemFont(17);
+  indexText.textOpacity = 0.8;
+  indexText.textColor = percent >= 0 ? Color.red() : Color.green();
+  topStack.addSpacer(15);
+  
+  if (random === 1) {
+    const dateText = topStack.addText(`更新于  ${updateTime}`);
     dateText.font = Font.systemFont(15);
-    dateText.textOpacity = 0.75;
-  }
-  topStack.addSpacer();
-  mainStack.addSpacer();
+    dateText.textOpacity = 0.75
+  };
   
+  mainStack.addSpacer();
   const stackItems = widget.addStack();
   const { add } = await getRank(stackItems, { column: 2 });
   
