@@ -231,7 +231,7 @@ async function main() {
    * @param {object} config - Scriptable 配置对象
    * @param {string} notice 
    */
-  if (config.runsInWidget) {
+  const runWidget = async () => {
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
     if (version !== settings.version && !settings.update && hours >= 12) {
@@ -519,7 +519,7 @@ async function main() {
     const {
       formItems = [],
       avatarInfo,
-      previewImage
+      previewImage = true
     } = options;
 
     const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
@@ -1834,9 +1834,8 @@ async function main() {
   })();
   
   // 主菜单
-  await renderAppView({
-    avatarInfo: true,
-    formItems: [
+  const formItems = (() => {
+    const mainFormItems = [
       {
         type: 'group',
         items: [
@@ -1976,7 +1975,15 @@ async function main() {
           }
         ]
       }
-    ]
-  }, true);
+    ];
+    return mainFormItems;
+  })();
+  
+  // render Widget
+  if (!config.runsInApp) {
+    await runWidget();
+  } else {
+    await renderAppView({ avatarInfo: true, formItems });
+  }
 }
 module.exports = { main }
