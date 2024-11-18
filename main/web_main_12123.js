@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-brown; icon-glyph: cog;
+// icon-color: deep-brown; icon-glyph: car;
 
 async function main() {
   const scriptName = '交管 12123'
@@ -21,7 +21,7 @@ async function main() {
   await download95duModule(rootUrl);
   const isDev = false
   
-  /** ------- 导入模块 ------- */
+  /** ------- 导入模块 ------- **/
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
@@ -223,23 +223,17 @@ async function main() {
    * @param {object} config - Scriptable 配置对象
    * @param {string} notice 
    */
-  if (config.runsInWidget) {
+  const runWidget = async () => {
+    const family = config.widgetFamily;
+    await previewWidget(family);
+    await module.appleOS_update();
+    
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
     if (version !== settings.version && !settings.update && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-    };
-    
-    try {
-      const family = config.widgetFamily;
-      await previewWidget(family);
-      await module.appleOS_update();
-    } catch (e) {
-      console.log(e);
-    } finally {
-      return null;
     }
   };
   
@@ -248,17 +242,17 @@ async function main() {
     const {
       formItems = [],
       avatarInfo,
-      previewImage
+      previewImage = true
     } = options;
+    
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
+    
+    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
     const appImage = await module.getCacheImage(`${rootUrl}/img/icon/12123.png`);
-    
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
-    
-    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
     const clockScript = await module.getCacheData(`${rootUrl}/web/clock.html`);
     
@@ -1712,9 +1706,8 @@ async function main() {
   })();
   
   // 主菜单
-  await renderAppView({
-    avatarInfo: true,
-    formItems: [
+  const formItems = (() => {
+    const mainFormItems = [
       {
         type: 'group',
         items: [
@@ -1852,7 +1845,15 @@ async function main() {
           }
         ]
       }
-    ]
-  }, true);
+    ];
+    return mainFormItems;
+  })();
+  
+  // render Widget
+  if (!config.runsInApp) {
+    await runWidget();
+  } else {
+    await renderAppView({ avatarInfo: true, formItems });
+  }
 }
 module.exports = { main }
