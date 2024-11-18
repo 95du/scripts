@@ -48,7 +48,7 @@ const getShopInfo = async () => {
       return shops;
     })();
   `);
-  return shopInfo;
+  return shopInfo.slice(0, 14);
 };
 
 // 获取黄金价格
