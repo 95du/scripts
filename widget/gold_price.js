@@ -6,6 +6,7 @@
  * 组件名称: 实物黄金价格
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-11-17 15:30
+ * 数据来源: 金投行情
  * https://t.me/+CpAbO_q_SGo2ZWE1
  */
 
@@ -39,16 +40,15 @@ const getShopInfo = async () => {
         if (anchor && gold) {
           shops.push({
             title: img.getAttribute('title') || img.getAttribute('alt'),
-            url: anchor.getAttribute('href'),
             gold,
-            silver
+            url: anchor.getAttribute('href')
           });
         }
       });
       return shops;
     })();
   `);
-  return shopInfo.slice(0, 14);
+  return shopInfo.slice(0, 12);
 };
 
 // 获取黄金价格
@@ -71,17 +71,36 @@ const extractGoldPrice = async (code) => {
 const fetchAndExtract = async () => {
   const symbolArr = await getShopInfo();
 
-  const shopInfoArr = await Promise.all(symbolArr.map(async (shop) => {
+  const shopInfoItems = await Promise.all(symbolArr.map(async (shop) => {
     const goldPriceData = await extractGoldPrice(shop.gold);
-    const goldPrices = goldPriceData[shop.gold];
-    goldPrices.title = shop.title;
-    goldPrices.index = goldPriceData['JO_92233'].q80;
-    return goldPrices;
+    const gold = goldPriceData[shop.gold] || {};
+    const current = goldPriceData['JO_92233'] || {};
+    gold.title = shop.title;
+    return { gold, current };
   }));
 
-  const filteredShops = shopInfoArr.filter(shop => shop.showCode === 'huangjinjiage');
-  return filteredShops.slice(0, 10);
+  const current = shopInfoItems[shopInfoItems.length - 1]?.current || {};
+  const shopsItems = shopInfoItems
+    .map(shop => shop.gold)
+    .filter(gold => gold.showCode === 'huangjinjiage');
+  
+  return { 
+    current, 
+    data: shopsItems.slice(0, 10),
+    random: Math.round(Math.random())
+  };
 };
+
+// 提取数据
+const { data, current, random } = await fetchAndExtract();
+const updateTime = formatDate(data[0].time, true);
+const max = Math.max(...data.map(item => item.q2));
+
+let name = data[0].showName;
+if (random === 0) name = current.showName;
+  
+const currentPrice = (current.q5).toFixed(2);
+const percent = (current.q80).toFixed(2);
 
 //
 const getRank = async (stack, { column }) => {
@@ -106,7 +125,7 @@ const addItem = async (widget, item, max, index) => {
   stack.size = new Size(0, 20);
 
   const indexStack = stack.addStack();
-  indexStack.size = new Size(18, 0);
+  indexStack.size = new Size(19, 0);
   const indexText = indexStack.addText(String(index));
   indexText.font = Font.boldSystemFont(15);
   const textColor = index <= 3 
@@ -136,11 +155,6 @@ const addItem = async (widget, item, max, index) => {
 
 // Create Component Instance
 const createWidget = async () => {
-  const data = await fetchAndExtract();
-  const updateTime = formatDate(data[0].time, true);
-  const index = (data[0].index).toFixed(2);
-  const max = Math.max(...data.map(item => item.q2));
-  
   const widget = new ListWidget();
   widget.setPadding(15, 15, 15, 15);
   const mainStack = widget.addStack();
@@ -158,19 +172,20 @@ const createWidget = async () => {
   columnStack.backgroundColor = new Color('#8B5FF4');
   topStack.addSpacer(10);
   
-  const nameText = topStack.addText('黄金时价');
-  nameText.font = Font.boldSystemFont(17);
-  topStack.addSpacer(10);
+  const nameText = topStack.addText(name).font = Font.boldSystemFont(17);
   
-  const indexText = topStack.addText(index + '%');
-  indexText.font = Font.boldSystemFont(17);
-  indexText.textOpacity = 0.8;
-  indexText.textColor = index >= 0 ? Color.red() : Color.green();
-  topStack.addSpacer();
-  
-  const dateText = topStack.addText(`更新于 ${updateTime}`);
-  dateText.font = Font.systemFont(14.5);
-  dateText.textOpacity = 0.75;
+  if (random === 0) {
+    topStack.addSpacer(15);
+    const indexText = topStack.addText(`${currentPrice}   |   ${percent}%`);
+    indexText.font = Font.mediumSystemFont(17);
+    indexText.textOpacity = 0.8;
+    indexText.textColor = percent >= 0 ? Color.red() : Color.green();
+  } else {
+    topStack.addSpacer();
+    const dateText = topStack.addText(`更新于 ${updateTime}`);
+    dateText.font = Font.systemFont(15);
+    dateText.textOpacity = 0.75;
+  }
   topStack.addSpacer();
   mainStack.addSpacer();
   
