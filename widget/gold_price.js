@@ -126,10 +126,10 @@ const addItem = async (widget, item, max, index) => {
   
   if (item.q2 === max) {
     stack.addSpacer(10);
-    const barStack = stack.addStack();
-    barStack.size = new Size(9, 9);
-    barStack.cornerRadius = 50;
-    barStack.backgroundColor = Color.red();
+    const symbol = SFSymbol.named('arrow.up');
+    const iconImage = stack.addImage(symbol.image);
+    iconImage.imageSize = new Size(13, 13);
+    iconImage.tintColor = Color.red();
   };
   stack.addSpacer();
 };
@@ -138,7 +138,7 @@ const addItem = async (widget, item, max, index) => {
 const createWidget = async () => {
   const data = await fetchAndExtract();
   const updateTime = formatDate(data[0].time, true);
-  const index = (data[0].index).toPrecision(2);
+  const index = (data[0].index).toFixed(2);
   const max = Math.max(...data.map(item => item.q2));
   
   const widget = new ListWidget();
