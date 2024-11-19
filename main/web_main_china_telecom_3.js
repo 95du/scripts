@@ -7,7 +7,6 @@ async function main() {
   const version = '1.1.0'
   const updateDate = '2024年10月23日'
   const pathName = '95du_china_telecom_3';
-  
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   const scrUrl = `${rootUrl}/api/web_china_telecom_3.js`;
   
@@ -22,16 +21,16 @@ async function main() {
   const isDev = false
   
   /** ------- 导入模块 ------- */
+  
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  
   const module = new _95du(pathName);  
+  
   const {
     mainPath,
     settingPath,
     cacheImg, 
-    cacheStr, 
-    cacheCar
+    cacheStr
   } = module;
   
   /**
@@ -66,7 +65,7 @@ async function main() {
     fadeInUp: 0.7,
     angle: 90,
     alwaysDark: false,
-    useCache: true,
+    notify: true,
     cacheTime: 2,
     subTitleColor: '#000000',
     radius: 50,
@@ -1574,16 +1573,6 @@ input.addEventListener("change", async (e) => {
             },
             message: '用量通知也根据缓存时长来推送\n( 单位: 小时 )',
             desc: settings.cacheTime
-          },
-          {
-            label: '使用缓存',
-            name: 'useCache',
-            type: 'switch',
-            icon: {
-              name: 'externaldrive.fill', 
-              color: '#F9A825'
-            },
-            default: true
           },
           {
             label: '用量通知',
