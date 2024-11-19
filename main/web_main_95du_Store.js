@@ -90,14 +90,13 @@ async function main() {
   };
   
   // 下载或读取缓存 GIF 图片  
-    const getCacheGif = async () => {
-      const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
-      const fileName = 'widget.gif';
-      const filePath = fm.joinPath(depPath, fileName);
-      if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
-      const gifBase64 = fm.read(filePath).toBase64String();
-      return `data:image/gif;base64,${gifBase64}`;
-    };
+  const getCacheGif = async () => {
+    const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
+    const filePath = fm.joinPath(depPath, 'widget.gif');
+    if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
+    const gifBase64 = fm.read(filePath).toBase64String();
+    return `data:image/gif;base64,${gifBase64}`;
+  };
   
   // 运行组件
   const ScriptableRun = (name = Script.name()) => {
@@ -846,6 +845,9 @@ async function main() {
           gif.style.display = 'block'
         };
         window.onload = loadGif;
+        document.getElementById('telegram').addEventListener('click', () => {
+          invoke('telegram');
+        });
         document.querySelector('#plus').addEventListener('click', (e) => {
           e.preventDefault();
           const popupTips = document.getElementById("popup").classList;
@@ -907,6 +909,9 @@ async function main() {
           $('${updateVersionNotice()}').click();
         }, 1200);
         window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
+        document.getElementById('clearCache').addEventListener('click', () => {
+          invoke('clearCache');
+        });
       </script>`;
       
       const songId = [
@@ -1777,17 +1782,6 @@ async function main() {
     const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
     toggleLogo(isDarkMode);
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
-    
-    /** 监听其他 elementById **/
-    
-document.getElementById('clearCache').addEventListener('click', () => {
-      invoke('clearCache');
-    });
-      
-document.getElementById('telegram').addEventListener('click', () => {
-      invoke('telegram');
-    });
-    
     })()`;
     
     // =======  HTML  =======//
