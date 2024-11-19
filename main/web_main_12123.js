@@ -22,16 +22,16 @@ async function main() {
   const isDev = false
   
   /** ------- 导入模块 ------- **/
+  
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  
   const module = new _95du(pathName);  
+  
   const {
     mainPath,
     settingPath,
     cacheImg, 
-    cacheStr, 
-    cacheCar
+    cacheStr
   } = module;
   
   /**
