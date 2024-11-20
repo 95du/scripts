@@ -355,7 +355,7 @@ const getInfo = async () => {
   };
   
   if (!setting.owner) writeSettings(json);
-  return { mapUrl, carLogo, fullTime, parkingTime, state, status, json };
+  return { mapUrl, carLogo, speed, addressStr, fullTime, parkingTime, state, status, json };
 };
 
 // 设置组件背景
@@ -524,6 +524,200 @@ const smallWidget = async (widget = new ListWidget()) => {
 };
 
 /**-------------------------**/
+
+// 封装 canvas 初始化的过程
+const setupCanvas = (() => {
+  const canvSize = 185;
+  const canvWidth = 15;
+  const canvRadius = 72;
+  
+  const canvas = new DrawContext();
+  canvas.opaque = false;
+  canvas.respectScreenScale = true;
+  canvas.size = new Size(canvSize, canvSize);
+  
+  return { canvas, canvSize, canvWidth, canvRadius };
+});
+
+// 绘制半圆弧进度
+const drawArc = (ctr, radius, startAngle, endAngle, color, canvas, canvWidth) => {
+  for (let t = startAngle; t <= endAngle; t += Math.PI / 180) {
+    const x = ctr.x + radius * Math.cos(t) - canvWidth / 2;
+    const y = ctr.y + radius * Math.sin(t) - canvWidth / 2;
+    const rect = new Rect(x, y, canvWidth, canvWidth);
+    canvas.setFillColor(color);
+    canvas.fillEllipse(rect);
+  }
+};
+
+// 绘制刻度
+const drawTickMarks = (radius, color, startBgAngle, totalBgAngle, ctr, canvas) => {
+  const tickRadius = radius - 10;
+  const tickLength = 4;
+
+  const totalTicks = 20;
+  for (let i = 0; i <= totalTicks; i++) {
+    const t = i / totalTicks;
+    const angle = startBgAngle + totalBgAngle * t;
+    const x1 = ctr.x + tickRadius * Math.cos(angle);
+    const y1 = ctr.y + tickRadius * Math.sin(angle);
+    const x2 = ctr.x + (tickRadius - tickLength) * Math.cos(angle);
+    const y2 = ctr.y + (tickRadius - tickLength) * Math.sin(angle);
+
+    const path = new Path();
+    path.move(new Point(x1, y1));
+    path.addLine(new Point(x2, y2));
+
+    canvas.setStrokeColor(color);
+    canvas.setLineWidth(1)
+    canvas.addPath(path);
+    canvas.strokePath();
+  }
+};
+
+const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor, canvWidth) => {
+  const path = new Path();
+  const x = ctr.x + radius * Math.cos(startAngle);
+  const y = ctr.y + radius * Math.sin(startAngle);
+  path.move(new Point(x, y));
+
+  for (let i = 1; i <= 100; i++) {
+    const t = i / 100;
+    const angle = startAngle + (endAngle - startAngle) * t;
+    const x = ctr.x + radius * Math.cos(angle);
+    const y = ctr.y + radius * Math.sin(angle);
+    path.addLine(new Point(x, y));
+  }
+
+  canvas.setStrokeColor(fillColor);
+  canvas.setLineWidth(canvWidth);
+  canvas.addPath(path);
+  canvas.strokePath();
+  
+  // 绘制连接圆角的下半圆  
+  const endX = ctr.x + radius * Math.cos(endAngle);
+  const endY = ctr.y + radius * Math.sin(endAngle);
+  
+  const lowerHalfCircleRadius = canvWidth / 2;
+  const lowerHalfCircleX = endX;
+  const lowerHalfCircleY = endY;
+  
+  // 下半圆起点角度调整为 200 度，转换为弧度
+  const lowerHalfCircleStartAngle = 19.2 * (Math.PI / 180); // 起点为 200 度
+  const lowerHalfCircleEndAngle = lowerHalfCircleStartAngle + Math.PI; // 下半圆从 200 度绘制半圆
+  
+  const pathHalfCircle = new Path();
+  for (let i = 0; i <= 100; i++) {
+    const t = i / 100;
+    const angle = lowerHalfCircleStartAngle + (lowerHalfCircleEndAngle - lowerHalfCircleStartAngle) * t;
+    const x = lowerHalfCircleX + lowerHalfCircleRadius * Math.cos(angle);
+    const y = lowerHalfCircleY + lowerHalfCircleRadius * Math.sin(angle);
+    if (i === 0) {
+      pathHalfCircle.move(new Point(x, y));
+    } else {
+      pathHalfCircle.addLine(new Point(x, y));
+    }
+  }
+  
+  canvas.setFillColor(fillColor);
+  canvas.addPath(pathHalfCircle);
+  canvas.fillPath();
+};
+
+// 封装进度条绘制的函数
+const drawSpeedArc = async (speed, progressColor) => {
+  const { canvas, canvSize, canvWidth, canvRadius } = setupCanvas();
+  
+  const ctr = new Point(canvSize / 2, canvSize / 2);
+  const startAngle = 160 * (Math.PI / 180); // 转换为弧度
+  const endAngle = startAngle + (220 * Math.PI / 180); // 终点角度为 200°
+  
+  // 限制 speed 值范围在 0-200
+  const clampedSpeed = Math.min(Math.max(speed, 0), 200);  
+  const centrePoint = speed === 100 ? 210 : 200;
+  const progressAngle = startAngle + ((clampedSpeed / centrePoint) * (endAngle - startAngle));
+
+  // 绘制背景和进度条
+  drawArcBackground(canvas, ctr, canvRadius, startAngle, endAngle, new Color(progressColor, 0.18), canvWidth);
+  drawArc(ctr, canvRadius, startAngle, progressAngle, new Color(progressColor), canvas, canvWidth);
+  
+  // 添加刻度线
+  const startBgAngle = startAngle;
+  const totalBgAngle = endAngle - startAngle;
+  drawTickMarks(canvRadius, new Color(progressColor, 0.6), startBgAngle, totalBgAngle, ctr, canvas);
+
+  // 绘制文字
+  const textSize = 28;
+  const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
+  const speedFont = Font.boldSystemFont(textSize);
+  
+  const textRect = new Rect(0, 55, canvSize, textSize);
+  canvas.setTextAlignedCenter();
+  canvas.setTextColor(speedColor);
+  canvas.setFont(speedFont);
+  canvas.drawTextInRect(`${speed}`, textRect);
+  
+  // 在速度文字下方添加 "km/h"
+  const unitSize = 18;
+  const unitColor = new Color(Device.isUsingDarkAppearance() ? 'FFFFFF' : '000000', 0.7);
+  const unitFont = Font.systemFont(unitSize);
+  
+  const unitRect = new Rect(0, 90, canvSize, unitSize);
+  canvas.setTextColor(unitColor);
+  canvas.setFont(unitFont);
+  canvas.drawTextInRect('km·h', unitRect);
+  
+  return canvas.getImage();
+};
+
+// 设置小部件
+const setupWidget = async () => {
+  const { speed, parkingTime, mapUrl } = await getInfo();
+  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#34C759' : 'FF0000';
+  
+  const widget = new ListWidget();
+  widget.setPadding(3, 0, 0, 0);
+  
+  const stack = widget.addStack();
+  stack.layoutHorizontally();
+  stack.setPadding(0, 0, -50, 0);
+  stack.addSpacer()
+  const halfCircleImage = await drawSpeedArc(speed, progressColor);
+  stack.addImage(halfCircleImage);
+  stack.addSpacer()
+  
+  const mediumStack = widget.addStack();
+  mediumStack.layoutHorizontally();
+  mediumStack.addSpacer();
+  
+  const dateText = mediumStack.addText(parkingTime);
+  dateText.font = Font.mediumSystemFont(13.5);
+  dateText.textOpacity = 0.75
+  mediumStack.addSpacer();
+  widget.addSpacer(3);
+  
+  const buttonStack = widget.addStack();
+  buttonStack.layoutHorizontally();
+  buttonStack.addSpacer();
+  
+  const barStack = buttonStack.addStack();
+  barStack.size = new Size(120, 30);
+  barStack.setPadding(7, 12, 7, 12);
+  barStack.cornerRadius = 9
+  barStack.backgroundColor = new Color('#8C7CFF', 0.4);
+  
+  const statusText = barStack.addText(speed <= 5 ? '车辆静止中' : '车辆正在行驶');
+  statusText.font = Font.boldSystemFont(14);
+  statusText.centerAlignText();
+  statusText.textOpacity = 0.85
+  buttonStack.addSpacer();
+  widget.addSpacer();
+  
+  widget.url = mapUrl;
+  return widget;
+};
+
+/**-------------------------**/
 const getCookieBoxjs = async () => {
   const boxjs_data = await makeRequest('http://boxjs.com/query/data/amap_cookie').catch(() => {
     Safari.open('quantumult-x://');
@@ -579,7 +773,7 @@ const presentMenu = async () => {
       break;
     case 4:
       if (!setting.cookie) return;
-      const widget = await smallWidget();
+      const widget = await setupWidget();
       widget.presentSmall();
       break;
   }
@@ -587,7 +781,19 @@ const presentMenu = async () => {
 
 const runWidget = async () => {
   if (config.runsInWidget && setting.cookie) {
-    const widget = await (config.widgetFamily === 'medium' ? createWidget() : config.widgetFamily === 'small' ? smallWidget() : null);
+    const family = config.widgetFamily;
+    const param = args.widgetParameter;
+    let widget;
+
+    if (family === 'medium') {
+      widget = await createWidget();
+    } else if (param == 1) {
+      widget = await setupWidget();
+    } else if (family === 'small') {
+      widget = await smallWidget();
+    };
+    
+    widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * 15);
     Script.setWidget(widget);
     Script.complete();
   } else {
