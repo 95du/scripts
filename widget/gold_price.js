@@ -4,11 +4,26 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 实物黄金价格
- * 组件版本: Version 1.0.0
- * 发布时间: 2024-11-17 15:30
+ * 组件版本: Version 1.0.1
+ * 发布时间: 2024-11-21 16:30
  * 数据来源: 金投行情
+ * 支持大号和中号组件❗️
  * https://t.me/+CpAbO_q_SGo2ZWE1
  */
+
+const configs = {
+  medium: {
+    total: 16,
+    slice: 10,
+    stackSize: 20,
+    indexSize: 19
+  }
+}[config.widgetFamily] || {
+  total: 36,
+  slice: 28,
+  stackSize: 22,
+  indexSize: 20
+};
 
 const formatDate = (timestamp, short) => new Date(timestamp + 8 * 3600000).toISOString().slice(short ? 5 : 0, 16).replace('T', ' ');
 
@@ -48,7 +63,7 @@ const getShopInfo = async () => {
       return shops;
     })();
   `);
-  return shopInfo.slice(0, 12);
+  return shopInfo.slice(0, configs.total);
 };
 
 // 获取黄金价格
@@ -86,7 +101,7 @@ const fetchAndExtract = async () => {
   
   return { 
     current, 
-    data: shopsItems.slice(0, 10),
+    data: shopsItems.slice(0, configs.slice),
     random: Math.round(Math.random())
   };
 };
@@ -122,10 +137,10 @@ const addItem = async (widget, item, max, index) => {
   const stack = widget.addStack();
   stack.layoutHorizontally();
   stack.centerAlignContent();
-  stack.size = new Size(0, 20);
+  stack.size = new Size(0, configs.stackSize);
 
   const indexStack = stack.addStack();
-  indexStack.size = new Size(19, 0);
+  indexStack.size = new Size(configs.indexSize, 0);
   const indexText = indexStack.addText(String(index));
   indexText.font = Font.boldSystemFont(15);
   const textColor = index <= 3 
@@ -190,18 +205,19 @@ const createWidget = async () => {
   mainStack.addSpacer();
   const stackItems = widget.addStack();
   const { add } = await getRank(stackItems, { column: 2 });
+  const maxNum = configs.slice;
   
-  for (let i = 0; i < 10; ++i) {
+  for (let i = 0; i < maxNum; ++i) {
     await add(stack => addItem(stack, data[i], max, i + 1));
   };
   
   if (config.runsInApp) {
-    widget.presentMedium();
-    autoUpdate();
+    widget.presentLarge();
+    //autoUpdate();
   } else {
     Script.setWidget(widget);
     Script.complete();
   }
 };
 
-await (config.runsInApp || config.widgetFamily === 'medium' ? createWidget() : null);
+await createWidget();
