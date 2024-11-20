@@ -602,8 +602,8 @@ const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor,
   const lowerHalfCircleX = endX;
   const lowerHalfCircleY = endY;
   
-  // 下半圆起点角度调整为 200 度，转换为弧度
-  const lowerHalfCircleStartAngle = 19.2 * (Math.PI / 180); // 起点为 200 度
+  // 下半圆起点角度调整为 200 度
+  const lowerHalfCircleStartAngle = 19.2 * (Math.PI / 180);
   const lowerHalfCircleEndAngle = lowerHalfCircleStartAngle + Math.PI; // 下半圆从 200 度绘制半圆
   
   const pathHalfCircle = new Path();
@@ -673,7 +673,7 @@ const drawSpeedArc = async (speed, progressColor) => {
 // 设置小部件
 const setupWidget = async () => {
   const { speed, parkingTime, mapUrl } = await getInfo();
-  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#A73BC6' : 'FF0000';
+  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#A85EFF' : 'FF0000';
   
   const widget = new ListWidget();
   widget.setPadding(3, 0, 0, 0);
@@ -704,9 +704,12 @@ const setupWidget = async () => {
   barStack.size = new Size(120, 30);
   barStack.setPadding(7, 12, 7, 12);
   barStack.cornerRadius = 9
-  barStack.backgroundColor = new Color('#8C7CFF', 0.4);
+  barStack.backgroundColor = Color.dynamic(
+    new Color(progressColor, 0.3), 
+    new Color('#8C7CFF', 0.3)
+  );
   
-  const statusText = barStack.addText(speed <= 5 ? '车辆静止中' : '车辆正在行驶');
+  const statusText = barStack.addText(speed <= 5 ? '已静止' : '正在行驶');
   statusText.font = Font.boldSystemFont(14);
   statusText.centerAlignText();
   statusText.textOpacity = 0.85
