@@ -176,14 +176,14 @@ const createWidget = async () => {
   topStack.addSpacer(15);
   
   const indexText = topStack.addText((random === 0 ? `${currentPrice}， ` : '') + `${percent}%`);
-  indexText.font = Font.mediumSystemFont(17);
+  indexText.font = Font.mediumSystemFont(15);
   indexText.textOpacity = 0.8;
   indexText.textColor = percent >= 0 ? Color.red() : Color.green();
   topStack.addSpacer(15);
   
   if (random === 1) {
     const dateText = topStack.addText(`更新于  ${updateTime}`);
-    dateText.font = Font.systemFont(15);
+    dateText.font = Font.systemFont(14);
     dateText.textOpacity = 0.75
   };
   
