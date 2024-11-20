@@ -644,7 +644,7 @@ const drawSpeedArc = async (speed, progressColor) => {
   // 添加刻度线
   const startBgAngle = startAngle;
   const totalBgAngle = endAngle - startAngle;
-  drawTickMarks(canvRadius, new Color(progressColor, 0.6), startBgAngle, totalBgAngle, ctr, canvas);
+  drawTickMarks(canvRadius, new Color(progressColor, 0.5), startBgAngle, totalBgAngle, ctr, canvas);
 
   // 绘制文字
   const textSize = 28;
@@ -673,7 +673,7 @@ const drawSpeedArc = async (speed, progressColor) => {
 // 设置小部件
 const setupWidget = async () => {
   const { speed, parkingTime, mapUrl } = await getInfo();
-  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#34C759' : 'FF0000';
+  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#A73BC6' : 'FF0000';
   
   const widget = new ListWidget();
   widget.setPadding(3, 0, 0, 0);
