@@ -694,7 +694,7 @@ const setupWidget = async () => {
   dateText.font = Font.mediumSystemFont(13.5);
   dateText.textOpacity = 0.75
   mediumStack.addSpacer();
-  widget.addSpacer(3);
+  widget.addSpacer(5);
   
   const buttonStack = widget.addStack();
   buttonStack.layoutHorizontally();
@@ -702,7 +702,7 @@ const setupWidget = async () => {
   
   const barStack = buttonStack.addStack();
   barStack.size = new Size(120, 30);
-  barStack.setPadding(7, 12, 7, 12);
+  barStack.setPadding(6, 12, 6, 12);
   barStack.cornerRadius = 9
   barStack.backgroundColor = Color.dynamic(
     new Color(progressColor, 0.3), 
