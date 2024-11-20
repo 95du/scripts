@@ -2,12 +2,12 @@
   "results": [
     {
       "primaryGenreName": "Productivity",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/72/34/9e/72349e5a-a3d2-106e-4ba2-67b07e8ec4e5/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
-      "sellerUrl": "https://openai.com/chatgpt",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/80/db/a3/80dba327-29a9-cd61-220f-39be74ffb99c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
       "currency": "USD",
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/72/34/9e/72349e5a-a3d2-106e-4ba2-67b07e8ec4e5/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
+      "sellerUrl": "https://openai.com/chatgpt",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/80/db/a3/80dba327-29a9-cd61-220f-39be74ffb99c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
       "ipadScreenshotUrls": [],
-      "fileSizeBytes": "75908096",
+      "fileSizeBytes": "76890112",
       "genres": [
         "Productivity",
         "Utilities"
@@ -74,7 +74,7 @@
         "UR",
         "VI"
       ],
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/72/34/9e/72349e5a-a3d2-106e-4ba2-67b07e8ec4e5/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/60x60bb.jpg",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/80/db/a3/80dba327-29a9-cd61-220f-39be74ffb99c/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/60x60bb.jpg",
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -184,27 +184,27 @@
         "iPadMiniA17Pro-iPadMiniA17Pro",
         "iPadMiniA17ProCellular-iPadMiniA17ProCellular"
       ],
-      "bundleId": "com.openai.chat",
-      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "version": "1.2024.310",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "bundleId": "com.openai.chat",
+      "version": "1.2024.317",
+      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "userRatingCountForCurrentVersion": 1277021,
-      "appletvScreenshotUrls": [],
-      "isGameCenterEnabled": false,
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "averageUserRatingForCurrentVersion": 4.871599999999999,
       "genreIds": [
         "6007",
         "6002"
       ],
-      "trackId": 6448311069,
+      "isGameCenterEnabled": false,
+      "appletvScreenshotUrls": [],
+      "releaseDate": "2023-05-18T07:00:00Z",
       "wrapperType": "software",
+      "averageUserRatingForCurrentVersion": 4.871619999999998,
+      "trackId": 6448311069,
+      "userRatingCountForCurrentVersion": 1281566,
       "minimumOsVersion": "16.4",
       "formattedPrice": "Free",
       "primaryGenreId": 6007,
-      "currentVersionReleaseDate": "2024-11-12T18:23:34Z",
-      "userRatingCount": 1277021,
+      "currentVersionReleaseDate": "2024-11-19T17:11:26Z",
+      "userRatingCount": 1281566,
       "artistId": 1684349733,
       "trackContentRating": "12+",
       "artistName": "OpenAI",
@@ -227,13 +227,13 @@
       "releaseNotes": "Bug fixes and small improvements.",
       "isVppDeviceBasedLicensingEnabled": true,
       "sellerName": "OpenAI, L.L.C.",
-      "averageUserRating": 4.871599999999999,
+      "averageUserRating": 4.871619999999998,
       "advisories": [
-        "Infrequent/Mild Profanity or Crude Humor",
-        "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
         "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Mature/Suggestive Themes"
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Profanity or Crude Humor",
+        "Infrequent/Mild Medical/Treatment Information"
       ]
     }
   ],
