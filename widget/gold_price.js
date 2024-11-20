@@ -213,7 +213,7 @@ const createWidget = async () => {
   
   if (config.runsInApp) {
     widget.presentLarge();
-    //autoUpdate();
+    autoUpdate();
   } else {
     Script.setWidget(widget);
     Script.complete();
