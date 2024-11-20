@@ -484,11 +484,11 @@ class _95du {
     const hour = new Date().getHours();
     const { 
       appleOS,
-      startHour = 4, 
-      endHour = 6 
+      startTime = 4, 
+      endTime = 6 
     } = settings;
 
-    if (appleOS && hour >= startHour && hour <= endHour) {
+    if (appleOS && hour >= startTime && hour <= endTime) {
       const html = await this.httpRequest('https://developer.apple.com/news/releases/rss/releases.rss');
       const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
       if (settings.push !== iOS) {
