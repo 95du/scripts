@@ -56,8 +56,8 @@ class _95du {
    */
   apiRequest = async (
     url, 
-    method = 'GET', 
     headers = {}, 
+    method = 'GET', 
     obj = null, 
     formBody = null
   ) => {
@@ -428,7 +428,7 @@ class _95du {
       .catch(() => null);
     if (moduleJs) return modulePath;
   };
-    
+  
   /**
    * 获取 boxjs Data
    * 依赖：Quantumult-X / Surge
