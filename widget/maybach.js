@@ -527,16 +527,16 @@ const smallWidget = async (widget = new ListWidget()) => {
 
 // 封装 canvas 初始化的过程
 const setupCanvas = (() => {
-  const canvSize = 185;
-  const canvWidth = 15;
-  const canvRadius = 72;
+  const canvSize = 185
+  const width = 15
+  const radius = 72;
   
   const canvas = new DrawContext();
   canvas.opaque = false;
   canvas.respectScreenScale = true;
   canvas.size = new Size(canvSize, canvSize);
   
-  return { canvas, canvSize, canvWidth, canvRadius };
+  return { canvas, canvSize, width, radius };
 });
 
 // 绘制半圆弧进度
@@ -550,15 +550,57 @@ const drawArc = (ctr, radius, startAngle, endAngle, color, canvas, canvWidth) =>
   }
 };
 
-// 绘制刻度
-const drawTickMarks = (radius, color, startBgAngle, totalBgAngle, ctr, canvas) => {
-  const tickRadius = radius - 10;
-  const tickLength = 4;
+// 绘制背景(两个函数)
+const drawCircularPath = (canvas, start, end, ctr, radius, steps, isFilled = false, fillColor, width = 1) => {
+  const path = new Path();
+  
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const angle = start + (end - start) * t;
+    const x = ctr.x + radius * Math.cos(angle);
+    const y = ctr.y + radius * Math.sin(angle);
+    i === 0 ? path.move(new Point(x, y)) : path.addLine(new Point(x, y));
+  }
 
-  const totalTicks = 20;
-  for (let i = 0; i <= totalTicks; i++) {
-    const t = i / totalTicks;
+  if (isFilled) {
+    canvas.setFillColor(fillColor);
+    canvas.addPath(path);
+    canvas.fillPath();
+  } else {
+    canvas.setStrokeColor(fillColor);
+    canvas.setLineWidth(width);
+    canvas.addPath(path);
+    canvas.strokePath();
+  }
+};
+
+const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor, width) => {
+  // 绘制主弧线
+  drawCircularPath(canvas, startAngle, endAngle, ctr, radius, 100, false, fillColor, width);
+
+  // 绘制连接的下半圆(endAngle)
+  const halfCircleRadius = width / 2;
+  const halfCircleStart = 19.2 * (Math.PI / 180); // 起点为主弧线的终点
+  const halfCircleEnd = halfCircleStart + Math.PI; // 绘制半圆
+  const halfCircleCenter = {
+    x: ctr.x + radius * Math.cos(endAngle),
+    y: ctr.y + radius * Math.sin(endAngle),
+  };
+
+  drawCircularPath(canvas, halfCircleStart, halfCircleEnd, halfCircleCenter, halfCircleRadius, 100, true, fillColor);
+};
+
+// 绘制刻度
+const drawTickMarks = (radius, color, digitColor, startBgAngle, totalBgAngle, ctr, canvas) => {
+  const tickRadius = radius - 10
+  const tickLength = 4;
+  const numberRadius = radius - 22;
+  const total = 20;
+  
+  for (let i = 0; i <= total; i++) {
+    const t = i / total;
     const angle = startBgAngle + totalBgAngle * t;
+    // 绘制刻度线
     const x1 = ctr.x + tickRadius * Math.cos(angle);
     const y1 = ctr.y + tickRadius * Math.sin(angle);
     const x2 = ctr.x + (tickRadius - tickLength) * Math.cos(angle);
@@ -569,100 +611,90 @@ const drawTickMarks = (radius, color, startBgAngle, totalBgAngle, ctr, canvas) =
     path.addLine(new Point(x2, y2));
 
     canvas.setStrokeColor(color);
-    canvas.setLineWidth(1)
+    canvas.setLineWidth(1);
     canvas.addPath(path);
     canvas.strokePath();
+
+    // 绘制刻度数字（每隔20显示一个数字）
+    if (i % (total / 10) === 0) { // 每 20 增加一个数字
+      const value = (i / total) * 200; // 根据总刻度计算速度值
+      const numX = ctr.x + numberRadius * Math.cos(angle);
+      const numY = ctr.y + numberRadius * Math.sin(angle);
+
+      canvas.setTextAlignedCenter();
+      canvas.setTextColor(digitColor)
+      const textFont = Font.mediumSystemFont(8);
+      canvas.setFont(textFont);
+      canvas.drawTextInRect(
+        Math.round(value).toString(),
+        new Rect(numX - 10, numY - 5, 20, 10) // 调整数字矩形框以居中
+      );
+    }
   }
 };
 
-const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor, canvWidth) => {
+// 绘制特定刻度线
+const drawSpecialTick = (radius, color, angle, ctr, canvas) => {
+  const tickRadius = radius - 12;
+  const tickLength = 16;
+
+  const x1 = ctr.x + tickRadius * Math.cos(angle);
+  const y1 = ctr.y + tickRadius * Math.sin(angle);
+  const x2 = ctr.x + (tickRadius - tickLength) * Math.cos(angle);
+  const y2 = ctr.y + (tickRadius - tickLength) * Math.sin(angle);
+
   const path = new Path();
-  const x = ctr.x + radius * Math.cos(startAngle);
-  const y = ctr.y + radius * Math.sin(startAngle);
-  path.move(new Point(x, y));
+  path.move(new Point(x1, y1));
+  path.addLine(new Point(x2, y2));
 
-  for (let i = 1; i <= 100; i++) {
-    const t = i / 100;
-    const angle = startAngle + (endAngle - startAngle) * t;
-    const x = ctr.x + radius * Math.cos(angle);
-    const y = ctr.y + radius * Math.sin(angle);
-    path.addLine(new Point(x, y));
-  }
-
-  canvas.setStrokeColor(fillColor);
-  canvas.setLineWidth(canvWidth);
+  canvas.setStrokeColor(color);
+  canvas.setLineWidth(2);
   canvas.addPath(path);
   canvas.strokePath();
-  
-  // 绘制连接圆角的下半圆  
-  const endX = ctr.x + radius * Math.cos(endAngle);
-  const endY = ctr.y + radius * Math.sin(endAngle);
-  
-  const lowerHalfCircleRadius = canvWidth / 2;
-  const lowerHalfCircleX = endX;
-  const lowerHalfCircleY = endY;
-  
-  // 下半圆起点角度调整为 200 度
-  const lowerHalfCircleStartAngle = 19.2 * (Math.PI / 180);
-  const lowerHalfCircleEndAngle = lowerHalfCircleStartAngle + Math.PI; // 下半圆从 200 度绘制半圆
-  
-  const pathHalfCircle = new Path();
-  for (let i = 0; i <= 100; i++) {
-    const t = i / 100;
-    const angle = lowerHalfCircleStartAngle + (lowerHalfCircleEndAngle - lowerHalfCircleStartAngle) * t;
-    const x = lowerHalfCircleX + lowerHalfCircleRadius * Math.cos(angle);
-    const y = lowerHalfCircleY + lowerHalfCircleRadius * Math.sin(angle);
-    if (i === 0) {
-      pathHalfCircle.move(new Point(x, y));
-    } else {
-      pathHalfCircle.addLine(new Point(x, y));
-    }
-  }
-  
-  canvas.setFillColor(fillColor);
-  canvas.addPath(pathHalfCircle);
-  canvas.fillPath();
 };
 
 // 封装进度条绘制的函数
 const drawSpeedArc = async (speed, progressColor) => {
-  const { canvas, canvSize, canvWidth, canvRadius } = setupCanvas();
+  const { canvas, canvSize, width, radius } = setupCanvas();
   
   const ctr = new Point(canvSize / 2, canvSize / 2);
-  const startAngle = 160 * (Math.PI / 180); // 转换为弧度
+  const startAngle = 160 * (Math.PI / 180); // 转换为弧度 180-(220-180)/2
   const endAngle = startAngle + (220 * Math.PI / 180); // 终点角度为 200°
   
   // 限制 speed 值范围在 0-200
   const clampedSpeed = Math.min(Math.max(speed, 0), 200);  
-  const centrePoint = speed === 100 ? 210 : 200;
+  const centrePoint = 200;
   const progressAngle = startAngle + ((clampedSpeed / centrePoint) * (endAngle - startAngle));
 
   // 绘制背景和进度条
-  drawArcBackground(canvas, ctr, canvRadius, startAngle, endAngle, new Color(progressColor, 0.18), canvWidth);
-  drawArc(ctr, canvRadius, startAngle, progressAngle, new Color(progressColor), canvas, canvWidth);
+  drawArcBackground(canvas, ctr, radius, startAngle, endAngle, new Color(progressColor, 0.18), width);
+  drawArc(ctr, radius, startAngle, progressAngle, new Color(progressColor), canvas, width);
   
-  // 添加刻度线
+  // 添加刻度线和数字
   const startBgAngle = startAngle;
   const totalBgAngle = endAngle - startAngle;
-  drawTickMarks(canvRadius, new Color(progressColor, 0.5), startBgAngle, totalBgAngle, ctr, canvas);
-
+  drawTickMarks(radius, new Color(progressColor, 0.5), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas);
+  
+  // 添加红色刻度线
+  if (speed > 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
+  
   // 绘制文字
   const textSize = 28;
   const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
   const speedFont = Font.boldSystemFont(textSize);
   
-  const textRect = new Rect(0, 55, canvSize, textSize);
+  const textRect = new Rect(0, 60, canvSize, textSize);
   canvas.setTextAlignedCenter();
   canvas.setTextColor(speedColor);
   canvas.setFont(speedFont);
   canvas.drawTextInRect(`${speed}`, textRect);
   
-  // 在速度文字下方添加 "km/h"
+  // 在速度文字下方添加 "km·h"
   const unitSize = 18;
   const unitColor = new Color(Device.isUsingDarkAppearance() ? 'FFFFFF' : '000000', 0.7);
   const unitFont = Font.systemFont(unitSize);
   
-  const unitRect = new Rect(0, 90, canvSize, unitSize);
+  const unitRect = new Rect(0, 95, canvSize, unitSize);
   canvas.setTextColor(unitColor);
   canvas.setFont(unitFont);
   canvas.drawTextInRect('km·h', unitRect);
@@ -670,8 +702,8 @@ const drawSpeedArc = async (speed, progressColor) => {
   return canvas.getImage();
 };
 
-// 设置小部件
-const setupWidget = async () => {
+// 仪表盘小号组件
+const dashboardWidget = async () => {
   const { speed, parkingTime, mapUrl } = await getInfo();
   const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#A85EFF' : 'FF0000';
   
@@ -694,7 +726,7 @@ const setupWidget = async () => {
   dateText.font = Font.mediumSystemFont(13.5);
   dateText.textOpacity = 0.75
   mediumStack.addSpacer();
-  widget.addSpacer(5);
+  widget.addSpacer(4);
   
   const buttonStack = widget.addStack();
   buttonStack.layoutHorizontally();
@@ -712,7 +744,7 @@ const setupWidget = async () => {
   const statusText = barStack.addText(speed <= 5 ? '已静止' : '正在行驶');
   statusText.font = Font.boldSystemFont(14);
   statusText.centerAlignText();
-  statusText.textOpacity = 0.85
+  statusText.textOpacity = 0.8
   buttonStack.addSpacer();
   widget.addSpacer();
   
@@ -776,7 +808,7 @@ const presentMenu = async () => {
       break;
     case 4:
       if (!setting.cookie) return;
-      const widget = await setupWidget();
+      const widget = await dashboardWidget();
       widget.presentSmall();
       break;
   }
@@ -791,7 +823,7 @@ const runWidget = async () => {
     if (family === 'medium') {
       widget = await createWidget();
     } else if (param == 1) {
-      widget = await setupWidget();
+      widget = await dashboardWidget();
     } else if (family === 'small') {
       widget = await smallWidget();
     };
