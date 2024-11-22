@@ -127,6 +127,7 @@ async function main() {
   // 预览组件
   const previewWidget = async () => {
     await importModule(await module.webModule(scrUrl)).main();
+    if (settings.update) await updateString();
     shimoFormData(settings.province);
   };
   
@@ -167,7 +168,7 @@ async function main() {
    * @returns {Promise<void>}
    */
   const updateVersion = async () => {
-    const index = await generateAlert(
+    const index = await module.generateAlert(
       '更新代码',
       '更新后当前脚本代码将被覆盖\n但不会清除用户已设置的数据\n如预览组件未显示或桌面组件显示错误，可更新尝试自动修复',
       options = ['取消', '更新']
@@ -188,8 +189,6 @@ async function main() {
       fm.writeString(modulePath, str)
       settings.version = version;
       writeSettings(settings);
-      shimoFormData('update');
-      ScriptableRun();
     }
   };
   
@@ -206,7 +205,7 @@ async function main() {
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
-    if (version !== settings.version && !settings.update && hours >= 12) {
+    if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，随机两种油价预警内容`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
@@ -234,42 +233,33 @@ async function main() {
     
     const scriptTags = await module.scriptTags();
     
-    // SFSymbol url icons
-    const subArray = [];  
-    const getPromises = [];
-    const getBuildIcon = (item) => {
+    // 批量处理并加载图标
+    const getBuildIcon = async (item) => {
       const { icon } = item;
-      if (icon?.name) {
+      if (!icon) return;
+      if (icon.name) {
         const { name, color } = icon;
-        return module.getCacheMaskSFIcon(name, color).then(iconData => {
-          item.icon = iconData;
-        });
-      } else if (icon?.startsWith('https')) {
-        return module.getCacheImage(icon).then(iconData => {
-          item.icon = iconData;
-        });
-      } else if (!icon?.startsWith('data')) {
-        return module.getCacheDrawSFIcon(icon).then(iconData => {
-          item.icon = iconData;
-        });
+        item.icon = await module.getCacheMaskSFIcon(name, color);
+      } else if (icon.startsWith('https')) {
+        item.icon = await module.getCacheImage(icon);
+      } else if (!icon.startsWith('data')) {
+        item.icon = await module.getCacheDrawSFIcon(icon);
       }
     };
-
-    for (const i of formItems) {
-      for (const item of i.items) {
-        if (item.item) {
-          for (const subItem of item.item) {
-            const arr = getBuildIcon(subItem);
-            getPromises.push(arr);
-            subArray.push(subItem);
-          }
+    
+    const promises = [];
+    const flattenItems = (arr) => {
+      for (const group of arr) {
+        if (!group || !group.items) continue;
+        for (const item of group.items) {
+          promises.push(getBuildIcon(item));
+          if (item.item) flattenItems(item.item);
         }
-        const array = getBuildIcon(item);
-        getPromises.push(array);
       }
     };
-    // 等待所有图标加载完成
-    await Promise.all(getPromises);
+    
+    flattenItems(formItems);
+    await Promise.all(promises);
     
     /**
      * @param {string} style
@@ -1141,6 +1131,7 @@ async function main() {
           break;
         case 'updateCode':
           await updateVersion();
+          ScriptableRun();
           break;
         case 'period':
           await period(data);
@@ -1182,6 +1173,7 @@ async function main() {
           break;
         case 'install':
           await updateString();
+          ScriptableRun();
           break;
         case 'itemClick':      
           const findItem = (items) => items.reduce((found, item) => found || (item.name === data.name ? item : (item.type === 'group' && findItem(item.items))), null);
