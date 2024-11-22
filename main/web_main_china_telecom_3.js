@@ -250,32 +250,34 @@ async function main() {
     
     const scriptTags = await module.scriptTags();
     
-    // 批量处理图标加载
-    const getBuildIcon = async (item) => {
+    // 批量处理图标加载  
+    const getAndBuildIcon = async (item) => {
       const { icon } = item;
-      if (!icon) return;
-      if (icon.name) {
+      if (icon?.name) {
         const { name, color } = icon;
         item.icon = await module.getCacheMaskSFIcon(name, color);
-      } else if (icon.startsWith('https')) {
+      } else if (icon?.startsWith('https')) {
         item.icon = await module.getCacheImage(icon);
-      } else if (!icon.startsWith('data')) {
+      } else if (!icon?.startsWith('data')) {
         item.icon = await module.getCacheDrawSFIcon(icon);
       }
     };
-    
+  
+    const subArray = [];
     const promises = [];
-    const flattenItems = (arr) => {
-      for (const group of arr) {
-        if (!group || !group.items) continue;
-        for (const item of group.items) {
-          promises.push(getBuildIcon(item));
-          if (item.item) flattenItems(item.item);
-        }
+    const buildIcon = (item) => getAndBuildIcon(item);
+    const processItem = (item) => {
+      promises.push(buildIcon(item));
+      if (item.item) {
+        item.item.forEach((i) => {
+          promises.push(buildIcon(i))
+          subArray.push(i);
+        });
       }
     };
-    
-    flattenItems(formItems);
+  
+    // 遍历所有表单项并处理
+    formItems.forEach(group => group.items.forEach(processItem));
     await Promise.all(promises);
     
     /**
