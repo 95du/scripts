@@ -10,121 +10,39 @@
 
 
 async function main() {
-  const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), "95du_Oils");
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const fm = FileManager.local();  
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  const isDev = false
   
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
-  const [ settingPath, cacheImg, cacheStr ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-  ].map(getCachePath);
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
-  /**
-   * 读取储存的设置
-   * @returns {object} - 设置对象
-   */
-  const getBotSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return { province, interval } = JSON.parse(fm.readString(file));
-    }
-  };
-  const setting = await getBotSettings(settingPath) || {};
+  const pathName = '95du_Oils';
+  const module = new _95du(pathName);  
+  const setting = module.settings;
   
-  /**
-   * 存储当前设置
-   * @param { JSON } string
-   */
-  const writeSettings = async (setting) => {
-    fm.writeString(settingPath, JSON.stringify(setting, null, 2));
-    console.log(JSON.stringify(
-      setting, null, 2
-    ));
-  };
+  const { 
+    rootUrl,
+    settingPath, 
+    cacheImg, 
+    cacheStr,
+  } = module;
   
-  /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'default', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
-  // 获取数组中随机值
-  const getRandomItem = (array) => array[parseInt(Math.random() * array.length)] || null;
-  
-  /**
-   * 读取和写入缓存的文本和图片数据
-   * @param {object} options
-   * @param {number}  - number
-   * @returns {object} - Object
-   */
-  const useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? cacheStr : cacheImg;
-    return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime || province !== setting.oils[0]) fm.remove(path);
-          else return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-        }
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
-  };
-  
-  /**
-   * 获取请求数据并缓存
-   * @param {string} - url
-   * @returns {image} - image
-   * @returns {object} - JSON
-   */
-  const getCacheData = async (name, url, type) => {
-    const cache = useFileManager({  
-      cacheTime: type ? 4 : 240, type
-    });
-    const cacheData = cache.read(name);
-    if (cacheData) return cacheData;
-    const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
-    if (response) {
-      cache.write(name, response);
-    }
-    return response;
-  };
+  const { 
+    province,
+    interval,
+    oils: array = ['海南']
+  } = setting;
   
   // Background image
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
-  // 图片遮罩颜色、透明度设置
-  async function shadowImage(img) {
-    let ctx = new DrawContext();
-    ctx.size = img.size;
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']));
-    return await ctx.getImage();
-  };
-    
   // 初始化，预警通知
   const updateAndNotify = (oils, oilsTips) => {
-    if (setting.oilsTips !== oilsTips || province !== setting.oils[0]) {
-      notify(`${province}油价调整‼️`, oilsTips);
+    if (setting.oilsTips !== oilsTips || province !== array[0]) {
+      module.notify(`${province}油价调整‼️`, oilsTips);
       Object.assign(setting, { oilsTips, oils });
-      writeSettings(setting);
+      module.writeSettings(setting);
     }
   };
   
@@ -186,7 +104,7 @@ async function main() {
   const getOilsPrices = async () => {
     const province = findTitle();
     const url = `https://youjia.15qs.com/index.php?c=api&a=getprice&province=${encodeURIComponent(province)}`;  
-    const oil = await getCacheData('oil.json', url, true);
+    const oil = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'oil.json');
     return oil ? [setting.province, oil.hao92, oil.hao95, oil.hao98, oil.hao0] : null;
   };
   
@@ -203,7 +121,7 @@ async function main() {
   // 获取油价预警
   const getOilTips = async () => {
     const url = 'https://20121212.cn/ci/index.php/tips/get';  
-    const [data] = await getCacheData('tips.json', url, true);
+    const [data] = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
     const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
     const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
     const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
@@ -219,14 +137,15 @@ async function main() {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const backgroundImage = await getCacheData('logo.png', `${rootUrl}/img/background/glass_0.png`);
+    const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
     const bgImage = getBgImage();
     if (fm.fileExists(bgImage) && !isDark) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
+      const image = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(image);
     } else if (!isDark) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = color[Math.floor(Math.random() * color.length)];
+      const randomColor = await module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
       const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
