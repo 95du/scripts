@@ -115,7 +115,10 @@ async function main(family) {
       : await getBoxjsData();
     }
     
-    return await module.apiRequest(url, { headers: { Cookie: cookie } });
+    const headers = { 
+      Cookie: cookie 
+    };
+    return await module.apiRequest(url, headers);
   };
   
   const formatFlows = (balance) => {
