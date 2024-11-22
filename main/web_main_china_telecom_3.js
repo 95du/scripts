@@ -192,6 +192,7 @@ async function main() {
     );
     if (index === 0) return;
     await updateString();
+    ScriptableRun();
   };
   
   const updateString = async () => {
@@ -1233,7 +1234,6 @@ input.addEventListener("change", async (e) => {
           break;
         case 'updateCode':
           await updateVersion();
-          ScriptableRun();
           break;
         case 'period':
           await period(data);
