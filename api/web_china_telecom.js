@@ -101,7 +101,7 @@ async function main(family) {
       if (cookie) {
         setting.cookie = cookie;
         writeSettings(setting);
-        notify('中国电信_2', '天翼账号中心 Cookie 更新成功');
+        module.notify('中国电信_2', '天翼账号中心 Cookie 更新成功');
         return cookie;
       }
     }
