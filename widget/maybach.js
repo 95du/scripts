@@ -527,8 +527,8 @@ const smallWidget = async (widget = new ListWidget()) => {
 
 // 封装 canvas 初始化的过程
 const setupCanvas = (() => {
-  const canvSize = 185
-  const width = 15
+  const canvSize = 185;
+  const width = 14.5;
   const radius = 72;
   
   const canvas = new DrawContext();
@@ -590,10 +590,10 @@ const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor,
   drawCircularPath(canvas, halfCircleStart, halfCircleEnd, halfCircleCenter, halfCircleRadius, 100, true, fillColor);
 };
 
-// 绘制刻度
-const drawTickMarks = (radius, color, digitColor, startBgAngle, totalBgAngle, ctr, canvas) => {
+// 绘制刻度和数字
+const drawTickMarks = (radius, strokeColor, color, startBgAngle, totalBgAngle, ctr, canvas, speed = 0) => {
   const tickRadius = radius - 10
-  const tickLength = 4;
+  const tickLength = 3.5;
   const numberRadius = radius - 22;
   const total = 20;
   
@@ -610,11 +610,11 @@ const drawTickMarks = (radius, color, digitColor, startBgAngle, totalBgAngle, ct
     path.move(new Point(x1, y1));
     path.addLine(new Point(x2, y2));
 
-    canvas.setStrokeColor(color);
+    canvas.setStrokeColor(speed < 5 ? strokeColor : color);
     canvas.setLineWidth(1);
     canvas.addPath(path);
     canvas.strokePath();
-
+    
     // 绘制刻度数字（每隔20显示一个数字）
     if (i % (total / 10) === 0) { // 每 20 增加一个数字
       const value = (i / total) * 200; // 根据总刻度计算速度值
@@ -622,7 +622,7 @@ const drawTickMarks = (radius, color, digitColor, startBgAngle, totalBgAngle, ct
       const numY = ctr.y + numberRadius * Math.sin(angle);
 
       canvas.setTextAlignedCenter();
-      canvas.setTextColor(digitColor)
+      canvas.setTextColor(color);
       const textFont = Font.mediumSystemFont(8);
       canvas.setFont(textFont);
       canvas.drawTextInRect(
@@ -633,10 +633,10 @@ const drawTickMarks = (radius, color, digitColor, startBgAngle, totalBgAngle, ct
   }
 };
 
-// 绘制特定刻度线
+// 绘制特定红色刻度线
 const drawSpecialTick = (radius, color, angle, ctr, canvas) => {
   const tickRadius = radius - 12;
-  const tickLength = 16;
+  const tickLength = 20;
 
   const x1 = ctr.x + tickRadius * Math.cos(angle);
   const y1 = ctr.y + tickRadius * Math.sin(angle);
@@ -673,11 +673,10 @@ const drawSpeedArc = async (speed, progressColor) => {
   // 添加刻度线和数字
   const startBgAngle = startAngle;
   const totalBgAngle = endAngle - startAngle;
-  drawTickMarks(radius, new Color(progressColor, 0.5), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas);
+  drawTickMarks(radius, new Color(progressColor, 0.6), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas, speed);
   
   // 添加红色刻度线
-  if (speed > 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
-  
+  if (speed >= 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
   // 绘制文字
   const textSize = 28;
   const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
@@ -705,7 +704,11 @@ const drawSpeedArc = async (speed, progressColor) => {
 // 仪表盘小号组件
 const dashboardWidget = async () => {
   const { speed, parkingTime, mapUrl } = await getInfo();
-  const progressColor = speed <= 50 ? "#FF9500" : speed <= 100 ? '#A85EFF' : 'FF0000';
+  const progressColor = speed <= 50 
+    ? "#A85EFF" 
+    : speed <= 100 
+    ? '#FF7800' 
+    : '#FF0000';
   
   const widget = new ListWidget();
   widget.setPadding(3, 0, 0, 0);
@@ -713,10 +716,10 @@ const dashboardWidget = async () => {
   const stack = widget.addStack();
   stack.layoutHorizontally();
   stack.setPadding(0, 0, -50, 0);
-  stack.addSpacer()
+  stack.addSpacer();
   const halfCircleImage = await drawSpeedArc(speed, progressColor);
   stack.addImage(halfCircleImage);
-  stack.addSpacer()
+  stack.addSpacer();
   
   const mediumStack = widget.addStack();
   mediumStack.layoutHorizontally();
@@ -748,7 +751,8 @@ const dashboardWidget = async () => {
   buttonStack.addSpacer();
   widget.addSpacer();
   
-  widget.url = mapUrl;
+  widget.backgroundColor = Color.dynamic(Color.white(), new Color('111111'));
+  widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
   return widget;
 };
 
