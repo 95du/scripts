@@ -1038,12 +1038,11 @@ async function main() {
     const installScript = async (data) => {
       const { label, scrUrl } = JSON.parse(data);
       const fm = FileManager.iCloud()
-      const script = await getString(scrUrl);
-      if (!script.includes('DOCTYPE')) {
-        const scrLable = fm.documentsDirectory() + `/${label}.js`;
-        fm.writeString(scrLable, script);
-        await shimoFormData(`install ${label}`);
-        Timer.schedule(650, false, () => Safari.open(`scriptable:///run/${encodeURIComponent(label)}`));
+      const script = await new Request(scrUrl).loadString();
+      if (script.includes('{')) {
+        const filePath = fm.documentsDirectory() + `/${label}.js`;
+        fm.writeString(filePath, script);
+        Timer.schedule(500, false, () => Safari.open(`scriptable:///run/${encodeURIComponent(label)}`));
       }
     };
     
