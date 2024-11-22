@@ -181,6 +181,7 @@ async function main() {
     );
     if (index === 0) return;
     await updateString();
+    ScriptableRun();
   };
   
   const updateString = async () => {
@@ -1175,7 +1176,6 @@ async function main() {
           break;
         case 'updateCode':
           await updateVersion();
-          ScriptableRun();
           break;
         case 'token':
           await userlogin(data);
