@@ -159,6 +159,7 @@ async function main(family) {
   const {  
     userName: name = '用户名',
     eleCustNumber: number = '070100',
+    eleType = '800',
     areaCode,
     bindingId: eleCustId
   } =  await getUserInfo() || {};
@@ -184,23 +185,47 @@ async function main(family) {
   } = await getEleBill(areaCode, eleCustId) || {};
   
   // 根据当前月份和用电量返回电费信息
-  const calcElectricBill = (totalPower) => {
+  const calcElectricBill = (totalPower, eleType = '800', areaCode = '') => {
     const isSummer = new Date().getMonth() + 1 >= 4 && new Date().getMonth() + 1 <= 10;
-    // 电价档次设定
+  
+    // 农业用电电价表（根据区域代码）
+    const agriculturalRatesByCode = {
+      '070000': { province: '海南', rate: 0.514 },
+      '440000': { province: '广东', rate: 0.514 },
+      '450000': { province: '广西', rate: 0.510 },
+      '530000': { province: '云南', rate: 0.508 },
+      '520000': { province: '贵州', rate: 0.507 }
+    };
+  
+    const agriculturalInfo = agriculturalRatesByCode[areaCode];
+    const agriculturalRate = agriculturalInfo ? agriculturalInfo.rate : 0.514;
+    // 返回农业用电数据
+    if (eleType === '800') {
+      return {
+        tier: '农用',
+        province: agriculturalInfo ? agriculturalInfo.province : '未知',
+        rate: agriculturalRate,
+        cost: (totalPower * agriculturalRate).toFixed(2),
+        percent: 0,
+        isPercent: '0%'
+      };
+    }
+  
+    // 普通居民电价档次设定
     const tiers = [
       { limit: isSummer ? 220 : 160, rate: 0.6083, name: '一档' },
       { limit: isSummer ? 400 : 280, rate: 0.6583, name: '二档' },
       { rate: 0.9083, name: '三档' }
     ];
-    
+  
     // 根据用电量判断所属档次
     const tier = tiers.find((t, i) => totalPower <= t.limit || i === tiers.length - 1);
-    
+  
     // 计算占第三档比例
     const thirdTierLimit = isSummer ? 400 : 280;
     const percentageOfThird = totalPower / thirdTierLimit;
     const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0;
-    
+  
     return {
       tier: tier.name,
       rate: tier.rate,
@@ -210,7 +235,13 @@ async function main(family) {
     };
   };
   
-  const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower);
+  const { 
+    tier, 
+    rate, 
+    cost, 
+    percent, 
+    isPercent 
+  } = calcElectricBill(totalPower, eleType, areaCode);
   
   // 欠费时每12小时通知一次
   const arrearsNotice = () => {
