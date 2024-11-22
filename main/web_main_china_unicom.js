@@ -792,7 +792,7 @@ input.addEventListener("change", async (e) => {
         </label>
         <!-- 折叠取色器 -->
         <div class="collapsible-range" id="content">
-          <hr class="range-separ2">
+          <hr class="separ">
           <label class="form-item">
             <div class="form-label">
               <img class="form-label-img" src="\${item.icon}"/>
