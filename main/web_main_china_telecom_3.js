@@ -1154,6 +1154,18 @@ input.addEventListener("change", async (e) => {
       })
     };
     
+    // 推荐组件
+    const installScript = async (data) => {
+      const { label, scrUrl } = JSON.parse(data);
+      const fm = FileManager.iCloud()
+      const script = await new Request(scrUrl).loadString();
+      if (script.includes('{')) {
+        const filePath = fm.documentsDirectory() + `/${label}.js`;
+        fm.writeString(filePath, script);
+        Timer.schedule(650, false, () => Safari.open(`scriptable:///run/${encodeURIComponent(label)}`));
+      }
+    };
+    
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
@@ -1180,7 +1192,7 @@ input.addEventListener("change", async (e) => {
           '清除缓存', '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
           options = ['取消', '清除']
         );
-        if ( action === 1 ) {
+        if (action === 1) {
           fm.remove(cacheStr);
           ScriptableRun();
         }
@@ -1190,7 +1202,7 @@ input.addEventListener("change", async (e) => {
           '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据', 
           ['取消', '重置'], '重置'
         );
-        if ( action === 1 ) {
+        if (action === 1) {
           fm.remove(mainPath);
           ScriptableRun();
         }
@@ -1200,7 +1212,7 @@ input.addEventListener("change", async (e) => {
           '用户登录的信息将重置\n设置的数据将会恢复为默认',   
           options = ['取消', '恢复']
         );
-        if ( action === 1 ) {
+        if (action === 1) {
           fm.remove(settingPath);
           ScriptableRun();
         }
@@ -1219,6 +1231,9 @@ input.addEventListener("change", async (e) => {
       
       // switch
       switch (code) {
+        case 1:
+          await installScript(data);
+          break;
         case 'setAvatar':
           const avatarImage = Image.fromData(Data.fromBase64String(data));
           fm.writeImage(
