@@ -11,29 +11,24 @@
 
 async function main(family) {
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_telecom');
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  const isDev = false
   
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
+  const pathName = '95du_telecom';
+  const module = new _95du(pathName);  
   
-  const [ settingPath, cacheImg, cacheStr ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-  ].map(getCachePath);
+  const { 
+    rootUrl,
+    settingPath, 
+    cacheImg, 
+    cacheStr,
+  } = module;
   
-  /**
-   * 读取储存的设置
-   * @returns {object} - 设置对象
-   */
-  const getBotSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return { balanceColor } = JSON.parse(fm.readString(file));
-    }
-    return null;
-  };
-  const setting = await getBotSettings(settingPath);
+  const setting = module.settings;
+  const { balanceColor } = setting;
   
   /**
    * 存储当前设置
@@ -46,65 +41,11 @@ async function main(family) {
     ))
   };
   
-  /**  
-  * 弹出通知
-  * @param {string} title
-  * @param {string} body
-  * @param {string} url
-  * @param {string} sound
-  */
-  const notify = (title, body, url, sound = 'event') => {
-    if (!setting.notify) return;
-    const n = Object.assign(new Notification(), { title, body, sound });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
-  /**
-   * 获取图片、string并使用缓存
-   * @param {string} File Extension
-   * @returns {image} - Request
-   */
-  const useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? cacheStr : cacheImg;
-    return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime) fm.remove(path);
-          else return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-        }
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.read(name);
-    if (image) return image;
-    const img = await new Request(url).loadImage();
-    cache.write(name, img);
-    return img;
-  };
     
   /**
    * 获取缓存的 JSON 字符串
@@ -113,7 +54,8 @@ async function main(family) {
    * @returns {object} - JSON
    */
   const getCacheString = async (jsonName, jsonUrl) => {
-    const cache = useFileManager({ cacheTime: setting.cacheTime, type: true });
+    const { type } = module.getFileInfo(jsonName);
+    const cache = module.useFileManager({ cacheTime: setting.cacheTime, type });
     const json = cache.read(jsonName);
     if (json) return json;
     
@@ -172,16 +114,8 @@ async function main(family) {
       ? await updateCookie(setting.loginUrl) 
       : await getBoxjsData();
     }
-    const request = new Request(url);
-    request.method = 'GET';
-    request.headers = {
-      Cookie: cookie
-    };
-    try {
-      return await request.loadJSON();
-    } catch (e) {
-      console.log(e);
-    }
+    
+    await module.apiRequest(url, { headers: { Cookie: cookie } });
   };
   
   const formatFlows = (balance) => {
@@ -249,7 +183,7 @@ async function main(family) {
     const timeDifference = (currentTime - lastWriteTime) / (60 * 60 * 1000);
     if (setting.cookie && (timeDifference >= setting.cacheTime || !setting.flowBalance)) {  
       const flowUesd = formatFlow(setting.flowBalance, flowBalance);
-      notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
+      module.notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
       writeSettings({ 
         ...setting,
         flowBalance,
@@ -335,19 +269,19 @@ async function main(family) {
   df.dateFormat = 'ddHHmm'
   const day1st = df.string(new Date());
   
-  const image = await getCacheImage('logo.png', `${rootUrl}/img/icon/telecom_5.png`);
-  const image1 = await getCacheImage('logo1.png', `${rootUrl}/img/icon/telecom_1.png`);
+  const image = await module.getCacheData(`${rootUrl}/img/icon/telecom_5.png`);
+  const image1 = await module.getCacheData(`${rootUrl}/img/icon/telecom_1.png`);
   
   // 设置组件背景
   const setBackground = async (widget) => {
     const bgImage = getBgImage();
     if (fm.fileExists(bgImage)) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage))
+      const image = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(image);
     } else if (setting.solidColor) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = color[Math.floor(Math.random() * color.length)];
-      
+      const randomColor = await module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
       const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
