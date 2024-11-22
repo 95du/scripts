@@ -28,7 +28,7 @@ async function main(family) {
   
   const setting = module.settings;
   const { rank, bill } = setting;
-  
+
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -107,16 +107,7 @@ async function main(family) {
       ? await updateCookie(setting.loginUrl) 
       : await getBoxjsData();
     }
-    const request = new Request(url);
-    request.method = 'GET';
-    request.headers = {
-      Cookie: cookie
-    };
-    try {
-      return await request.loadJSON();
-    } catch (e) {
-      console.log(e);
-    }
+    await module.apiRequest(url, { headers: { Cookie: cookie } });
   };
   
   /**
@@ -369,7 +360,7 @@ async function main(family) {
         stack: horStack,
         title: bill ? '账单' : '话费',
         balance: feeBalance,
-        newUnit: ' $',
+        newUnit: ' ＄',
         percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
         symbol: family === 'small' ? '' : 'network',
         color: feeColor
