@@ -329,6 +329,26 @@ async function main() {
     }` : ''}
     ${cssStyle}`;
     
+    // 酷狗音乐模块
+    const musicHtml = () => {
+      const songId = [
+        '8fk9B72BcV2',
+        '8duPZb8BcV2',
+        '6pM373bBdV2',
+        '6NJHhd6BeV2'
+      ];
+      const randomId = module.getRandomItem(songId);
+      const music = `
+      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
+      </iframe>
+      <script>
+        const iframe = document.querySelector('.custom-iframe');
+        iframe.src = iframe.getAttribute('data-src');
+      </script>`;
+      
+      return `${settings.music ? music : ''}`
+    };
+    
     /**
      * 生成主菜单头像信息和弹窗的HTML内容
      * @returns {string} 包含主菜单头像信息、弹窗和脚本标签的HTML字符串
@@ -390,27 +410,8 @@ async function main() {
           }, 1200);
         };
         window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
-      </script>
-      
-      `
-      // music
-      const songId = [
-        '8fk9B72BcV2',
-        '8duPZb8BcV2',
-        '6pM373bBdV2',
-        '6NJHhd6BeV2'
-      ];
-      const randomId = module.getRandomItem(songId);
-      const music = `
-      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
-      </iframe>
-      <script>
-        const iframe = document.querySelector('.custom-iframe');
-        iframe.src = iframe.getAttribute('data-src');
       </script>`;
-      
-      return `${avatar}
-      ${settings.music ? music : ''}`
+      return `${avatar} ${musicHtml()}`
     };
     
     /**
@@ -1033,35 +1034,32 @@ async function main() {
      * @returns {Promise<string>}
      */
     const input = async ({ label, name, message, input, display, isDesc, other } = data) => {
-      await module.generateInputAlert({
-        title: label,
-        message: message,
-        options: [
-          {
-            hint: settings[name] ? String(settings[name]) : '请输入',
-            value: String(settings[name]) ?? ''
-          }
-        ]
-      }, 
-      async ([{ value }]) => {
-        if ( isDesc ) {
-          result = value.endsWith('.png') ? value : ''
-        } else if ( display ) {
-          result = /[a-z]+/.test(value) && /\d+/.test(value) ? value : ''
-        } else {
-          result = value === '0' || other ? value : !isNaN(value) ? Number(value) : settings[name];
-        };
+      const fields = [{
+        hint: settings[name] ? String(settings[name]) : '请输入',
+        value: String(settings[name]) ?? ''
+      }];
+    
+      const inputs = await module.collectInputs(label, message, fields);
+      if (!inputs.length) return;
+      const value = inputs[0];
+      
+      if (isDesc) {
+        result = value.endsWith('.png') ? value : ''
+      } else if ( display ) {
+        result = /[a-z]+/.test(value) && /\d+/.test(value) ? value : ''
+      } else {
+        result = value === '0' || other ? value : !isNaN(value) ? Number(value) : settings[name];
+      };
         
-        const isName = ['myPlate', 'logo', 'carImg'].includes(name);
-        const inputStatus = result ? '已添加' : (display || other ? '未添加' : '默认');
+      const isName = ['myPlate', 'logo', 'carImg'].includes(name);
+      const inputStatus = result ? '已添加' : (display || other ? '未添加' : '默认');
         
-        if (isDesc || display) {
-          settings[`${name}_status`] = inputStatus;  
-        }
-        settings[name] = result;
-        writeSettings(settings);
-        innerTextElementById(name, isName ? inputStatus : result);
-      })
+      if (isDesc || display) {
+        settings[`${name}_status`] = inputStatus;  
+      }
+      settings[name] = result;
+      writeSettings(settings);
+      innerTextElementById(name, isName ? inputStatus : result);
     };
     
     const getToken = async () => {
@@ -1074,54 +1072,46 @@ async function main() {
     };
     
     // 修改组件布局
-    const layout = async ({ label, message, name } = data) => {
-      await module.generateInputAlert({
-        title: label,
-        message: message,
-        options: [
-          {hint: '左边容器宽度', value: String(settings['lrfeStackWidth'])},
-          {hint: '车图容器宽度', value: String(settings['carStackWidth'])},
-          {hint: '减少车图顶部空白', value: String(settings['carTop'])},
-          {hint: '减少车图底部空白', value: String(settings['carBot'])},
-          {hint: '车图左边空白', value: String(settings['carLead'])},
-          {hint: '车图右边空白', value: String(settings['carTra'])},
-          {hint: '文字容器尺寸', value: String(settings['bottomSize'])}
-        ]
-      },
-      async (inputArr) => {
-        settings.lrfeStackWidth = Number(inputArr[0].value);
-        settings.carStackWidth = Number(inputArr[1].value);
-        settings.carTop = Number(inputArr[2].value);
-        settings.carBot = Number(inputArr[3].value);
-        settings.carLead = Number(inputArr[4].value);
-        settings.carTra = Number(inputArr[5].value);
-        settings.bottomSize = Number(inputArr[6].value);
-        
-        writeSettings(settings);
-        await module.generateAlert('设置成功', '桌面组件稍后将自动刷新', ['完成']);
+    const layout = async ({ label, message, name } = {}) => {
+      const fields = [
+        { hint: '左边容器宽度', value: String(settings.lrfeStackWidth) },
+        { hint: '车图容器宽度', value: String(settings.carStackWidth) },
+        { hint: '减少车图顶部空白', value: String(settings.carTop) },
+        { hint: '减少车图底部空白', value: String(settings.carBot) },
+        { hint: '车图左边空白', value: String(settings.carLead) },
+        { hint: '车图右边空白', value: String(settings.carTra) },
+        { hint: '文字容器尺寸', value: String(settings.bottomSize) }
+      ];
+    
+      const inputs = await module.collectInputs(label, message, fields);
+      if (!inputs.length) return;
+    
+      const keys = ['lrfeStackWidth', 'carStackWidth', 'carTop', 'carBot', 'carLead', 'carTra', 'bottomSize'];
+      keys.forEach((key, i) => {
+        const value = settings[key];
+        settings[key] = typeof value === 'number' ? Number(inputs[i]) || 0 : inputs[i];
       });
+    
+      writeSettings(settings);
+      await module.generateAlert('设置成功', '桌面组件稍后将自动刷新', ['OK']);
     };
     
     // appleOS 推送时段
     const period = async ({ label, name, message, desc } = data) => {
-      await module.generateInputAlert({
-        title: label,
-        message: message,
-        options: [
-          { hint: '开始时间 4', value: String(settings['startTime']) },
-          { hint: '结束时间 6', value: String(settings['endTime']) }
-        ]
-      }, 
-      async (inputArr) => {
-        const [startTime, endTime] = inputArr.map(({ value }) => value);
-        settings.startTime = startTime ? Number(startTime) : ''
-        settings.endTime = endTime ? Number(endTime) : ''
-        
-        const inputStatus = startTime || endTime ? '已设置' : '默认'
-        settings[`${name}_status`] = inputStatus;
-        writeSettings(settings);
-        innerTextElementById(name, inputStatus);
-      })
+      const fields = [
+        { hint: '开始时间 4', value: String(settings.startTime) },
+        { hint: '结束时间 6', value: String(settings.endTime) }
+      ];
+      
+      const inputs = await module.collectInputs(label, message, fields);
+      if (!inputs.length) return;
+      const [startTime, endTime] = inputs;
+      settings.startTime = startTime ? Number(startTime) : '';
+      settings.endTime = endTime ? Number(endTime) : '';
+      const inputStatus = startTime || endTime ? '已设置' : '默认'
+      settings[`${name}_status`] = inputStatus;
+      writeSettings(settings);
+      innerTextElementById(name, inputStatus);
     };
     
     // 注入监听器
