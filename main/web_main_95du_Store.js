@@ -254,7 +254,7 @@ async function main() {
           label: '排列仓库',
           name: 'rank',
           type: 'cell',
-          icon: 'eject.circle.fill'
+          icon: 'arrow.up.circle.fill'
         }
       ]
     },
@@ -520,6 +520,7 @@ async function main() {
           version: '1.5.0',
           type: 'button',
           recommend: true,
+          random: true,
           scrUrl: `${rootUrl}/widget/bottomBar.js`,
           icon: `${rootUrl}/img/icon/bottomBars.png`
         },
