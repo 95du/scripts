@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.1.1'
-  const updateDate = '2024年11月19日'
+  const version = '1.1.2'
+  const updateDate = '2024年11月22日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -133,6 +133,7 @@ async function main() {
     const moduleJs = await module.webModule(scrUrl);
     const { main } = await importModule(moduleJs)
     await main(family);
+    if (settings.update) await updateString();
     shimoFormData(family);
   };
   
@@ -211,10 +212,10 @@ async function main() {
     await module.appleOS_update();
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    if (version !== settings.version && !settings.update && hours >= 12) {
+    if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，显示电价档次，用电量占第三档百分比`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，显示电价档次包括农业用电，用电量占第三档百分比`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
