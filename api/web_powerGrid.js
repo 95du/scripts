@@ -4,37 +4,31 @@
 /**
  * 组件作者: 95度茅台
  * 组件名称: 南方电网
- * 组件版本: Version 1.0.1
- * 发布时间: 2024-05-06
+ * 组件版本: Version 1.1.1
+ * 发布时间: 2024-11-19
  */
 
 async function main(family) {
-  const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_powerGrid');
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
+  const fm = FileManager.local();  
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  const isDev = false
   
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
-  const [ settingPath, cacheImg, cacheStr ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-  ].map(getCachePath);
+  const pathName = '95du_powerGrid';
+  const module = new _95du(pathName);  
   
-  /**
-   * 读取储存的设置
-   * @returns {object} - 设置对象
-   */
-  const getBotSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return { avatar, useCache, count = 0, token, gap, location, progressWidth, radius } = JSON.parse(fm.readString(file));
-    }
-    return {};
-  };
+  const { 
+    rootUrl,
+    settingPath, 
+    cacheImg, 
+    cacheStr,
+  } = module;
   
-  const setting = await getBotSettings(settingPath);
-  
+  const setting = module.settings;
+  const { avatar, useCache, count = 0, token, gap, location, progressWidth, radius } = setting;
+
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -46,99 +40,8 @@ async function main(family) {
     ))
   };
   
-  // 获取随机数组元素
-  const getRandomItem = async (array) => array[Math.floor(Math.random() * array.length)];
-  
-  /**  
-  * 弹出通知
-  * @param {string} title
-  * @param {string} body
-  * @param {string} url
-  * @param {string} sound
-  */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
- /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
-  // 图片遮罩
-  async function shadowImage(img) {
-    let ctx = new DrawContext()
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']))
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
-    return await ctx.getImage()
-  };
-  
-  /**
-   * 读取和写入缓存的文本和图片数据
-   * @param {object} options
-   * @param {number}  - number
-   * @returns {object} - Object
-   */
-  const useFileManager = ({ cacheTime, type } = {}) => {
-    const basePath = type ? cacheStr : cacheImg;
-    return {
-      read: (name) => {
-        const path = fm.joinPath(basePath, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime || !useCache) {  
-            fm.remove(path);
-          } else if (useCache) {  
-            return type ? JSON.parse(fm.readString(path)) : fm.readImage(path);
-          }
-        }
-      },
-      write: (name, content) => {
-        const path = fm.joinPath(basePath, name);
-        type ? fm.writeString(path, JSON.stringify(content)) : fm.writeImage(path, content);
-      }
-    };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager({ cacheTime : 240 });
-    const image = cache.read(name);
-    if (image) return image;
-    const img = await new Request(url).loadImage();
-    cache.write(name, img);
-    return img;
-  };
-  
-  /**
-   * 获取 POST JSON 字符串
-   * @param {string} string
-   * @returns {object} - JSON
-   */
-  const getCacheString = async (jsonName, jsonUrl, requestBody) => {
-    const cache = useFileManager({ cacheTime: 12, type: true });
-    const json = cache.read(jsonName);
-    if (json) return json;
-    
-    const response = await makeRequest(jsonUrl, requestBody);
-    const { sta } = response;
-    if (sta == 00) {
-      cache.write(jsonName, response);
-    }
-    return response;
-  }; 
+  const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
+  const logo = 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png';
   
   /**
    * 该函数获取当前的年份和月份
@@ -148,6 +51,30 @@ async function main(family) {
   const year = currentDate.getFullYear();
   const month = String(currentDate.getMonth() + 1).padStart(2, '0');
   const currentYear = month === '01' ? year - 1 : year;
+  
+ /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
+  
+  /**
+   * 获取 POST JSON 字符串
+   * @param {string} string
+   * @returns {object} - JSON
+   */
+  const getCacheString = async (jsonName, jsonUrl, requestBody) => {
+    const { type } = module.getFileInfo(jsonName);
+    const cache = module.useFileManager({ 
+      cacheTime: 12, type 
+    });
+    const json = cache.read(jsonName);
+    if (json) return json;
+    const response = await makeRequest(jsonUrl, requestBody);
+    const { sta } = response;
+    if (sta == 00) cache.write(jsonName, response);
+    return response;
+  }; 
   
   /**
    * 获取请求数据
@@ -175,7 +102,7 @@ async function main(family) {
       writeSettings(setting);
       return data[setting.count];
     } else {
-      notify('南网在线', 'Token已过期，请重新获取。⚠️');
+      module.notify('南网在线', 'Token已过期，请重新获取。⚠️');
     }
   };
   
@@ -187,8 +114,7 @@ async function main(family) {
       areaCode,
       eleCustNumberList: [{ areaCode, eleCustId }]
     });
-    
-    // totalPower & yesterday
+    // 总用电和昨日
     if (pointResponse.sta == 00) {
       const { meteringPointId } = pointResponse?.data[0];
       const monthResponse = await getCacheString(`queryDayElectricByMPoint_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint', {
@@ -210,7 +136,7 @@ async function main(family) {
       areaCode,
       eleCustId
     });
-    
+
     if (response.sta == 00) {
       const totalArray = response.data.billUserAndYear;
       const eleBill = totalArray[0];
@@ -228,7 +154,8 @@ async function main(family) {
     return res.sta == 00 ? res.data[0].balance : '0.00';
   };
   
-  // 提取数据
+  /** -------- 提取数据 -------- **/
+  
   const {  
     userName: name = '用户名',
     eleCustNumber: number = '070100',
@@ -238,8 +165,12 @@ async function main(family) {
   
   const balance = await getUserBalance(areaCode, eleCustId);
   
-  // totalPower & Yesterday
-  const { totalPower = '0.00', result = [] } = await getMonthData(areaCode, eleCustId) || {};
+  // 总用电量，昨日用电
+  const { 
+    totalPower = '0.00', 
+    result = [] 
+  } = await getMonthData(areaCode, eleCustId) || {};
+  
   const ystdayPower = result.length > 0 ? result.pop().power : '0.00';
   const beforeYesterday = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   
@@ -253,23 +184,33 @@ async function main(family) {
   } = await getEleBill(areaCode, eleCustId) || {};
   
   // 根据当前月份和用电量返回电费信息
-  const getElectricityPrice = (totalPower) => {
+  const calcElectricBill = (totalPower) => {
     const isSummer = new Date().getMonth() + 1 >= 4 && new Date().getMonth() + 1 <= 10;
     // 电价档次设定
     const tiers = [
-      { limit: isSummer ? 220 : 160, rate: 0.6083, name: '第一档' },
-      { limit: isSummer ? 360 : 290, rate: 0.6583, name: '第二档' },
-      { rate: 0.9083, name: '第三档' }
+      { limit: isSummer ? 220 : 160, rate: 0.6083, name: '一档' },
+      { limit: isSummer ? 400 : 280, rate: 0.6583, name: '二档' },
+      { rate: 0.9083, name: '三档' }
     ];
+    
     // 根据用电量判断所属档次
     const tier = tiers.find((t, i) => totalPower <= t.limit || i === tiers.length - 1);
-  
+    
+    // 计算占第三档比例
+    const thirdTierLimit = isSummer ? 400 : 280;
+    const percentageOfThird = totalPower / thirdTierLimit;
+    const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0;
+    
     return {
       tier: tier.name,
       rate: tier.rate,
-      cost: (totalPower * tier.rate).toFixed(2)
-    }
+      cost: (totalPower * tier.rate).toFixed(2),
+      percent: percentageOfThird,
+      isPercent: `${isPercent}%`
+    };
   };
+  
+  const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower);
   
   // 欠费时每12小时通知一次
   const arrearsNotice = () => {
@@ -281,14 +222,13 @@ async function main(family) {
       setting.updateTime = Date.now()
       writeSettings(setting);
       
-      const { tier, rate } = getElectricityPrice(total);
-      notify('用电缴费通知 ‼️', `${name}，${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
+     module.notify('用电缴费通知 ‼️', `${name}，第${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
   // 创建图表(每月用量)  
   const getTotalPower = (data) => {
-    const total = data.map(entry => entry.totalElectricity).reverse();
+    const total = data?.map(entry => entry.totalElectricity).reverse();
     while (total?.length < 12) total.push(0);
     return total?.slice(0, 12);
   };
@@ -334,11 +274,12 @@ async function main(family) {
     const bgImage = getBgImage();
     const Appearance = Device.isUsingDarkAppearance();
     if (fm.fileExists(bgImage) && !Appearance) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
+      const shadowImg = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(shadowImg);
     } else if (setting.solidColor && !Appearance) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = await getRandomItem(color);
+      const randomColor = module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
       const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
@@ -354,21 +295,18 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else if (!Appearance && !setting.bwTheme) {
-      widget.backgroundImage = await getCacheImage("bg.png", `${rootUrl}/img/picture/background_image_1.png`);
+      widget.backgroundImage = await module.getCacheData(`${rootUrl}/img/picture/background_image_1.png`);
     } else {
-      const baiTiaoUrl = [`${rootUrl}/img/background/glass_2.png`];
-      const imageUrl = await getRandomItem(baiTiaoUrl);
-      const name = imageUrl.split('/').pop();
-      const randomBackgroundImage = await getCacheImage(name, imageUrl);
-      widget.backgroundImage = randomBackgroundImage;
+      const imageUrl = `${rootUrl}/img/background/glass_2.png`;
+      widget.backgroundImage = await module.getCacheData(imageUrl);
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
     
     if (count % 2 === 0) {
-      levelColor = '#34C579'
+      levelColor = '#00B400'
       barColor = new Color(levelColor, 0.6);
     } else {
-      levelColor = '#00BAFF'
+      levelColor = '#0094FF'
       barColor = new Color(levelColor, 0.6);
     }
   };
@@ -411,8 +349,7 @@ async function main(family) {
     avatarStack.centerAlignContent();
     const avatarStack2 = avatarStack.addStack();
     
-    const imgName = decodeURIComponent(avatar.substring(avatar.lastIndexOf("/") + 1));
-    const iconSymbol = await getCacheImage(imgName, avatar);
+    const iconSymbol = await module.getCacheData(avatar);
     const avatarIcon = avatarStack2.addImage(iconSymbol);
     avatarIcon.imageSize = new Size(50, 50);
     avatarStack2.cornerRadius = Number(radius);
@@ -463,8 +400,7 @@ async function main(family) {
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
     } else if (setting.estimate) {
-      const estimate = totalElectricity / total * totalPower
-      const payText0 = beneStack.addText(isNaN(estimate) ? '0.00' : estimate === 0 ? balance : estimate.toFixed(2));
+      const payText0 = beneStack.addText(isNaN(cost) ? '0.00' : cost);
       payText0.font = Font.mediumSystemFont(16);
       payText0.textColor = Color.blue();
     }
@@ -520,7 +456,7 @@ async function main(family) {
     createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
     
     const totalItems = getTotalPower(totalArray);
-    const n = totalItems.length;
+    const n = totalItems?.length;
     
     if (setting.chart && n > 0) {
       const chartColor = count % 2 === 0 ? '#8C7CFF' : '#34C579'
@@ -530,7 +466,7 @@ async function main(family) {
       drawImage.imageSize = new Size(127, 60);
       drawImage.url = alipayUrl;
     } else {
-      const icon = await getCacheImage('logo.png', 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png');
+      const icon = await module.getCacheData(logo);
       const iconElement = middleStack.addImage(icon);
       iconElement.imageSize = new Size(55, 55);
       iconElement.centerAlignImage();
@@ -562,7 +498,7 @@ async function main(family) {
     prgsStack.layoutHorizontally();
     prgsStack.centerAlignContent();
       
-    const curScoreText = prgsStack.addText(month);
+    const curScoreText = prgsStack.addText(tier);
     curScoreText.font = Font.boldSystemFont(13);
     prgsStack.addSpacer();
       
@@ -571,8 +507,6 @@ async function main(family) {
     progress.imageSize = new Size(width, height);
     
     function creatProgress() {
-      const isPercent = Math.max(0, Math.min(1, totalPower / total));
-      
       const cxt = new DrawContext();
       cxt.opaque = false;
       cxt.respectScreenScale = true;
@@ -586,14 +520,14 @@ async function main(family) {
       cxt.fillPath();
     
       const currPath = new Path();
-      currPath.addRoundedRect(new Rect(0, 5, width * isPercent, barHeight), barHeight / 2, barHeight / 2);
+      currPath.addRoundedRect(new Rect(0, 5, width * percent, barHeight), barHeight / 2, barHeight / 2);
       cxt.addPath(currPath);
       cxt.setFillColor(barColor);
       cxt.fillPath();
     
       const circlePath = new Path();
       const diameter = height * 0.85;
-      circlePath.addEllipse(new Rect((width - diameter) * isPercent, (height - diameter) / 2, diameter, diameter));
+      circlePath.addEllipse(new Rect((width - diameter) * percent, (height - diameter) / 2, diameter, diameter));
       cxt.addPath(circlePath);
       cxt.setFillColor(new Color(levelColor));
       cxt.fillPath();
@@ -602,8 +536,7 @@ async function main(family) {
     };
       
     prgsStack.addSpacer();
-    const isPercent2 = total > 0 ? String(Math.floor(totalPower / total * 100)) : 0;
-    const percentText = prgsStack.addText(`${isPercent2}%`);
+    const percentText = prgsStack.addText(isPercent);
     percentText.font = Font.boldSystemFont(13);  
     mainStack.addSpacer();
   };
