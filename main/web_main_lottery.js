@@ -398,7 +398,7 @@ async function main() {
         '6pM373bBdV2',
         '6NJHhd6BeV2'
       ];
-      const randomId = songId[Math.floor(Math.random() * songId.length)];
+      const randomId = module.getRandomItem(songId);
       const music = `
       <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
       </iframe>
