@@ -185,7 +185,7 @@ async function main() {
    * @returns {Promise<void>}
    */
   const updateVersion = async () => {
-    const index = await generateAlert(
+    const index = await module.generateAlert(
       '更新代码',
       '更新后当前脚本代码将被覆盖\n但不会清除用户已设置的数据\n如预览组件未显示或桌面组件显示错误，可更新尝试自动修复',
       options = ['取消', '更新']
