@@ -39,7 +39,7 @@ async function main(family) {
       settings, null, 2
     ))
   };
-    
+  
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
@@ -107,7 +107,8 @@ async function main(family) {
       ? await updateCookie(setting.loginUrl) 
       : await getBoxjsData();
     }
-    await module.apiRequest(url, { headers: { Cookie: cookie } });
+    
+    return await module.apiRequest(url, { headers: { Cookie: cookie } });
   };
   
   /**
