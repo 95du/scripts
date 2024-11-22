@@ -9,6 +9,7 @@ async function main() {
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const spareUrl = 'https://raw.gitcode.com/4qiao/scriptable/raw/master';
   const scrUrl = `${rootUrl}/api/web_12123.js`;
   
   /**
@@ -18,7 +19,8 @@ async function main() {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
-  await download95duModule(rootUrl);
+  await download95duModule(rootUrl)
+    .catch(() => download95duModule(spareUrl));
   const isDev = false
   
   /** ------- 导入模块 ------- **/
@@ -233,7 +235,7 @@ async function main() {
     if (version !== settings.version && !settings.update && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
