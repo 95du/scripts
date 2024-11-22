@@ -676,7 +676,7 @@ const drawSpeedArc = async (speed, progressColor) => {
   drawTickMarks(radius, new Color(progressColor, 0.6), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas, speed);
   
   // 添加红色刻度线
-  if (speed >= 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
+  if (speed > 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
   // 绘制文字
   const textSize = 28;
   const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
@@ -706,7 +706,7 @@ const dashboardWidget = async () => {
   const { speed, parkingTime, mapUrl } = await getInfo();
   const progressColor = speed <= 50 
     ? "#A85EFF" 
-    : speed <= 100 
+    : speed <= 120 
     ? '#FF7800' 
     : '#FF0000';
   
@@ -744,7 +744,12 @@ const dashboardWidget = async () => {
     new Color('#8C7CFF', 0.3)
   );
   
-  const statusText = barStack.addText(speed <= 5 ? '已静止' : '正在行驶');
+  const statusText = barStack.addText(speed <= 5 
+    ? '已静止' 
+    : speed > 125 
+    ? '已超速' 
+    : '正在行驶'
+  );
   statusText.font = Font.boldSystemFont(14);
   statusText.centerAlignText();
   statusText.textOpacity = 0.8
