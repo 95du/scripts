@@ -1,14 +1,36 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: phone-volume;
+// icon-color: pink; icon-glyph: bolt;
 /**
  * 组件名称: 南网在线
  * 组件作者：95度茅台
- * 组件版本: Version 1.1.0
- * 更新日期: 2024-10-25 15:00
+ * 组件版本: Version 1.1.1
+ * 更新日期: 2024-11-19
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
  * 
  * Quantumult X 自动获取 token 重写: https://raw.githubusercontent.com/95du/scripts/master/rewrite/get_95598_token.sgmodule
+
+根据中国南方电网的居民阶梯电价标准，第三档的起始用电量（即第二档的上限）在夏季和非夏季有所不同：
+
+夏季（4月至10月）：
+
+	•	第一档：0 - 220度。
+	•	第二档：221 - 400度。
+	•	第三档：超过400度。
+
+非夏季（11月至次年3月）：
+
+	•	第一档：0 - 170度。
+	•	第二档：171 - 280度。
+	•	第三档：超过280度。
+
+电价梯度
+
+	1.	第一档：基准电价（最低）。
+	2.	第二档：比第一档略高。
+	3.	第三档：最高价格。
+
+具体电价标准可能因地区不同有所差异，但全国范围内的总体规则大致相同。如果需要精确值，建议查询您所在地区的电力部门公告。
 */
 
 const scriptName = '95du_powerGrid';
