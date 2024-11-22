@@ -24,8 +24,7 @@ async function main(family) {
     rootUrl,
     settingPath, 
     cacheImg, 
-    cacheStr, 
-    cacheCar,
+    cacheStr,
   } = module;
   
   /**
@@ -94,7 +93,7 @@ async function main(family) {
   const requestInfo = async (api, params) => {
     const { verifyToken, sign } = setting.sign ? setting : await getBoxjsData();
     const formBody = 'params=' + encodeURIComponent(JSON.stringify({ productId, api, sign, version, verifyToken, params }));
-    const response = await module.apiRequest(apiUrl, 'POST', {}, null, formBody);
+    const response = await module.apiRequest(apiUrl, {}, 'POST', null, formBody);
     return response;
   };
   
