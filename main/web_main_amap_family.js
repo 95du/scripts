@@ -48,7 +48,7 @@ async function main() {
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(settingPath(), JSON.stringify(settings, null, 4));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 4));
     console.log(JSON.stringify(
       settings, null, 2
     ));
