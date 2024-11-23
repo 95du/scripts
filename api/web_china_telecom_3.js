@@ -28,24 +28,38 @@ async function main(family) {
   
   const setting = module.settings;
   const { rank, bill } = setting;
-
-  /**
-   * 存储当前设置
-   * @param { JSON } string
-   */
-  const writeSettings = async (settings) => {
-    fm.writeString(settingPath, JSON.stringify(settings, null, 2));
-    console.log(JSON.stringify(
-      settings, null, 2
-    ))
+  
+  // 请求链接
+  const fetchUrl = {
+    detail: 'https://e.dlife.cn/user/package_detail.do',
+    balance: 'https://e.dlife.cn/user/balance.do',  
+    bill: 'https://e.189.cn/user/bill.do',
+    boxjs: 'http://boxjs.com/query/data/china_telecom_loginUrl',
+    logo: 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png',
+    alipay: 'alipays://platformapi/startapp?appId=2021001107610820&page=pages%2Ftop-up%2Fhome%2Findex'
   };
+    
+  const getLayout = (scr = Device.screenSize().height) => ({
+    titleSize: scr < 926 ? 17 : 18,
+    circle: scr < 926 ? 145 : 152
+  });
+  
+  const logo = await module.getCacheData(fetchUrl.logo);
+  
+  const subTitleColor = Color.dynamic(new Color(setting.subTitleColor), new Color('#FFFFFF'));
+  
+  const feeColor = Color.dynamic(new Color(setting.feeColor), new Color(setting.feeDarkColor));
+  
+  const voiceColor = Color.dynamic(new Color(setting.voiceColor), new Color(setting.voiceDarkColor));
+  
+  const flowColor = Color.dynamic(new Color(setting.flowColor), new Color(setting.flowDarkColor));
   
   /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-    
+  
   /**
    * 获取缓存的 JSON 字符串
    * @param {string} jsonName
@@ -74,11 +88,11 @@ async function main(family) {
    */
   const getBoxjsData = async () => {
     try {
-      const response = await new Request('http://boxjs.com/query/data/china_telecom_loginUrl').loadJSON();
+      const response = await new Request(fetchUrl.boxjs).loadJSON();
       const loginUrl = response?.val;
       if (loginUrl) {
         setting.loginUrl = loginUrl;
-        writeSettings(setting);
+        module.writeSettings(setting)
         return await updateCookie(loginUrl);
       }
     } catch (e) {
@@ -94,7 +108,7 @@ async function main(family) {
     const cookie = req.response.headers['Set-Cookie'];
     if (cookie) {
       setting.cookie = cookie;
-      writeSettings(setting);
+      module.writeSettings(setting);
       module.notify('中国电信_3', '天翼账号中心 Cookie 更新成功');
       return cookie;
     }
@@ -108,10 +122,7 @@ async function main(family) {
       : await getBoxjsData();
     }
     
-    const headers = { 
-      Cookie: cookie 
-    };
-    return await module.apiRequest(url, headers);
+    return await module.apiRequest(url, { Cookie: cookie });
   };
   
   /**
@@ -121,7 +132,7 @@ async function main(family) {
   const formatFlows = (flow) => flow == 0 ? '0 MB' : flow < 1 ? `${(flow * 1024).toFixed(1)} MB` : `${parseFloat(flow).toFixed(flow < 100 ? 2 : 1)} GB`;
   
   const fetchPackage = async () => {
-    const package = await getCacheString('package_detail.json', 'https://e.dlife.cn/user/package_detail.do');
+    const package = await getCacheString('package_detail.json', fetchUrl.detail);
     return package || {};
   };
   
@@ -172,7 +183,7 @@ async function main(family) {
   };
   
   const fetchBalance = async () => {
-    const balances = await getCacheString('balance.json', 'https://e.dlife.cn/user/balance.do');  
+    const balances = await getCacheString('balance.json', fetchUrl.balance);  
     return balances || {};
   };
   
@@ -183,7 +194,7 @@ async function main(family) {
   
   // 账单
   const getUserBill = async () => {
-    const data = await getCacheString('bill.json', 'https://e.189.cn/user/bill.do');
+    const data = await getCacheString('bill.json', fetchUrl.bill);
     const bill = data?.serviceResultCode == 0 ? data.items[0].sumCharge / 100 : 0;
     return bill;
   };
@@ -203,25 +214,9 @@ async function main(family) {
     if (setting.cookie && (timeDifference >= setting.cacheTime || !setting.flowBalance)) {  
       const flowUesd = formatFlow(setting.flowBalance, flowBalance);
       module.notify(`中国电信${setting.cacheTime}小时用量‼️`, `流量使用 ${flowUesd}，语音使用 ${setting.voiceBalance - voiceBalance} 分钟。`);
-      writeSettings({ ...setting, flowBalance, voiceBalance });
+      module.writeSettings({ ...setting, flowBalance, voiceBalance });
     }
   };
-  
-  // 其他
-  const getLayout = (scr = Device.screenSize().height) => ({
-    titleSize: scr < 926 ? 17 : 18,
-    circle: scr < 926 ? 145 : 152
-  });
-  
-  const logo = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png');
-  
-  const subTitleColor = Color.dynamic(new Color(setting.subTitleColor), new Color('#FFFFFF'));
-  
-  const feeColor = Color.dynamic(new Color(setting.feeColor), new Color(setting.feeDarkColor));
-  
-  const voiceColor = Color.dynamic(new Color(setting.voiceColor), new Color(setting.voiceDarkColor));
-  
-  const flowColor = Color.dynamic(new Color(setting.flowColor), new Color(setting.flowDarkColor));
   
   // 设置组件背景
   const setBackground = async (widget) => {
@@ -425,7 +420,7 @@ async function main(family) {
     
     if (setting.alwaysDark) widget.backgroundColor = new Color('#000000');
     if (feeBalance < 0) {
-      widget.url = 'alipays://platformapi/startapp?appId=2021001107610820&page=pages%2Ftop-up%2Fhome%2Findex';
+      widget.url = fetchUrl.alipayUrl;
     }
     
     if (config.runsInApp) {
