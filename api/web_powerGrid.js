@@ -184,17 +184,19 @@ async function main(family) {
     isArrears = '0'
   } = await getEleBill(areaCode, eleCustId) || {};
   
-  // 根据当前月份和用电量返回电费信息
+  /** 
+   * 根据当前月份和用电量返回电费信息
+   * 农业用电电价表（根据区域代码）海南，广东，广西，云南，贵州
+   */
   const calcElectricBill = (totalPower, eleType = '800', areaCode = '') => {
     const isSummer = new Date().getMonth() + 1 >= 4 && new Date().getMonth() + 1 <= 10;
-  
-    // 农业用电电价表（根据区域代码）
+
     const agriculturalRatesByCode = {
-      '070000': { province: '海南', rate: 0.514 },
-      '440000': { province: '广东', rate: 0.514 },
-      '450000': { province: '广西', rate: 0.510 },
-      '530000': { province: '云南', rate: 0.508 },
-      '520000': { province: '贵州', rate: 0.507 }
+      '070000': { rate: 0.514 },
+      '440000': { rate: 0.514 },
+      '450000': { rate: 0.510 },
+      '530000': { rate: 0.508 },
+      '520000': { rate: 0.507 }
     };
   
     const agriculturalInfo = agriculturalRatesByCode[areaCode];
@@ -203,7 +205,6 @@ async function main(family) {
     if (eleType === '800') {
       return {
         tier: '农用',
-        province: agriculturalInfo ? agriculturalInfo.province : '未知',
         rate: agriculturalRate,
         cost: (totalPower * agriculturalRate).toFixed(2),
         percent: 0,
@@ -242,6 +243,8 @@ async function main(family) {
     percent, 
     isPercent 
   } = calcElectricBill(totalPower, eleType, areaCode);
+  
+  /** -------- 缴费通知 -------- **/
   
   // 欠费时每12小时通知一次
   const arrearsNotice = () => {
