@@ -623,7 +623,7 @@ class _95du {
     listItems,
     collectionCode
   ) => {
-    const avatar = `
+    return `
       <div class="avatarInfo">
         <span class="signup-loader">
           <img src="${authorAvatar}" class="avatar"/>
@@ -680,9 +680,6 @@ class _95du {
         };
         window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
       </script>`;
-      
-    return `${avatar}
-      ${this.settings.music ? this.musicHtml() : ''}`
   };
   
   /**
@@ -984,8 +981,8 @@ input.addEventListener("change", async (e) => {
           if (item.name === 'clock') switchStyle(isChecked);
           if (item.name === 'iconBg') switchLabel(isChecked);
           if (item.name === 'alwaysDark') switchColor(isChecked);
-
           invoke('changeSettings', formData);
+          if (item.name === 'music') iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
         });
         label.appendChild(input);
       }
