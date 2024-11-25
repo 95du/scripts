@@ -7,7 +7,11 @@ class _95du {
     this.pathName = pathName;
     this.rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
     this.initPaths();
-    this.settings = this.getSettings();
+    this.settings = this.getSettings();  
+    // 默认通知
+    if (typeof this.settings.notify === 'undefined') {
+      this.settings.notify = true;
+    }
   };
   
   // 初始化目录和路径
@@ -36,7 +40,7 @@ class _95du {
    * 存储当前设置
    * @param { JSON } setting
    */
-  async writeSettings(setting) {
+  writeSettings(setting) {
     const json = JSON.stringify(setting, null, 2);
     this.fm.writeString(
       this.settingPath, json
@@ -399,20 +403,6 @@ class _95du {
   };
   
   /**
-   * 从远程下载 JavaScript 文件并缓存
-   * @returns {Promise<string[]>} 包含各个 JavaScript
-   */
-  async scriptTags() {
-    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-    const js = await Promise.all(scripts.map(async (script) => {
-      const url = `${this.rootUrl}/web/${script}%3Fver%3D8.0.1`
-      const content = await this.getCacheData(url);
-      return `<script>${content}</script>`;
-    }));
-    return js.join('\n');
-  };
-  
-  /**
    * 获取模块页面路径，如本地不存在或需更新则从远程获取
    * @param {string} scriptName
    * @param {string} url
@@ -591,6 +581,694 @@ class _95du {
     if (!Array.isArray(array) || array.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * array.length);
     return array[randomIndex];
+  };
+  
+  /**
+   * 从远程下载 JavaScript 文件并缓存
+   * @returns {Promise<string[]>} 包含各个 JavaScript
+   */
+  async scriptTags() {
+    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
+    const js = await Promise.all(scripts.map(async (script) => {
+      const url = `${this.rootUrl}/web/${script}%3Fver%3D8.0.1`
+      const content = await this.getCacheData(url);
+      return `<script>${content}</script>`;
+    }));
+    return js.join('\n');
+  };
+  
+  /**
+   * 版本更新时弹出窗口
+   * @returns {String} string
+   */
+  updatePopup = (version) => {
+    const creationDate = this.fm.creationDate(this.settingPath);
+    let isInitialized;
+    if (creationDate) {
+      isInitialized = Date.now() - creationDate.getTime() > 300000;
+    }
+    return this.settings.version !== version ? '.signin-loader' : (isInitialized && this.settings.loader !== '95du' ? '.signup-loader' : null);
+  };
+  
+  /**
+   * 生成主菜单头像信息和弹窗的HTML内容
+   * @returns {string} 包含主菜单头像信息、弹窗和脚本标签的HTML字符串
+   */
+  mainMenuTop = (
+    version,
+    authorAvatar,
+    appleHub_dark,
+    appleHub_light,
+    scriptName,
+    listItems,
+    collectionCode
+  ) => {
+    const avatar = `
+      <div class="avatarInfo">
+        <span class="signup-loader">
+          <img src="${authorAvatar}" class="avatar"/>
+        </span>
+        <a class="signin-loader"></a>
+        <div class="interval"></div>
+        <a class="but">
+          <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" onclick="switchDrawerMenu()" tabindex="0"></a>
+        <div id="store">
+          <a class="rainbow-text but">Script Store</a>
+        </div>
+      </div>
+      <!-- 对话框 -->
+      <div class="modal fade" id="u_sign" role="dialog">
+        <div class="modal-dialog">
+          <div class="zib-widget blur-bg relative">
+            <a href="#tab-sign-up" data-toggle="tab"></a>
+            <div class="box-body sign-logo" data-dismiss="modal" onclick="hidePopup()">  
+              <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+            </div>
+            <div class="tab-content">
+              <!-- 版本信息 -->
+              <div class="tab-pane fade active in" id="tab-sign-in">
+                <div class="padding">
+                  <div href="#tab-sign-up" data-toggle="tab" class="title-h-center popup-title">
+                    ${scriptName}
+                  </div>
+                  <a class="popup-content update-desc">
+                     <div class="but">Version ${version}</div>
+                  </a><br>
+                  <div class="form-label-title update-desc">${listItems}
+                  </div>
+                </div>
+                <div class="box-body" ><button id="install" class="but radius jb-yellow btn-block">立即更新</button>
+                </div>
+              </div>
+              <!-- 捐赠 -->
+              <div class="tab-pane fade-in" id="tab-sign-up">
+                <a class="donate flip-horizontal" href="#tab-sign-in" data-toggle="tab"><img src="${collectionCode}">  
+                </a>
+              </div>
+            </div>
+            <p class="separator" data-dismiss="modal">95du丶茅台</p>
+          </div>
+        </div>
+      </div>
+      <script>
+        const popupOpen = () => { $('.signin-loader').click() };
+        
+        window.onload = () => {
+          setTimeout(() => {
+            $('${this.updatePopup(version)}').click()
+          }, 1200);
+        };
+        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
+      </script>`;
+      
+    return `${avatar}
+      ${this.settings.music ? this.musicHtml() : ''}`
+  };
+  
+  /**
+   * @returns {string} 返回一个包含随机酷狗音乐 iframe 的 HTML 字符串。
+   * 该 iframe 源自随机选取的歌曲 ID，并动态加载歌曲。
+   */
+  musicHtml = () => {
+    const songId = [
+      '8fk9B72BcV2',
+      '8duPZb8BcV2',
+      '6pM373bBdV2',
+      '6NJHhd6BeV2',
+      '4yhGxb6CJV2',
+      '2ihRd27CKV2',
+      'a2e7985CLV2',
+      'cwFCHbdCNV2',
+      'UxE30dCPV2',
+      '4Qs8h89CPV2',
+      '9tGRt0cCTV2'
+    ];
+    const randomId = this.getRandomItem(songId);
+    return `
+      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
+      </iframe>
+      <script>
+        const iframe = document.querySelector('.custom-iframe');
+        iframe.src = iframe.getAttribute('data-src');
+      </script>`;
+  };
+  
+  /**
+   * Donated Author
+   * weChat pay
+   */
+  donatePopup = (appleHub_dark, appleHub_light, collectionCode) => {
+    return `        
+      <a class="signin-loader"></a>
+      <div class="modal fade" id="u_sign" role="dialog">
+        <div class="modal-dialog">
+          <div class="zib-widget blur-bg relative">
+            <div id="appleHub" class="box-body sign-logo">
+              <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+            </div>
+            <a class="but donated">
+              <img src="${collectionCode}">
+            </a>
+            <p class="but separator">95du丶茅台</p>
+          </div>
+        </div>
+      </div>
+      <script>
+        const popupOpen = () => { $('.signin-loader').click() };
+        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
+      </script>`
+  };
+  
+  /**
+   * @returns {Promise<string>} - 返回一个包含时钟 HTML 的字符串，根据设置动态控制显示样式。
+   * - 在页面中动态嵌入时钟组件。
+   * - 可通过设置动态控制时钟的显示与隐藏。
+   */
+  clockHtml = async (settings) => {
+    const clockScript = await this.getCacheData(`${this.rootUrl}/web/clock.html`);
+    const displayStyle = settings.clock ? 'block' : 'none';
+    return `<div id="clock" style="display: ${displayStyle}">${clockScript}</div>`;
+  };
+  
+  /**
+   * 组件效果图预览
+   * 图片左右轮播
+   * Preview Component Images
+   * This function displays images with left-right carousel effect.
+   */
+  previewImgHtml = async (settings, previewImgUrl) => {
+    const displayStyle = settings.clock ? 'none' : 'block';
+    
+    if (settings.topStyle) {
+      const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
+      const previewImg = await this.getCacheImage(item);
+        return previewImg;
+      }));
+      return `${await this.clockHtml(settings)}
+        <div id="scrollBox" style="display: ${displayStyle}">
+          <div id="scrollImg">
+            ${previewImgs.map(img => `<img src="${img}">`).join('')}
+          </div>
+        </div>`; 
+    } else {
+      const randomUrl = this.getRandomItem(previewImgUrl);
+      const previewImg = await this.getCacheImage(randomUrl);
+      return `${await this.clockHtml(settings)}
+      <img id="store" src="${previewImg}" class="preview-img" style="display: ${displayStyle}">`
+    }
+  };
+  
+  // 增加右侧 desc 颜色(中国电信_3)
+  addColorDesc = (settings) => {
+    let htmlFragment = '';
+    settings.rank?.forEach((item, index) => {
+      htmlFragment += `<span class="${item.name.toLowerCase()}-text" style="color: ${item.color};">${item.name}</span>`;
+    });
+    return htmlFragment;
+  };
+  
+  /**
+   * @param {Array} formItems
+   * @param {Object} settings
+   * @returns {string} 返回嵌入页面的 JavaScript 脚本 (设置js)
+   * @returns {Image} 返回页面图标图片
+   */
+  runScripts = async (formItems, settings, elementId, separ) => {
+    // 批量处理图标加载  
+    const getAndBuildIcon = async (item) => {
+      const { icon } = item;
+      if (icon?.name) {
+        const { name, color } = icon;
+        item.icon = await this.getCacheMaskSFIcon(name, color);
+      } else if (icon?.startsWith('https')) {
+        item.icon = await this.getCacheImage(icon);
+      } else if (!icon?.startsWith('data')) {
+        item.icon = await this.getCacheDrawSFIcon(icon);
+      }
+    };
+  
+    const subArray = [];
+    const promises = [];
+    const buildIcon = (item) => getAndBuildIcon(item);
+    const processItem = (item) => {
+      promises.push(buildIcon(item));
+      if (item.item) {
+        item.item.forEach((i) => {
+          promises.push(buildIcon(i))
+          subArray.push(i);
+        });
+      }
+    };
+  
+    // 遍历所有表单项并处理
+    formItems.forEach(group => group.items.forEach(processItem));
+    await Promise.all(promises);
+    
+    // =======  js  =======//
+    return `
+    (() => {
+    const settings = ${JSON.stringify({
+      ...settings
+    })}
+    const formItems = ${JSON.stringify(formItems)}
+    
+    window.invoke = (code, data) => {
+      window.dispatchEvent(
+        new CustomEvent(
+          'JBridge',
+          { detail: { code, data } }
+        )
+      )
+    }
+    
+    const formData = {};
+    const createFormItem = ( item ) => {
+      const value = settings[item.name] ?? item.default;
+      formData[item.name] = value;
+      
+      const label = document.createElement("label");
+      label.className = "form-item";
+      label.dataset.name = item.name;
+      
+      const div = document.createElement("div");
+      div.className = 'form-label';
+      label.appendChild(div);
+      
+      if (item.icon) {
+        const img = document.createElement("img");
+        img.src = item.icon;
+        img.className = 'form-label-img';
+        div.appendChild(img);
+      }
+          
+      const divTitle = document.createElement("div");
+      divTitle.className = 'form-label-title';
+      divTitle.innerText = item.label;
+      div.appendChild(divTitle);
+          
+      if (item.type === 'select') {
+        const select = document.createElement('select');
+        select.name = item.name;
+        select.classList.add('select-input');
+        select.multiple = !!item.multiple;
+        select.style.width = '100px'
+      
+        item.options?.forEach(grp => {
+          const container = document.createElement('optgroup');
+          if (grp.label) container.label = grp.label;
+      
+          grp.values.forEach(opt => {
+            const option = new Option(opt.label, opt.value);
+            option.disabled = opt.disabled || false;
+            option.selected = (item.multiple && Array.isArray(value)) ? value.includes(opt.value) : value === opt.value;
+            container.appendChild(option);
+          });
+          if (container !== select) select.appendChild(container);
+        });
+        
+        select.addEventListener('change', (e) => {
+        const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
+        const convertValue = value => value === 'true' ? true : (value === 'false' ? false : (!isNaN(value) ? parseFloat(value) : value));
+      
+        const convertedValues = item.multiple ? selectedValues.map(convertValue) : convertValue(selectedValues[0]);
+      
+        formData[item.name] = convertedValues;
+        invoke('changeSettings', formData);
+        selectWidth();
+      });
+      
+        const selCont = document.createElement('div');
+        selCont.classList.add('form-item__input__select');
+        selCont.appendChild(select);
+      
+        if (!item.multiple) {
+          select.style.appearance = 'none';
+          const icon = document.createElement('i');
+          icon.className = 'iconfont icon-arrow_right';
+          selCont.appendChild(icon);
+        };
+        
+        label.appendChild(selCont);
+      } else if (['cell', 'page', 'file'].includes(item.type)) {
+        const { name, isDesc, other, descColor } = item;
+
+        if (item.desc) {
+          const desc = document.createElement("div");
+          desc.className = 'form-item-right-desc';
+          desc.id = \`\${name}-desc\`
+          
+          if (descColor) {
+            desc.innerHTML = \`${this.addColorDesc(settings)}\`;
+          } else {
+            desc.innerText = isDesc ? (settings[\`\${name}_status\`] ??item.desc) : other ? item.desc : settings[name];
+          };
+          
+          label.appendChild(desc);
+        };
+      
+        const icon = document.createElement('i');
+        icon.className = 'iconfont icon-arrow_right';
+        label.appendChild(icon);
+        label.addEventListener('click', (e) => {
+          switch (name) {
+            case 'version':
+            case 'donate':
+              popupOpen();
+              break;
+            case 'setAvatar':
+              fileInput.click();
+              invoke(name, data);
+              break;
+            case 'inpShare':
+            case 'sharing':
+            case 'widgetMsg':
+              switchDrawerMenu();
+              break;
+          };
+      
+          invoke(item.type === 'page' ? 'itemClick' : name, item);
+        });
+  
+        /** file input **/
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = ".jpg,.jpeg,.png,.gif,.bmp";
+        fileInput.addEventListener("change", async (event) => {
+          const uploadedImage = document.querySelector('.avatar');
+          const file = event.target.files[0];
+          if (file && file.type.includes("image")) {
+            avatarFile(file, name);
+          }
+        });
+      } else {
+        const input = document.createElement("input")
+        input.className = 'form-item__input'
+        input.name = item.name
+        input.type = item.type
+        input.enterKeyHint = 'done'
+        input.value = value
+        
+        if (item.type === 'switch') {
+          input.type = 'checkbox'
+          input.role = 'switch'
+          input.checked = value
+        };
+        
+input.addEventListener("change", async (e) => {
+          const isChecked = e.target.checked;
+          formData[item.name] =
+            item.type === 'switch'
+            ? isChecked
+            : e.target.value;
+          
+          if (item.name === 'clock') switchStyle(isChecked);
+          if (item.name === 'iconBg') switchLabel(isChecked);
+          if (item.name === 'alwaysDark') switchColor(isChecked);
+
+          invoke('changeSettings', formData);
+        });
+        label.appendChild(input);
+      }
+      return label
+    };
+    
+    /** 切换 label 文字 **/
+    const switchLabel = async  (isChecked) => {
+      const newTitle = isChecked ? '小号组件' : '图标背景';
+      document.querySelectorAll('.form-label-title').forEach(title => {  
+        title.textContent = (title.textContent === '图标背景' || title.textContent === '小号组件') ? newTitle : title.textContent;
+      })  
+    };
+      
+    /** 切换颜色并更新表单数据 **/
+    const switchColor = async (isChecked) => {
+      const colorValue = isChecked ? '#FFFFFF' : '#000000';
+      const stackColor = isChecked ? '#2C2C2C' : '#EEEEEE';
+      const fields = {
+        subTitleColor: colorValue,
+        leftLightText: colorValue,
+        rightLightText: colorValue,
+        rightStack: stackColor,
+        lightColor: colorValue,
+        solidColor: isChecked
+      };
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.querySelector(\`input[name="\${key}"]\`);
+        if (input) input.value = formData[key] = value;
+      });
+      
+      const solidColorInput = document.querySelector('input[name="solidColor"]');
+      if (solidColorInput) solidColorInput.checked = formData['solidColor'] = isChecked;
+    };
+    
+    /** fileInput 头像 **/
+    const avatarFile = (file, name) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const size = Math.min(img.width, img.height);
+          const tempCanvas = document.createElement('canvas');
+          const tempContext = tempCanvas.getContext('2d');
+        
+          tempCanvas.width = tempCanvas.height = size;
+          tempContext.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, size, size);
+        
+          const uploadedImage = document.querySelector('.avatar');
+          uploadedImage.src = tempCanvas.toDataURL();
+        };
+      
+        img.src = e.target.result;
+        const imageData = e.target.result.split(',')[1];
+        invoke(name, imageData)
+      };
+      reader.readAsDataURL(file);
+    };
+    
+    /** 时钟图片切换，动画 **/
+    const fadeInOut = async (element, fadeIn) => {
+      const fadeTime = 0.4
+      element.style.transition = \`opacity \${fadeTime}s\`;
+      element.style.opacity = fadeIn ? 1 : 0;
+      element.style.display = 'block'          
+      await new Promise(resolve => setTimeout(resolve, fadeTime * 700));
+          
+      if (!fadeIn) element.style.display = 'none';
+      element.style.transition = '';
+    };
+    
+    const switchStyle = async (isChecked) => {
+      const imageId = settings.topStyle ? 'scrollBox' : 'store';
+      const imageEle = document.getElementById(imageId);
+      const htmlContainer = document.getElementById('clock');
+          
+      const fadeIn = isChecked ? htmlContainer : imageEle;
+      const fadeOut = isChecked ? imageEle : htmlContainer;
+          
+      await fadeInOut(fadeOut, false)
+      await fadeInOut(fadeIn, true);
+    };
+    
+    /** ☘️创建列表通用组容器☘️ **/
+    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body') => {
+      const groupDiv = fragment.appendChild(document.createElement('div'));
+      groupDiv.className = 'list';
+    
+      if (title) {
+        const elTitle = groupDiv.appendChild(document.createElement('div'));
+        elTitle.className = headerClass;
+        elTitle.textContent = title;
+      }
+    
+      const elBody = groupDiv.appendChild(document.createElement('div'));
+      elBody.className = bodyClass;
+      return elBody;
+    };
+    
+    /** 创建范围输入元素 **/
+    const createRange = (elBody, item) => {
+      const range = elBody.appendChild(document.createElement('div'));
+      range.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <div class="collapsible-value">${settings.angle || 90}</div>
+          </div>
+          <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <!-- 折叠取色器 -->
+        <div class="collapsible-range" id="content">
+          <hr class="${separ}">
+          <label class="form-item">
+            <div class="form-label">
+              <img class="form-label-img" src="\${item.icon}"/>
+              <div class="form-label-title">渐变颜色</div>
+            </div>
+            <input type="color" value="\${settings.rangeColor}" id="color-input">
+          </label>
+        </div>\`;
+    
+      const icon = range.querySelector('.collapsible-label .icon-right-down');
+      const content = range.querySelector('.collapsible-range');
+      const colorInput = range.querySelector('#color-input');
+      const rangeInput = range.querySelector('#_range');
+      let isExpanded = false;
+    
+      const toggleShow = () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      };
+      range.querySelector('.collapsible-label').addEventListener('click', toggleShow);
+    
+      colorInput.addEventListener('change', (e) => {
+        const selectedColor = e.target.value;
+        settings.rangeColor = selectedColor;
+        updateRange();
+        formData[item.color] = selectedColor;
+        invoke('changeSettings', formData);
+      });
+    
+      const updateRange = () => {
+        const value = rangeInput.value;
+        const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
+        rangeInput.dataset.value = value;
+        rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
+        range.querySelector('.collapsible-value').textContent = value;
+      };
+    
+      rangeInput.addEventListener('input', updateRange);
+      rangeInput.addEventListener('change', (event) => {
+        formData[item.name] = event.target.value;
+        invoke('changeSettings', formData);
+      });
+      updateRange();
+    };
+    
+    /** 创建可折叠列表元素 **/  
+    const createCollapsible = (elBody, item) => {
+      const label = (item) => \`
+        <label id="\${item.name}" class="form-item">
+          <div class="form-label">
+            <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          \${item.desc ? \`
+          <div class="form-label">
+            <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
+            <i class="iconfont icon-arrow_right"></i>
+          </div>\` : \`
+          <i class="iconfont icon-arrow_right"></i>\`}
+        </label>\`;
+    
+      const collapsible = elBody.appendChild(document.createElement('div'));
+      collapsible.innerHTML = \`
+        <label class="collapsible-label" for="collapse-toggle">
+          <div class="form-label">
+            <img class="form-label-img" src="\${item.icon}"/>
+            <div class="form-label-title">\${item.label}</div>
+          </div>
+          <i class="fas fa-chevron-right icon-right-down"></i>
+        </label>
+        <hr class="separ">
+        <!-- 折叠列表 -->
+        <div class="collapsible-content" id="content">
+          <div class="coll__body">
+            \${item.item.map(item => label(item)).join('')}
+          </div>
+          <hr class="separ">
+        </div>\`;
+    
+      const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
+      const content = collapsible.querySelector('.collapsible-content');
+      let isExpanded = false;
+      
+      collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
+        content.classList.toggle('show');
+        isExpanded = !isExpanded;
+        icon.style.transition = 'transform 0.4s';
+        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+      });
+    
+      collapsible.querySelectorAll('.form-item').forEach((label, index) => {
+        label.addEventListener('click', () => {
+          const labelId = label.getAttribute('id');
+          invoke(labelId, item.item[index]);
+        });
+      })
+    };
+    
+    //======== 创建列表 ========//
+    const createList = ( list, title ) => {
+      const fragment = document.createDocumentFragment();
+      let elBody;
+    
+      for (const item of list) {
+        if (item.type === 'group') {
+          const grouped = createList(item.items, item.label);
+          fragment.appendChild(grouped);
+        } else if (item.type === 'range') {
+          elBody = createGroup(fragment, title);  
+          createRange(elBody, item);
+        } else if (item.type === 'collapsible') {
+          elBody = createGroup(fragment, title);
+          createCollapsible(elBody, item);
+        } else {
+          if (!elBody) {
+            elBody = createGroup(fragment, title, 'list__header', 'list__body');
+          }
+          const label = createFormItem(item);
+          elBody.appendChild(label);
+        }
+      }
+      return fragment
+    };
+    const fragment = createList(formItems);
+    document.getElementById('settings').appendChild(fragment);
+    
+    /** 加载动画 **/
+    const toggleLoading = (e) => {
+      const target = e.currentTarget;
+      target.classList.add('loading')
+      const icon = target.querySelector('.iconfont');
+      const className = icon.className;
+      icon.className = 'iconfont icon-loading';
+      
+      const listener = (event) => {
+        if (event.detail.code) {
+          target.classList.remove('loading');
+          icon.className = className;
+          window.removeEventListener(
+            'JWeb', listener
+          );
+        }
+      };
+      window.addEventListener('JWeb', listener);
+    };
+    
+    document.querySelectorAll('.form-item').forEach((btn) => {
+      btn.addEventListener('click', (e) => { toggleLoading(e) });
+    });
+    
+    // 切换 appleLogo 黑白主题
+    const appleLogos = document.querySelectorAll('.logo');
+    const toggleLogo = (isDark) => {
+      const newSrc = isDark ? appleLogos[0].dataset.darkSrc : appleLogos[0].dataset.lightSrc;
+      appleLogos.forEach(logo => logo.src = newSrc);
+    };
+      
+    const updateOnDarkModeChange = (event) => toggleLogo(event.matches);
+    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    toggleLogo(isDarkMode);
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
+    
+    // 监听其他 elementById
+    ['${elementId}', 'store', 'install', 'app'].forEach(id => {
+      const elementById = document.getElementById(id).addEventListener('click', () => invoke(id));
+    });
+    
+    })()`;
   };
 };
 
