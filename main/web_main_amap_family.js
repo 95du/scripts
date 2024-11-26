@@ -28,7 +28,7 @@ async function main() {
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
     .catch(() => download95duModule(spareUrl));
-  const isDev = true
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   
