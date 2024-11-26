@@ -11,7 +11,7 @@ async function main() {
   const myRepo = 'https://github.com/95du/scripts';
   const chatGPT = 'https://chatgpt.com/?ref=dotcom';
   const chatGptUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/ChatGPT.json';
-
+  
   /**
    * 创建，获取存储路径
    * @returns {string} - string
@@ -91,7 +91,7 @@ async function main() {
   
   // 下载或读取缓存 GIF 图片  
   const getCacheGif = async () => {
-    const url = 'https://sweixinfile.hisense.com/media/M00/82/70/Ch4FyWYeOx-Aad1OAEgKkK6qUUk601.gif';
+    const url = 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/picture/widget.gif';
     const filePath = fm.joinPath(depPath, 'widget.gif');
     if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
     const gifBase64 = fm.read(filePath).toBase64String();
@@ -288,7 +288,7 @@ async function main() {
         {
           label: '黄金时价',
           desc: '十大珠宝品牌黄金价格',
-          version: '1.0.0',
+          version: '1.0.1',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/gold_price.js`,
@@ -435,6 +435,16 @@ async function main() {
           icon: `${rootUrl}/img/icon/lottery.png`
         },
         {
+          label: '南网在线',
+          desc: '昨日用电量，账单',
+          version: '1.1.0',
+          type: 'button',
+          recommend: true,
+          random: true,
+          scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
+          icon: `${rootUrl}/img/icon/electric.png`
+        },
+        {
           label: '中国电信_2',
           desc: '剩余流量、语音、余额',
           version: '1.1.0',
@@ -525,16 +535,6 @@ async function main() {
           icon: `${rootUrl}/img/icon/bottomBars.png`
         },
         {
-          label: '南网在线',
-          desc: '昨日用电量，账单',
-          version: '1.1.0',
-          type: 'button',
-          recommend: true,
-          random: true,
-          scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
-          icon: `${rootUrl}/img/icon/electric.png`
-        },
-        {
           label: '澳门六合彩',
           desc: '新旧版每日开奖结果',
           version: '1.1.0',
@@ -587,8 +587,6 @@ async function main() {
           desc: '每月收支账单、白条',
           version: '1.1.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/run/web_module_jingDong_bill.js`,
           icon: `${rootUrl}/img/icon/jingDong.png`
         },
@@ -597,8 +595,6 @@ async function main() {
           desc: '白条信息、白条等级',
           version: '1.1.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/run/web_module_jingDong_baiTiao.js`,
           icon: `${rootUrl}/img/icon/jingDong.png`
         },
@@ -915,30 +911,8 @@ async function main() {
         });
       </script>`;
       
-      const songId = [
-        '8fk9B72BcV2',
-        '8duPZb8BcV2',
-        '6pM373bBdV2',
-        '6NJHhd6BeV2',
-        '4yhGxb6CJV2',
-        '2ihRd27CKV2',
-        'a2e7985CLV2',
-        'cwFCHbdCNV2',
-        'UxE30dCPV2',
-        '4Qs8h89CPV2'
-      ];
-      const randomId = module.getRandomItem(songId);
-      const music = `
-      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
-      </iframe>
-      <script>
-        const iframe = document.querySelector('.custom-iframe');
-        iframe.src = iframe.getAttribute('data-src');
-      </script>
-      `;
-      
       return `
-        ${settings.music === true ? music : ''}
+        ${settings.music ? module.musicHtml() : ''}
         ${avatarHtml}
         ${popup}
         ${scriptTags}
