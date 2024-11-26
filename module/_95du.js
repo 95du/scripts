@@ -141,6 +141,7 @@ class _95du {
       if (this.fm.fileExists(path)) {
         if (!isExpired(path)) return readFile(path);
         this.fm.remove(path);
+        console.log(`更新${name}`)
       }
       return null;
     };
@@ -573,14 +574,15 @@ class _95du {
   };
   
   /**  
-   * 获取数组中的随机值
-   * @param {Array} array - 输入的数组
+   * 获取数组中的随机值，随机n个对象
+   * @param {Array} arr - 输入的数组
    * @returns {*} 返回数组中的一个随机元素，如果数组为空则返回 null
    */
-  getRandomItem(array) {
-    if (!Array.isArray(array) || array.length === 0) return null;
-    const randomIndex = Math.floor(Math.random() * array.length);
-    return array[randomIndex];
+  getRandomItem(arr, count = 0) {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * arr.length);
+    if (count) return arr.sort(() => Math.random() - 0.5).slice(0, count);
+    return arr[randomIndex];
   };
   
   /**
@@ -608,6 +610,130 @@ class _95du {
       isInitialized = Date.now() - creationDate.getTime() > 300000;
     }
     return this.settings.version !== version ? '.signin-loader' : (isInitialized && this.settings.loader !== '95du' ? '.signup-loader' : null);
+  };
+  
+  // 用户偏好设置菜单
+  userMenus = (settings, widget = false) => {
+    const filePath = this.fm.joinPath(this.fm.documentsDirectory(), '95du_Store/setting.json')
+    const setting = this.fm.fileExists(filePath) ? JSON.parse(this.fm.readString(filePath)) : {};
+    
+    const randomWidgets = this.getRandomItem(setting.items, 9)
+    const recommendedWidgets = randomWidgets.filter(item => item.recommend);
+  
+    const transformedItems = recommendedWidgets.map(item => ({
+      label: item.label,
+      version: item.version,
+      type: "card",
+      scrUrl: item.scrUrl,
+      icon: item.icon
+    }));
+    
+    // 返回页面菜单
+    return [
+      {
+        type: 'group',
+        items: [
+          {
+            label: '炫酷时钟',
+            name: 'clock',
+            type: 'switch',
+            icon: {
+              name: 'button.programmable',
+              color: '#F326A2'
+            }
+          },
+          {
+            label: '图片轮播',
+            name: 'topStyle',
+            type: 'switch',
+            icon: {
+              name: 'photo.tv',
+              color: '#FF9500'
+            }
+          },
+          {
+            label: '列表动画',
+            name: 'animation',
+            type: 'switch',
+            icon: {
+              name: 'rotate.right.fill',
+              color: '#BD7DFF'
+            },
+            default: true
+          },
+          {
+            label: '动画时间',
+            name: 'fadeInUp',
+            type: 'cell',
+            input: true,
+            icon: {
+              name: 'clock.fill',
+              color: '#0096FF'
+            },
+            message: '设置时长为0时，列表将无动画效果\n( 单位: 秒 )',
+            desc: settings.fadeInUp
+          }
+        ]
+      },
+      {
+        type: 'group',
+        items: [
+          {
+            label: widget ? '组件推荐' : '组件简介',
+            name: 'widgetMsg',
+            type: 'cell',
+            icon: {
+              name: 'doc.text.image',
+              color: '#43CD80'
+            },
+            ...(widget && { item: transformedItems })  
+          },
+          {
+            label: '组件商店',
+            name: 'store',
+            type: 'cell',
+            icon: {
+              name: 'bag.fill',
+              color: '#FF6800'
+            }
+          }
+        ]
+      },
+      {
+        type: 'group',
+        items: [
+          {
+            label: 'AppleOS',
+            name: 'appleOS',
+            type: 'switch',
+            icon: `${this.rootUrl}/img/symbol/notice.png`
+          },
+          {
+            label: '推送时段',
+            name: 'period',
+            type: 'cell',
+            isDesc: true,
+            icon: {
+              name: 'deskclock.fill',
+              color: '#0096FF'
+            },
+            message: 'iOS 最新系统版本更新通知\n默认 04:00 至 06:00',
+            desc: settings.startTime || settings.endTime ? '已设置' : '默认'
+          }
+        ]
+      },
+      {
+        type: 'group',
+        items: [
+          {
+            name: 'donate',
+            label: '打赏作者',
+            type: 'cell',
+            icon: `${this.rootUrl}/img/icon/weChat.png`
+          }
+        ]
+      }
+    ];
   };
   
   /**
@@ -734,6 +860,126 @@ class _95du {
         const popupOpen = () => { $('.signin-loader').click() };
         window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
       </script>`
+  };
+  
+  /**
+   * 底部弹窗信息
+   * 创建底部弹窗的相关交互功能
+   * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
+   */
+  cardHtml = (formItems) => formItems.flatMap(group => 
+    group.items.flatMap(item => 
+      item.item?.filter(i => i.type === 'card').map(i => `
+      <div class="card">
+        <img src="${i.icon}">
+        <span>${i.label}</span>
+        <p>${i.version}</p>
+        <button class="but" style="background-color: #FF9000" onclick="clickCard('${i.label}', '${i.scrUrl}')">获 取</button>
+      </div>`) || []
+    )
+  ).join('');
+  
+  /**
+   * 生成弹窗组件，支持打字效果或卡片显示。
+   * @param {Object} options - 弹窗
+   * @param {string} widgetMessage
+   * @param {Array} 卡片内容
+   * @returns {string} - HTML
+   */
+  buttonPopup = async ({
+    widgetMessage = '',
+    formItems,
+    avatarInfo,
+    appImage,
+    appleHub_dark,
+    appleHub_light,
+    id,
+    buttonColor,
+    margin,
+    text,
+    text2
+  }) => {
+    const js = `
+      const menuMask = document.querySelector(".popup-mask")
+      const showMask = async (callback, isFadeIn) => {
+        const duration = isFadeIn ? 200 : 300;
+        const startTime = performance.now();
+        const animate = async (currentTime) => {
+          const elapsedTime = currentTime - startTime;
+          menuMask.style.opacity = isFadeIn ? elapsedTime / duration : 1 - elapsedTime / duration;
+          if (elapsedTime < duration) requestAnimationFrame(animate);
+          else callback?.();
+        };
+  
+        menuMask.style.display = "block";
+        requestAnimationFrame(() => animate(performance.now()));
+      };
+  
+      const switchDrawerMenu = () => {
+        const popup = document.querySelector(".popup-container");
+        const isOpenPopup = popup.style.height !== '255px';
+        showMask(isOpenPopup ? null : () => (menuMask.style.display = "none"), isOpenPopup);
+        popup.style.height = isOpenPopup ? '255px' : '';
+        ${widgetMessage ? (!avatarInfo ? 'isOpenPopup && typeNextChar()' : '') : ''}
+      };
+      
+      const clickCard = (label, scrUrl) => {
+        hidePopup();
+        const item = JSON.stringify({ label, scrUrl });
+        const event = new CustomEvent('JBridge', { detail: { code: 1, data: item } });
+        window.dispatchEvent(event);
+      }
+      
+      const hidePopup = () => {
+        setTimeout(() => switchDrawerMenu(), 300);
+      };
+  
+      const typeNextChar = () => {
+        const chatMsg = document.querySelector(".chat-message");
+        chatMsg.innerHTML = "";
+        let charIndex = 0;
+        const message = \`${widgetMessage}\`;
+        const nextChar = () => {
+          if (charIndex >= message.length) return;
+          const isTag = message[charIndex] === '<';
+          const endIdx = isTag ? message.indexOf(">", charIndex) + 1 : charIndex + 1;
+          chatMsg.innerHTML += message.slice(charIndex, endIdx);
+          charIndex = endIdx;
+          chatMsg.scrollTop = chatMsg.scrollHeight;
+          setTimeout(nextChar, 30);
+        };
+        nextChar();
+      };
+    `;
+  
+    const content = avatarInfo
+      ? `
+        <img id="app" onclick="switchDrawerMenu()" class="app-icon" src="${appImage}">
+          <div style="margin-bottom: ${margin}">${text}</div>
+        <button id="${id}" onclick="hidePopup()" class="but ${buttonColor}">
+          ${text2}
+        </button>
+      `
+      : widgetMessage
+        ? `
+          <div class="sign-logo" style="margin-bottom: -10px;">
+            <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+          </div>
+        `
+        : `<div class="card-container">${this.cardHtml(formItems)}</div>`;
+  
+    return `
+      <div class="popup-mask" onclick="switchDrawerMenu()"></div>
+      <div class="popup-container">
+        <div class="popup-widget zib-widget blur-bg" role="dialog">
+          <div class="box-body">
+            ${content}
+          </div>
+          ${widgetMessage ? `<div class="chat-message"></div>` : ''}
+        </div>
+      </div>
+      <script>${js}</script>
+    `
   };
   
   /**
@@ -984,6 +1230,7 @@ input.addEventListener("change", async (e) => {
           invoke('changeSettings', formData);
           if (item.name === 'music') iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
         });
+        
         label.appendChild(input);
       }
       return label
