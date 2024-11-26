@@ -292,8 +292,8 @@ async function main() {
       id: 'alipay',
       buttonColor: 'jb-green',
       margin: '30px;',
-      text: '南网在线 App ( 5 省 )',
-      text2: '支付宝缴费'
+      text: '全国油价调整预警',
+      text2: '查看'
     });
     
     /**
