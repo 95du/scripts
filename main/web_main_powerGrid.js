@@ -255,7 +255,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-7%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-8%' : '-4%')};
     }
     
     ${settings.animation ? `
@@ -395,7 +395,7 @@ async function main() {
           
     // 登录南网在线
     const userlogin = async ({ label, name } = data) => {
-      const openAlert = await module.generateAlert('南网在线登录', `\r\n南方电网只包括海南、广东、广西、云南、贵州5个省份\n\n注: 使用小组件需要用户的 Token\n1，使用 Quantumult-X 自动获取。\n2，用户自行在App中抓包获取，在请求头部或响应头部拷贝x-auth-token的值。`,
+      const openAlert = await module.generateAlert('南网在线登录', `南方电网只包括海南、广东、广西、云南、贵州5个省份\n\n注: 使用小组件需要用户的 Token\n1，使用 Quantumult-X 自动获取。\n2，用户自行在App中抓包获取，在请求头部或响应头部拷贝x-auth-token的值。`,
         options = ['取消', '获取']
       );
       if ( openAlert === 1 ) {
