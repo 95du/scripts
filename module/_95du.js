@@ -617,8 +617,8 @@ class _95du {
     const filePath = this.fm.joinPath(this.fm.documentsDirectory(), '95du_Store/setting.json')
     const setting = this.fm.fileExists(filePath) ? JSON.parse(this.fm.readString(filePath)) : {};
     
-    const randomWidgets = this.getRandomItem(setting.items, 9)
-    const recommendedWidgets = randomWidgets.filter(item => item.recommend);
+    const randomWidgets = this.getRandomItem(setting.items, 10) 
+    const recommendedWidgets = randomWidgets?.filter(item => item.recommend) || [];
   
     const transformedItems = recommendedWidgets.map(item => ({
       label: item.label,
@@ -886,7 +886,7 @@ class _95du {
    * @param {Array} 卡片内容
    * @returns {string} - HTML
    */
-  buttonPopup = async ({
+  buttonPopup = ({
     widgetMessage = '',
     formItems,
     avatarInfo,
