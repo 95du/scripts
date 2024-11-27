@@ -335,6 +335,7 @@ async function main() {
       <style>${style}</style>
       </head>
       <body>
+        ${settings.music ? module.musicHtml() : ''}
         ${avatarInfo ? mainMenu : (previewImage ? await module.previewImgHtml(settings, previewImgUrl) : '')}
         <!-- 弹窗 -->
         ${previewImage ? await module.donatePopup(appleHub_dark, appleHub_light, collectionCode) : ''}
