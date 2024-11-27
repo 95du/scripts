@@ -267,7 +267,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-4.5%' : '-2%') : (avatarInfo ? '-8.5%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-4.5%' : '-2%') : (avatarInfo ? '-9%' : '-4%')};
     }
     
     ${settings.animation ? `
@@ -312,7 +312,7 @@ async function main() {
      */
     const widgetMessage = '组件功能: 全国彩开奖结果，如果需要显示多个彩票种类，在桌面小组件长按编辑小组件， 在 Parameter 添加参数 ( 例如双色球: 输入ssq ，七星彩: qxc ， 福彩3D: fc3d ， 排列五: pl5 ) 彩票名称的小写字母包括数字。';
 
-    const popupHtml = await module.buttonPopup({
+    const popupHtml = module.buttonPopup({
       widgetMessage,
       formItems,
       avatarInfo,
@@ -585,390 +585,384 @@ async function main() {
   const userMenus = module.userMenus(settings, false);
   
   // 设置菜单页
-  const settingMenu = (() => {
-    const formItems = [
-      {
-        label: '设置',
-        type: 'group',
-        items: [
-          {
-            label: '恢复设置',
-            name: 'recover',
-            type: 'cell',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#FF4D3D'
-            }
-          },
-          {
-            label: '文件管理',
-            name: 'file',
-            type: 'cell',
-            isDesc: true,
-            icon: {
-              name: 'folder.fill',
-              color: '#B07DFF'
-            },
-            desc: 'Honye'
-          },
-          {
-            label: '刷新时间',
-            name: 'refresh',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/refresh.png`,  
-            message: '设置桌面组件的时长\n( 单位: 分钟 )',
-            desc: settings.refresh
-          },
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '彩球弧度',
-            name: 'radius',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'rotate.right.fill',  
-              color: '#BD7DFF'
-            },
-            message: 'iOS 16 系统以下设置值为 18\n即可显示圆形',
-            desc: settings.radius
-          },
-          {
-            label: '使用缓存',
-            name: 'useCache',
-            type: 'switch',
-            icon: {
-              name: 'externaldrive.fill', 
-              color: '#F9A825'
-            },
-            default: false
+  const settingMenu = [
+    {
+      label: '设置',
+      type: 'group',
+      items: [
+        {
+          label: '恢复设置',
+          name: 'recover',
+          type: 'cell',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#FF4D3D'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "textLightColor",
-            label: "白天文字",
-            type: "color",
-            icon: `${rootUrl}/img/symbol/title.png`
+        },
+        {
+          label: '文件管理',
+          name: 'file',
+          type: 'cell',
+          isDesc: true,
+          icon: {
+            name: 'folder.fill',
+            color: '#B07DFF'
           },
-          {
-            name: "textDarkColor",
-            label: "夜间文字",
-            type: "color",
-            icon: {
-              name: 'textformat',
-              color: '#938BF0'
-            }
+          desc: 'Honye'
+        },
+        {
+          label: '刷新时间',
+          name: 'refresh',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/refresh.png`,
+          message: '设置桌面组件的时长\n( 单位: 分钟 )',
+          desc: settings.refresh
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '彩球弧度',
+          name: 'radius',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'rotate.right.fill',
+            color: '#BD7DFF'
           },
-          {
-            name: "titleColor",
-            label: "标题名称",
-            type: "color",
-            icon: {
-              name: 'checklist',
-              color: '#F9A825'
-            }
+          message: 'iOS 16 系统以下设置值为 18\n即可显示圆形',
+          desc: settings.radius
+        },
+        {
+          label: '使用缓存',
+          name: 'useCache',
+          type: 'switch',
+          icon: {
+            name: 'externaldrive.fill',
+            color: '#F9A825'
+          },
+          default: false
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "textLightColor",
+          label: "白天文字",
+          type: "color",
+          icon: `${rootUrl}/img/symbol/title.png`
+        },
+        {
+          name: "textDarkColor",
+          label: "夜间文字",
+          type: "color",
+          icon: {
+            name: 'textformat',
+            color: '#938BF0'
           }
-        ]
-      },
-      {
-        label: '渐变角度、颜色',
-        type: 'group',
-        items: [
-          {
-            type: 'range',
-            name: 'angle',
-            color: 'rangeColor',
-            icon: {
-              name: 'circle.lefthalf.filled',
-              color: '289CF4'
-            }
+        },
+        {
+          name: "titleColor",
+          label: "标题名称",
+          type: "color",
+          icon: {
+            name: 'checklist',
+            color: '#F9A825'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "solidColor",
-            label: "黑白背景",
-            type: "switch",
-            icon: {
-              name: 'square.filled.on.square',
-              color: '#34C759'
-            }
+        }
+      ]
+    },
+    {
+      label: '渐变角度、颜色',
+      type: 'group',
+      items: [
+        {
+          type: 'range',
+          name: 'angle',
+          color: 'rangeColor',
+          icon: {
+            name: 'circle.lefthalf.filled',
+            color: '289CF4'
+          }
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "solidColor",
+          label: "黑白背景",
+          type: "switch",
+          icon: {
+            name: 'square.filled.on.square',
+            color: '#34C759'
+          }
+        },
+        {
+          label: '内置渐变',
+          name: 'gradient',
+          type: 'select',
+          multiple: true,
+          icon: {
+            name: 'scribble.variable',
+            color: '#B07DFF'
           },
-          {
-            label: '内置渐变',
-            name: 'gradient',
-            type: 'select',
-            multiple: true,
-            icon: {
-              name: 'scribble.variable',
-              color: '#B07DFF'
+          options: [
+            {
+              label: 'Group - 1',
+              values: [
+                {
+                  label: '#82B1FF',
+                  value: '#82B1FF'
+                },
+                {
+                  label: '#4FC3F7',
+                  value: '#4FC3F7'
+                },
+                {
+                  label: '#66CCFF',
+                  value: '#66CCFF'
+                }
+              ]
             },
-            options: [
-              {
-                label: 'Group - 1',
-                values: [
-                  { 
-                    label: '#82B1FF',
-                    value: '#82B1FF'
-                  },
-                  {
-                    label: '#4FC3F7',
-                    value: '#4FC3F7'
-                  },
-                  { 
-                    label: '#66CCFF',
-                    value: '#66CCFF'
-                  }
-                ]
-              },
-              {
-                label: 'Group - 2',
-                values: [
-                  { 
-                    label: '#99CCCC',
-                    value: '#99CCCC'
-                  },
-                  { 
-                    label: '#BCBBBB',
-                    value: '#BCBBBB'
-                  },
-                  { 
-                    label: '#A0BACB',
-                    value: '#A0BACB'
-                  },
-                  {
-                    label: '#FF6800',
-                    value: '#FF6800',
-                    disabled: true
-                  }
-                ]
-              }
-            ]
+            {
+              label: 'Group - 2',
+              values: [
+                {
+                  label: '#99CCCC',
+                  value: '#99CCCC'
+                },
+                {
+                  label: '#BCBBBB',
+                  value: '#BCBBBB'
+                },
+                {
+                  label: '#A0BACB',
+                  value: '#A0BACB'
+                },
+                {
+                  label: '#FF6800',
+                  value: '#FF6800',
+                  disabled: true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          label: '渐变透明',
+          name: 'transparency',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/masking_2.png`,
+          message: '渐变颜色透明度，完全透明设置为 0',
+          desc: settings.transparency
+        },
+        {
+          label: '透明背景',
+          name: 'background',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/transparent.png`
+        },
+        {
+          label: '遮罩透明',
+          name: 'masking',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'photo.stack',
+            color: '#8E8D91'
           },
-          {
-            label: '渐变透明',
-            name: 'transparency',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/masking_2.png`,  
-            message: '渐变颜色透明度，完全透明设置为 0',
-            desc: settings.transparency
+          message: '给图片加一层半透明遮罩\n完全透明设置为 0',
+          desc: settings.masking
+        },
+        {
+          label: '图片背景',
+          name: 'chooseBgImg',
+          type: 'file',
+          isDesc: true,
+          icon: `${rootUrl}/img/symbol/bgImage.png`,
+          desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
+        },
+        {
+          label: '清除背景',
+          name: 'clearBgImg',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/clearBg.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '自动更新',
+          name: 'update',
+          type: 'switch',
+          icon: `${rootUrl}/img/symbol/update.png`
+        },
+        {
+          label: '背景音乐',
+          name: 'music',
+          type: 'switch',
+          icon: {
+            name: 'music.note',
+            color: '#FF6800'
           },
-          {
-            label: '透明背景',
-            name: 'background',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/transparent.png`
-          },
-          {
-            label: '遮罩透明',
-            name: 'masking',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'photo.stack',
-              color: '#8E8D91'
-            },
-            message: '给图片加一层半透明遮罩\n完全透明设置为 0',
-            desc: settings.masking
-          },
-          {
-            label: '图片背景',
-            name: 'chooseBgImg',
-            type: 'file',
-            isDesc: true,
-            icon: `${rootUrl}/img/symbol/bgImage.png`,
-            desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
-          },
-          {
-            label: '清除背景',
-            name: 'clearBgImg',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/clearBg.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '自动更新',
-            name: 'update',
-            type: 'switch',
-            icon: `${rootUrl}/img/symbol/update.png`
-          },
-          {
-            label: '背景音乐',
-            name: 'music',
-            type: 'switch',
-            icon: {
-              name: 'music.note',  
-              color: '#FF6800'
-            },
-            default: true
-          }
-        ]
-      },
-    ];
-    return formItems;
-  })();
+          default: true
+        }
+      ]
+    },
+  ];
   
   // 主菜单
-  const formItems = (() => {
-    const mainFormItems = [
-      {
-        type: 'group',
-        items: [
-          {
-            label: '设置头像',
-            name: 'setAvatar',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/camera.png`
+  const formItems = [
+    {
+      type: 'group',
+      items: [
+        {
+          label: '设置头像',
+          name: 'setAvatar',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/camera.png`
+        },
+        {
+          label: 'Telegram',
+          name: 'telegram',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/Swiftgram.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '彩票种类',
+          name: 'agentShortName',
+          type: 'select',
+          multiple: false,
+          icon: {
+            name: 'circle.grid.2x1.fill',
+            color: '#00C4B6'
           },
-          {
-            label: 'Telegram',
-            name: 'telegram',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/Swiftgram.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '彩票种类',
-            name: 'agentShortName',
-            type: 'select',
-            multiple: false,
-            icon: {
-              name: 'circle.grid.2x1.fill',
-              color: '#00C4B6'
+          options: [
+            {
+              label: ' ',
+              values: [
+                {
+                  label: '双色球',
+                  value: '0'
+                },
+                {
+                  label: '大乐透',
+                  value: '1'
+                },
+                {
+                  label: '排列三',
+                  value: '2'
+                }
+              ]
             },
-            options: [
-              {
-                label: ' ',
-                values: [
-                  { 
-                    label: '双色球',
-                    value: '0'
-                  },
-                  {
-                    label: '大乐透',
-                    value: '1'
-                  },
-                  { 
-                    label: '排列三',
-                    value: '2'
-                  }
-                ]
-              },
-              {
-                values: [
-                  { 
-                    label: '福彩3D',
-                    value: '3'
-                  },
-                  {
-                    label: '七星彩',
-                    value: '4'
-                  },
-                  { 
-                    label: '七乐彩',
-                    value: '5'
-                  },
-                  { 
-                    label: '排列五',
-                    value: '6'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            label: '重置所有',
-            name: 'reset',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/reset.png`
-          },
-          {
-            label: '清除缓存',
-            name: 'clearCache',
-            type: 'cell',
-            icon: {
-              name: 'arrow.triangle.2.circlepath',
-              color: '#FF9500'
+            {
+              values: [
+                {
+                  label: '福彩3D',
+                  value: '3'
+                },
+                {
+                  label: '七星彩',
+                  value: '4'
+                },
+                {
+                  label: '七乐彩',
+                  value: '5'
+                },
+                {
+                  label: '排列五',
+                  value: '6'
+                }
+              ]
             }
-          },
-          {
-            label: '偏好设置',
-            name: 'infoPage',
-            type: 'page',
-            icon: {
-              name: 'person.crop.circle',
-              color: '#43CD80'
-            },
-            formItems: userMenus,
-            previewImage: true
-          },
-          {
-            label: '组件设置',
-            name: 'preference',
-            type: 'page',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#0096FF'
-            },
-            formItems: settingMenu
+          ]
+        },
+        {
+          label: '重置所有',
+          name: 'reset',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/reset.png`
+        },
+        {
+          label: '清除缓存',
+          name: 'clearCache',
+          type: 'cell',
+          icon: {
+            name: 'arrow.triangle.2.circlepath',
+            color: '#FF9500'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '预览组件',
-            name: 'preview',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/preview.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "version",
-            label: "组件版本",
-            type: "cell",
-            icon: {
-              name: 'externaldrive.fill', 
-              color: '#F9A825'
-            },
-            desc: settings.version
+        },
+        {
+          label: '偏好设置',
+          name: 'infoPage',
+          type: 'page',
+          icon: {
+            name: 'person.crop.circle',
+            color: '#43CD80'
           },
-          {
-            name: "updateCode",
-            label: "更新代码",
-            type: "cell",
-            icon: `${rootUrl}/img/symbol/update.png`
-          }
-        ]
-      }
-    ];
-    return mainFormItems;
-  })();
+          formItems: userMenus,
+          previewImage: true
+        },
+        {
+          label: '组件设置',
+          name: 'preference',
+          type: 'page',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#0096FF'
+          },
+          formItems: settingMenu
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '预览组件',
+          name: 'preview',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/preview.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "version",
+          label: "组件版本",
+          type: "cell",
+          icon: {
+            name: 'externaldrive.fill',
+            color: '#F9A825'
+          },
+          desc: settings.version
+        },
+        {
+          name: "updateCode",
+          label: "更新代码",
+          type: "cell",
+          icon: `${rootUrl}/img/symbol/update.png`
+        }
+      ]
+    }
+  ];
   
   // render Widget
   if (!config.runsInApp) {
