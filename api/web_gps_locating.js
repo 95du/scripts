@@ -8,21 +8,19 @@
  * 模拟电子围栏，显示车速，位置等
  */
 
-async function main() {
-  const uri = Script.name();
+
+async function main(family) {
   const fm = FileManager.local();
   const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_GPS');
   
   const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
   
-  const [ settingPath, cacheImg, cacheStr, cacheCar] = [
+  const [ settingPath, cacheImg, cacheStr] = [
     'setting.json',
     'cache_image',
     'cache_string',
-    'cache_vehicle'
   ].map(getCachePath);
-  
-  
+
   /**
    * 读取储存的设置
    * @param {string} file - JSON
@@ -31,7 +29,7 @@ async function main() {
   const getSettings = (file) => {
     let setting = {};
     if (fm.fileExists(file)) {
-      return { imei, password, token, run, coordinates, pushTime, imgArr, picture, aMapkey, tokenUrl, touser, agentid, interval, endAddr, carImg, carTop, carBot } = JSON.parse(fm.readString(file));
+      return { imei, password, token, run, coordinates, pushTime, imgArr, picture, aMapkey, tokenUrl, touser, agentid, interval, endAddr, carImg, carTop, carBot, carLead, carTra } = JSON.parse(fm.readString(file));
     }
     return {}
   }
@@ -52,10 +50,7 @@ async function main() {
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
-  const getBgImagePath = () => {
-    const bgImgPath = fm.joinPath(fm.documentsDirectory(), '95duBackground');
-    return fm.joinPath(bgImgPath, Script.name() + '.jpg');
-  };
+  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
   async function shadowImage(img) {
     let ctx = new DrawContext();
@@ -95,7 +90,7 @@ async function main() {
   const downloadCarImage = async (item) => {
     const carImage = await getImage(item);
     const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
-    const cachePath = fm.joinPath(cacheCar, imgName);
+    const cachePath = fm.joinPath(cacheImg, imgName);
     await fm.writeImage(cachePath, carImage, { overwrite: true });
     imgArr.push(imgName);
     if (imgArr.length > 8) {
@@ -117,7 +112,7 @@ async function main() {
  async function getRandomImage() {
     const count = imgArr.length;
     const index = Math.floor(Math.random() * count);
-    const cacheImgPath = cacheCar + '/' + imgArr[index];
+    const cacheImgPath = cacheImg + '/' + imgArr[index];
     return await fm.readImage(cacheImgPath);
   };
   
@@ -205,7 +200,9 @@ async function main() {
     const url = 'https://app.tutuiot.com/locator-app/es/getTrackSegment';
     const params = { imeis: imei, page: 1, pageSize: 1, token };
     const { code, data } = await makeRequest(url, params);
+console.log(code)
     if (code === 0) {
+      console.log(data)
       processData(data);
     } else {
       await fetchToken();
@@ -248,7 +245,7 @@ async function main() {
     
   const { longitude, latitude } = await getMapUrl();
   const mapUrl = `https://maps.apple.com/?q=${encodeURIComponent(deviceName)}&ll=${latitude},${longitude}&t=m`;
-  
+  speed = 1
   const [ state, status ] = speed <= 5 ? ['已静止', '[ 车辆静止中 ]'] : [`${speed} km·h`, `[ 车速 ${speed} km·h ]`];
   
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
@@ -334,7 +331,7 @@ async function main() {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImagePath();
+    const bgImage = getBgImage();
     if (fm.fileExists(bgImage)) {
       widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
     } else {
@@ -491,7 +488,7 @@ async function main() {
     
     // 车辆图片
     const carStack = rightStack.addStack();
-    carStack.setPadding(carImg ? carTop : -25, 5, carImg ? carBot : 0, 0);
+    carStack.setPadding(carImg ? carTop : -25, carLead, carImg ? carBot : 0, carTra);
     carStack.size = new Size(setting.carStackWidth, 0);
     
     if (setting.carImg) {
@@ -503,7 +500,7 @@ async function main() {
     
     const imageCar = carStack.addImage(vehicleImg);
     if (!carImg) imageCar.imageSize = new Size(setting.carStackWidth, 107);
-    imageCar.url = 'scriptable:///run/' + encodeURIComponent(uri);
+    imageCar.url = 'scriptable:///run/' + encodeURIComponent(Script.name())
     rightStack.addSpacer();
     
     const adrStack = rightStack.addStack();
@@ -573,20 +570,20 @@ async function main() {
   };
   
   const runWidget = async () => {
-    const isMediumWidget = config.runsInApp || config.widgetFamily === 'medium';
+    const widget = await (family === 'medium' ? createWidget() : smallWidget());
     try {
-      const widget = await (isMediumWidget ? createWidget() : config.widgetFamily === 'small' ? createSmallWidget() : createErrorWidget());
-      if (!config.runsInWidget) {  
-        await widget.presentMedium();
+      if (config.runsInApp) {
+        await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
       } else {
+        widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
         Script.setWidget(widget);
         Script.complete();
-      };
+      }
     } catch (e) {
       console.log(e)
       isMediumWidget ? await createError() : createErrorWidget();
     }
-  }
+  };
   await runWidget();
 };
 module.exports = { main }
