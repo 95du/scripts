@@ -279,6 +279,7 @@ async function main() {
      */
     const listItems = [
       `<li>${updateDate}</li>`,
+      `<li>增加仪表盘样式小号组件</li>`,
       `<li>修复已知问题</li>`,
       `<li>性能优化，改进用户体验</li>`
     ].join('\n');
