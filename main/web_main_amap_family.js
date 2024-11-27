@@ -310,7 +310,7 @@ async function main() {
      */
     const widgetMessage = '1，手机型号、电量、充电状态 ( 看图标 )<br>2，是否在线状态、共享状态。<br>3，更新日期、地址、家人成员人数。<br>4，家人所在位置的天气、当日步数。<br>️注：点击组件右侧跳转到家人地图';
     
-    const popupHtml = await module.buttonPopup({
+    const popupHtml = module.buttonPopup({
       widgetMessage,
       formItems,
       avatarInfo,
@@ -756,555 +756,547 @@ async function main() {
   const userMenus = module.userMenus(settings, false);
   
   // 设置菜单页
-  const settingMenu = (() => {
-    const formItems = [
-      {
-        label: '设置',
-        type: 'group',
-        items: [
-          {
-            label: '重置所有',
-            name: 'reset',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/reset.png`
-          },
-          {
-            label: '清除缓存',
-            name: 'clearCache',
-            type: 'cell',
-            icon: {
-              name: 'arrow.triangle.2.circlepath',
-              color: '#FF9500'
-            }
-          },
-          {
-            label: '恢复设置',
-            name: 'recover',
-            type: 'cell',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#FF4D3D'
-            }
-          },
-          {
-            label: '文件管理',
-            name: 'file',
-            type: 'cell',
-            isDesc: true,
-            icon: {
-              name: 'folder.fill',
-              color: '#B07DFF'
-            },
-            desc: 'Honye'
-          },
-          {
-            label: '刷新时间',
-            name: 'refresh',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/refresh.png`,  
-            message: '设置桌面组件的时长\n( 单位: 分钟 )',
-            desc: settings.refresh
+  const settingMenu = [
+    {
+      label: '设置',
+      type: 'group',
+      items: [
+        {
+          label: '重置所有',
+          name: 'reset',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/reset.png`
+        },
+        {
+          label: '清除缓存',
+          name: 'clearCache',
+          type: 'cell',
+          icon: {
+            name: 'arrow.triangle.2.circlepath',
+            color: '#FF9500'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '今日行程',
-            name: 'dayTripAllow',
-            type: 'switch',
-            icon: {
-              name: 'arrow.triangle.swap',  
-              color: '#FF9900'
-            },
-            default: false
-          },
-          {
-            label: '进度长度',
-            name: 'progressWidth',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/layout.png`,
-            desc: settings.progressWidth,  
-            message: 'Max 以下机型设置进度条长度'
-          },
-          {
-            label: '头像弧度',
-            name: 'radius',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'rotate.right.fill',  
-              color: '#BD7DFF'
-            },
-            message: '未显示圆形的设置值小于50',
-            desc: settings.radius
-          },
-          {
-            label: '头像边框',
-            name: 'borderWidth',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'person.circle',
-              color: '#FFB500'
-            },
-            message: '设置头像边框的宽度',
-            desc: settings.borderWidth
-          },
-          {
-            name: "borderColor",
-            label: "边框颜色",
-            type: "color",
-            icon: {
-              name: 'button.programmable',
-              color: '#F326A2'
-            }
-          },
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "leftLightText",
-            label: "左侧白天",
-            type: "color",
-            icon: `${rootUrl}/img/symbol/title.png`
-          },
-          {
-            name: "leftNightText",
-            label: "左侧夜间",
-            type: "color",
-            icon: {
-              name: 'textformat',
-              color: '#938BF0'
-            }
-          },
-          {
-            name: "rightStack",
-            label: "右边容器",
-            type: "color",
-            icon: {
-              name: 'square.filled.on.square',
-              color: '#34C759'
-            }
-          },
-          {
-            name: "rightLightText",
-            label: "右侧白天",
-            type: "color",
-            icon: {
-              name: 'a.circle.fill',
-              color: '#FF9500'
-            }
-          },
-          {
-            name: "rightNightText",
-            label: "右侧夜间",
-            type: "color",
-            icon: {
-              name: 'b.circle.fill',
-              color: '#00AEFF'
-            }
+        },
+        {
+          label: '恢复设置',
+          name: 'recover',
+          type: 'cell',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#FF4D3D'
           }
-        ]
-      },
-      {
-        label: '渐变角度、颜色',
-        type: 'group',
-        items: [
-          {
-            type: 'range',
-            name: 'angle',
-            color: 'rangeColor',
-            icon: {
-              name: 'circle.lefthalf.filled',
-              color: '3FC8FF'
+        },
+        {
+          label: '文件管理',
+          name: 'file',
+          type: 'cell',
+          isDesc: true,
+          icon: {
+            name: 'folder.fill',
+            color: '#B07DFF'
+          },
+          desc: 'Honye'
+        },
+        {
+          label: '刷新时间',
+          name: 'refresh',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/refresh.png`,
+          message: '设置桌面组件的时长\n( 单位: 分钟 )',
+          desc: settings.refresh
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '今日行程',
+          name: 'dayTripAllow',
+          type: 'switch',
+          icon: {
+            name: 'arrow.triangle.swap',
+            color: '#FF9900'
+          },
+          default: false
+        },
+        {
+          label: '进度长度',
+          name: 'progressWidth',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/layout.png`,
+          desc: settings.progressWidth,
+          message: 'Max 以下机型设置进度条长度'
+        },
+        {
+          label: '头像弧度',
+          name: 'radius',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'rotate.right.fill',
+            color: '#BD7DFF'
+          },
+          message: '未显示圆形的设置值小于50',
+          desc: settings.radius
+        },
+        {
+          label: '头像边框',
+          name: 'borderWidth',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'person.circle',
+            color: '#FFB500'
+          },
+          message: '设置头像边框的宽度',
+          desc: settings.borderWidth
+        },
+        {
+          name: "borderColor",
+          label: "边框颜色",
+          type: "color",
+          icon: {
+            name: 'button.programmable',
+            color: '#F326A2'
+          }
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "leftLightText",
+          label: "左侧白天",
+          type: "color",
+          icon: `${rootUrl}/img/symbol/title.png`
+        },
+        {
+          name: "leftNightText",
+          label: "左侧夜间",
+          type: "color",
+          icon: {
+            name: 'textformat',
+            color: '#938BF0'
+          }
+        },
+        {
+          name: "rightStack",
+          label: "右边容器",
+          type: "color",
+          icon: {
+            name: 'square.filled.on.square',
+            color: '#34C759'
+          }
+        },
+        {
+          name: "rightLightText",
+          label: "右侧白天",
+          type: "color",
+          icon: {
+            name: 'a.circle.fill',
+            color: '#FF9500'
+          }
+        },
+        {
+          name: "rightNightText",
+          label: "右侧夜间",
+          type: "color",
+          icon: {
+            name: 'b.circle.fill',
+            color: '#00AEFF'
+          }
+        }
+      ]
+    },
+    {
+      label: '渐变角度、颜色',
+      type: 'group',
+      items: [
+        {
+          type: 'range',
+          name: 'angle',
+          color: 'rangeColor',
+          icon: {
+            name: 'circle.lefthalf.filled',
+            color: '3FC8FF'
+          }
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "alwaysDark",
+          label: "始终深色",
+          type: "switch",
+          icon: {
+            name: 'moon.fill',
+            color: '#B07DFF'
+          }
+        },
+        {
+          label: '内置渐变',
+          name: 'gradient',
+          type: 'select',
+          multiple: true,
+          icon: {
+            name: 'scribble.variable',
+            color: '#00C400'
+          },
+          options: [
+            {
+              label: 'Group - 1',
+              values: [
+                {
+                  label: '#82B1FF',
+                  value: '#82B1FF'
+                },
+                {
+                  label: '#4FC3F7',
+                  value: '#4FC3F7'
+                },
+                {
+                  label: '#66CCFF',
+                  value: '#66CCFF'
+                }
+              ]
+            },
+            {
+              label: 'Group - 2',
+              values: [
+                {
+                  label: '#99CCCC',
+                  value: '#99CCCC'
+                },
+                {
+                  label: '#BCBBBB',
+                  value: '#BCBBBB'
+                },
+                {
+                  label: '#A0BACB',
+                  value: '#A0BACB'
+                },
+                {
+                  label: '#FF6800',
+                  value: '#FF6800',
+                  disabled: true
+                }
+              ]
             }
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "alwaysDark",
-            label: "始终深色",
-            type: "switch",
-            icon: {
-              name: 'moon.fill',  
-              color: '#B07DFF'
-            }
+          ]
+        },
+        {
+          label: '渐变透明',
+          name: 'transparency',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/masking_2.png`,
+          message: '渐变颜色透明度，完全透明设置为 0',
+          desc: settings.transparency
+        },
+        {
+          label: '透明背景',
+          name: 'background',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/transparent.png`
+        },
+        {
+          label: '遮罩透明',
+          name: 'masking',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'photo.stack',
+            color: '#8E8D91'
           },
-          {
-            label: '内置渐变',
-            name: 'gradient',
-            type: 'select',
-            multiple: true,
-            icon: {
-              name: 'scribble.variable',
-              color: '#00C400'
-            },
-            options: [
-              {
-                label: 'Group - 1',
-                values: [
-                  { 
-                    label: '#82B1FF',
-                    value: '#82B1FF'
-                  },
-                  {
-                    label: '#4FC3F7',
-                    value: '#4FC3F7'
-                  },
-                  { 
-                    label: '#66CCFF',
-                    value: '#66CCFF'
-                  }
-                ]
-              },
-              {
-                label: 'Group - 2',
-                values: [
-                  { 
-                    label: '#99CCCC',
-                    value: '#99CCCC'
-                  },
-                  { 
-                    label: '#BCBBBB',
-                    value: '#BCBBBB'
-                  },
-                  { 
-                    label: '#A0BACB',
-                    value: '#A0BACB'
-                  },
-                  {
-                    label: '#FF6800',
-                    value: '#FF6800',
-                    disabled: true
-                  }
-                ]
-              }
-            ]
+          message: '给图片加一层半透明遮罩\n完全透明设置为 0',
+          desc: settings.masking
+        },
+        {
+          label: '图片背景',
+          name: 'chooseBgImg',
+          type: 'file',
+          isDesc: true,
+          icon: `${rootUrl}/img/symbol/bgImage.png`,
+          desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
+        },
+        {
+          label: '清除背景',
+          name: 'clearBgImg',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/clearBg.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '自动更新',
+          name: 'update',
+          type: 'switch',
+          icon: `${rootUrl}/img/symbol/update.png`
+        },
+        {
+          label: '背景音乐',
+          name: 'music',
+          type: 'switch',
+          icon: {
+            name: 'music.note',
+            color: '#FF6800'
           },
-          {
-            label: '渐变透明',
-            name: 'transparency',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/masking_2.png`,  
-            message: '渐变颜色透明度，完全透明设置为 0',
-            desc: settings.transparency
-          },
-          {
-            label: '透明背景',
-            name: 'background',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/transparent.png`
-          },
-          {
-            label: '遮罩透明',
-            name: 'masking',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'photo.stack',
-              color: '#8E8D91'
-            },
-            message: '给图片加一层半透明遮罩\n完全透明设置为 0',
-            desc: settings.masking
-          },
-          {
-            label: '图片背景',
-            name: 'chooseBgImg',
-            type: 'file',
-            isDesc: true,
-            icon: `${rootUrl}/img/symbol/bgImage.png`,
-            desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
-          },
-          {
-            label: '清除背景',
-            name: 'clearBgImg',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/clearBg.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '自动更新',
-            name: 'update',
-            type: 'switch',
-            icon: `${rootUrl}/img/symbol/update.png`
-          },
-          {
-            label: '背景音乐',
-            name: 'music',
-            type: 'switch',
-            icon: {
-              name: 'music.note',  
-              color: '#FF6800'
-            },
-            default: true
-          }
-        ]
-      },
-    ];
-    return formItems;
-  })();
+          default: true
+        }
+      ]
+    },
+  ];
   
   // 主菜单
-  const formItems = (() => {
-    const userMenus = module.userMenus(settings, '组件简介', false);
+  const formItems = [
+    {
+      type: 'group',
+      items: [
+        {
+          label: '设置头像',
+          name: 'setAvatar',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/camera.png`
+        },
+        {
+          label: 'Telegram',
+          name: 'telegram',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/Swiftgram.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '家人地图',
+          type: 'collapsible',
+          name: 'user',
+          icon: {
+            name: 'person.crop.circle.badge.questionmark',
+            color: '#FF6800'
+          },
+          item: [
+            {
+              label: '自动获取',
+              name: 'getFamily',
+              type: 'cell',
+              icon: 'leaf',
+              desc: settings.url && settings.cookie && settings.body ? '已获取' : '未获取',
+              descTitle: '家人地图',
+              message: '自动获取 URL、Cookie、Body，\n需要Quantumult-X 辅助运行，\n在下方一键添加重写，boxjs订阅'
+            },
+            {
+              label: '手动填写',
+              name: 'login',
+              type: 'cell',
+              desc: settings.url && settings.cookie && settings.body ? '已获取' : '未获取',
+              message: '自行在高德家人地图抓包获取。\n\n1，找到POST类型的JSON\n2，包含 https://ts.amap.com/ws/tservice/team/family/info 开头的链接。\n3，填写 URL、Cookie，请求体',
+              icon: 'externaldrive.badge.plus'
+            },
+            {
+              label: '高德KEY',
+              name: 'amapKey',
+              type: 'cell',
+              input: true,
+              other: true,
+              desc: settings.amapKey ? '已添加' : '未添加',
+              message: '高德地图Web端API KEY\n转换为更详细的地址 ( 选填 )',
+              icon: 'location'
+            },
+            {
+              label: '腾讯KEY',
+              name: 'qqKey',
+              type: 'cell',
+              input: true,
+              other: true,
+              desc: settings.qqKey ? '已添加' : '未添加',
+              message: '注释头有两个可用的KEY，\n转换为更详细的地址 ( 选填 )',
+              icon: 'questionmark'
+            },
+            {
+              label: '配置规则',
+              name: 'boxjs_rewrite',
+              type: 'cell',
+              icon: 'circle.hexagongrid.fill',
+              desc: 'Boxjs 重写'
+            },
+            {
+              label: '添加重写',
+              name: 'rewrite',
+              type: 'cell',
+              icon: `${rootUrl}/img/symbol/quantumult-x.png`,
+              desc: 'Quantumult X'
+            },
+            {
+              label: '95_boxjs',
+              name: 'boxjs',
+              type: 'cell',
+              icon: 'star.fill',
+              desc: '应用订阅'
+            },
+          ]
+        },
+        {
+          label: '选择家人',
+          name: 'selected',
+          type: 'select',
+          multiple: false,
+          icon: `${rootUrl}/img/icon/amap_family.png`,
+          options: [
+            {
+              label: ' ',
+              values: [
+                {
+                  label: '随机显示',
+                  value: 'random'
+                }
+              ]
+            },
+            {
+              label: ' ',
+              values: settings.values
+            },
+          ]
+        },
+        {
+          label: '指定成员',
+          name: settings.update_url ? 'sharing' : 'inpShare',
+          isDesc: true,
+          type: 'cell',
+          icon: {
+            name: 'square.and.arrow.up.fill',
+            color: '#F326A2'
+          },
+          desc: settings.update_url && settings.update_body? '已获取' : '未获取',
+          message: '自行在高德家人地图抓包获取。\n\n1，找到POST类型的JSON\n2，包含 https://ts.amap.com/ws/tservice/team/family/member/update 开头的链接。\n3，填写 URL、Cookie，请求体\n4，如Quantumult X 已获取 ⬇️'
+        },
+        {
+          label: '偏好设置',
+          name: 'infoPage',
+          type: 'page',
+          icon: {
+            name: 'person.crop.circle',
+            color: '#43CD80'
+          },
+          formItems: userMenus,
+          previewImage: true
+        },
+        {
+          label: '组件设置',
+          name: 'preference',
+          type: 'page',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#0096FF'
+          },
+          formItems: settingMenu
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '预览组件',
+          name: 'preview',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/preview.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "version",
+          label: "组件版本",
+          type: "cell",
+          icon: {
+            name: 'externaldrive.fill',
+            color: '#F9A825'
+          },
+          desc: version
+        },
+        {
+          name: "updateCode",
+          label: "更新代码",
+          type: "cell",
+          icon: `${rootUrl}/img/symbol/update.png`
+        },
+        {
+          name: "apply",
+          label: "申请KEY",
+          type: "cell",
+          icon: {
+            name: 'map.fill',
+            color: '#FF6800'
+          }
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '健康达人',
+          type: 'collapsible',
+          name: 'sport',
+          icon: {
+            name: 'bolt.heart.fill',
+            color: '#00C400'
+          },
+          item: [
+            {
+              label: '自动获取',
+              name: 'getFamily',
+              type: 'cell',
+              desc: settings.health ? '已添加' : '未添加',
+              icon: 'flame',
+              descTitle: '健康达人',
+              message: '小号组件: 步数、热量、运动时间\n需要Quantumult-X 辅助运行，\n在下方一键添加重写规则。'
+            },
+            {
+              label: "手动填写",
+              name: "health",
+              type: "cell",
+              input: true,
+              other: true,
+              icon: 'heart',
+              desc: settings.health ? '已添加' : '未添加',
+              message: '小号组件: 步数、热量消耗、运动时间。\n手动抓取方法: 进入家人地图页面，抓包后找到https://m5.amap.com/ws/mapapi/sport/family_sport_space_card开头的请求链接。'
+            },
+            {
+              label: '添加重写',
+              name: 'sport_rewrite',
+              type: 'cell',
+              icon: `${rootUrl}/img/symbol/quantumult-x.png`,
+              desc: 'Quantumult X'
+            }
+          ]
+        },
+        {
+          label: '图标背景',
+          name: 'iconBg',
+          type: 'switch',
+          icon: {
+            name: 'flame.fill',
+            color: '#FE4904'
+          }
+        }
+      ]
+    },
+  ];
     
-    const mainFormItems = [
-      {
-        type: 'group',
-        items: [
-          {
-            label: '设置头像',
-            name: 'setAvatar',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/camera.png`
-          },
-          {
-            label: 'Telegram',
-            name: 'telegram',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/Swiftgram.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '家人地图',
-            type: 'collapsible',
-            name: 'user',
-            icon: {
-              name: 'person.crop.circle.badge.questionmark',
-              color: '#FF6800'
-            },
-            item: [
-              {
-                label: '自动获取',
-                name: 'getFamily',
-                type: 'cell',
-                icon: 'leaf',
-                desc: settings.url && settings.cookie && settings.body ? '已获取' : '未获取',
-                descTitle: '家人地图',
-                message: '自动获取 URL、Cookie、Body，\n需要Quantumult-X 辅助运行，\n在下方一键添加重写，boxjs订阅'
-              },
-              {
-                label: '手动填写',
-                name: 'login',
-                type: 'cell',
-                desc: settings.url && settings.cookie && settings.body ? '已获取' : '未获取',
-                message: '自行在高德家人地图抓包获取。\n\n1，找到POST类型的JSON\n2，包含 https://ts.amap.com/ws/tservice/team/family/info 开头的链接。\n3，填写 URL、Cookie，请求体',
-                icon: 'externaldrive.badge.plus'
-              },
-              {
-                label: '高德KEY',
-                name: 'amapKey',
-                type: 'cell',
-                input: true,
-                other: true,
-                desc: settings.amapKey ? '已添加' : '未添加',
-                message: '高德地图Web端API KEY\n转换为更详细的地址 ( 选填 )',
-                icon: 'location'
-              },
-              {
-                label: '腾讯KEY',
-                name: 'qqKey',
-                type: 'cell',
-                input: true,
-                other: true,
-                desc: settings.qqKey ? '已添加' : '未添加',
-                message: '注释头有两个可用的KEY，\n转换为更详细的地址 ( 选填 )',
-                icon: 'questionmark'
-              },
-              {
-                label: '配置规则',
-                name: 'boxjs_rewrite',
-                type: 'cell',
-                icon: 'circle.hexagongrid.fill',
-                desc: 'Boxjs 重写'
-              },
-              {
-                label: '添加重写',
-                name: 'rewrite',
-                type: 'cell',
-                icon: `${rootUrl}/img/symbol/quantumult-x.png`,
-                desc: 'Quantumult X'
-              },
-              {
-                label: '95_boxjs',
-                name: 'boxjs',
-                type: 'cell',
-                icon: 'star.fill',
-                desc: '应用订阅'
-              },
-            ]
-          },
-          {
-            label: '选择家人',
-            name: 'selected',
-            type: 'select',
-            multiple: false,
-            icon: `${rootUrl}/img/icon/amap_family.png`,
-            options: [
-              {
-                label: ' ',
-                values: [
-                  { 
-                    label: '随机显示',
-                    value: 'random'
-                  }
-                ]
-              },
-              {
-                label: ' ',
-                values: settings.values
-              },
-            ]
-          },
-          {
-            label: '指定成员',
-            name: settings.update_url ? 'sharing' : 'inpShare',
-            isDesc: true,
-            type: 'cell',
-            icon: {
-              name: 'square.and.arrow.up.fill',  
-              color: '#F326A2'
-            },
-            desc: settings.update_url && settings.update_body? '已获取' : '未获取',
-            message: '自行在高德家人地图抓包获取。\n\n1，找到POST类型的JSON\n2，包含 https://ts.amap.com/ws/tservice/team/family/member/update 开头的链接。\n3，填写 URL、Cookie，请求体\n4，如Quantumult X 已获取 ⬇️'
-          },
-          {
-            label: '偏好设置',
-            name: 'infoPage',
-            type: 'page',
-            icon: {
-              name: 'person.crop.circle',
-              color: '#43CD80'
-            },
-            formItems: userMenus,
-            previewImage: true
-          },
-          {
-            label: '组件设置',
-            name: 'preference',
-            type: 'page',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#0096FF'
-            },
-            formItems: settingMenu
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '预览组件',
-            name: 'preview',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/preview.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "version",
-            label: "组件版本",
-            type: "cell",
-            icon: {
-              name: 'externaldrive.fill', 
-              color: '#F9A825'
-            },
-            desc: version
-          },
-          {
-            name: "updateCode",
-            label: "更新代码",
-            type: "cell",
-            icon: `${rootUrl}/img/symbol/update.png`
-          },
-          {
-            name: "apply",
-            label: "申请KEY",
-            type: "cell",
-            icon: {
-              name: 'map.fill', 
-              color: '#FF6800'
-            }
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '健康达人',
-            type: 'collapsible',
-            name: 'sport',
-            icon: {
-              name: 'bolt.heart.fill',
-              color: '#00C400'
-            },
-            item: [
-              {
-                label: '自动获取',
-                name: 'getFamily',
-                type: 'cell',
-                desc: settings.health ? '已添加' : '未添加',
-                icon: 'flame',
-                descTitle: '健康达人',
-                message: '小号组件: 步数、热量、运动时间\n需要Quantumult-X 辅助运行，\n在下方一键添加重写规则。'
-              },
-              {
-                label: "手动填写",
-                name: "health",
-                type: "cell",
-                input: true,
-                other: true,
-                icon: 'heart',
-                desc: settings.health ? '已添加' : '未添加',
-                message: '小号组件: 步数、热量消耗、运动时间。\n手动抓取方法: 进入家人地图页面，抓包后找到https://m5.amap.com/ws/mapapi/sport/family_sport_space_card开头的请求链接。'
-              },
-              {
-                label: '添加重写',
-                name: 'sport_rewrite',
-                type: 'cell',
-                icon: `${rootUrl}/img/symbol/quantumult-x.png`,
-                desc: 'Quantumult X'
-              }
-            ]
-          },
-          {
-            label: '图标背景',
-            name: 'iconBg',
-            type: 'switch',
-            icon: {
-              name: 'flame.fill',  
-              color: '#FE4904'
-            }
-          }
-        ]
-      },
-    ];
-    return mainFormItems;
-  })();
-  
   // render Widget
   if (!config.runsInApp) {
     await runWidget();
