@@ -246,6 +246,8 @@ async function main(family) {
 
   const [ state, status ] = speed <= 5 ? ['已静止', '[ 车辆静止中 ]'] : [`${speed} km·h`, `[ 车速 ${speed} km·h ]`];
   
+  const icons = ['car.rear.and.tire.marks', 'minus.plus.and.fluid.batteryblock', 'auto.headlight.low.beam.fill', 'figure.seated.side.air.upper'];
+  
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
   const GMT = updateTime.match(/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/)[0];
@@ -565,8 +567,288 @@ async function main(family) {
     return widget;
   };
   
+  /**-------------------------**/
+  
+  // 封装 canvas 初始化的过程
+  const setupCanvas = (() => {
+    const canvSize = 185;
+    const width = 14;
+    const radius = 72;
+    
+    const canvas = new DrawContext();
+    canvas.opaque = false;
+    canvas.respectScreenScale = true;
+    canvas.size = new Size(canvSize, canvSize);
+    
+    return { canvas, canvSize, width, radius };
+  });
+  
+  // 绘制半圆弧进度
+  const drawArc = (ctr, radius, startAngle, endAngle, color, canvas, canvWidth) => {
+    for (let t = startAngle; t <= endAngle; t += Math.PI / 180) {
+      const x = ctr.x + radius * Math.cos(t) - canvWidth / 2;
+      const y = ctr.y + radius * Math.sin(t) - canvWidth / 2;
+      const rect = new Rect(x, y, canvWidth, canvWidth);
+      canvas.setFillColor(color);
+      canvas.fillEllipse(rect);
+    }
+  };
+  
+  // 线性渐变颜色函数
+  const interpolateColor = (start, end, t) => {
+    const r = Math.round(start.red * 255 + t * (end.red * 255 - start.red * 255));
+    const g = Math.round(start.green * 255 + t * (end.green * 255 - start.green * 255));
+    const b = Math.round(start.blue * 255 + t * (end.blue * 255 - start.blue * 255));
+    return new Color(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+  };
+  
+  const getGradientColor = (level) => {
+    const gradientColors = [
+      { level: 0, color: new Color("#8200FF") }, // 紫色  
+      { level: 90, color: new Color("#FF00FF") }, // 粉色
+      { level: 150, color: new Color("#FF0000") } // 红色
+    ];
+    
+    const gradient = gradientColors.find((_, i) => 
+      i < gradientColors.length - 1 && level >= gradientColors[i].level && level <= gradientColors[i + 1].level
+    );
+  
+    if (gradient) {
+      const { level: startLevel, color: startColor } = gradient;
+      const { level: endLevel, color: endColor } = gradientColors[gradientColors.indexOf(gradient) + 1];
+      const t = (level - startLevel) / (endLevel - startLevel);
+      return interpolateColor(startColor, endColor, t);
+    }
+  
+    const gradientColor = gradientColors[gradientColors.length - 1].color;  
+    return gradientColor;
+  };
+  
+  // 绘制背景(两个函数)
+  const drawCircularPath = (canvas, start, end, ctr, radius, steps, isFilled = false, fillColor, width = 1) => {
+    const path = new Path();
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angle = start + (end - start) * t;
+      const x = ctr.x + radius * Math.cos(angle);
+      const y = ctr.y + radius * Math.sin(angle);
+      i === 0 ? path.move(new Point(x, y)) : path.addLine(new Point(x, y));
+    }
+  
+    if (isFilled) {
+      canvas.setFillColor(fillColor);
+      canvas.addPath(path);
+      canvas.fillPath();
+    } else {
+      canvas.setStrokeColor(fillColor);
+      canvas.setLineWidth(width);
+      canvas.addPath(path);
+      canvas.strokePath();
+    }
+  };
+  
+  const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor, width) => {
+    // 绘制主弧线
+    drawCircularPath(canvas, startAngle, endAngle, ctr, radius, 100, false, fillColor, width);
+  
+    // 绘制连接的下半圆(endAngle)
+    const halfCircleRadius = width / 2;
+    const halfCircleStart = 19.2 * (Math.PI / 180); // 起点为主弧线的终点
+    const halfCircleEnd = halfCircleStart + Math.PI; // 绘制半圆
+    const halfCircleCenter = {
+      x: ctr.x + radius * Math.cos(endAngle),
+      y: ctr.y + radius * Math.sin(endAngle),
+    };
+  
+    drawCircularPath(canvas, halfCircleStart, halfCircleEnd, halfCircleCenter, halfCircleRadius, 100, true, fillColor);
+  };
+  
+  // 绘制刻度和数字
+  const drawTickMarks = (radius, strokeColor, color, startBgAngle, totalBgAngle, ctr, canvas, speed = 0) => {
+    const tickRadius = radius - 10
+    const tickLength = 3.5;
+    const numberRadius = radius - 22;
+    const total = 20;
+    
+    for (let i = 0; i <= total; i++) {
+      const t = i / total;
+      const angle = startBgAngle + totalBgAngle * t;
+      // 绘制刻度线
+      const x1 = ctr.x + tickRadius * Math.cos(angle);
+      const y1 = ctr.y + tickRadius * Math.sin(angle);
+      const x2 = ctr.x + (tickRadius - tickLength) * Math.cos(angle);
+      const y2 = ctr.y + (tickRadius - tickLength) * Math.sin(angle);
+  
+      const path = new Path();
+      path.move(new Point(x1, y1));
+      path.addLine(new Point(x2, y2));
+  
+      canvas.setStrokeColor(speed < 5 ? strokeColor : color);
+      canvas.setLineWidth(1);
+      canvas.addPath(path);
+      canvas.strokePath();
+      
+      // 绘制刻度数字（每隔20显示一个数字）
+      if (i % (total / 10) === 0) { // 每 20 增加一个数字
+        const value = (i / total) * 200; // 根据总刻度计算速度值
+        const numX = ctr.x + numberRadius * Math.cos(angle);
+        const numY = ctr.y + numberRadius * Math.sin(angle);
+  
+        canvas.setTextAlignedCenter();
+        canvas.setTextColor(color);
+        const textFont = Font.mediumSystemFont(8);
+        canvas.setFont(textFont);
+        canvas.drawTextInRect(
+          Math.round(value).toString(),
+          new Rect(numX - 10, numY - 5, 20, 10) // 调整数字矩形框以居中
+        );
+      }
+    }
+  };
+  
+  // 绘制特定红色刻度线
+  const drawSpecialTick = (radius, color, angle, ctr, canvas) => {
+    const tickRadius = radius - 12;
+    const tickLength = 20;
+  
+    const x1 = ctr.x + tickRadius * Math.cos(angle);
+    const y1 = ctr.y + tickRadius * Math.sin(angle);
+    const x2 = ctr.x + (tickRadius - tickLength) * Math.cos(angle);
+    const y2 = ctr.y + (tickRadius - tickLength) * Math.sin(angle);
+  
+    const path = new Path();
+    path.move(new Point(x1, y1));
+    path.addLine(new Point(x2, y2));
+  
+    canvas.setStrokeColor(color);
+    canvas.setLineWidth(2);
+    canvas.addPath(path);
+    canvas.strokePath();
+  };
+  
+  // 封装进度条绘制的函数
+  const drawSpeedArc = async (speed, progressColor) => {
+    const { canvas, canvSize, width, radius } = setupCanvas();
+    
+    const ctr = new Point(canvSize / 2, canvSize / 2);
+    const startAngle = 160 * (Math.PI / 180); // 转换为弧度 180-(220-180)/2
+    const endAngle = startAngle + (220 * Math.PI / 180); // 终点角度为 200°
+    
+    // 限制 speed 值范围在 0-200
+    const clampedSpeed = Math.min(Math.max(speed, 0), 200);  
+    const centrePoint = 200;
+    const progressAngle = startAngle + ((clampedSpeed / centrePoint) * (endAngle - startAngle));
+  
+    // 绘制背景和进度条
+    drawArcBackground(canvas, ctr, radius, startAngle, endAngle, new Color(progressColor, 0.18), width);
+  
+    if (speed >= 100) {
+      // 绘制渐变进度条
+      for (let t = 0; t <= 100; t++) {
+        const angle = startAngle + (t / 100) * (progressAngle - startAngle);
+        const color = getGradientColor((t / 100) * speed);
+        drawArc(ctr, radius, angle, angle + 0.01, color, canvas, width);
+      }
+    } else {
+      drawArc(ctr, radius, startAngle, progressAngle, new Color(progressColor), canvas, width);  
+    }
+    
+    // 添加刻度线和数字
+    const startBgAngle = startAngle;
+    const totalBgAngle = endAngle - startAngle;
+    drawTickMarks(radius, new Color(progressColor, 0.6), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas, speed);
+    
+    // 添加红色刻度线
+    if (speed > 3) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
+    // 绘制文字
+    const textSize = 28;
+    const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
+    const speedFont = Font.boldSystemFont(textSize);
+    
+    const textRect = new Rect(0, 60, canvSize, textSize);
+    canvas.setTextAlignedCenter();
+    canvas.setTextColor(speedColor);
+    canvas.setFont(speedFont);
+    canvas.drawTextInRect(`${speed}`, textRect);
+    
+    // 在速度文字下方添加 "km·h"
+    const unitSize = 17;
+    const unitColor = new Color(Device.isUsingDarkAppearance() ? 'FFFFFF' : '000000', 0.7);
+    const unitFont = Font.systemFont(unitSize);
+    
+    const unitRect = new Rect(0, 95, canvSize, unitSize);
+    canvas.setTextColor(unitColor);
+    canvas.setFont(unitFont);
+    canvas.drawTextInRect('km·h', unitRect);
+    
+    return canvas.getImage();
+  };
+  
+  // 仪表盘小号组件
+  const dashboardWidget = async () => {
+    // #08C58B
+    const progressColor = speed <= 90 ? "#FF9500" : speed <= 120 ? '#A85EFF' : '#FF0000';
+    
+    const widget = new ListWidget();
+    widget.setPadding(2, 0, 0, 0);
+    
+    const stack = widget.addStack();
+    stack.layoutHorizontally();
+    stack.setPadding(0, 0, -50, 0);
+    stack.addSpacer();
+    const halfCircleImage = await drawSpeedArc(speed, progressColor);
+    stack.addImage(halfCircleImage);
+    stack.addSpacer();
+    
+    const mediumStack = widget.addStack();
+    mediumStack.layoutHorizontally();
+    mediumStack.addSpacer();
+    
+    const dateText = mediumStack.addText(GMT2);
+    dateText.font = Font.mediumSystemFont(13.5);
+    dateText.textOpacity = 0.75
+    mediumStack.addSpacer();
+    widget.addSpacer(4);
+    
+    const buttonStack = widget.addStack();
+    buttonStack.layoutHorizontally();
+    buttonStack.addSpacer();
+    
+    const barStack = buttonStack.addStack();
+    barStack.size = new Size(120, 30);
+    barStack.setPadding(6, 0, 6, 0);
+    barStack.cornerRadius = 9
+    barStack.borderColor = new Color(progressColor, 0.5);
+    barStack.borderWidth = 2;
+    
+    // #8C7CFF
+    const iconStack = barStack.addStack();
+    iconStack.layoutHorizontally();
+    iconStack.addSpacer();
+    
+    for (item of icons) {
+      const barIcon = SFSymbol.named(item);
+      const icon = iconStack.addImage(barIcon.image);
+      icon.imageSize = new Size(18, 18);
+      iconStack.addSpacer();
+    };
+    
+    buttonStack.addSpacer();
+    widget.addSpacer();
+    widget.backgroundColor = Color.dynamic(Color.white(), new Color('111111'));
+    widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
+    return widget;
+  };
+  
+  // 渲染组件
   const runWidget = async () => {
-    const widget = await (family === 'medium' ? (longitude ? createWidget() : createError()) : smallWidget());
+    const param = args.widgetParameter;
+    const isNumber = param && !isNaN(Number(param));
+    
+    const widget = await (family === 'medium' 
+      ? longitude ? createWidget() : createError() 
+      : isNumber ? dashboardWidget() : smallWidget());
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
