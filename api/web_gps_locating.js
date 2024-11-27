@@ -200,9 +200,7 @@ async function main(family) {
     const url = 'https://app.tutuiot.com/locator-app/es/getTrackSegment';
     const params = { imeis: imei, page: 1, pageSize: 1, token };
     const { code, data } = await makeRequest(url, params);
-console.log(code)
     if (code === 0) {
-      console.log(data)
       processData(data);
     } else {
       await fetchToken();
@@ -232,7 +230,7 @@ console.log(code)
         latitude: Number(locations[1]).toFixed(6)
       }
     } catch (e) {
-      console.log(e + '242行\n');
+      console.log(e + '\n未填写高德地图 API Key，无法显示静态地图');
       return {
         longitude: 116.484828,
         latitude: 39.948585
@@ -242,10 +240,10 @@ console.log(code)
   
   /**--------获取所有信息---------**/
   const info = await Promise.all([loadPicture(), getTrackSegment(), getSpeed()]);
-    
+  
   const { longitude, latitude } = await getMapUrl();
   const mapUrl = `https://maps.apple.com/?q=${encodeURIComponent(deviceName)}&ll=${latitude},${longitude}&t=m`;
-  speed = 1
+
   const [ state, status ] = speed <= 5 ? ['已静止', '[ 车辆静止中 ]'] : [`${speed} km·h`, `[ 车速 ${speed} km·h ]`];
   
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
