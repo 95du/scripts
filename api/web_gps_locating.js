@@ -493,7 +493,7 @@ async function main(family) {
       const name = setting.carImg.split('/').pop();
       vehicleImg = await getCacheImage(name, setting.carImg);
     } else {
-      vehicleImg = await getRandomImage() || fm.readImage(fm.joinPath(cacheCar, 'Maybach-8.png'));
+      vehicleImg = await getRandomImage() || fm.readImage(fm.joinPath(cacheImg, 'Maybach-8.png'));
     };
     
     const imageCar = carStack.addImage(vehicleImg);
