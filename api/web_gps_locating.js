@@ -848,7 +848,7 @@ async function main(family) {
     
     const widget = await (family === 'medium' 
       ? longitude ? createWidget() : createError() 
-      : isNumber ? dashboardWidget() : smallWidget());
+      : isNumber ? smallWidget() : dashboardWidget());
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
