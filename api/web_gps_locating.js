@@ -3,8 +3,8 @@
 // icon-color: teal; icon-glyph: car;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.0
- * 更新日期: 2024-10-24
+ * 组件版本: Version 2.0.0
+ * 更新日期: 2024-11-27
  * 模拟电子围栏，显示车速，位置等
  */
 
@@ -530,12 +530,18 @@ console.log(code)
   };
   
   // 创建小号组件
-  createSmallWidget = async () => {
+  const smallWidget = async () => {
     const widget = new ListWidget();
-    widget.backgroundImage = await getImage(`https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=13&size=240*240&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`);
-    widget.url = mapUrl;
+    try {
+      widget.backgroundImage = await getImage(`https://restapi.amap.com/v3/staticmap?&key=${aMapkey}&zoom=13&size=240*240&markers=-1,https://raw.githubusercontent.com/95du/scripts/master/img/car/locating_0.png,0:${longitude},${latitude}`);
+      widget.url = mapUrl;
+    } catch (e) {
+      const text = widget.addText('获取静态地图失败，需填写高德 API Key');
+      text.font = Font.systemFont(17);
+      text.centerAlignText();
+    }
     return widget;
-  }
+  };
   
   const createError = async () => {
     const widget = new ListWidget();
@@ -552,7 +558,7 @@ console.log(code)
     const mainStack = widget.addStack();
     mainStack.addSpacer();
     
-    const cacheMaybach = fm.joinPath(cacheCar, 'Maybach-8.png');
+    const cacheMaybach = fm.joinPath(cacheImg, 'Maybach-8.png');
     const vehicleImg = fm.readImage(cacheMaybach);
     const widgetImg = mainStack.addImage(vehicleImg);
     widgetImg.imageSize = new Size(400, 150);
@@ -561,28 +567,17 @@ console.log(code)
     return widget;
   };
   
-  const createErrorWidget = () => {
-    const widget = new ListWidget();
-    const text = widget.addText('仅支持中小尺寸');
-    text.font = Font.systemFont(17);
-    text.centerAlignText();
-    return widget;
-  };
-  
   const runWidget = async () => {
-    const widget = await (family === 'medium' ? createWidget() : smallWidget());
-    try {
-      if (config.runsInApp) {
-        await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
-      } else {
-        widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
-        Script.setWidget(widget);
-        Script.complete();
-      }
-    } catch (e) {
-      console.log(e)
-      isMediumWidget ? await createError() : createErrorWidget();
+    const widget = await (family === 'medium' ? (longitude ? createWidget() : createError()) : smallWidget());
+    
+    if (config.runsInApp) {
+      await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
+    } else {
+      widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
+      Script.setWidget(widget);
+      Script.complete();
     }
+    
   };
   await runWidget();
 };
