@@ -85,25 +85,14 @@ async function main() {
    * @param {Image} Basr64 
    * @returns {string} - Request
    */
-  const useFileManager = ({ cacheTime } = {}) => {
+  const useFileManager = () => {
+    const fullPath = (name) => fm.joinPath(mainPath, name);
     return {
-      readImage: (name) => {
-        const path = fm.joinPath(cacheImg, name);
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime) fm.remove(path);
-          else return fm.readImage(path);
-        }
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cacheImg, name), image)
+      readImage: (name) => fm.fileExists(fullPath(name)) ? fm.readImage(fullPath(name)) : null,
+      writeImage: (name, image) => fm.writeImage(fullPath(name), image)
     };
-  
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000);
-    }
   };
-
-  // 获取网络图片，使用缓存
+  
   const getCacheImage = async (name, url) => {
     const cache = useFileManager();
     const image = cache.readImage(name);
