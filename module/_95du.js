@@ -1114,7 +1114,7 @@ class _95du {
         select.name = item.name;
         select.classList.add('select-input');
         select.multiple = !!item.multiple;
-        select.style.width = '100px'
+        select.style.width = '130px'
       
         item.options?.forEach(grp => {
           const container = document.createElement('optgroup');
