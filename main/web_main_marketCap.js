@@ -6,36 +6,42 @@ async function main() {
   const scriptName = '美股港股市值'
   const version = '1.1.0'
   const updateDate = '2024年10月23日'
-  
   const pathName = '95du_marketCap';
+  
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const [scrName, scrUrl] = ['market_cap.js', `${rootUrl}/api/web_market_cap.js`];
+  const spareUrl = 'https://raw.gitcode.com/4qiao/scriptable/raw/master';
+  const scrUrl = `${rootUrl}/api/web_market_cap.js`;
 
   /**
    * 创建，获取存储路径
    * @returns {string} - string
    */
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), pathName);
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
+  await download95duModule(rootUrl)
+    .catch(() => download95duModule(spareUrl));
+  const isDev = false
   
-  const getCachePath = (dirName) => {
-    if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
-    const dirPath = fm.joinPath(mainPath, dirName);
-    if (!fm.fileExists(dirPath)) fm.createDirectory(dirPath);
-    return dirPath;
-  };
+  /** ------- 导入模块 ------- */
   
-  const [ cacheImg, cacheStr ] = [
-    'cache_image',
-    'cache_string'
-  ].map(getCachePath);
-
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
+  const module = new _95du(pathName);  
+  
+  const {
+    mainPath,
+    settingPath,
+    cacheImg, 
+    cacheStr
+  } = module;
+  
   /**
    * 存储当前设置
    * @param { JSON } string
    */
   const writeSettings = async (settings) => {
-    fm.writeString(settingPath(), JSON.stringify(settings, null, 4));
+    fm.writeString(settingPath, JSON.stringify(settings, null, 4));
     console.log(JSON.stringify(
       settings, null, 2
     ));
@@ -398,167 +404,33 @@ async function main() {
     values
   };
   
-  const getSettings = (file) => {
-    if (fm.fileExists(file)) {
-      return JSON.parse(fm.readString(file));
-    } else {
-      const settings = DEFAULT;
-      writeSettings(settings);
-      return settings;
-    }
+  const initSettings = () => {
+    const settings = DEFAULT;
+    module.writeSettings(settings);
+    return settings;
   };
   
-  const settingPath = () => fm.joinPath(mainPath, 'setting.json')
-  settings = await getSettings(settingPath());
-
-  // ScriptableRun
-  const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
-  
-  // 预览组件
-  const previewWidget = async () => {
-    const modulePath = await webModule(scrName, scrUrl);
-    if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main();
-      shimoFormData('Preview');
-    }
-  };
-  
-  const shimoFormData = (action) => {
-    const selectedLabel = settings.values.find(item => settings.selected === item.value)?.label || 'random';
-    const req = new Request('https://shimo.im/api/newforms/forms/N2A1gDmrKJirlNqD/submit');  
-    req.method = 'POST';
-    req.headers = {
-      'Content-Type': 'application/json;charset=utf-8',
-    };
-    req.body = JSON.stringify({
-      formRev: 1,
-      responseContent: [
-        {
-          type: 4,
-          guid: 'n7iKRSLt',
-          text: { content: '测试' },
-        },
-      ],
-      userName: `${selectedLabel}  -  ${Device.systemName()} ${Device.systemVersion()}  ${action}`
-    });
-    req.load();
-  };
+  const settings = fm.fileExists(settingPath) 
+    ? module.getSettings() 
+    : initSettings();
   
   /**
-   * 弹出通知
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
+   * 检查并下载远程依赖文件
+   * Downloads or updates the `_95du.js` module hourly.
+   * @param {string} rootUrl - The base URL for the module file.
    */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'event', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
+  async function download95duModule(rootUrl) {
+    const modulePath = fm.joinPath(depPath, '_95du.js');
+    const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
+    const currentDate = new Date().toISOString().slice(0, 13);
   
-  /**
-   * 指定模块页面
-   * @param { string } time
-   * @param { string } color
-   * @param { string } module
-   */
-  const webModule = async (scriptName, url) => {
-    const modulePath = fm.joinPath(cacheStr, scriptName);
-    if (!settings.update && fm.fileExists(modulePath)) {
-      return modulePath;
-    } else {
-      const moduleJs = await getCacheString(scriptName, url);
-      if (moduleJs) {
-        return modulePath;
-      }
-    }
-  };
+    const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
   
-  /** download store **/
-  const myStore = async () => {
-    const script = await getString(`${rootUrl}/run/web_module_95duScript.js`);
-    const fm = FileManager.iCloud();
-    fm.writeString(
-      fm.documentsDirectory() + '/95du_ScriptStore.js', script);
-  };
-  
-  /**
-   * 版本更新时弹出窗口
-   * @returns {String} string
-   */
-  const updateVerPopup = () => {
-    const creationDate = fm.creationDate(settingPath());
-    if (creationDate) {
-      isInitialized = Date.now() - creationDate.getTime() > 300000;
-    }
-    return settings.version !== version ? '.signin-loader' : (isInitialized && settings.loader !== '95du' ? '.signup-loader' : null);
-  };
-  
-  /**
-   * Download Update Script
-   * @param { string } string
-   * 检查苹果操作系统更新
-   * @returns {Promise<void>}
-   */
-  const updateVersion = async () => {
-    const index = await generateAlert(
-      '更新代码',
-      '更新后当前脚本代码将被覆盖\n但不会清除用户已设置的数据\n如预览组件未显示或桌面组件显示错误，可更新尝试自动修复',
-      options = ['取消', '更新']
-    );
-    if (index === 0) return;
-    await updateString();
-  };
-  
-  const updateString = async () => {
-    const modulePath = fm.joinPath(cacheStr, scrName);
-    const str = await getString(scrUrl);
-    if (!str.includes('95度茅台')) {
-      notify('更新失败 ⚠️', '请检查网络或稍后再试');
-    } else {
-      const moduleDir = fm.joinPath(mainPath, 'Running');
-      if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
-      fm.writeString(modulePath, str)
-      settings.version = version;
-      writeSettings(settings);
-      await shimoFormData('update');
-      ScriptableRun();
-    }
-  };
-  
-  const appleOS = async () => {
-    const currentHour = new Date().getHours();
-    const { startHour = 4, endHour = 6 } = settings;
-
-    if (settings.appleOS && currentHour >= startHour && currentHour <= endHour) {
-      const html = await new Request(atob('aHR0cHM6Ly9kZXZlbG9wZXIuYXBwbGUuY29tL25ld3MvcmVsZWFzZXMvcnNzL3JlbGVhc2VzLnJzcw==')).loadString();
-      const iOS = html.match(/<title>(iOS.*?)<\/title>/)[1];
-      if (settings.push !== iOS) {
-        notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS)
-        settings.push = iOS
-        writeSettings(settings);
-      }
-    }
-  };
-    
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  const runWidget = async () => {
-    await previewWidget();
-    await appleOS();
-    
-    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    
-    if (version !== settings.version && !settings.update && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加两个中号组件，分时图表和股市指数，在设置中查看更新。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
+      const moduleJs = await new Request(`${rootUrl}/module/_95du.js`).load();
+      fm.write(modulePath, moduleJs);
+      fm.writeString(timestampPath, currentDate);
+      console.log('Module updated');
     }
   };
   
@@ -576,263 +448,88 @@ async function main() {
   const getAvatarImg = () => {
     return fm.joinPath(cacheImg, 'userSetAvatar.png');
   };
+
+  // ScriptableRun
+  const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
-  /**
-   * 获取css及js字符串和图片并使用缓存
-   * @param {string} File Extension
-   * @param {Image} Base64 
-   * @returns {string} - Request
-   */
-  const useFileManager = ({ cacheTime } = {}) => {
-    return {
-      readString: (name) => {
-        const path = fm.joinPath(cacheStr, name);  
-        if (fm.fileExists(path)) {
-          if (hasExpired(path) > cacheTime) fm.remove(path);
-          else return fm.readString(path);
-        }
-      },
-      writeString: (name, content) => fm.writeString(fm.joinPath(cacheStr, name), content),
-      // cache image
-      readImage: (name) => {
-        const path = fm.joinPath(cacheImg, name);
-        return fm.fileExists(path) ? fm.readImage(path) : null;
-      },
-      writeImage: (name, image) => fm.writeImage(fm.joinPath(cacheImg, name), image),
+  // 预览组件
+  const previewWidget = async () => {
+    const moduleJs = await module.webModule(scrUrl);
+    const { main } = await importModule(moduleJs)
+    await main();
+    if (settings.update) await updateString();
+    shimoFormData('Preview');
+  };
+  
+  const shimoFormData = (action) => {
+    const selectedLabel = settings.values.find(item => settings.selected === item.value)?.label || 'random';
+    const req = new Request('https://shimo.im/api/newforms/forms/N2A1gDmrKJirlNqD/submit');  
+    req.method = 'POST';
+    req.headers = {
+      'Content-Type': 'application/json;charset=utf-8',
     };
-    
-    function hasExpired(filePath) {
-      const createTime = fm.creationDate(filePath).getTime();
-      return (Date.now() - createTime) / (60 * 60 * 1000)
-    }
-  };
-  
-  /**
-   * 获取css，js字符串并使用缓存
-   * @param {string} string
-   */
-  const getString = async (url) => await new Request(url).loadString();
-  
-  const getCacheString = async (cssFileName, cssFileUrl) => {
-    const cache = useFileManager({ cacheTime: 240 });
-    const cssString = cache.readString(cssFileName);
-    if (cssString) return cssString;
-    const response = await getString(cssFileUrl);
-    if (response.includes('{')) {
-      cache.writeString(cssFileName, response);
-    }
-    return response;
-  };
-  
-  /** 
-   * toBase64(img) string
-   * SFIcon蒙版后转base64
-   */
-  const toBase64 = (img) => {
-    return `data:image/png;base64,${Data.fromPNG(img).toBase64String()}`
-  };
-  
-  /**
-   * 获取网络图片并使用缓存
-   * @param {Image} url
-   */
-  const getImage = async (url) => {
-    return await new Request(url).loadImage();
-  }
-  
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await getImage(url);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  /**
-   * Setting drawTableIcon
-   * @param { Image } image
-   * @param { string } string
-   */  
-  const getCacheMaskSFIcon = async (name, color) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawTableIcon(name, color);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  // drawTableIcon
-  const drawTableIcon = async (
-    icon = name,
-    color = '#ff6800',
-    cornerWidth = 42
-  ) => {
-    let sfi = SFSymbol.named(icon);
-    if (sfi === null) sfi = SFSymbol.named('message.fill');
-    sfi.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    const imgData = Data.fromPNG(sfi.image).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-      
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      const size = sourceImg.width > sourceImg.height ? sourceImg.width : sourceImg.height;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(sourceImg, (canvas.width - sourceImg.width) / 2, (canvas.height - sourceImg.height) / 2);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pix = imgData.data;
-      for (var i=0, n = pix.length; i < n; i+= 4){
-        pix[i] = 255;
-        pix[i+1] = 255;
-        pix[i+2] = 255;
-        pix[i+3] = pix[i+3];
-      }
-      ctx.putImageData(imgData,0,0);
-      silhouetteImg.src = canvas.toDataURL();
-      output=canvas.toDataURL()
-    `;
-  
-    let wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    const iconImage = await new Request(base64Image).loadImage();
-    const size = new Size(160, 160);
-    const ctx = new DrawContext();
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    ctx.size = size;
-    const path = new Path();
-    const rect = new Rect(0, 0, size.width, size.width);
-  
-    path.addRoundedRect(rect, cornerWidth, cornerWidth);
-    path.closeSubpath();
-    ctx.setFillColor(new Color(color));
-    ctx.addPath(path);
-    ctx.fillPath();
-    const rate = 36;
-    const iw = size.width - rate;
-    const x = (size.width - iw) / 2;
-    ctx.drawImageInRect(iconImage, new Rect(x, x, iw, iw));
-    return ctx.getImage();
-  };
-  
-  /**
-   * drawSquare
-   * @param { Image } image
-   * @param { string } string
-   */
-  const drawSquare = async (img) => {
-    const imgData = Data.fromPNG(img).toBase64String();
-    const html = `
-      <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
-      <canvas id="mainCanvas" />`;
-    const js = `
-      const canvas = document.createElement("canvas");
-      const sourceImg = document.getElementById("sourceImg");
-      const silhouetteImg = document.getElementById("silhouetteImg");
-      const ctx = canvas.getContext('2d');
-      // 裁剪成正方形
-      const size = Math.min(sourceImg.width, sourceImg.height);
-      canvas.width = canvas.height = size;
-      ctx.drawImage(sourceImg, (sourceImg.width - size) / 2, (sourceImg.height - size) / 2, size, size, 0, 0, size, size);
-      
-      // 压缩图像
-      const maxFileSize = 200 * 1024
-      const quality = Math.min(1, Math.sqrt(maxFileSize / (canvas.toDataURL('image/jpeg', 1).length * 0.75)));
-      const compressedCanvas = document.createElement("canvas");
-      const compressedCtx = compressedCanvas.getContext('2d');
-      compressedCanvas.width = compressedCanvas.height = 400;
-      compressedCtx.drawImage(canvas, 0, 0, size, size, 0, 0, 400, 400);
-      
-      silhouetteImg.src = canvas.toDataURL();
-      output = compressedCanvas.toDataURL('image/jpeg', quality);
-    `;
-    
-    const wv = new WebView();
-    await wv.loadHTML(html);
-    const base64Image = await wv.evaluateJavaScript(js);
-    return await new Request(base64Image).loadImage();  
-  };
-  
-  /**
-   * SFIcon 转换为base64
-   * @param {*} icon SFicon
-   * @returns base64 string
-   */
-  const drawSFIcon = async ( icon = name ) => {
-    let sf = SFSymbol.named(icon);
-    if (sf === null) sf = SFSymbol.named('message');
-    sf.applyFont(  
-      Font.mediumSystemFont(30)
-    );
-    return sf.image;
-  };
-  
-  // 缓存并读取原生 SFSymbol icon
-  const getCacheDrawSFIcon = async (name) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if ( image ) {
-      return toBase64(image);
-    }
-    const img = await drawSFIcon(name);
-    cache.writeImage(name, img);
-    return toBase64(img);
-  };
-  
-  /**
-   * 弹出输入框
-   * @param title 标题
-   * @param desc  描述
-   * @param opt   属性
-   * @returns { Promise<void> }
-   */
-  const generateInputAlert = async (options, confirm) => {
-    const { title, message, options: fieldArr } = options;
-    const inputAlert = new Alert();
-    inputAlert.title = title;
-    inputAlert.message = message;
-    fieldArr.forEach(({ hint, value }) => inputAlert.addTextField(hint, value))
-    inputAlert.addAction('取消');
-    inputAlert.addAction('确认');
-    const getIndex = await inputAlert.presentAlert();
-    if (getIndex === 1) {
-      const inputObj = fieldArr.map(({ value }, index) => ({ index, value: inputAlert.textFieldValue(index) }));
-      confirm(inputObj);
-    }
-    return getIndex;
-  };
-  
-  /**
-   * @param message 内容
-   * @param options 按键
-   * @returns { Promise<number> }
-   */
-  const generateAlert = async ( title, message = '', options, destructiveAction ) => {
-    const alert = new Alert();
-    alert.title = title;
-    alert.message = message ?? '';
-    options.forEach(option => {
-      option === destructiveAction ? alert.addDestructiveAction(option) : alert.addAction(option);
+    req.body = JSON.stringify({
+      formRev: 1,
+      responseContent: [{
+        type: 4,
+        guid: 'n7iKRSLt',
+        text: { content: '测试' },
+      }],
+      userName: `${selectedLabel}  -  ${Device.systemName()} ${Device.systemVersion()}  ${action}`
     });
-    return await alert.presentAlert();
+    req.load();
   };
   
+  /**
+   * Download Update Script
+   * @param { string } string
+   * 检查苹果操作系统更新
+   * @returns {Promise<void>}
+   */
+  const updateVersion = async () => {
+    const index = await module.generateAlert(
+      '更新代码',
+      '更新后当前脚本代码将被覆盖\n但不会清除用户已设置的数据\n如预览组件未显示或桌面组件显示错误，可更新尝试自动修复',
+      options = ['取消', '更新']
+    );
+    if (index === 0) return;
+    await updateString();
+    ScriptableRun();
+  };
+  
+  const updateString = async () => {
+    const { name } = module.getFileInfo(scrUrl);
+    const modulePath = fm.joinPath(cacheStr, name);
+    const str = await module.httpRequest(scrUrl);
+    if (!str.includes('95度茅台')) {
+      module.notify('更新失败 ⚠️', '请检查网络或稍后再试');
+    } else {
+      const moduleDir = fm.joinPath(mainPath, 'Running');
+      if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
+      fm.writeString(modulePath, str)
+      settings.version = version;
+      writeSettings(settings);
+    }
+  };
+    
+  /**
+   * 运行 Widget 脚本
+   * 组件版本、iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
+  const runWidget = async () => {
+    await previewWidget();
+    await module.appleOS_update();
+    
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    
+    if (version !== settings.version && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加两个中号组件，分时图表和股市指数，在设置中查看更新。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    }
+  };
   
   // ====== web start ======= //
   const renderAppView = async (options) => {
@@ -842,49 +539,17 @@ async function main() {
       previewImage
     } = options;
 
-    const appleHub_light = await getCacheImage('white.png', `${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await getCacheImage('black.png', `${rootUrl}/img/picture/appleHub_black.png`);
+    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
+    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await getCacheImage('appImage.png', `${rootUrl}/img/icon/apple.png`);
+    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/apple.png`);
     
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await toBase64(fm.readImage(getAvatarImg()) ) : await getCacheImage('author.png', `${rootUrl}/img/icon/4qiao.png`);
+    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
-    const collectionCode = await getCacheImage('collection.png',`${rootUrl}/img/picture/collectionCode.jpeg`);
+    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
-    const clockScript = await getCacheString('clock.html', `${rootUrl}/web/clock.html`);
+    const scriptTags = await module.scriptTags();
     
-    const scripts = ['jquery.min.js', 'bootstrap.min.js', 'loader.js'];
-      
-  const scriptTags = await Promise.all(scripts.map(async (script) => {
-      const content = await getCacheString(script, `${rootUrl}/web/${script}%3Fver%3D8.0`);
-      return `<script>${content}</script>`;
-    }));
-    
-    // SFSymbol url icons  
-    const subArray = [];
-    const getAndBuildIcon = async (item) => {
-      const { icon } = item;
-      if (icon?.name) {
-        const { name, color } = icon;
-        item.icon = await getCacheMaskSFIcon(name, color);
-      } else if (icon?.startsWith('https')) {
-        const name = icon.split('/').pop();
-        item.icon = await getCacheImage(name, icon);
-      } else if (!icon?.startsWith('data')) {
-        item.icon = await getCacheDrawSFIcon(icon);
-      }
-    };
-    
-    for (const i of formItems) {
-      for (const item of i.items) {
-        if (item.item) for (const subItem of item.item) {
-          await getAndBuildIcon(subItem);
-          subArray.push(subItem);
-        }
-        await getAndBuildIcon(item);
-      }
-    };
-
     /**
      * @param {string} style
      * @param {string} themeColor
@@ -894,7 +559,7 @@ async function main() {
      * @returns {string} html
      */
     const screenSize = Device.screenSize().height;
-    const cssStyle = await getCacheString('cssStyle.css', `${rootUrl}/web/cssStyle.css`);  
+    const cssStyle = await module.getCacheData(`${rootUrl}/web/cssStyle.css`);
 
     const style =`  
     :root {
@@ -915,7 +580,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-8%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-5%' : '-2%')};
     }
     
     ${settings.animation ? `
@@ -928,193 +593,40 @@ async function main() {
      * 生成主菜单头像信息和弹窗的HTML内容
      * @returns {string} 包含主菜单头像信息、弹窗和脚本标签的HTML字符串
      */
-    const mainMenuTop = async () => {
-      const avatar = `
-      <div class="avatarInfo">
-        <span class="signup-loader">
-          <img src="${authorAvatar}" class="avatar"/>
-        </span>
-        <a class="signin-loader"></a>
-        <div class="interval"></div>
-        <a class="but">
-          <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" onclick="switchDrawerMenu()" tabindex="0"></a>
-        <div id="store">
-          <a class="rainbow-text but">Script Store</a>
-        </div>
-      </div>
-      <!-- 对话框 -->
-      <div class="modal fade" id="u_sign" role="dialog">
-        <div class="modal-dialog">
-          <div class="zib-widget blur-bg relative">
-            <a href="#tab-sign-up" data-toggle="tab"></a>
-            <div class="box-body sign-logo" data-dismiss="modal" onclick="hidePopup()"><img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0"></div>
-            <div class="tab-content">
-              <!-- 版本信息 -->
-              <div class="tab-pane fade active in" id="tab-sign-in">
-                <div class="box-body">
-                  <div href="#tab-sign-up" data-toggle="tab" class="fa-2x title-h-center popup-title">${scriptName}</div>
-                  <a class="popup-content update-desc">
-                     <div class="but">Version ${version}</div>
-                  </a><br>
-                  <div class="form-label-title update-desc"> <li>${updateDate}</li> <li>增加第三种中号组件</li> <li>编辑桌面组件，在参数中输入 【 "图表"，"指数" 】将会显示对应的组件，默认显示市值股票 🔥</li>
-                  </div>
-                </div>
-                <div class="box-body" ><button id="install" class="but radius jb-yellow btn-block">立即更新</button>
-                </div>
-              </div>
-              <!-- 捐赠 -->
-              <div class="tab-pane fade-in" id="tab-sign-up">
-                <a class="donate flip-horizontal" href="#tab-sign-in" data-toggle="tab"><img src="${collectionCode}">  
-                </a>
-              </div>
-            </div>
-            <p class="separator" data-dismiss="modal">95du丶茅台</p>
-          </div>
-        </div>
-      </div>
-      <script>
-        setTimeout(() => {
-          const loadingDiv = document.querySelector('.loading-right').style.display = 'none';
-        }, 1500);
-        
-        const popupOpen = () => { $('.signin-loader').click() };
-        
-        window.onload = () => {
-          setTimeout(() => {
-            $('${updateVerPopup()}').click();
-          }, 1600);
-        };
-        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
-      </script>
-      `
-      // music
-      const songId = [
-        '8fk9B72BcV2',
-        '8duPZb8BcV2',
-        '6pM373bBdV2',
-        '6NJHhd6BeV2'
-      ];
-      const randomId = songId[Math.floor(Math.random() * songId.length)];
-      const music = `
-      <iframe data-src="https://t1.kugou.com/song.html?id=${randomId}" class="custom-iframe" frameborder="0" scrolling="auto">
-      </iframe>
-      <script>
-        const iframe = document.querySelector('.custom-iframe');
-        iframe.src = iframe.getAttribute('data-src');
-      </script>`;
+    const listItems = [
+      `<li>${updateDate}</li>`,
+      `<li>增加第三种中号组件</li>`,
+      `<li>编辑桌面组件，在参数中输入 【 "图表"，"指数" 】将会显示对应的组件，默认显示市值股票</li>`
+    ].join('\n');
+    
+    const mainMenu = module.mainMenuTop(
+      version, 
+      authorAvatar, 
+      appleHub_dark, 
+      appleHub_light, 
+      scriptName, 
+      listItems, 
+      collectionCode
+    );
       
-      return `${avatar}
-      ${settings.music ? music : ''}`
-    };
-    
-    /**
-     * Donated Author
-     * weChat pay
-     */
-    const donatePopup = async () => {
-      return `        
-      <a class="signin-loader"></a>
-      <div class="modal fade" id="u_sign" role="dialog">
-        <div class="modal-dialog">
-          <div class="zib-widget blur-bg relative">
-            <div id="appleHub" class="box-body sign-logo">
-              <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
-            </div>
-            <a class="but donated">
-              <img src="${collectionCode}">
-            </a>
-            <p class="but separator">95du丶茅台</p>
-          </div>
-        </div>
-      </div>
-      <script>
-        const popupOpen = () => { $('.signin-loader').click() };
-        window._win = { uri: 'https://demo.zibll.com/wp-content/themes/zibll' };
-      </script>`
-    };
-    
     /**
      * 底部弹窗信息
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
-     * 
-    const cardElements = subArray.flatMap(item => {
-      if (item.type === 'card') {
-        return `<div class="card">
-          <img src="${item.icon}">
-          <span>${item.label}</span>
-          <p>${item.version}</p>
-          <button class="but" style="background-color: #FF9000" onclick="clickCard('${item.label}', '${item.scrUrl}')">获 取</button>
-        </div>`;
-      }
-    }).join('');
-    
      */
-    const cardElements = formItems.flatMap(group => group.items.flatMap(item =>
-      item.item?.filter(item => item.type === 'card').map(item => `
-        <div class="card">
-          <img src="${item.icon}">
-          <span>${item.label}</span>
-          <p>${item.version}</p>
-          <button class="but" style="background-color: #FF9000" onclick="clickCard('${item.label}', '${item.scrUrl}')">获 取</button>
-        </div>`
-      ) || [])
-    ).join('');
-
-    const buttonPopup = async () => {
-      const js = `
-      const menuMask = document.querySelector(".popup-mask")
-      const showMask = async (callback, isFadeIn) => {
-        const duration = isFadeIn ? 200 : 300;
-        const startTime = performance.now();
+    const popupHtml = module.buttonPopup({
+      formItems,
+      avatarInfo,
+      appImage,
+      appleHub_dark,
+      appleHub_light,
+      id: 'shortcuts',
+      buttonColor: '',
+      margin: '35px;',
+      text: '全球市值排名前 Top_80',
+      text2: '95du丶茅台'
+    });
     
-        const animate = async (currentTime) => {
-          const elapsedTime = currentTime - startTime;
-          menuMask.style.opacity = isFadeIn ? elapsedTime / duration : 1 - elapsedTime / duration;
-          if (elapsedTime < duration) requestAnimationFrame(animate);
-          else callback?.();
-        };
-    
-        menuMask.style.display = "block";
-        requestAnimationFrame(() => animate(performance.now()));
-      };
-    
-      function switchDrawerMenu() {
-        const popup = document.querySelector(".popup-container");
-        const isOpenPopup = popup.style.height !== '255px';
-        showMask(isOpenPopup ? null : () => menuMask.style.display = "none", isOpenPopup);
-        popup.style.height = isOpenPopup ? '255px' : ''
-      };
-      
-      const hidePopup = () => {
-        setTimeout(() => switchDrawerMenu(), 300);
-      };
-                  
-      const clickCard = (label, scrUrl) => {
-        hidePopup();
-        const item = JSON.stringify({ label, scrUrl });
-        const event = new CustomEvent('JBridge', { detail: { code: 1, data: item } });
-        window.dispatchEvent(event);
-      }`;
-      
-      const content = `${avatarInfo  
-        ? `<img id="app" onclick="switchDrawerMenu()" class="app-icon" src="${appImage}">
-          <div style="margin-bottom: 35px;">全球市值排名前 Top_80</div>
-          <button id="shortcuts" onclick="hidePopup()" class="but" >95du丶茅台</button>`  
-        : `<div class="card-container">${cardElements}</div>`
-      }`
-      
-      return `
-      <div class="popup-mask" onclick="switchDrawerMenu()"></div>
-      <div class="popup-container">
-        <div class="popup-widget zib-widget blur-bg" role="dialog">
-          <div class="box-body">
-            ${content}
-          </div>
-        </div>
-      </div>
-      <script>${js}</script>`;
-    };
     
     /**
      * 组件效果图预览
@@ -1122,453 +634,10 @@ async function main() {
      * Preview Component Images
      * This function displays images with left-right carousel effect.
      */
-    const clockHtml = (() => {
-      const displayStyle = settings.clock ? 'block' : 'none';
-      return `<div id="clock" style="display: ${displayStyle}">${clockScript}</div>`;
-    });
-    
-    previewImgHtml = async () => {
-      const displayStyle = settings.clock ? 'none' : 'block';
-
-      const previewImgUrl = [
-        `${rootUrl}/img/picture/marketCap_1.png`,
-        `${rootUrl}/img/picture/marketCap_0.png`
-      ];
-      
-      if ( settings.topStyle ) {
-        const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
-          const imgName = decodeURIComponent(item.substring(item.lastIndexOf("/") + 1));
-          const previewImg = await getCacheImage(imgName, item);
-          return previewImg;
-        }));
-        return `${clockHtml()}
-        <div id="scrollBox" style="display: ${displayStyle}">
-          <div id="scrollImg">
-            ${previewImgs.map(img => `<img src="${img}">`).join('')}
-          </div>
-        </div>`; 
-      } else {
-        const randomUrl = previewImgUrl[Math.floor(Math.random() * previewImgUrl.length)];
-        const imgName = decodeURIComponent(randomUrl.substring(randomUrl.lastIndexOf("/") + 1));
-        const previewImg = await getCacheImage(imgName, randomUrl);
-        return `${clockHtml()}
-        <img id="store" src="${previewImg}" class="preview-img" style="display: ${displayStyle}">`
-      }
-    };
-    
-    // =======  js  =======//
-    const js =`
-    (() => {
-    const settings = ${JSON.stringify({
-      ...settings
-    })}
-    const formItems = ${JSON.stringify(formItems)}
-    
-    window.invoke = (code, data) => {
-      window.dispatchEvent(
-        new CustomEvent(
-          'JBridge',
-          { detail: { code, data } }
-        )
-      )
-    };
-    
-    const formData = {};
-    const createFormItem = (item) => {
-      const value = settings[item.name] ?? item.default;
-      formData[item.name] = value;
-      
-      const label = document.createElement("label");
-      label.className = "form-item";
-      label.dataset.name = item.name;
-      
-      const div = document.createElement("div");
-      div.className = 'form-label';
-      label.appendChild(div);
-      
-      if (item.icon) {
-        const img = document.createElement("img");
-        img.src = item.icon;
-        img.className = 'form-label-img';
-        div.appendChild(img);
-      }
-          
-      const divTitle = document.createElement("div");
-      divTitle.className = 'form-label-title';
-      divTitle.innerText = item.label;
-      div.appendChild(divTitle);
-      
-      if (item.type === 'select') {
-        const select = document.createElement('select');
-        select.name = item.name;
-        select.classList.add('select-input');
-        select.multiple = !!item.multiple;
-        select.style.width = '130px'
-      
-        item.options?.forEach(grp => {
-          const container = document.createElement('optgroup');
-          if (grp.label) container.label = grp.label;
-      
-          grp.values.forEach(opt => {
-            const option = new Option(opt.label, opt.value);
-            option.disabled = opt.disabled || false;
-            option.selected = (item.multiple && Array.isArray(value)) ? value.includes(opt.value) : value === opt.value;
-            container.appendChild(option);
-          });
-          if (container !== select) select.appendChild(container);
-        });
-        
-        select.addEventListener('change', (e) => {
-          const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
-          formData[item.name] = item.multiple ? selectedValues : selectedValues[0];
-      
-          const selectedOption = item.options.flatMap(option => option.values).find(opt => opt.value === formData[item.name]);
-          formData['market'] = selectedOption?.market || null;
-          invoke('changeSettings', formData);
-          selectWidth();
-        });
-      
-        const selCont = document.createElement('div');
-        selCont.classList.add('form-item__input__select');
-        selCont.appendChild(select);
-      
-        if (!item.multiple) {
-          select.style.appearance = 'none';
-          const icon = document.createElement('i');
-          icon.className = 'iconfont icon-arrow_right form-item__icon';
-          selCont.appendChild(icon);
-        };
-        
-        label.appendChild(selCont);
-      } else if (['cell', 'page', 'file'].includes(item.type)) {
-        const { name, isAdd, isOther } = item
-
-        if (item.desc) {
-          const desc = document.createElement("div");
-          desc.className = 'form-item-right-desc';
-          desc.id = \`\${name}-desc\`
-          desc.innerText = isAdd ? (settings[\`\${name}_status\`] ?? item.desc) : isOther ? settings.values.length : settings[name];
-          label.appendChild(desc);
-        };
-      
-        const icon = document.createElement('i');
-        icon.className = 'iconfont icon-arrow_right';
-        label.appendChild(icon);
-        label.addEventListener('click', (e) => {
-          switch (name) {
-            case 'version':
-            case 'donate':
-              popupOpen();
-              break;
-            case 'setAvatar':
-              fileInput.click();
-              invoke(name, data);
-              break;
-            case 'widgetMsg':
-              switchDrawerMenu();
-              break;
-          };
-      
-          invoke(item.type === 'page' ? 'itemClick' : name, item);
-        });
-  
-        /** file input **/
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept = ".jpg,.jpeg,.png,.gif,.bmp";
-        fileInput.addEventListener("change", (event) => {
-          const file = event.target.files[0];
-          if (file && file.type.includes("image")) {
-            avatarFile(file, name);
-          }
-        });
-      } else {
-        const input = document.createElement("input")
-        input.className = 'form-item__input'
-        input.name = item.name
-        input.type = item.type
-        input.enterKeyHint = 'done'
-        input.value = value
-        
-        if (item.type === 'switch') {
-          input.type = 'checkbox'
-          input.role = 'switch'
-          input.checked = value
-        };
-        
-input.addEventListener("change", async (e) => {
-          const isChecked = e.target.checked;
-          formData[item.name] =
-            item.type === 'switch'
-            ? isChecked
-            : e.target.value;
-          
-          if (item.name === 'clock') switchStyle(isChecked);
-          if (item.name === 'alwaysDark') switchColor(isChecked);
-        
-          invoke('changeSettings', formData);
-        });
-        label.appendChild(input);
-      }
-      return label
-    };
-    
-    /** 切换颜色 **/
-    const switchColor = async (isChecked) => {
-      const colorValue = isChecked ? '#FFFFFF' : '#000000';
-      document.querySelector('input[name="lightColor"]').value = formData['lightColor'] = colorValue;  
-      document.querySelector('input[name="solidColor"]').checked = formData['solidColor'] = isChecked;  
-    };
-    
-    /** fileInput 头像 **/
-    const avatarFile = (file, name) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const size = Math.min(img.width, img.height);
-          const tempCanvas = document.createElement('canvas');
-          const tempContext = tempCanvas.getContext('2d');
-        
-          tempCanvas.width = tempCanvas.height = size;
-          tempContext.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, size, size);
-        
-          const uploadedImage = document.querySelector('.avatar');
-          uploadedImage.src = tempCanvas.toDataURL();
-        };
-      
-        img.src = e.target.result;
-        const imageData = e.target.result.split(',')[1];
-        invoke(name, imageData)
-      };
-      reader.readAsDataURL(file);
-    };
-    
-    /** 时钟图片切换，动画 **/
-    const fadeInOut = async (element, fadeIn) => {
-      const fadeTime = 0.4
-      element.style.transition = \`opacity \${fadeTime}s\`;
-      element.style.opacity = fadeIn ? 1 : 0;
-      element.style.display = 'block'          
-      await new Promise(resolve => setTimeout(resolve, fadeTime * 700));
-          
-      if (!fadeIn) element.style.display = 'none';
-      element.style.transition = '';
-    };
-    
-    const switchStyle = async (isChecked) => {
-      const imageId = settings.topStyle ? 'scrollBox' : 'store';
-      const imageEle = document.getElementById(imageId);
-      const htmlContainer = document.getElementById('clock');
-          
-      const fadeIn = isChecked ? htmlContainer : imageEle;
-      const fadeOut = isChecked ? imageEle : htmlContainer;
-          
-      await fadeInOut(fadeOut, false)
-      await fadeInOut(fadeIn, true);
-    };
-    
-    /** ☘️创建列表通用组容器☘️ **/
-    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body') => {
-      const groupDiv = fragment.appendChild(document.createElement('div'));
-      groupDiv.className = 'list';
-    
-      if (title) {
-        const elTitle = groupDiv.appendChild(document.createElement('div'));
-        elTitle.className = headerClass;
-        elTitle.textContent = title;
-      }
-    
-      const elBody = groupDiv.appendChild(document.createElement('div'));
-      elBody.className = bodyClass;
-      return elBody;
-    };
-    
-    /** 创建范围输入元素 **/
-    const createRange = (elBody, item) => {
-      const range = elBody.appendChild(document.createElement('div'));
-      range.innerHTML = \`
-        <label class="collapsible-label" for="collapse-toggle">
-          <div class="form-label">
-            <div class="collapsible-value">${settings.angle || 90}</div>
-          </div>
-          <input id="_range" type="range" value="${settings.angle || 90}" min="0" max="360" step="5">
-          <i class="fas fa-chevron-right icon-right-down"></i>
-        </label>
-        <!-- 折叠取色器 -->
-        <div class="collapsible-range" id="content">
-          <hr class="range-separ2">
-          <label class="form-item">
-            <div class="form-label">
-              <img class="form-label-img" src="\${item.icon}"/>
-              <div class="form-label-title">渐变颜色</div>
-            </div>
-            <input type="color" value="\${settings.rangeColor}" id="color-input">
-          </label>
-        </div>\`;
-    
-      const icon = range.querySelector('.collapsible-label .icon-right-down');
-      const content = range.querySelector('.collapsible-range');
-      const colorInput = range.querySelector('#color-input');
-      const rangeInput = range.querySelector('#_range');
-      let isExpanded = false;
-    
-      const toggleShow = () => {
-        content.classList.toggle('show');
-        isExpanded = !isExpanded;
-        icon.style.transition = 'transform 0.4s';
-        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-      };
-      range.querySelector('.collapsible-label').addEventListener('click', toggleShow);
-    
-      colorInput.addEventListener('change', (e) => {
-        const selectedColor = e.target.value;
-        settings.rangeColor = selectedColor;
-        updateRange();
-        formData[item.color] = selectedColor;
-        invoke('changeSettings', formData);
-      });
-    
-      const updateRange = () => {
-        const value = rangeInput.value;
-        const percent = ((value - rangeInput.min) / (rangeInput.max - rangeInput.min)) * 100;
-        rangeInput.dataset.value = value;
-        rangeInput.style.background = \`linear-gradient(90deg, \${settings.rangeColor} \${percent}%, var(--checkbox) \${percent}%)\`;
-        range.querySelector('.collapsible-value').textContent = value;
-      };
-    
-      rangeInput.addEventListener('input', updateRange);
-      rangeInput.addEventListener('change', (event) => {
-        formData[item.name] = event.target.value;
-        invoke('changeSettings', formData);
-      });
-      updateRange();
-    };
-    
-    /** 创建可折叠列表元素 **/  
-    const createCollapsible = (elBody, item) => {
-      const label = (item) => \`
-        <label id="\${item.name}" class="form-item">
-          <div class="form-label">
-            <img class="form-label-img collapsible-label-img" src="\${item.icon}"/>
-            <div class="form-label-title">\${item.label}</div>
-          </div>
-          \${item.desc ? \`
-          <div class="form-label">
-            <div id="\${item.name}-desc" class="form-item-right-desc">\${item.desc}</div>
-            <i class="iconfont icon-arrow_right"></i>
-          </div>\` : \`
-          <i class="iconfont icon-arrow_right"></i>\`}
-        </label>\`;
-    
-      const collapsible = elBody.appendChild(document.createElement('div'));
-      collapsible.innerHTML = \`
-        <label class="collapsible-label" for="collapse-toggle">
-          <div class="form-label">
-            <img class="form-label-img" src="\${item.icon}"/>
-            <div class="form-label-title">\${item.label}</div>
-          </div>
-          <i class="fas fa-chevron-right icon-right-down"></i>
-        </label>
-        <hr class="separ">
-        <!-- 折叠列表 -->
-        <div class="collapsible-content" id="content">
-          <div class="coll__body">
-            \${item.item.map(item => label(item)).join('')}
-          </div>
-          <hr class="separ">
-        </div>\`;
-    
-      const icon = collapsible.querySelector('.collapsible-label .icon-right-down');
-      const content = collapsible.querySelector('.collapsible-content');
-      let isExpanded = false;
-      
-      collapsible.querySelector('.collapsible-label').addEventListener('click', () => {
-        content.classList.toggle('show');
-        isExpanded = !isExpanded;
-        icon.style.transition = 'transform 0.4s';
-        icon.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
-      });
-    
-      collapsible.querySelectorAll('.form-item').forEach((label, index) => {
-        label.addEventListener('click', () => {
-          const labelId = label.getAttribute('id');
-          invoke(labelId, item.item[index]);
-        });
-      })
-    };
-    
-    //======== 创建列表 ========//
-    const createList = ( list, title ) => {
-      const fragment = document.createDocumentFragment();
-      let elBody;
-    
-      for (const item of list) {
-        if (item.type === 'group') {
-          const grouped = createList(item.items, item.label);
-          fragment.appendChild(grouped);
-        } else if (item.type === 'range') {
-          elBody = createGroup(fragment, title);  
-          createRange(elBody, item);
-        } else if (item.type === 'collapsible') {
-          elBody = createGroup(fragment, title);
-          createCollapsible(elBody, item);
-        } else {
-          if (!elBody) {
-            elBody = createGroup(fragment, title, 'list__header', 'list__body');
-          }
-          const label = createFormItem(item);
-          elBody.appendChild(label);
-        }
-      }
-      return fragment
-    };
-    const fragment = createList(formItems);
-    document.getElementById('settings').appendChild(fragment);
-    
-    /** 加载动画 **/
-    const toggleLoading = (e) => {
-      const target = e.currentTarget;
-      target.classList.add('loading')
-      const icon = target.querySelector('.iconfont');
-      const className = icon.className;
-      icon.className = 'iconfont icon-loading';
-      
-      const listener = (event) => {
-        if (event.detail.code) {
-          target.classList
-            .remove('loading');
-          icon.className = className;
-          window.removeEventListener(
-            'JWeb', listener
-          );
-        }
-      };
-      window.addEventListener('JWeb', listener);
-    };
-    
-    document.querySelectorAll('.form-item').forEach((btn) => {
-      btn.addEventListener('click', (e) => { toggleLoading(e) });
-    });
-    
-    // 切换 appleLogo 黑白主题
-    const appleLogos = document.querySelectorAll('.logo');
-    const toggleLogo = (isDark) => {
-      const newSrc = isDark ? appleLogos[0].dataset.darkSrc : appleLogos[0].dataset.lightSrc;
-      appleLogos.forEach(logo => logo.src = newSrc);
-    };
-      
-    const updateOnDarkModeChange = (event) => toggleLogo(event.matches);
-    const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    toggleLogo(isDarkMode);
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
-    
-    // 监听其他 elementById
-    ['store', 'install', 'app', 'shortcuts'].forEach(id => {
-      const elementById = document.getElementById(id).addEventListener('click', () => invoke(id));
-    });
-
-    })()`;
+    const previewImgUrl = [
+      `${rootUrl}/img/picture/marketCap_1.png`,
+      `${rootUrl}/img/picture/marketCap_0.png`
+    ];
     
     // =======  HTML  =======//
     const html =`
@@ -1580,14 +649,15 @@ input.addEventListener("change", async (e) => {
       <style>${style}</style>
       </head>
       <body>
-        ${avatarInfo ? await mainMenuTop() : (previewImage ? await previewImgHtml() : '')}
+        ${settings.music ? module.musicHtml() : ''}
+        ${avatarInfo ? mainMenu : (previewImage ? await module.previewImgHtml(settings, previewImgUrl) : '')}
         <!-- 弹窗 -->
-        ${previewImage ? await donatePopup() : ''}
-        ${await buttonPopup()}
+        ${previewImage ? await module.donatePopup(appleHub_dark, appleHub_light, collectionCode) : ''}
+        ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${js}</script>
-        ${scriptTags.join('\n')}
+        <script>${await module.runScripts(formItems, settings, 'shortcuts', 'range-separ2')}</script>
+        ${scriptTags}
       </body>
     </html>`;
   
@@ -1605,17 +675,7 @@ input.addEventListener("change", async (e) => {
           const valuesArr = ${JSON.stringify(valuesItems)};
           const selectElement = document.querySelector('[name="selected"]');
           selectElement.innerHTML = valuesArr.map(val => \`<option value="\${val.value}">\${val.label}</option>\`).join('');
-          const length = valuesArr[0].label.length || 4;
-          const width = {
-            7: '128px',
-            6: '111px',
-            5: '94px',
-            4: '77px',
-            3: '60px',
-            2: '43px'
-          };
-          selectElement.style.width = width[Math.min(length, 7)] || '77px'
-
+          selectElement.style.width = '130px'
         })()`, false
       ).catch(console.error);
     };
@@ -1654,7 +714,7 @@ input.addEventListener("change", async (e) => {
      * @returns {Promise<string>}
      */
     const input = async ({ label, name, message, other } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [{
@@ -1665,17 +725,15 @@ input.addEventListener("change", async (e) => {
       async ([{ value }]) => {
         const result = value === '0' || other ? value : !isNaN(value) ? Number(value) : settings[name];
 
-        if ( result ) {
-          settings[name] = result;
-          writeSettings(settings);
-          innerTextElementById(name, result);
-        }
+        settings[name] = result;
+        writeSettings(settings);
+        innerTextElementById(name, result || settings[name]);
       })
     };
     
     // appleOS 推送时段
     const period = async ({ label, name, message } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1708,7 +766,7 @@ input.addEventListener("change", async (e) => {
         const menuId = await alert.presentSheet();
         if (menuId === -1) break;
         
-        const action = await generateAlert(
+        const action = await module.generateAlert(
           subList[menuId].label,
           '是否删除该股票❓',
           options = ['取消', '删除']
@@ -1721,6 +779,7 @@ input.addEventListener("change", async (e) => {
             market: subList[0].market === 'HK' ? 'HK' : 'US',
             values: subList
           };
+          
           writeSettings(newData);
           innerTextElementById(name, settings.values.length);
           updateSelect(subList);
@@ -1730,7 +789,7 @@ input.addEventListener("change", async (e) => {
     
     // 增加股票代码  
     const addStock = async ({ label, message, sta } = data) => {
-      await generateInputAlert({
+      await module.generateInputAlert({
         title: label,
         message: message,
         options: [
@@ -1757,12 +816,13 @@ input.addEventListener("change", async (e) => {
               market,
               values: subList
             };
+
             writeSettings(newData);
             innerTextElementById(sta, subList.length);
             updateSelect(subList);
           }
         } else {
-          notify('请输入有效的股票代码', '只能包含大写字母和数字。或该代码已存在。');
+          module.notify('请输入有效的股票代码', '只能包含大写字母和数字。或该代码已存在')
         }
       });
     };
@@ -1772,11 +832,10 @@ input.addEventListener("change", async (e) => {
       const { label, scrUrl } = JSON.parse(data);
       const fm = FileManager.iCloud()
       const script = await getString(scrUrl);
-      if (!script.includes('DOCTYPE')) {
+      if (script.includes('{')) {
         const scrLable = fm.documentsDirectory() + `/${label}.js`;
         fm.writeString(scrLable, script);
-        await shimoFormData(`install ${label}`);
-        Timer.schedule(650, false, () => Safari.open(`scriptable:///run/${encodeURIComponent(label)}`));
+        Safari.open(`scriptable:///run/${encodeURIComponent(label)}`);
       }
     };
     
@@ -1801,7 +860,7 @@ input.addEventListener("change", async (e) => {
       
       const { code, data } = event;
       if (code === 'clearCache') {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '清除缓存', '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
           options = ['取消', '清除']
         );
@@ -1811,7 +870,7 @@ input.addEventListener("change", async (e) => {
           ScriptableRun();
         }
       } else if (code === 'reset') {
-        const action = await generateAlert(
+        const action = await module.generateAlert(
           '清空所有数据', 
           '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据', 
           ['取消', '重置'], '重置'
@@ -1821,7 +880,7 @@ input.addEventListener("change", async (e) => {
           ScriptableRun();
         }
       } else if ( code === 'recover' ) {
-        const action = await generateAlert(  
+        const action = await module.generateAlert(  
           '是否恢复设置 ？', 
           '用户登录的信息将重置\n设置的数据将会恢复为默认',   
           options = ['取消', '恢复']
@@ -1851,7 +910,7 @@ input.addEventListener("change", async (e) => {
         case 'setAvatar':
           const avatarImage = Image.fromData(Data.fromBase64String(data));
           fm.writeImage(
-            getAvatarImg(), await drawSquare(avatarImage)
+            getAvatarImg(), await module.drawSquare(avatarImage)
           );
           break;
         case 'telegram':
@@ -1893,20 +952,23 @@ input.addEventListener("change", async (e) => {
             await previewWidget();
           }
           break;
-          case 'background':
-          const modulePath = webModule('background.js', `${rootUrl}/main/main_background.js`);
-          if (modulePath != null) {
-            await importModule(await modulePath).main(cacheImg);
-            await previewWidget();
-          }
+        case 'file':
+          const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
+          await importModule(await fileModule).main();
+          break;
+        case 'background':
+          const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
+          await importModule(await modulePath).main(cacheImg);
+          await previewWidget();
           break;
         case 'store':
-          const storeModule = webModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+          const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
           await importModule(await storeModule).main();
-          await myStore();
+          module.myStore();
           break;
         case 'install':
           await updateString();
+          ScriptableRun();
           break;
         case 'itemClick':      
           const findItem = (items) => items.reduce((found, item) => found || (item.name === data.name ? item : (item.type === 'group' && findItem(item.items))), null);
@@ -1932,621 +994,453 @@ input.addEventListener("change", async (e) => {
     await webView.present();
   };
   
-  
-  // 组件信息页
-  const userMenu = (() => {
-    const formItems = [
-      {
-        type: 'group',
-        items: [
-          {
-            label: '炫酷时钟',
-            name: 'clock',
-            type: 'switch',
-            icon: {
-              name: 'button.programmable',
-              color: '#F326A2'
-            }
-          },
-          {
-            label: '图片轮播',
-            name: 'topStyle',
-            type: 'switch',
-            icon: {
-              name: 'photo.tv',
-              color: '#FF9500'
-            }
-          },
-          {
-            label: '列表动画',
-            name: 'animation',
-            type: 'switch',
-            icon: {
-              name: 'rotate.right.fill',  
-              color: '#BD7DFF'
-            },
-            default: true
-          },
-          {
-            label: '动画时间',
-            name: 'fadeInUp',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'clock.fill',
-              color: '#0096FF'
-            },
-            message: '设置时长为0时，列表将无动画效果\n( 单位: 秒 )',
-            desc: settings.fadeInUp
-          },
-          
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '组件推荐',
-            name: 'widgetMsg',
-            type: 'cell',
-            icon: {
-              name: 'doc.text.image',
-              color: '#43CD80'
-            },
-            item: [
-              {
-                label: '交管12123',
-                type: 'card',
-                version: '1.0.1',
-                scrUrl: `${rootUrl}/run/web_module_12123.js`,
-                icon: `${rootUrl}/img/icon/12123.png`
-              },
-              {
-                label: '全国油价',
-                type: 'card',
-                version: '1.0.0',
-                scrUrl: `${rootUrl}/run/web_module_oil_price.js`,
-                icon: `${rootUrl}/img/icon/oilPrice2.png`
-              },
-              {
-                label: '中国电信',
-                type: 'card',
-                version: '1.0.0',
-                scrUrl: `${rootUrl}/run/web_module_china_telecom.js`,
-                icon: `${rootUrl}/img/icon/telecom_2.png`
-              },
-              {
-                label: '开奖结果',
-                type: 'card',
-                version: '1.0.4',
-                scrUrl: `${rootUrl}/run/web_module_lottery.js`,
-                icon: `${rootUrl}/img/icon/lottery.png`
-              },
-              {
-                label: '智慧交通',
-                version: '1.0.0',
-                type: 'card',
-                scrUrl: `${rootUrl}/widget/congest.js`,
-                icon: `${rootUrl}/img/icon/cityCongest.png`
-              },
-              {
-                label: '收支账单',
-                version: '1.0.0',
-                type: 'card',
-                scrUrl: `${rootUrl}/run/web_module_jingDong_bill.js`,
-                icon: `${rootUrl}/img/icon/jingDong.png`
-              },
-              {
-                label: '南网在线',
-                version: '1.0.0',
-                type: 'card',
-                scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
-                icon: `${rootUrl}/img/icon/electric.png`
-              },
-              {
-                label: '负一屏底栏',
-                version: '1.3.0',
-                type: 'card',
-                scrUrl: `${rootUrl}/widget/bottomBar.js`,
-                icon: `${rootUrl}/img/icon/bottomBars.png`
-              },
-              {
-                label: '循环组件',
-                version: '1.0.0',
-                type: 'card',
-                scrUrl: `${rootUrl}/widget/loopScripts.js`,
-                icon: `${rootUrl}/img/icon/loopScript.png`
-              }
-            ]
-          },
-          {
-            label: '组件商店',
-            name: 'store',
-            type: 'cell',
-            icon: {
-              name: 'bag.fill',  
-              color: 'FF6800'
-            }
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: 'AppleOS',
-            name: 'appleOS',
-            type: 'switch',
-            icon: `${rootUrl}/img/symbol/notice.png`
-          },
-          {
-            label: '推送时段',
-            name: 'period',
-            type: 'cell',
-            isAdd: true,
-            icon: {
-              name: 'deskclock.fill',
-              color: '#0096FF'
-            },
-            message: 'iOS 最新系统版本更新通知\n默认 04:00 至 06:00',
-            desc: settings.startTime || settings.endTime ? '已设置' : '默认'
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "donate",
-            label: "打赏作者",
-            type: "cell",
-            icon: `${rootUrl}/img/icon/weChat.png`
-          }
-        ]
-      }
-    ];
-    return formItems;
-  })();
+  // 用户偏好设置菜单
+  const userMenus = module.userMenus(settings, true);
   
   // 设置菜单页
-  const settingMenu = (() => {
-    const formItems = [
-      {
-        label: '设置',
-        type: 'group',
-        items: [
-          {
-            label: '重置所有',
-            name: 'reset',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/reset.png`
-          },
-          {
-            label: '清除缓存',
-            name: 'clearCache',
-            type: 'cell',
-            icon: {
-              name: 'arrow.triangle.2.circlepath',
-              color: '#FF9500'
-            }
-          },
-          {
-            label: '恢复设置',
-            name: 'recover',
-            type: 'cell',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#FF4D3D'
-            }
-          },
-          {
-            label: '刷新时间',
-            name: 'refresh',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/refresh.png`,  
-            message: '设置桌面组件的时长\n( 单位: 分钟 )',
-            desc: settings.refresh
+  const settingMenu = [
+    {
+      label: '设置',
+      type: 'group',
+      items: [
+        {
+          label: '重置所有',
+          name: 'reset',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/reset.png`
+        },
+        {
+          label: '清除缓存',
+          name: 'clearCache',
+          type: 'cell',
+          icon: {
+            name: 'arrow.triangle.2.circlepath',
+            color: '#FF9500'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '股市指数',
-            name: 'index',
-            type: 'select',
-            multiple: false,
-            icon: {
-              name: 'arrow.up.arrow.down',
-              color: '#FF7800'
-            },
-            options: [
-              {
-                values: [
-                  { 
-                    label: '随机显示',
-                    value: 'random'
-                  }
-                ]
-              },
-              {
-                values: [
-                  { 
-                    label: '美股指数',
-                    value: 'us'
-                  },
-                  { 
-                    label: '港股指数',
-                    value: 'hk'
-                  },
-                  { 
-                    label: 'A 股指数',
-                    value: 'a'
-                  }
-                ]
-              }
-            ]
-          },
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "horizontal",
-            label: "水平线色",
-            type: "color",
-            icon: {
-              name: 'chart.line.flattrend.xyaxis',
-              color: '#00C8FF'
-            },
-            default: '#FF0000'
-          },
-          {
-            label: '线透明度',
-            name: 'lineTrans',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'text.line.first.and.arrowtriangle.forward',  
-              color: '#FFC294'
-            },  
-            message: '图表水平线渐变颜色透明度，\n完全透明设置为 0',
-            desc: settings.lineTrans
-          },
-          {
-            name: "charts",
-            label: "柱条数量",
-            type: "cell",
-            input: true,
-            icon: `${rootUrl}/img/symbol/columnChart.png`,
-            desc: settings.charts,
-            message: '柱条顶显示每分钟的成交量，\n在桌面编辑组件的参数中输入"图表"显示柱形图。输入"指数"显示股市指数涨跌组件。'
+        },
+        {
+          label: '恢复设置',
+          name: 'recover',
+          type: 'cell',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#FF4D3D'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "titleColor",
-            label: "公司名称",
-            type: "color",
-            icon: {
-              name: 'checklist',
-              color: '#F9A825'
-            }
+        },
+        {
+          label: '文件管理',
+          name: 'file',
+          type: 'cell',
+          isDesc: true,
+          icon: {
+            name: 'folder.fill',
+            color: '#B07DFF'
           },
-          {
-            name: "columnBarColor",
-            label: "左下柱条",
-            type: "color",
-            icon: {
-              name: 'align.vertical.bottom.fill',
-              color: '#D338FF'
-            }
+          desc: 'Honye'
+        },
+        {
+          label: '刷新时间',
+          name: 'refresh',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/refresh.png`,
+          message: '设置桌面组件的时长\n( 单位: 分钟 )',
+          desc: settings.refresh
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '股市指数',
+          name: 'index',
+          type: 'select',
+          multiple: false,
+          icon: {
+            name: 'arrow.up.arrow.down',
+            color: '#FF7800'
           },
-          {
-            name: "lightColor",
-            label: "白天文字",
-            type: "color",
-            icon: `${rootUrl}/img/symbol/title.png`
-          },
-          {
-            name: "darkColor",
-            label: "夜间文字",
-            type: "color",
-            icon: {
-              name: 'textformat',
-              color: '#938BF0'
-            }
-          },
-        ]
-      },
-      {
-        label: '渐变角度、颜色',
-        type: 'group',
-        items: [
-          {
-            type: 'range',
-            name: 'angle',
-            color: 'rangeColor',
-            icon: {
-              name: 'circle.lefthalf.filled',
-              color: '289CF4'
-            }
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "alwaysDark",
-            label: "始终深色",
-            type: "switch",
-            icon: {
-              name: 'globe.central.south.asia.fill',  
-              color: '#F9A825'
-            }
-          },
-          {
-            name: "solidColor",
-            label: "黑白背景",
-            type: "switch",
-            icon: {
-              name: 'square.filled.on.square',
-              color: '#34C759'
-            }
-          },
-          {
-            label: '内置渐变',
-            name: 'gradient',
-            type: 'select',
-            multiple: true,
-            icon: {
-              name: 'scribble.variable',
-              color: '#B07DFF'
+          options: [
+            {
+              values: [
+                {
+                  label: '随机显示',
+                  value: 'random'
+                }
+              ]
             },
-            options: [
-              {
-                label: 'Group - 1',
-                values: [
-                  { 
-                    label: '#82B1FF',
-                    value: '#82B1FF'
-                  },
-                  {
-                    label: '#4FC3F7',
-                    value: '#4FC3F7'
-                  },
-                  { 
-                    label: '#66CCFF',
-                    value: '#66CCFF'
-                  }
-                ]
-              },
-              {
-                label: 'Group - 2',
-                values: [
-                  { 
-                    label: '#99CCCC',
-                    value: '#99CCCC'
-                  },
-                  { 
-                    label: '#BCBBBB',
-                    value: '#BCBBBB'
-                  },
-                  { 
-                    label: '#A0BACB',
-                    value: '#A0BACB'
-                  },
-                  {
-                    label: '#FF6800',
-                    value: '#FF6800',
-                    disabled: true
-                  }
-                ]
-              }
-            ]
+            {
+              values: [
+                {
+                  label: '美股指数',
+                  value: 'us'
+                },
+                {
+                  label: '港股指数',
+                  value: 'hk'
+                },
+                {
+                  label: 'A 股指数',
+                  value: 'a'
+                }
+              ]
+            }
+          ]
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "horizontal",
+          label: "水平线色",
+          type: "color",
+          icon: {
+            name: 'chart.line.flattrend.xyaxis',
+            color: '#00C8FF'
           },
-          {
-            label: '渐变透明',
-            name: 'transparency',
-            type: 'cell',
-            input: true,
-            icon: `${rootUrl}/img/symbol/masking_2.png`,  
-            message: '渐变颜色透明度，完全透明设置为 0',
-            desc: settings.transparency
+          default: '#FF0000'
+        },
+        {
+          label: '线透明度',
+          name: 'lineTrans',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'text.line.first.and.arrowtriangle.forward',
+            color: '#FFC294'
           },
-          {
-            label: '透明背景',
-            name: 'background',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/transparent.png`
-          },
-          {
-            label: '遮罩透明',
-            name: 'masking',
-            type: 'cell',
-            input: true,
-            icon: {
-              name: 'photo.stack',
-              color: '#8E8D91'
-            },
-            message: '给图片加一层半透明遮罩\n完全透明设置为 0',
-            desc: settings.masking
-          },
-          {
-            label: '图片背景',
-            name: 'chooseBgImg',
-            type: 'file',
-            isAdd: true,
-            icon: `${rootUrl}/img/symbol/bgImage.png`,
-            desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
-          },
-          {
-            label: '清除背景',
-            name: 'clearBgImg',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/clearBg.png`
+          message: '图表水平线渐变颜色透明度，\n完全透明设置为 0',
+          desc: settings.lineTrans
+        },
+        {
+          name: "charts",
+          label: "柱条数量",
+          type: "cell",
+          input: true,
+          icon: `${rootUrl}/img/symbol/columnChart.png`,
+          desc: settings.charts,
+          message: '柱条顶显示每分钟的成交量，\n在桌面编辑组件的参数中输入"图表"显示柱形图。输入"指数"显示股市指数涨跌组件。'
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "titleColor",
+          label: "公司名称",
+          type: "color",
+          icon: {
+            name: 'checklist',
+            color: '#F9A825'
           }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '自动更新',
-            name: 'update',
-            type: 'switch',
-            icon: `${rootUrl}/img/symbol/update.png`
-          },
-          {
-            label: '背景音乐',
-            name: 'music',
-            type: 'switch',
-            icon: {
-              name: 'music.note',  
-              color: '#FF6800'
-            },
-            default: true
+        },
+        {
+          name: "columnBarColor",
+          label: "左下柱条",
+          type: "color",
+          icon: {
+            name: 'align.vertical.bottom.fill',
+            color: '#D338FF'
           }
-        ]
-      },
-    ];
-    return formItems;
-  })();
+        },
+        {
+          name: "lightColor",
+          label: "白天文字",
+          type: "color",
+          icon: `${rootUrl}/img/symbol/title.png`
+        },
+        {
+          name: "darkColor",
+          label: "夜间文字",
+          type: "color",
+          icon: {
+            name: 'textformat',
+            color: '#938BF0'
+          }
+        },
+      ]
+    },
+    {
+      label: '渐变角度、颜色',
+      type: 'group',
+      items: [
+        {
+          type: 'range',
+          name: 'angle',
+          color: 'rangeColor',
+          icon: {
+            name: 'circle.lefthalf.filled',
+            color: '289CF4'
+          }
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "alwaysDark",
+          label: "始终深色",
+          type: "switch",
+          icon: {
+            name: 'globe.central.south.asia.fill',
+            color: '#F9A825'
+          }
+        },
+        {
+          name: "solidColor",
+          label: "黑白背景",
+          type: "switch",
+          icon: {
+            name: 'square.filled.on.square',
+            color: '#34C759'
+          }
+        },
+        {
+          label: '内置渐变',
+          name: 'gradient',
+          type: 'select',
+          multiple: true,
+          icon: {
+            name: 'scribble.variable',
+            color: '#B07DFF'
+          },
+          options: [
+            {
+              label: 'Group - 1',
+              values: [
+                {
+                  label: '#82B1FF',
+                  value: '#82B1FF'
+                },
+                {
+                  label: '#4FC3F7',
+                  value: '#4FC3F7'
+                },
+                {
+                  label: '#66CCFF',
+                  value: '#66CCFF'
+                }
+              ]
+            },
+            {
+              label: 'Group - 2',
+              values: [
+                {
+                  label: '#99CCCC',
+                  value: '#99CCCC'
+                },
+                {
+                  label: '#BCBBBB',
+                  value: '#BCBBBB'
+                },
+                {
+                  label: '#A0BACB',
+                  value: '#A0BACB'
+                },
+                {
+                  label: '#FF6800',
+                  value: '#FF6800',
+                  disabled: true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          label: '渐变透明',
+          name: 'transparency',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/masking_2.png`,
+          message: '渐变颜色透明度，完全透明设置为 0',
+          desc: settings.transparency
+        },
+        {
+          label: '透明背景',
+          name: 'background',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/transparent.png`
+        },
+        {
+          label: '遮罩透明',
+          name: 'masking',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'photo.stack',
+            color: '#8E8D91'
+          },
+          message: '给图片加一层半透明遮罩\n完全透明设置为 0',
+          desc: settings.masking
+        },
+        {
+          label: '图片背景',
+          name: 'chooseBgImg',
+          type: 'file',
+          isDesc: true,
+          icon: `${rootUrl}/img/symbol/bgImage.png`,
+          desc: fm.fileExists(getBgImage()) ? '已添加' : ' '
+        },
+        {
+          label: '清除背景',
+          name: 'clearBgImg',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/clearBg.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '自动更新',
+          name: 'update',
+          type: 'switch',
+          icon: `${rootUrl}/img/symbol/update.png`
+        },
+        {
+          label: '背景音乐',
+          name: 'music',
+          type: 'switch',
+          icon: {
+            name: 'music.note',
+            color: '#FF6800'
+          },
+          default: true
+        }
+      ]
+    },
+  ];
   
   // 主菜单
-  const formItems = (() => {
-    const mainFormItems = [
-      {
-        type: 'group',
-        items: [
-          {
-            label: '设置头像',
-            name: 'setAvatar',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/camera.png`
+  const formItems = [
+    {
+      type: 'group',
+      items: [
+        {
+          label: '设置头像',
+          name: 'setAvatar',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/camera.png`
+        },
+        {
+          label: 'Telegram',
+          name: 'telegram',
+          type: 'cell',
+          icon: `${rootUrl}/img/icon/Swiftgram.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '美股港股',
+          name: 'selected',
+          type: 'select',
+          multiple: false,
+          icon: {
+            name: 'trophy.fill',
+            color: '#00C4B6'
           },
-          {
-            label: 'Telegram',
-            name: 'telegram',
-            type: 'cell',
-            icon: `${rootUrl}/img/icon/Swiftgram.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '美股港股',
-            name: 'selected',
-            type: 'select',
-            multiple: false,
-            icon: {
-              name: 'trophy.fill',
-              color: '#00C4B6'
+          options: [
+            {
+              label: '美股 | 港股',
+              values: [
+                {
+                  label: '随机显示',
+                  value: 'random'
+                }
+              ]
             },
-            options: [
-              {
-                label: '美股 | 港股',
-                values: [
-                  { 
-                    label: '随机显示',
-                    value: 'random'
-                  }
-                ]
-              },
-              {
-                label: ' ',
-                values: settings.values
-              }
-            ]
+            {
+              label: ' ',
+              values: settings.values
+            }
+          ]
+        },
+        {
+          label: '删减股票',
+          name: 'removeStock',
+          type: 'cell',
+          isDesc: true,
+          icon: {
+            name: 'chart.line.downtrend.xyaxis',
+            color: '#FF3300'
           },
-          {
-            label: '删减股票',
-            name: 'removeStock',
-            type: 'cell',
-            isOther: true,
-            icon: {
-              name: 'chart.line.downtrend.xyaxis',
-              color: '#FF3300'
-            },
-            desc: settings.values.length
+          desc: settings.values.length
+        },
+        {
+          label: '添加股票',
+          name: 'addStock',
+          type: 'cell',
+          icon: {
+            name: 'chart.line.uptrend.xyaxis',
+            color: '#FF8800'
           },
-          {
-            label: '添加股票',
-            name: 'addStock',
-            type: 'cell',
-            icon: {
-              name: 'chart.line.uptrend.xyaxis',
-              color: '#FF8800'
-            },
-            sta: 'removeStock'
+          sta: 'removeStock'
+        },
+        {
+          label: '偏好设置',
+          name: 'infoPage',
+          type: 'page',
+          icon: {
+            name: 'person.crop.circle',
+            color: '#43CD80'
           },
-          {
-            label: '偏好设置',
-            name: 'infoPage',
-            type: 'page',
-            icon: {
-              name: 'person.crop.circle',
-              color: '#43CD80'
-            },
-            formItems: userMenu,
-            previewImage: true
+          formItems: userMenus,
+          previewImage: true
+        },
+        {
+          label: '组件设置',
+          name: 'preference',
+          type: 'page',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#0096FF'
           },
-          {
-            label: '组件设置',
-            name: 'preference',
-            type: 'page',
-            icon: {
-              name: 'gearshape.fill',
-              color: '#0096FF'
-            },
-            formItems: settingMenu
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            label: '预览组件',
-            name: 'preview',
-            type: 'cell',
-            icon: `${rootUrl}/img/symbol/preview.png`
-          }
-        ]
-      },
-      {
-        type: 'group',
-        items: [
-          {
-            name: "version",
-            label: "组件版本",
-            type: "cell",
-            icon: {
-              name: 'externaldrive.fill', 
-              color: '#F9A825'
-            },
-            desc: settings.version
+          formItems: settingMenu
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '预览组件',
+          name: 'preview',
+          type: 'cell',
+          icon: `${rootUrl}/img/symbol/preview.png`
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "version",
+          label: "组件版本",
+          type: "cell",
+          icon: {
+            name: 'externaldrive.fill',
+            color: '#F9A825'
           },
-          {
-            name: "updateCode",
-            label: "更新代码",
-            type: "cell",
-            icon: `${rootUrl}/img/symbol/update.png`
-          }
-        ]
-      }
-    ];
-    return mainFormItems;
-  })();
+          desc: settings.version
+        },
+        {
+          name: "updateCode",
+          label: "更新代码",
+          type: "cell",
+          icon: `${rootUrl}/img/symbol/update.png`
+        }
+      ]
+    }
+  ];
   
   // render Widget
   if (!config.runsInApp) {
