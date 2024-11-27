@@ -426,7 +426,7 @@ async function main() {
         
         writeSettings(settings);
         innerTextElementById(name, imei && password ? '已登录' : '未登录')
-        await previewWidget();
+        await previewWidget('medium');
       });
     };
     
