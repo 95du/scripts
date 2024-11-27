@@ -115,7 +115,7 @@ async function main() {
     ? module.getSettings() 
     : initSettings();
   
-  const { imei, password, aMapkey, tokenUrl, touser, agentid } = settings || {};
+  const { imei, password, aMapkey, deviceName, tokenUrl, touser, agentid } = settings || {};
   
   /**
    * 检查并下载远程依赖文件
@@ -543,7 +543,7 @@ async function main() {
           options = ['取消', '恢复']
         );
         if ( action === 1 ) {
-          const reserve = { ...DEFAULT, imei, password, aMapkey, tokenUrl, touser, agentid }
+          const reserve = { ...DEFAULT, imei, password, deviceName, aMapkey, tokenUrl, touser, agentid };
           writeSettings(reserve);
           ScriptableRun();
         }
