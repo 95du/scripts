@@ -246,7 +246,14 @@ async function main(family) {
   
   const logoUrl = setting.logo || 'https://raw.githubusercontent.com/95du/scripts/master/img/car/maybachLogo.png';
   
-  const icons = ['car.rear.and.tire.marks', 'minus.plus.and.fluid.batteryblock', 'auto.headlight.low.beam.fill', 'figure.seated.side.air.upper'];
+  const icons = [
+    { name: 'car.rear.and.tire.marks', color: Color.orange() },
+    { name: 'minus.plus.and.fluid.batteryblock', color: Color.red() },
+    { name: 'auto.headlight.low.beam.fill', color: Color.green() },
+    { name: 'figure.seated.side.air.upper', color: Color.blue() }
+  ];
+  
+  const screenSize = Device.screenSize().height;
   
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
@@ -790,11 +797,10 @@ async function main(family) {
     const progressColor = speed <= 90 ? "#FF9500" : speed <= 120 ? '#A85EFF' : '#FF0000';
     
     const widget = new ListWidget();
-    widget.setPadding(2, 0, 0, 0);
-    
+    widget.setPadding(screenSize < 926 ? 0 : 2, 0, 2, 0);
     const stack = widget.addStack();
     stack.layoutHorizontally();
-    stack.setPadding(0, 0, -50, 0);
+    stack.setPadding(0, 0, screenSize < 926 ? -45 : -50, 0);
     stack.addSpacer();
     const halfCircleImage = await drawSpeedArc(speed, progressColor);
     stack.addImage(halfCircleImage);
@@ -815,7 +821,7 @@ async function main(family) {
     buttonStack.addSpacer();
     
     const barStack = buttonStack.addStack();
-    barStack.size = new Size(120, 30);
+    barStack.size = new Size(120, 30)
     barStack.setPadding(6, 0, 6, 0);
     barStack.cornerRadius = 9
     barStack.borderColor = new Color(progressColor, 0.5);
@@ -827,9 +833,10 @@ async function main(family) {
     iconStack.addSpacer();
     
     for (item of icons) {
-      const barIcon = SFSymbol.named(item);
+      const barIcon = SFSymbol.named(item.name);
       const icon = iconStack.addImage(barIcon.image);
       icon.imageSize = new Size(18, 18);
+      icon.tintColor = item.color;
       iconStack.addSpacer();
     };
     
@@ -856,7 +863,6 @@ async function main(family) {
       Script.setWidget(widget);
       Script.complete();
     }
-    
   };
   await runWidget();
 };
