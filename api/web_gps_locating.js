@@ -214,8 +214,6 @@ async function main(family) {
     const { code, data } = await makeRequest(url, params);
     if (code === 0) {
       return { speed, chargeState, percentageElectricQuantity } = data;  
-    } else {
-      await fetchToken();
     }
   };
   
@@ -245,6 +243,8 @@ async function main(family) {
   const mapUrl = `https://maps.apple.com/?q=${encodeURIComponent(deviceName)}&ll=${latitude},${longitude}&t=m`;
 
   const [ state, status ] = speed <= 5 ? ['已静止', '[ 车辆静止中 ]'] : [`${speed} km·h`, `[ 车速 ${speed} km·h ]`];
+  
+  const logoUrl = setting.logo || 'https://raw.githubusercontent.com/95du/scripts/master/img/car/maybachLogo.png';
   
   const icons = ['car.rear.and.tire.marks', 'minus.plus.and.fluid.batteryblock', 'auto.headlight.low.beam.fill', 'figure.seated.side.air.upper'];
   
@@ -478,7 +478,6 @@ async function main(family) {
     logoStack.setPadding(2, 0, 0, 6);
     logoStack.addSpacer();
     
-    const logoUrl = setting.logo || 'https://raw.githubusercontent.com/95du/scripts/master/img/car/maybachLogo.png';  
     const logoName = logoUrl.split('/').pop();
     const carLogo = await getCacheImage(logoName, logoUrl);
     const image = logoStack.addImage(carLogo);
