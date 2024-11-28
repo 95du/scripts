@@ -640,10 +640,16 @@ svg {
 /** 滑动卡片 **/
 .card-container {
   display: flex;
+  justify-content: center;
+  align-items: center;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   gap: 5px;
+  max-width: 600px; /* 根据需要调整 */
+  margin: 0 auto;  /* 居中容器 */
   width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
 }
 
 .card-container::-webkit-scrollbar {
@@ -748,6 +754,10 @@ button .iconfont {
   margin: 15px;
 }
 
+.list__2 {
+  margin: 0px;
+}
+
 .el__header {
   padding: 0 20px;
   font-size: 13px;
@@ -778,6 +788,12 @@ button .iconfont {
 
 .custom-iframe {
   height: 0px;
+}
+
+/* list__2 图片尺寸 */
+.formItems-label-img {
+  width: 28px;
+  height: 28px;
 }
 
 .form-item {
