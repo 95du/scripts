@@ -1038,7 +1038,7 @@ class _95du {
           detail: formData,
         });
         invoke('changeSettings', formData);
-        switchBox(formData);
+        if (name === 'music') switchBox(formData);
         window.dispatchEvent(event);
       }
       
