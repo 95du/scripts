@@ -26,7 +26,7 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie() {
-    if ($request && ($request.url.includes('repo') || $request.url.includes('home')) && $request.headers) {
+    if ($request && $request.url.includes('repo') && $request.headers) {
       debug($request.headers);
       if ($request['headers']['Cookie'] !== $.cookie) {
         $.cookie = $request['headers']['Cookie'];
