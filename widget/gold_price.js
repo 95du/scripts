@@ -19,7 +19,7 @@ const configs = {
     indexSize: 19
   }
 }[config.widgetFamily] || {
-  total: 36,
+  total: 32,
   slice: 28,
   stackSize: 22,
   indexSize: 20
@@ -113,8 +113,8 @@ const max = Math.max(...data.map(item => item.q2));
 
 let name = data[0].showName;
 if (random === 0) name = current.showName;
-  
-const currentPrice = (current.q5).toFixed(2);
+  console.log(current)
+const currentPrice = (current.q63).toFixed(2);
 const percent = (current.q80).toFixed(2);
 
 //
