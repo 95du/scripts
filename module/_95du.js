@@ -609,7 +609,7 @@ class _95du {
     if (creationDate) {
       isInitialized = Date.now() - creationDate.getTime() > 300000;
     }
-    return this.settings.version !== version ? '.signin-loader' : (isInitialized && this.settings.loader !== '95du' ? '.signup-loader' : null);
+    return this.settings.version !== version ? '.signin-loader' : (isInitialized && this.settings.loader !== '95du' || this.settings.donate ? '.signup-loader' : null);
   };
   
   // 用户偏好设置菜单
