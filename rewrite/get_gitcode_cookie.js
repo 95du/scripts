@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-blue; icon-glyph: magic;
 /*
 脚本名称：获取GitCode代码仓Cookie
 更新时间：2023-02-02
@@ -23,7 +26,7 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie() {
-    if ($request && $request.url.indexOf("home") > -1 && $request.headers) {
+    if ($request && ($request.url.includes('repo') || $request.url.includes('home')) && $request.headers) {
       debug($request.headers);
       if ($request['headers']['Cookie'] !== $.cookie) {
         $.cookie = $request['headers']['Cookie'];
