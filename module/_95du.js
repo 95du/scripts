@@ -998,6 +998,8 @@ class _95du {
       content = `<div class="card-container">${this.cardHtml?.(formItems)}</div>`;
     };
     
+    const height = avatarInfo && toggle ? '280px' : '260px';
+    
     const js = `
       const menuMask = document.querySelector(".popup-mask")
       const showMask = async (callback, isFadeIn) => {
@@ -1016,9 +1018,9 @@ class _95du {
   
       function switchDrawerMenu() {
         const popup = document.querySelector(".popup-container");
-        const isOpenPopup = popup.style.height !== '260px';
+        const isOpenPopup = popup.style.height !== '${height}';
         showMask(isOpenPopup ? null : () => (menuMask.style.display = "none"), isOpenPopup);
-        popup.style.height = isOpenPopup ? '260px' : '';
+        popup.style.height = isOpenPopup ? '${height}' : '';
         ${widgetMessage ? (!avatarInfo ? 'isOpenPopup && typeNextChar()' : '') : ''}
       };
       
@@ -1026,7 +1028,7 @@ class _95du {
         hidePopup();
         const item = JSON.stringify({ label, scrUrl });
         const event = new CustomEvent('JBridge', { detail: { code: param, data: item } });
-        setTimeout(() => window.dispatchEvent(event), 600);
+        setTimeout(() => window.dispatchEvent(event), 800);
       }
       
       // 弹窗内按钮切换事件
@@ -1073,14 +1075,14 @@ class _95du {
     
     const style = `
       .custom-img {
-        margin-bottom: 5px;
+        margin-bottom: 10px;
       }
       
       .popup-widget {
         clear: both;
         padding: 10px 0;
         border-radius: var(--main-radius);
-        height: 260px;
+        height: '${height}';
       }
     `;
     
