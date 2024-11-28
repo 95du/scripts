@@ -886,7 +886,17 @@ class _95du {
    * @param {Array} 卡片内容
    * @returns {string} - HTML
    */
-  buttonPopup = ({
+  menulists = async (items) => {
+    return await Promise.all(
+      items.map(async (item) => ({
+        ...item,
+        icon: await this.getCacheDrawSFIcon(item.icon),
+      }))
+    )
+  };
+  
+  buttonPopup = async ({
+    settings,
     widgetMessage = '',
     formItems,
     avatarInfo,
@@ -897,8 +907,97 @@ class _95du {
     buttonColor,
     margin,
     text,
-    text2
+    text2,
+    toggle = false
   }) => {
+    const cells = [
+      {
+        label: '组件脚本',
+        name: 'store',
+        type: 'cell',
+        icon: 'message.circle.fill'
+      }
+    ];
+    
+    const menu = [
+      {
+        label: '捐赠弹窗',
+        name: 'donate',
+        type: 'switch',
+        icon: 'questionmark.circle.fill'
+      },
+      {
+        label: '背景音乐',
+        name: 'music',
+        type: 'switch',
+        icon: 'speaker.wave.2.circle.fill'
+      }
+    ];
+    
+    const [menuItems, cellItems] = await Promise.all([
+      this.menulists(menu),
+      this.menulists(cells),
+    ]);
+    
+    const label = (item) => `
+      <label class="form-item" onclick="clickCard('${item.name}')">
+        <div class="form-label">
+          <img class="formItems-label-img" src="${item.icon}"/>
+          <div class="form-label-title">${item.label}</div>
+        </div>
+        ${
+          item.desc ? `
+            <div class="form-label">
+              <div id="${item.id}-desc" class="form-item-right-desc">${item.desc}</div>
+              <i class="iconfont icon-arrow_right"></i>
+            </div>
+          ` : `<i class="iconfont icon-arrow_right"></i>`
+        }
+      </label>
+    `;
+    
+    const labels = () => `
+    <div class="sign-logo" style="margin-bottom: -10px;">
+      <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+    </div>
+    <div class="list__2">
+      <form class="list__body">
+        ${menuItems.map((item) => `
+          <label class="form-item">
+            <div class="form-label">
+              <img class="formItems-label-img" src="${item.icon}" />
+              <div class="form-label-title">${item.label}</div>
+            </div>
+            <input type="checkbox" role="switch" ${settings[item.name] ? 'checked' : ''} onchange="handleToggle('${item.name}', this.checked)" />
+          </label>
+        `).join('')}
+        ${cellItems.map(item => label(item)).join('')}
+      </form>
+    </div>`;
+    
+    let content = '';
+    if (avatarInfo) {
+      if (toggle) {
+        content = labels();
+      } else {
+        content = `
+          <img id="app" onclick="switchDrawerMenu()" class="app-icon" src="${appImage}">
+          <div style="margin-bottom: ${margin}">${text}</div>
+          <button id="${id}" onclick="hidePopup()" class="but ${buttonColor}">
+            ${text2}
+          </button>
+        `;
+      }
+    } else if (widgetMessage) {
+      content = `
+        <div class="sign-logo" style="margin-bottom: -10px;">
+          <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
+        </div>
+      `;
+    } else {
+      content = `<div class="card-container">${this.cardHtml?.(formItems)}</div>`;
+    };
+    
     const js = `
       const menuMask = document.querySelector(".popup-mask")
       const showMask = async (callback, isFadeIn) => {
@@ -915,25 +1014,45 @@ class _95du {
         requestAnimationFrame(() => animate(performance.now()));
       };
   
-      const switchDrawerMenu = () => {
+      function switchDrawerMenu() {
         const popup = document.querySelector(".popup-container");
-        const isOpenPopup = popup.style.height !== '255px';
+        const isOpenPopup = popup.style.height !== '260px';
         showMask(isOpenPopup ? null : () => (menuMask.style.display = "none"), isOpenPopup);
-        popup.style.height = isOpenPopup ? '255px' : '';
+        popup.style.height = isOpenPopup ? '260px' : '';
         ${widgetMessage ? (!avatarInfo ? 'isOpenPopup && typeNextChar()' : '') : ''}
       };
       
-      const clickCard = (label, scrUrl) => {
+      const clickCard = (param, label, scrUrl) => {
         hidePopup();
         const item = JSON.stringify({ label, scrUrl });
-        const event = new CustomEvent('JBridge', { detail: { code: 1, data: item } });
+        const event = new CustomEvent('JBridge', { detail: { code: param, data: item } });
+        setTimeout(() => window.dispatchEvent(event), 600);
+      }
+      
+      // 弹窗内按钮切换事件
+      const handleToggle = (name, value) => {
+        const formData = { 
+          [name]: value 
+        };
+        const event = new CustomEvent('JBridge', {
+          detail: formData,
+        });
+        invoke('changeSettings', formData);
+        switchBox(formData);
         window.dispatchEvent(event);
+      }
+      
+      function switchBox(formData) {
+        iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
+        const musicInput = document.querySelector('input[name="music"]');
+        if (musicInput) musicInput.checked = formData['music'] = this.checked;
       }
       
       const hidePopup = () => {
         setTimeout(() => switchDrawerMenu(), 300);
       };
-  
+      
+      // 打字动画效果
       const typeNextChar = () => {
         const chatMsg = document.querySelector(".chat-message");
         chatMsg.innerHTML = "";
@@ -951,23 +1070,20 @@ class _95du {
         nextChar();
       };
     `;
-  
-    const content = avatarInfo
-      ? `
-        <img id="app" onclick="switchDrawerMenu()" class="app-icon" src="${appImage}">
-          <div style="margin-bottom: ${margin}">${text}</div>
-        <button id="${id}" onclick="hidePopup()" class="but ${buttonColor}">
-          ${text2}
-        </button>
-      `
-      : widgetMessage
-        ? `
-          <div class="sign-logo" style="margin-bottom: -10px;">
-            <img class="custom-img logo" data-light-src="${appleHub_dark}" data-dark-src="${appleHub_light}" tabindex="0">
-          </div>
-        `
-        : `<div class="card-container">${this.cardHtml(formItems)}</div>`;
-  
+    
+    const style = `
+      .custom-img {
+        margin-bottom: 5px;
+      }
+      
+      .popup-widget {
+        clear: both;
+        padding: 10px 0;
+        border-radius: var(--main-radius);
+        height: 260px;
+      }
+    `;
+    
     return `
       <div class="popup-mask" onclick="switchDrawerMenu()"></div>
       <div class="popup-container">
@@ -978,6 +1094,7 @@ class _95du {
           ${widgetMessage ? `<div class="chat-message"></div>` : ''}
         </div>
       </div>
+      ${avatarInfo ? `<style>${style}</style>` : ''}
       <script>${js}</script>
     `
   };
