@@ -626,7 +626,7 @@ async function main() {
           version: '1.0.0',
           type: 'button',
           scrUrl: `${rootUrl}/update/GitHub_Tool.js`,
-          icon: `${rootUrl}/img/icon/gitHub.png`
+          icon: `${rootUrl}/img/icon/github_logo.png`
         },
         {
           label: '支付宝_SchemeUrl',
