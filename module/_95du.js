@@ -605,11 +605,13 @@ class _95du {
    */
   updatePopup = (version) => {
     const creationDate = this.fm.creationDate(this.settingPath);
-    let isInitialized;
-    if (creationDate) {
-      isInitialized = Date.now() - creationDate.getTime() > 300000;
+    const isInitialized = Date.now() - creationDate.getTime() > 300000;
+  
+    if (isInitialized) {
+      if (this.settings.version !== version) return '.signin-loader';
+      if (this.settings.loader !== undefined && this.settings.loader !== '95du') return '.signup-loader';
+      if (this.settings.donate) return '.signup-loader';
     }
-    return this.settings.version !== version ? '.signin-loader' : isInitialized && this.settings.loader !== '95du' && this.settings.donate ? '.signup-loader' : null;
   };
   
   // 用户偏好设置菜单
