@@ -711,7 +711,7 @@ async function main() {
   //=========> Create <=========//
   const renderWidget = async () => {
     const widget = new ListWidget();
-    widget.setPadding(15, 17, 15, 15)
+    widget.setPadding(15, 18, 15, 18)
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
