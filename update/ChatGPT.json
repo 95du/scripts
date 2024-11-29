@@ -3,8 +3,8 @@
     {
       "primaryGenreName": "Productivity",
       "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/65/e3/2e/65e32e35-b471-7fb6-556f-a0542b0ae3e8/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
-      "currency": "USD",
       "sellerUrl": "https://openai.com/chatgpt",
+      "currency": "USD",
       "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/65/e3/2e/65e32e35-b471-7fb6-556f-a0542b0ae3e8/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
       "ipadScreenshotUrls": [],
       "fileSizeBytes": "75609088",
@@ -189,13 +189,13 @@
       "version": "1.2024.325",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "appletvScreenshotUrls": [],
+      "isGameCenterEnabled": false,
       "genreIds": [
         "6007",
         "6002"
       ],
-      "isGameCenterEnabled": false,
-      "appletvScreenshotUrls": [],
-      "releaseDate": "2023-05-18T07:00:00Z",
       "wrapperType": "software",
       "userRatingCountForCurrentVersion": 1311764,
       "trackId": 6448311069,
