@@ -274,7 +274,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-13%' : '-2%') : (avatarInfo ? '-17%' : '-5%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-13%' : '-2%') : (avatarInfo ? '-18%' : '-5%')};
     }
 
     ${settings.animation ? `
@@ -352,7 +352,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'share', 'range-separ2')}</script>
+        <script>${await module.runScripts(formItems, settings, 'range-separ2')}</script>
         ${scriptTags}
       </body>
     </html>`;
