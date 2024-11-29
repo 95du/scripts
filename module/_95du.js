@@ -1029,12 +1029,8 @@ class _95du {
       
       const clickCard = (param, label, scrUrl) => {
         hidePopup();
-        if (label && scrUrl) {
-          const item = JSON.stringify({ label, scrUrl });
-          invoke(param, item);
-        } else {
-          setTimeout(() => invoke(param), 800);
-        }
+        const item = label && scrUrl ? JSON.stringify({ label, scrUrl }) : '';
+        setTimeout(() => invoke(param, item), item ? 0 : 800);
       };
       
       // 弹窗内按钮切换事件
