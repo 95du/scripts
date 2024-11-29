@@ -30,7 +30,7 @@ $.is_debug = $.getdata('is_debug');
       debug($request.headers);
       if ($request['headers']['Cookie'] !== $.cookie) {
         $.cookie = $request['headers']['Cookie'];
-        if ($.cookie !== undefined && $.cookie.indexOf("UserNick") > -1) {
+        if ($.cookie !== undefined && $.cookie.includes("UserName")) {
           debug($.cookie);
           $.setdata($.cookie, $.cookie_key);
           $.msg($.name + '_Cookie 获取成功', ``, $.cookie);
