@@ -19,7 +19,7 @@ const configs = {
     indexSize: 19
   }
 }[config.widgetFamily] || {
-  total: 32,
+  total: 36,
   slice: 28,
   stackSize: 22,
   indexSize: 20
