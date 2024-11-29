@@ -301,7 +301,7 @@ async function main() {
      */
     const widgetMessage = '功能: 通过GPS设备制作的中小号小组件，显示车辆实时位置、车速、最高时速、行车里程和停车时间等。推送实时静态地图及信息到微信。需申请高德地图 web 服务 Api 类型 key，微信推送需要另外填入企业微信应用的Api信息。';
 
-    const popupHtml = await module.buttonPopup({
+    const popupHtml = module.buttonPopup({
       widgetMessage,
       formItems,
       avatarInfo,
@@ -343,7 +343,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'getKey', 'range-separ1')}</script>
+        <script>${await module.runScripts(formItems, settings, 'range-separ1')}</script>
         ${scriptTags}
       </body>
     </html>`;
