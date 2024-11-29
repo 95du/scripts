@@ -241,8 +241,6 @@ async function main() {
     
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
-    
-    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/12123.png`);
 
     const scriptTags = await module.scriptTags();
 
@@ -312,18 +310,14 @@ async function main() {
      */
     const widgetMessage = '1，车辆检验有效期的日期和累积记分。<br>2，准驾车型，换证日期，车辆备案信息。<br>3，支持多车辆、多次违章( 随机显示 )。<br>4，点击违章信息跳转查看违章详情、照片。<br>️注：Sign过期后点击组件上的车辆图片自动跳转到支付宝更新 Sign'
 
-    const popupHtml = await module.buttonPopup({
+    const popupHtml = module.buttonPopup({
+      settings,
       widgetMessage,
       formItems,
       avatarInfo,
-      appImage,
       appleHub_dark,
       appleHub_light,
-      id: 'getKey',
-      buttonColor: 'jb-green',
-      margin: '30px;',
-      text: '组件作者: 95du茅台',
-      text2: '立即获取'
+      toggle: true
     });
     
     /**
@@ -355,7 +349,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'getKey', 'range-separ2')}</script>
+        <script>${await module.runScripts(formItems, settings, 'install', 'range-separ2')}</script>
         ${scriptTags}
       </body>
     </html>`;
