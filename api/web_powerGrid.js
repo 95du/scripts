@@ -138,10 +138,11 @@ async function main(family) {
     });
 
     if (response.sta == 00) {
+      const { totalElectricityYear, totalPowerYear } = response.data;
       const totalArray = response.data.billUserAndYear;
       const eleBill = totalArray[0];
       const lastMonth = eleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      return { lastMonth, ...eleBill, totalArray };
+      return { lastMonth, ...eleBill, totalArray, totalElectricityYear, totalPowerYear };
     }
   };
   
@@ -181,7 +182,9 @@ async function main(family) {
     totalPower: total = '0.00',
     totalElectricity = '0.00',   
     arrears = '0', 
-    isArrears = '0'
+    isArrears = '0',
+    totalElectricityYear = '0.00', 
+    totalPowerYear = '0.00 °'
   } = await getEleBill(areaCode, eleCustId) || {};
   
   /** 
@@ -353,11 +356,11 @@ async function main(family) {
 
     const addTextStack = (text, font, opacity, addSpacer) => {
       const stack = quotaStack.addStack();
-      if (spacer) stack.addSpacer();
-      const quotaText = stack.addText(text);
+      if (spacer || spacer === 1) stack.addSpacer();
+      const quotaText = stack.addText(`${text}`);
       quotaText.font = font;
       if (opacity) quotaText.textOpacity = opacity;
-      if (!spacer) stack.addSpacer();
+      if (!spacer || spacer === 1)  stack.addSpacer();
       if (!addSpacer) quotaStack.addSpacer(3);
     };
 
@@ -484,6 +487,7 @@ async function main(family) {
     * @param {string} string
     */
     const middleStack = mainStack.addStack();
+    middleStack.url = alipayUrl;
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
@@ -498,13 +502,8 @@ async function main(family) {
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(127, 60);
-      drawImage.url = alipayUrl;
     } else {
-      const icon = await module.getCacheData(logo);
-      const iconElement = middleStack.addImage(icon);
-      iconElement.imageSize = new Size(55, 55);
-      iconElement.centerAlignImage();
-      iconElement.url = alipayUrl;
+      createStack(middleStack, 1, `${year} 年`, totalPowerYear, totalElectricityYear);
     };
     
     /** Middle Right Stack **/
