@@ -874,7 +874,7 @@ class _95du {
         <img src="${i.icon}">
         <span>${i.label}</span>
         <p>${i.version}</p>
-        <button class="but" style="background-color: #FF9000" onclick="clickCard('${i.label}', '${i.scrUrl}')">获 取</button>
+        <button class="but" style="background-color: #FF9000" onclick="clickCard(1, '${i.label}', '${i.scrUrl}')">获 取</button>
       </div>`) || []
     )
   ).join('');
@@ -982,10 +982,9 @@ class _95du {
       } else {
         content = `
           <img id="app" onclick="switchDrawerMenu()" class="app-icon" src="${appImage}">
-          <div style="margin-bottom: ${margin}">${text}</div>
-          <button id="${id}" onclick="hidePopup()" class="but ${buttonColor}">
-            ${text2}
-          </button>
+          <div style="margin-bottom: ${margin}">${text}</div>  
+          <div style="margin-bottom: 25px;"></div>
+          <button class="but ${buttonColor}" onclick="clickCard('${id}')">${text2}</button>
         `;
       }
     } else if (widgetMessage) {
@@ -1024,34 +1023,30 @@ class _95du {
         ${widgetMessage ? (!avatarInfo ? 'isOpenPopup && typeNextChar()' : '') : ''}
       };
       
+      const hidePopup = () => {
+        setTimeout(() => switchDrawerMenu(), 300);
+      };
+      
       const clickCard = (param, label, scrUrl) => {
         hidePopup();
-        const item = JSON.stringify({ label, scrUrl });
-        const event = new CustomEvent('JBridge', { detail: { code: param, data: item } });
-        setTimeout(() => window.dispatchEvent(event), 800);
-      }
+        if (label && scrUrl) {
+          const item = JSON.stringify({ label, scrUrl });
+          invoke(param, item);
+        } else {
+          setTimeout(() => invoke(param), 800);
+        }
+      };
       
       // 弹窗内按钮切换事件
       const handleToggle = (name, value) => {
-        const formData = { 
-          [name]: value 
-        };
-        const event = new CustomEvent('JBridge', {
-          detail: formData,
-        });
-        invoke('changeSettings', formData);
-        if (name === 'music') switchBox(formData);
-        window.dispatchEvent(event);
-      }
+        invoke('changeSettings', { [name]: value });
+        if (name === 'music') switchBox({ [name]: value });
+      };
       
       function switchBox(formData) {
         iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
         const musicInput = document.querySelector('input[name="music"]');
         if (musicInput) musicInput.checked = formData['music'] = this.checked;
-      }
-      
-      const hidePopup = () => {
-        setTimeout(() => switchDrawerMenu(), 300);
       };
       
       // 打字动画效果
@@ -1155,7 +1150,7 @@ class _95du {
    * @returns {string} 返回嵌入页面的 JavaScript 脚本 (设置js)
    * @returns {Image} 返回页面图标图片
    */
-  runScripts = async (formItems, settings, elementId, separ) => {
+  runScripts = async (formItems, settings, separ) => {
     // 批量处理图标加载  
     const getAndBuildIcon = async (item) => {
       const { icon } = item;
@@ -1627,7 +1622,7 @@ input.addEventListener("change", async (e) => {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
     
     // 监听其他 elementById
-    ['${elementId}', 'store', 'install', 'app'].forEach(id => {
+    ['store', 'install', 'app'].forEach(id => {
       const elementById = document.getElementById(id).addEventListener('click', () => invoke(id));
     });
     
