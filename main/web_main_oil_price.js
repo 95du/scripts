@@ -212,8 +212,6 @@ async function main() {
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
     
-    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/oilPrice2.png`);
-    
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
     const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
@@ -284,16 +282,12 @@ async function main() {
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
     const popupHtml = module.buttonPopup({
+      settings,
       formItems,
       avatarInfo,
-      appImage,
       appleHub_dark,
       appleHub_light,
-      id: 'alipay',
-      buttonColor: 'jb-green',
-      margin: '30px;',
-      text: '全国油价调整预警',
-      text2: '查看'
+      toggle: true
     });
     
     /**
@@ -324,7 +318,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'adjustment', 'range-separ1')}</script>
+        <script>${await module.runScripts(formItems, settings, 'install', 'range-separ1')}</script>
         ${scriptTags}
       </body>
     </html>`;
