@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: purple; icon-glyph: atom;
+// icon-color: purple; icon-glyph: splotch;
 /**
  * 组件作者：95du茅台
  * 组件名称: 节日倒计时
@@ -56,7 +56,7 @@ const autoUpdate = async () => {
 };
 
 const shimoFormData = () => {
-  const req = new Request(atob('aHR0cHM6Ly9zaGltby5pbS9hcGkvbmV3Zm9ybXMvZm9ybXMvOE5rNmV2Wng0S1NqNE5xTC9zdWJtaXQ='));
+  const req = new Request('https://shimo.im/api/newforms/forms/8Nk6evZx4KSj4NqL/submit');
   req.method = 'POST';
   req.headers = {
     'Content-Type': 'application/json;charset=utf-8',
@@ -160,7 +160,7 @@ const drawCircle = async () => {
 
 const setBackground = async (widget) => {
   if (daysUntil > 0) {
-    widget.backgroundImage = await getCacheData('background.jpeg', 'https://raw.githubusercontent.com/95du/scripts/master/img/picture/background_festival.jpeg');
+    widget.backgroundImage = await getCacheData('background.png', 'https://sweixinfile.hisense.com/media/M00/8C/2B/Ch4FyWdJ-dKAQ8zNAA1BuzEeeSc937.png');
   } else {
     const solarTerms = ['立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒'];
     const termColor = [new Color('#7B417B'), new Color('#E796B7')];  
