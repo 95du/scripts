@@ -711,10 +711,11 @@ async function main() {
   //=========> Create <=========//
   const renderWidget = async () => {
     const widget = new ListWidget();
-    widget.setPadding(15, 18, 15, 18)
+    widget.setPadding(15, 15, 15, 15)
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
+    mainStack.addSpacer();
     
     const leftStack = mainStack.addStack();
     leftStack.layoutVertically();
@@ -863,6 +864,7 @@ async function main() {
     
     widget.url = `https://www.laohu8.com/m/hq/s/${stockCode}/wiki`;
     if (familySize) await setBackground(widget);
+    mainStack.addSpacer();
     return widget;
   };
   
