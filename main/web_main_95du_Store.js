@@ -288,7 +288,7 @@ async function main() {
         {
           label: '黄金时价',
           desc: '十大珠宝品牌黄金价格',
-          version: '1.0.1',
+          version: '1.0.2',
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/gold_price.js`,
@@ -403,7 +403,7 @@ async function main() {
         {
           label: '车辆_GPS',
           desc: '行车速度，实时定位',
-          version: '1.1.0',
+          version: '1.3.0',
           type: 'button',
           recommend: true,
           random: true,
@@ -437,7 +437,7 @@ async function main() {
         {
           label: '南网在线',
           desc: '昨日用电量，账单',
-          version: '1.1.0',
+          version: '1.1.5',
           type: 'button',
           recommend: true,
           random: true,
@@ -563,7 +563,7 @@ async function main() {
         {
           label: '随机组件',
           desc: '随机切换多个小组件',
-          version: '1.1.5',
+          version: '1.0.0',
           type: 'button',
           scrUrl: `${rootUrl}/widget/randomScript.js`,
           icon: `${rootUrl}/img/icon/random_2.jpeg`
@@ -620,6 +620,14 @@ async function main() {
       label: '工具类',
       type: 'group',
       items: [
+        {
+          label: 'GitHub Tool',
+          desc: '上传图片代码，更新代码',
+          version: '1.0.0',
+          type: 'button',
+          scrUrl: `${rootUrl}/update/GitHub_Tool.js`,
+          icon: `${rootUrl}/img/icon/gitHub.png`
+        },
         {
           label: '支付宝_SchemeUrl',
           desc: '跳转支付宝App指定页面',
@@ -998,7 +1006,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${183 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${188 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
