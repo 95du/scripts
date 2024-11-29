@@ -250,7 +250,7 @@ async function main() {
   
   // ===========图表============ //
   const headers = {
-    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzI3MjgyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiUjVNUHlibUM5Z0VRNWNQUzJvZ2VTVkJlcGpuemp1YnNJb2xDSE1PUXR2dFJ5eVdrWlIifQ.YGQAbrY4_YkBUK-rwlbN2HpQ4qCUoXeMBqaRvHcBAbgCJfwTIZyJvowr4SYp2uSowTjvuMB5hmyBLh6aLtTHbQ'
+    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzUzMjAyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiWTdhaDNZZHQ0VjBRQzlBMzRBNm5nVFBPbm12WXo4OEtGUmgzZ0psSHBlbGJDTEdVM0wifQ.mnSpunYp1VIw0rNsfl2Gq1sbi8OfeJnslv_fVlAJORfBgFx88j4f9awSzTEL452KzpaPGCMPWKDpW6__8A2HEg'
   };
   
   const getColor = (value) => {
