@@ -19,16 +19,22 @@
 
 async function main() {
   const fm = FileManager.local();
-  const mainPath = fm.joinPath(fm.documentsDirectory(), '95du_marketCap');
-  const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
+  const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
+  const isDev = false
   
-  const getCachePath = (dirName) => fm.joinPath(mainPath, dirName);
+  if (typeof require === 'undefined') require = importModule;
+  const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
   
-  const [ settingPath, cacheImg, cacheStr ] = [
-    'setting.json',
-    'cache_image',
-    'cache_string',
-  ].map(getCachePath);
+  const pathName = '95du_marketCap';
+  const module = new _95du(pathName);
+  const setting = module.settings;
+  
+  const { 
+    rootUrl,
+    settingPath, 
+    cacheImg, 
+    cacheStr,
+  } = module;
   
   /**
    * 存储当前设置
@@ -42,71 +48,16 @@ async function main() {
   };
   
   /**
-   * 读取储存的设置
-   * @returns {object} - 设置对象
-   */
-  const getBotSettings = (file) => {
-    if (fm.fileExists(file)) return JSON.parse(fm.readString(file));
-    return {};
-  };
-  const setting = await getBotSettings(settingPath);
-  
-  /**  
-   * 弹出通知  
-   * @param {string} title
-   * @param {string} body
-   * @param {string} url
-   * @param {string} sound
-   */
-  const notify = (title, body, url, opts = {}) => {
-    const n = Object.assign(new Notification(), { title, body, sound: 'default', ...opts });
-    if (url) n.openURL = url;
-    n.schedule();
-  };
-  
-  /**
    * 获取背景图片存储目录路径
    * @returns {string} - 目录路径
    */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
-  async function shadowImage(img) {
-    let ctx = new DrawContext();
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']))
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']))
-    return await ctx.getImage()
-  };
-  
-  /**
-   * 写入读取json字符串并使用缓存
-   * @param {string} File Extension
-   * @param {Image} Basr64 
-   * @returns {string} - Request
-   */
-  const useFileManager = () => {
-    const fullPath = (name) => fm.joinPath(cacheImg, name);
-    return {
-      readImage: (name) => fm.fileExists(fullPath(name)) ? fm.readImage(fullPath(name)) : null,
-      writeImage: (name, image) => fm.writeImage(fullPath(name), image)
-    };
-  };
-  
-  const getCacheImage = async (name, url) => {
-    const cache = useFileManager();
-    const image = cache.readImage(name);
-    if (image) return image;
-    const img = await new Request(url).loadImage();
-    cache.writeImage(name, img);
-    return img;
-  };
-  
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
   // 获取 access_token
   const access_token = async () => {
-    const html = await new Request('https://www.laohu8.com/m/hq/s/AAPL/wiki').loadString()
+    const html = await module.getCacheData('https://www.laohu8.com/m/hq/s/AAPL/wiki', 72)
     const webView = new WebView();
     await webView.loadHTML(html);
     const headers = await webView.evaluateJavaScript(`
@@ -569,7 +520,7 @@ async function main() {
   
   // 交易状态变化通知
   if (marketStatusCode !== setting.statusCode) {
-    notify(`${nameCN} ( ${symbol} ) ${marketStatusCode}`, `[ ${marketStatus} ] 最新价格: ${latestPrice.toFixed(2)}，市值: ${totalMarketCap}${totalUnit}`);
+    module.notify(`${nameCN} ( ${symbol} ) ${marketStatusCode}`, `[ ${marketStatus} ] 最新价格: ${latestPrice.toFixed(2)}，市值: ${totalMarketCap}${totalUnit}`);
     
     if (marketStatusCode === 2) {
       setting.items = await getStockTrend();
@@ -686,7 +637,8 @@ async function main() {
   const setBackground = async (widget) => {
     const bgImage = getBgImage();
     if (fm.fileExists(bgImage)) {
-      widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
+      const image = fm.readImage(bgImage);
+      widget.backgroundImage = await module.shadowImage(image);
     } else if (!setting.solidColor && !Device.isUsingDarkAppearance()) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
@@ -710,9 +662,8 @@ async function main() {
       const urls = [
         `${rootUrl}/img/background/glass_1.png`,  
         `${rootUrl}/img/background/glass_2.png`];
-      const randomUrl = getRandomItem(urls);
-      const name = randomUrl.split('/').pop();
-      const randomBackgroundImage = await getCacheImage(name, randomUrl);
+      const randomUrl = module.getRandomItem(urls);
+      const randomBackgroundImage = await module.getCacheData(randomUrl);
       widget.backgroundImage = randomBackgroundImage;
     }
   };
@@ -774,8 +725,7 @@ async function main() {
     if (familySize) {
       for (item of !market ? usIcons : hkIcons) {
         stateStack.addSpacer(3);
-        const urlName = item.split('/').pop();
-        const icons = await getCacheImage(urlName, item);
+        const icons = await module.getCacheData(item);
         const shareIcon = stateStack.addImage(icons);
         shareIcon.imageSize = new Size(17, 17);
       }
