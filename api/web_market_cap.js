@@ -104,6 +104,21 @@ async function main() {
   
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
+  // 获取boxjs数据
+  const getBoxjs = async () => {
+    try {
+      const boxjs_data = await new Request('http://boxjs.com/query/data/laohu8_Authorization').loadJSON();
+      const { val } = boxjs_data;
+      if (val) {
+        return { Authorization: val };
+        console.log(val);
+      }
+      Safari.openInApp('https://www.laohu8.com/m/hq/s/AAPL/wiki', false)
+    } catch(e) {
+      console.log('获取 boxjs 数据失败 ⚠️', '需打开Quantumult-X获取Cookie');
+    }
+  };
+  
   // ===========指数============ //
   const getIndex = async (index) => {
     const { data } = await new Request(`https://betaapi.zhitongcaijing.com/market/quote/market-index.html?area=app_index&dev=0&mainland=1&market=${index}`).loadJSON();
@@ -249,10 +264,6 @@ async function main() {
   };
   
   // ===========图表============ //
-  const headers = {
-    Authorization: 'Bearer eyJhbGciOiJFUzI1NiIsImtpZCI6IjVVQzB5NGhnUXUiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3MzUzMjAyMDUsImlzcyI6IkNITiIsIm5vbmNlIjoiWTdhaDNZZHQ0VjBRQzlBMzRBNm5nVFBPbm12WXo4OEtGUmgzZ0psSHBlbGJDTEdVM0wifQ.mnSpunYp1VIw0rNsfl2Gq1sbi8OfeJnslv_fVlAJORfBgFx88j4f9awSzTEL452KzpaPGCMPWKDpW6__8A2HEg'
-  };
-  
   const getColor = (value) => {
     const thresholds = [5, 10, 15, 20, 25];
     const colors = [
@@ -303,8 +314,8 @@ async function main() {
     try {
       const stockInfo = tradeStatus ? 'time_trend' : 'candle_stick';
       const url = `https://hq.laohu8.com/${market}/stock_info/${stockInfo}/day/${stockCode}?lang=zh_CN&manualRefresh=true`;
-      const request = await new Request(url);
-      request.headers = headers;
+      const request = new Request(url);
+      request.headers = await getBoxjs();
       const { items } = await request.loadJSON();
       
       if (items?.length === 1) {
@@ -476,15 +487,16 @@ async function main() {
   const fetchData = async () => {
     try {
       const request = new Request(`https://hq.laohu8.com/${market}stock_info/detail/${stockCode}?lang=zh_CN`);
-      request.headers = headers;
+      request.headers = await getBoxjs();
       const { items } = await request.loadJSON();
-      return items[0];
+      return items?.[0];
     } catch (error) {
+      Safari.openInApp('https://www.laohu8.com/m/hq/s/AAPL/wiki', false)
       console.error(error);
     }
   };
   
-  const { symbol, nameCN, marketStatus, marketStatusCode, latestTime, latestPrice, change, preClose, postHourTrading, high, low, volume, open, shares, floatShares, amount, eps, ttmEps } = await fetchData();
+  const { symbol, nameCN, marketStatus, marketStatusCode, latestTime, latestPrice, change, preClose, postHourTrading, high, low, volume, open, shares, floatShares, amount, eps, ttmEps } = await fetchData() || {};
   
   const colors = [
     '#FFD723', 
