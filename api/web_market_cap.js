@@ -104,19 +104,17 @@ async function main() {
   
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
-  // 获取boxjs数据
-  const getBoxjs = async () => {
-    try {
-      const boxjs_data = await new Request('http://boxjs.com/query/data/laohu8_Authorization').loadJSON();
-      const { val } = boxjs_data;
-      if (val) {
-        return { Authorization: val };
-        console.log(val);
-      }
-      Safari.openInApp('https://www.laohu8.com/m/hq/s/AAPL/wiki', false)
-    } catch(e) {
-      console.log('获取 boxjs 数据失败 ⚠️', '需打开Quantumult-X获取Cookie');
-    }
+  // 获取 access_token
+  const access_token = async () => {
+    const html = await new Request('https://www.laohu8.com/m/hq/s/AAPL/wiki').loadString()
+    const webView = new WebView();
+    await webView.loadHTML(html);
+    const headers = await webView.evaluateJavaScript(`
+      (() => {
+        return SETTINGS.guestUser
+      })();
+    `);
+    return { Authorization: 'Bearer ' + headers.access_token };
   };
   
   // ===========指数============ //
@@ -315,7 +313,7 @@ async function main() {
       const stockInfo = tradeStatus ? 'time_trend' : 'candle_stick';
       const url = `https://hq.laohu8.com/${market}/stock_info/${stockInfo}/day/${stockCode}?lang=zh_CN&manualRefresh=true`;
       const request = new Request(url);
-      request.headers = await getBoxjs();
+      request.headers = await access_token();
       const { items } = await request.loadJSON();
       
       if (items?.length === 1) {
@@ -487,7 +485,7 @@ async function main() {
   const fetchData = async () => {
     try {
       const request = new Request(`https://hq.laohu8.com/${market}stock_info/detail/${stockCode}?lang=zh_CN`);
-      request.headers = await getBoxjs();
+      request.headers = await access_token();
       const { items } = await request.loadJSON();
       return items?.[0];
     } catch (error) {
