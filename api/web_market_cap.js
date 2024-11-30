@@ -86,7 +86,7 @@ async function main() {
    * @returns {string} - Request
    */
   const useFileManager = () => {
-    const fullPath = (name) => fm.joinPath(mainPath, name);
+    const fullPath = (name) => fm.joinPath(cacheImg, name);
     return {
       readImage: (name) => fm.fileExists(fullPath(name)) ? fm.readImage(fullPath(name)) : null,
       writeImage: (name, image) => fm.writeImage(fullPath(name), image)
@@ -489,7 +489,6 @@ async function main() {
       const { items } = await request.loadJSON();
       return items?.[0];
     } catch (error) {
-      Safari.openInApp('https://www.laohu8.com/m/hq/s/AAPL/wiki', false)
       console.error(error);
     }
   };
