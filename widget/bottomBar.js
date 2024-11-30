@@ -42,10 +42,9 @@ const getBgImage = () => fm.joinPath(cache, Script.name());
  * @param { JSON } string
  */
 const setCacheData = (data) => {
-  fm.writeString(cacheFile, JSON.stringify({ ...data, updateTime: Date.now() }, null, 2));
-  console.log(JSON.stringify(
-    data, null, 2
-  ))
+  const cacheData = { ...data, updateTime: Date.now() };
+  fm.writeString(cacheFile, JSON.stringify(cacheData, null, 2));
+  console.log(JSON.stringify(cacheData, null, 2));
 };
 
 const getCacheSetting = () => {
@@ -465,7 +464,7 @@ const downloadModule = async (scriptName, url) => {
   if (fm.fileExists(modulePath)) {
     return modulePath;
   } else {
-    const req = new Request(atob(url));
+    const req = new Request(url);
     const moduleJs = await req.load().catch(() => {
       return null;
     });
@@ -498,7 +497,7 @@ const presentMenu = async() => {
   }
   
   if (menu === 1) {
-    const code = new Request(`${rootUrl}/widget/bottomBar.js`).loadString();
+    const code = await new Request(`${rootUrl}/widget/bottomBar.js`).loadString();
     if (!code.includes('95度茅台')) {
       const finish = new Alert();
       finish.title = "更新失败"
