@@ -616,18 +616,13 @@ async function main() {
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
     const popupHtml = module.buttonPopup({
+      settings,
       formItems,
       avatarInfo,
-      appImage,
       appleHub_dark,
       appleHub_light,
-      id: 'quanX',
-      buttonColor: '',
-      margin: '35px;',
-      text: 'token 十天左右过期，需要重新抓取。',
-      text2: '添加 Quantumult X 重写'
+      toggle: true
     });
-    
     
     /**
      * 组件效果图预览
@@ -916,9 +911,6 @@ async function main() {
           break;
         case 'telegram':
           Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false);
-          break;
-        case 'quanX':
-          Timer.schedule(100, false, () => Safari.open('quantumult-x:///add-resource?remote-resource=%0A%20%20%7B%0A%20%20%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%20%20%22https%3A%2F%2Fraw.githubusercontent.com%2F95du%2Fscripts%2Frefs%2Fheads%2Fmaster%2Frewrite%2Fget_laohu8_Authorization.conf%2C%20tag%3D%E9%AB%98%E5%BE%B7%E4%BC%9A%E5%91%98%E4%B8%AD%E5%BF%83%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%20%20%5D%0A%20%20%7D') );
           break;
         case 'changeSettings':
           Object.assign(settings, data);
