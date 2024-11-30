@@ -120,15 +120,19 @@ async function main() {
   
   // 获取油价预警
   const getOilTips = async () => {
-    const url = 'https://20121212.cn/ci/index.php/tips/get';  
-    const [data] = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
-    const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
-    const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
-    const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
-    
-    return {
-      date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
-      oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
+    try {
+      const url = 'https://20121212.cn/ci/index.php/tips/get';  
+      const [data] = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
+      const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
+      const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
+      const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
+      
+      return {
+        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
+        oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
+      }
+    } catch (e) {
+      console.error('\n⚠️ 无法更新数据，可能节点冲突，请关闭 VPN 后重试。');
     }
   };
   
