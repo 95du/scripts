@@ -274,7 +274,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-13%' : '-2%') : (avatarInfo ? '-18%' : '-5%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-10%' : '-2%') : (avatarInfo ? '-8%' : '-3%')};
     }
 
     ${settings.animation ? `
@@ -912,6 +912,57 @@ async function main() {
       ]
     },
     {
+      type: 'group',
+      items: [
+        {
+          label: '健康达人',
+          type: 'collapsible',
+          name: 'sport',
+          icon: {
+            name: 'bolt.heart.fill',
+            color: '#00C400'
+          },
+          item: [
+            {
+              label: '自动获取',
+              name: 'getFamily',
+              type: 'cell',
+              desc: settings.health ? '已添加' : '未添加',
+              icon: 'flame',
+              descTitle: '健康达人',
+              message: '小号组件: 步数、热量、运动时间\n需要Quantumult-X 辅助运行，\n在下方一键添加重写规则。'
+            },
+            {
+              label: "手动填写",
+              name: "health",
+              type: "cell",
+              input: true,
+              other: true,
+              icon: 'heart',
+              desc: settings.health ? '已添加' : '未添加',
+              message: '小号组件: 步数、热量消耗、运动时间。\n手动抓取方法: 进入家人地图页面，抓包后找到https://m5.amap.com/ws/mapapi/sport/family_sport_space_card开头的请求链接。'
+            },
+            {
+              label: '添加重写',
+              name: 'sport_rewrite',
+              type: 'cell',
+              icon: `${rootUrl}/img/symbol/quantumult-x.png`,
+              desc: 'Quantumult X'
+            }
+          ]
+        },
+        {
+          label: '图标背景',
+          name: 'iconBg',
+          type: 'switch',
+          icon: {
+            name: 'flame.fill',
+            color: '#FE4904'
+          }
+        }
+      ]
+    },
+    {
       label: '渐变角度、颜色',
       type: 'group',
       items: [
@@ -1124,6 +1175,12 @@ async function main() {
               icon: 'questionmark'
             },
             {
+              name: "apply",
+              label: "申请KEY",
+              type: "cell",
+              icon: 'key'
+            },
+            {
               label: '配置规则',
               name: 'boxjs_rewrite',
               type: 'cell',
@@ -1203,7 +1260,7 @@ async function main() {
         }
       ]
     },
-    {
+        {
       type: 'group',
       items: [
         {
@@ -1232,69 +1289,9 @@ async function main() {
           label: "更新代码",
           type: "cell",
           icon: `${rootUrl}/img/symbol/update.png`
-        },
-        {
-          name: "apply",
-          label: "申请KEY",
-          type: "cell",
-          icon: {
-            name: 'map.fill',
-            color: '#FF6800'
-          }
         }
       ]
-    },
-    {
-      type: 'group',
-      items: [
-        {
-          label: '健康达人',
-          type: 'collapsible',
-          name: 'sport',
-          icon: {
-            name: 'bolt.heart.fill',
-            color: '#00C400'
-          },
-          item: [
-            {
-              label: '自动获取',
-              name: 'getFamily',
-              type: 'cell',
-              desc: settings.health ? '已添加' : '未添加',
-              icon: 'flame',
-              descTitle: '健康达人',
-              message: '小号组件: 步数、热量、运动时间\n需要Quantumult-X 辅助运行，\n在下方一键添加重写规则。'
-            },
-            {
-              label: "手动填写",
-              name: "health",
-              type: "cell",
-              input: true,
-              other: true,
-              icon: 'heart',
-              desc: settings.health ? '已添加' : '未添加',
-              message: '小号组件: 步数、热量消耗、运动时间。\n手动抓取方法: 进入家人地图页面，抓包后找到https://m5.amap.com/ws/mapapi/sport/family_sport_space_card开头的请求链接。'
-            },
-            {
-              label: '添加重写',
-              name: 'sport_rewrite',
-              type: 'cell',
-              icon: `${rootUrl}/img/symbol/quantumult-x.png`,
-              desc: 'Quantumult X'
-            }
-          ]
-        },
-        {
-          label: '图标背景',
-          name: 'iconBg',
-          type: 'switch',
-          icon: {
-            name: 'flame.fill',
-            color: '#FE4904'
-          }
-        }
-      ]
-    },
+    }
   ];
     
   // render Widget
