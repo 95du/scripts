@@ -476,7 +476,8 @@ async function main() {
       });
     
       writeSettings(settings);
-      await module.generateAlert('设置成功', '桌面组件稍后将自动刷新', ['OK']);
+      await previewWidget('medium');
+      await layout({ label, message, name }); // 重复弹窗
     };
     
     // appleOS 推送时段
