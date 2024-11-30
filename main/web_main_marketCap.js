@@ -456,7 +456,8 @@ async function main() {
   const previewWidget = async () => {
     const moduleJs = await module.webModule(scrUrl);
     const { main } = await importModule(moduleJs)
-    await main();
+    
+
     if (settings.update) await updateString();
     shimoFormData('Preview');
   };
@@ -620,11 +621,11 @@ async function main() {
       appImage,
       appleHub_dark,
       appleHub_light,
-      id: 'shortcuts',
+      id: 'quanX',
       buttonColor: '',
       margin: '35px;',
-      text: '全球市值排名前 Top_80',
-      text2: '95du丶茅台'
+      text: 'token 十天左右过期，需要重新抓取。',
+      text2: '添加 Quantumult X 重写'
     });
     
     
@@ -916,8 +917,8 @@ async function main() {
         case 'telegram':
           Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false);
           break;
-        case 'shortcuts':
-          Timer.schedule(650, false, () => Safari.open('https://www.icloud.com/shortcuts/83c8ee56524343b9941648e5d71b81e1'));
+        case 'quanX':
+          Timer.schedule(100, false, () => Safari.open('quantumult-x:///add-resource?remote-resource=%0A%20%20%7B%0A%20%20%20%20%22rewrite_remote%22%3A%20%5B%0A%20%20%20%20%20%20%22https%3A%2F%2Fraw.githubusercontent.com%2F95du%2Fscripts%2Frefs%2Fheads%2Fmaster%2Frewrite%2Fget_laohu8_Authorization.conf%2C%20tag%3D%E9%AB%98%E5%BE%B7%E4%BC%9A%E5%91%98%E4%B8%AD%E5%BF%83%2C%20update-interval%3D172800%2C%20opt-parser%3Dtrue%2C%20enabled%3Dtrue%22%0A%20%20%20%20%5D%0A%20%20%7D') );
           break;
         case 'changeSettings':
           Object.assign(settings, data);
