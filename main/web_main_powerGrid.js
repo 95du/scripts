@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.1.2'
-  const updateDate = '2024年11月22日'
+  const version = '1.1.5'
+  const updateDate = '2024年12月01日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -202,7 +202,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，显示电价档次包括农业用电，用电量占第三档百分比`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加第二个小号组件`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -667,6 +667,18 @@ async function main() {
     {
       type: 'group',
       items: [
+        {
+          label: '排列月份',
+          name: 'column',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'arrow.up.arrow.down',
+            color: '#8C7CFF'
+          },
+          desc: settings.column,
+          message: '输入 1 上月内容显示在顶部'
+        },
         {
           label: '账单通知',
           name: 'notify',
