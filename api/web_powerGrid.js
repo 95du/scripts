@@ -27,7 +27,7 @@ async function main(family) {
   } = module;
   
   const setting = module.settings;
-  const { avatar, useCache, count = 0, token, gap, location, progressWidth, radius } = setting;
+  const { avatar, column = 0, count = 0, token, gap, location, progressWidth, radius } = setting;
 
   /**
    * 存储当前设置
@@ -40,9 +40,6 @@ async function main(family) {
     ))
   };
   
-  const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
-  const logo = 'https://kjimg10.360buyimg.com/jr_image/jfs/t1/205492/13/33247/3505/64ddf97fF4361af37/ffad1b1ba160d127.png';
-  
   /**
    * 该函数获取当前的年份和月份
    * @returns {Promise}
@@ -53,10 +50,105 @@ async function main(family) {
   const currentYear = month === '01' ? year - 1 : year;
   
  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
+  * 获取背景图片存储目录路径
+  * @returns {string} - 目录路径
+  */
   const getBgImage = () => fm.joinPath(cacheImg, Script.name());
+  
+  // ====== 绘制圆柱图形 ====== //
+  const drawBar = (color) => {
+    const context = new DrawContext();
+    context.size = new Size(10, 115);
+    context.respectScreenScale = true;
+    context.opaque = false;
+    context.setStrokeColor(color);
+    context.setLineWidth(10);
+  
+    const path = new Path();
+    path.move(new Point(5, 5));
+    path.addLine(new Point(5, 110));
+    context.addPath(path);
+    context.strokePath();
+    context.setFillColor(color);
+  
+    const ellipseSize = 10;
+    context.fillEllipse(new Rect(0, 0, ellipseSize, ellipseSize));
+    context.fillEllipse(new Rect(0, 105, ellipseSize, ellipseSize));
+    return context.getImage();
+  };
+  
+  // ====== 创建图表(每月用量) ====== //
+  const getTotalPower = (data) => {
+    const total = data?.map(entry => entry.totalElectricity).reverse();
+    while (total?.length < 12) total.push(0);
+    return total?.slice(0, 12);
+  };
+  
+  // 填充矩形
+  const fillRect = (ctx, x, y, width, height, radius, color) => {
+    const path = new Path();
+    path.addRoundedRect(new Rect(x, y, width, height), radius, radius);
+    ctx.addPath(path);
+    ctx.setFillColor(color);
+    ctx.fillPath();
+  };
+  
+  // 图表绘制函数
+  const createChart = (displayData, n, barColor) => {
+    const chartHeight = setting.chartHeight || 70;
+    const paddingTop = 88 - chartHeight;
+    
+    const ctx = new DrawContext();
+    ctx.size = new Size(n * 18 - 10, chartHeight + paddingTop);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    
+    const max = Math.max(...displayData) || 1;
+    const deltaY = chartHeight / max;
+  
+    displayData.forEach((val, i) => {
+      const barHeight = val > 0 ? val * deltaY : max * deltaY;
+      const color = val === 0 
+        ? new Color(barColor, 0.35) 
+        : val == max 
+          ? new Color('#FF6800') 
+          : new Color(barColor);
+  
+      fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
+    });
+  
+    return ctx.getImage();
+  };
+  
+  // ======= 绘制进度条 ======= //
+  const creatProgress =(width, height, percent, isPercent, barColor) => {
+    const cxt = new DrawContext();
+    cxt.opaque = false;
+    cxt.respectScreenScale = true;
+    cxt.size = new Size(width, height);
+    
+    const barPath = new Path();
+    const barHeight = height - 10;
+    barPath.addRoundedRect(new Rect(0, 5, width, barHeight), barHeight / 2, barHeight / 2);
+    cxt.addPath(barPath);
+    cxt.setFillColor(new Color(levelColor, 0.25));
+    cxt.fillPath();
+  
+    const currPath = new Path();
+    currPath.addRoundedRect(new Rect(0, 5, width * percent, barHeight), barHeight / 2, barHeight / 2);
+    cxt.addPath(currPath);
+    cxt.setFillColor(barColor);
+    cxt.fillPath();
+  
+    const circlePath = new Path();
+    const diameter = height * 0.85;
+    circlePath.addEllipse(new Rect((width - diameter) * percent, (height - diameter) / 2, diameter, diameter));
+    cxt.addPath(circlePath);
+    cxt.setFillColor(new Color(levelColor));
+    cxt.fillPath();
+    
+    return cxt.getImage();
+  };
   
   /**
    * 获取 POST JSON 字符串
@@ -239,13 +331,7 @@ async function main(family) {
     };
   };
   
-  const { 
-    tier, 
-    rate, 
-    cost,
-    percent, 
-    isPercent 
-  } = calcElectricBill(totalPower, eleType, areaCode);
+  const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower, eleType, areaCode);
   
   /** -------- 缴费通知 -------- **/
   
@@ -263,50 +349,7 @@ async function main(family) {
     }
   };
   
-  // 创建图表(每月用量)  
-  const getTotalPower = (data) => {
-    const total = data?.map(entry => entry.totalElectricity).reverse();
-    while (total?.length < 12) total.push(0);
-    return total?.slice(0, 12);
-  };
-  
-  // 填充矩形
-  const fillRect = (ctx, x, y, width, height, radius, color) => {
-    const path = new Path();
-    path.addRoundedRect(new Rect(x, y, width, height), radius, radius);
-    ctx.addPath(path);
-    ctx.setFillColor(color);
-    ctx.fillPath();
-  };
-  
-  // 图表绘制函数
-  const createChart = (displayData, n, barColor) => {
-    const chartHeight = setting.chartHeight || 70;
-    const paddingTop = 88 - chartHeight;
-    
-    const ctx = new DrawContext();
-    ctx.size = new Size(n * 18 - 10, chartHeight + paddingTop);
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    
-    const max = Math.max(...displayData) || 1;
-    const deltaY = chartHeight / max;
-  
-    displayData.forEach((val, i) => {
-      const barHeight = val > 0 ? val * deltaY : max * deltaY;
-      const color = val === 0 
-        ? new Color(barColor, 0.35) 
-        : val == max 
-          ? new Color('#FF6800') 
-          : new Color(barColor);
-  
-      fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
-    });
-  
-    return ctx.getImage();
-  };
-  
-  // 设置组件背景
+  // ====== 设置组件背景 ====== //
   const setBackground = async (widget) => {
     const bgImage = getBgImage();
     const Appearance = Device.isUsingDarkAppearance();
@@ -348,7 +391,7 @@ async function main(family) {
     }
   };
   
-  // createStack
+  // createStack(中号组件)
   const createStack = (middleStack, spacer, month, total, money) => {
     const quotaStack = middleStack.addStack();  
     quotaStack.layoutVertically();
@@ -369,7 +412,35 @@ async function main(family) {
     addTextStack(money, Font.boldSystemFont(14), 0.7, true);
   };
   
-  //=========> Create <=========//
+  /** 
+   * progressBar Stack
+   * @param {image} image
+   * @param {string} string
+   */
+  const progressBar = (mainStack, tier) => {
+    const width = progressWidth;
+    const height = 16;
+    
+    const prgsStack = mainStack.addStack();  
+    prgsStack.layoutHorizontally();
+    prgsStack.centerAlignContent();
+      
+    const curScoreText = prgsStack.addText(tier);
+    curScoreText.font = Font.boldSystemFont(13);
+    prgsStack.addSpacer();
+    
+    const progressImg = creatProgress(width, height, percent, isPercent, barColor);
+    const progress = prgsStack.addImage(progressImg);
+    progress.centerAlignImage();
+    progress.imageSize = new Size(width, height);
+    
+    prgsStack.addSpacer();
+    const percentText = prgsStack.addText(isPercent);
+    percentText.font = Font.boldSystemFont(13);  
+    mainStack.addSpacer();
+  };
+  
+  //=========> 中号组件 <=========//
   const createWidget = async () => {
     const widget = new ListWidget();
     await setBackground(widget);
@@ -427,7 +498,7 @@ async function main(family) {
     benefitText.font = Font.boldSystemFont(14);  
     benefitText.textOpacity = 0.7;
     
-    const benefitText2 = beneStack.addText(`${ystdayPower} °`)
+    const benefitText2 = beneStack.addText(`${ystdayPower} °`);
     benefitText2.font = Font.boldSystemFont(16);
     benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red();
     beneStack.addSpacer();
@@ -476,18 +547,15 @@ async function main(family) {
     pointText.textColor = Color.white();
     mainStack.addSpacer();
     
-    // Switch position
-    if (location == 0) {
-      await progressBar(mainStack);
-    }
+    if (location == 0) progressBar(mainStack, tier);
     
     /** 
-    * Middle or bottom Stack
+    * 中间，底部容器内容
     * @param {image} image
     * @param {string} string
     */
     const middleStack = mainStack.addStack();
-    middleStack.url = alipayUrl;
+    middleStack.url = 'alipays://platformapi/startapp?appId=2021001164644764';
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
@@ -506,75 +574,121 @@ async function main(family) {
       createStack(middleStack, 1, `${year} 年`, totalPowerYear, totalElectricityYear);
     };
     
-    /** Middle Right Stack **/
     createStack(middleStack, true, lastMonth, total, totalElectricity);
     mainStack.addSpacer();
     
-    // Switch position
-    if (location == 1) {
-      await progressBar(mainStack);
-    }
+    if (location == 1) progressBar(mainStack, tier);
     arrearsNotice();
     return widget;
   };
   
-  /** 
-   * progressBar Stack
-   * @param {image} image
-   * @param {string} string
-   */
-  const progressBar = async (mainStack) => {
-    const width = progressWidth;
-    const height = 16;
+  // 小号组件
+  const addStack = (stack, month, power, pay, tier, color) => {
+    const barStack = stack.addStack();
+    barStack.layoutHorizontally();
+    barStack.centerAlignContent();
+    barStack.size = new Size(0, 48);
+    const barImg = drawBar(new Color(color));
+    barStack.addImage(barImg);
+    barStack.addSpacer(10);
     
-    const prgsStack = mainStack.addStack();  
-    prgsStack.layoutHorizontally();
-    prgsStack.centerAlignContent();
-      
-    const curScoreText = prgsStack.addText(tier);
-    curScoreText.font = Font.boldSystemFont(13);
-    prgsStack.addSpacer();
-      
-    const progress = prgsStack.addImage(creatProgress());
-    progress.centerAlignImage();
-    progress.imageSize = new Size(width, height);
+    const columnStack = barStack.addStack();
+    columnStack.layoutVertically();
+    const upStack = columnStack.addStack();
+    upStack.layoutHorizontally();
     
-    function creatProgress() {
-      const cxt = new DrawContext();
-      cxt.opaque = false;
-      cxt.respectScreenScale = true;
-      cxt.size = new Size(width, height);
-      
-      const barPath = new Path();
-      const barHeight = height - 10;
-      barPath.addRoundedRect(new Rect(0, 5, width, barHeight), barHeight / 2, barHeight / 2);
-      cxt.addPath(barPath);
-      cxt.setFillColor(new Color(levelColor, 0.25));
-      cxt.fillPath();
+    const payText = upStack.addText(pay);
+    payText.textOpacity = 0.9;
+    payText.font = Font.boldSystemFont(27);
+    upStack.addSpacer(3);
     
-      const currPath = new Path();
-      currPath.addRoundedRect(new Rect(0, 5, width * percent, barHeight), barHeight / 2, barHeight / 2);
-      cxt.addPath(currPath);
-      cxt.setFillColor(barColor);
-      cxt.fillPath();
+    const tierText = upStack.addText(tier);
+    tierText.textOpacity = 0.6;
+    tierText.font = Font.boldSystemFont(10);
+    columnStack.addSpacer(1);
     
-      const circlePath = new Path();
-      const diameter = height * 0.85;
-      circlePath.addEllipse(new Rect((width - diameter) * percent, (height - diameter) / 2, diameter, diameter));
-      cxt.addPath(circlePath);
-      cxt.setFillColor(new Color(levelColor));
-      cxt.fillPath();
-      
-      return cxt.getImage();
-    };
-      
-    prgsStack.addSpacer();
-    const percentText = prgsStack.addText(isPercent);
-    percentText.font = Font.boldSystemFont(13);  
-    mainStack.addSpacer();
+    const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
+    powerText.textOpacity = 0.6;
+    powerText.font = Font.mediumSystemFont(14);
   };
   
-  /**-------------------------**/
+  // 创建小号组件
+  const smallWidget = async () => {
+    const random = Math.round(Math.random());
+  const title = isArrears === 1 ? '账单' : random === 0 ? '估算' : '余额';
+  const value = isArrears === 1 ? arrears : (cost > 0 ? cost : balance);
+ 
+  const result = random === 0 
+    ? { title: '昨日', value: `${ystdayPower} °` } 
+    : { title, value };
+  
+    const color = tier === '一档' 
+      ? '#00C400' 
+      : tier === '二档' 
+        ? '#FF9500' 
+        : '#FF0000';
+    
+    // 排列顺序
+    const rankStack = (groupStack, column, isFirstGroup) => {
+      const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
+      if (isCurrentMonth) {
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? balance : '0.00', tier, color);
+      } else {
+        const { tier } = calcElectricBill(total, eleType, areaCode);
+        return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF');
+      }
+    };
+    
+    // 创建组件
+    const widget = new ListWidget();
+    widget.setPadding(15, 15, 15, 0);
+    const mainStack = widget.addStack();
+    mainStack.layoutHorizontally();
+    mainStack.centerAlignContent();
+    
+    const groupStack = mainStack.addStack();
+    groupStack.layoutVertically();
+
+    // 第一组
+    rankStack(groupStack, column, true)
+    groupStack.addSpacer(10);
+    
+    // 状态容器(中间)
+    const stateStack = groupStack.addStack();
+    stateStack.layoutHorizontally();
+    stateStack.centerAlignContent();
+    
+    const borStack = stateStack.addStack();
+    borStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#AF52DE');
+    borStack.setPadding(2, 5, 2, 5);
+    borStack.cornerRadius = 5;
+    
+    const titleText = borStack.addText(name);
+    titleText.textColor = Color.white();
+    titleText.textOpacity = 0.9;
+    titleText.font = Font.boldSystemFont(11);
+    stateStack.addSpacer(5);
+    
+    const subText = stateStack.addText(result.title);
+    subText.textColor = Color.blue();
+    subText.textOpacity = 0.75;
+    subText.font = Font.mediumSystemFont(13);
+    stateStack.addSpacer(3);
+    
+    const resultText = stateStack.addText(result.value);
+    resultText.textColor = Color.red();
+    resultText.textOpacity = 0.9;
+    resultText.font = Font.boldSystemFont(14);
+    stateStack.addSpacer(10);
+    groupStack.addSpacer(10);
+    
+    // 第二组
+    rankStack(groupStack, column);
+    mainStack.addSpacer();
+    return widget;
+  };
+  
+  // ======= 电动汽车组件 ====== //
   const getLayout = (scr = Device.screenSize().height) => ({
     stackSize: scr < 926 ? 35 : 37,
     iconSize: scr < 926 ? 23 : 25,
@@ -617,7 +731,7 @@ async function main(family) {
   };
   
   // 创建小号组件
-  const createSmall = async () => {
+  const eleCarWidget = async () => {
     const response = await getCacheString(  
       `eleCar.json`,
       'https://95598.csg.cn/ucs/ma/zt/eleCar/getHomeInfo', {
@@ -649,7 +763,17 @@ async function main(family) {
   
   // 渲染组件
   const runWidget = async () => {
-    const widget = await (family === 'medium' ? createWidget() : createSmall());
+    const param = args.widgetParameter;
+    const isNumber = param && !isNaN(Number(param));
+    let widget;
+
+    if (family === 'medium') {
+      widget = await createWidget();
+    } else if (isNumber) {
+      widget = await eleCarWidget();
+    } else if (family === 'small') {
+      widget = await smallWidget();
+    };
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
