@@ -676,7 +676,7 @@ async function main(family) {
     const titleText = borStack.addText(name);
     titleText.textColor = Color.white();
     titleText.textOpacity = 0.9;
-    titleText.font = Font.boldSystemFont(11);
+    titleText.font = Font.boldSystemFont(12);
     stateStack.addSpacer(5);
     
     const subText = stateStack.addText(result.title);
