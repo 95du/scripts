@@ -242,7 +242,7 @@ async function main(family) {
   const { 
     tier, 
     rate, 
-    cost, 
+    cost,
     percent, 
     isPercent 
   } = calcElectricBill(totalPower, eleType, areaCode);
@@ -437,7 +437,7 @@ async function main(family) {
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
     } else if (setting.estimate) {
-      const payText0 = beneStack.addText(isNaN(cost) ? '0.00' : cost);
+      const payText0 = beneStack.addText(cost > 0 ? cost : balance);
       payText0.font = Font.mediumSystemFont(16);
       payText0.textColor = Color.blue();
     }
