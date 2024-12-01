@@ -683,6 +683,7 @@ async function main(family) {
     // 第二组
     rankStack(groupStack, column);
     mainStack.addSpacer();
+    widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     return widget;
   };
   
