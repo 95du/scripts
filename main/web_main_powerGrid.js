@@ -802,17 +802,17 @@ async function main() {
       type: 'group',
       items: [
         {
-          name: "bwTheme",
-          label: "黑白背景",
+          name: "alwaysDark",
+          label: "始终深色",
           type: "switch",
           icon: {
             name: 'moon.fill',
-            color: '#AD40FF'
+            color: '#B07DFF'
           }
         },
         {
-          name: "solidColor",
-          label: "渐变背景",
+          name: "bwTheme",
+          label: "黑白背景",
           type: "switch",
           icon: {
             name: 'square.filled.on.square',
