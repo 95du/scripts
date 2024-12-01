@@ -601,7 +601,7 @@ async function main(family) {
     upStack.addSpacer(3);
     
     const tierText = upStack.addText(tier);
-    tierText.textOpacity = 0.6;
+    tierText.textOpacity = 0.7;
     tierText.font = Font.boldSystemFont(10);
     columnStack.addSpacer(1);
     
