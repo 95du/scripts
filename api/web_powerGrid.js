@@ -316,7 +316,6 @@ async function main(family) {
   
     // 根据用电量判断所属档次
     const tier = tiers.find((t, i) => totalPower <= t.limit || i === tiers.length - 1);
-  
     // 计算占第三档比例
     const thirdTierLimit = isSummer ? 400 : 280;
     const percentageOfThird = totalPower / thirdTierLimit;
@@ -344,8 +343,7 @@ async function main(family) {
     if (hours_duration >= 12 && isArrears == 1) {
       setting.updateTime = Date.now()
       writeSettings(setting);
-      
-     module.notify('用电缴费通知 ‼️', `${name}，第${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
+      module.notify('用电缴费通知 ‼️', `${name}，第${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
