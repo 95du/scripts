@@ -7,7 +7,7 @@ class _95du {
     this.pathName = pathName;
     this.rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
     this.initPaths();
-    this.settings = this.getSettings();  
+    this.settings = this.getSettings();
     // 默认通知
     if (typeof this.settings.notify === 'undefined') {
       this.settings.notify = true;
@@ -485,7 +485,7 @@ class _95du {
       if (settings.push !== iOS) {
         this.notify('AppleOS 更新通知 🔥', '新版本发布: ' + iOS);
         settings.push = iOS
-        this.writeSettings(settings);
+        this.writeSettings(settings)
       }
     }
   };
@@ -1339,7 +1339,9 @@ input.addEventListener("change", async (e) => {
           if (item.name === 'clock') switchStyle(isChecked);
           if (item.name === 'iconBg') switchLabel(isChecked);
           if (item.name === 'alwaysDark') switchColor(isChecked);
+          if (item.name === 'music') switchColor(isChecked);
           invoke('changeSettings', formData);
+          
           if (item.name === 'music') iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
         });
         
@@ -1366,6 +1368,7 @@ input.addEventListener("change", async (e) => {
         rightLightText: colorValue,
         rightStack: stackColor,
         lightColor: colorValue,
+        textLightColor: colorValue,
         solidColor: isChecked
       };
       Object.entries(fields).forEach(([key, value]) => {
@@ -1373,8 +1376,11 @@ input.addEventListener("change", async (e) => {
         if (input) input.value = formData[key] = value;
       });
       
-      const solidColorInput = document.querySelector('input[name="solidColor"]');
-      if (solidColorInput) solidColorInput.checked = formData['solidColor'] = isChecked;
+      const inputNames = ['solidColor', 'bwTheme'];
+      inputNames.forEach(name => {
+        const input = document.querySelector(\`input[name="\${name}"]\`);
+        if (input) input.checked = formData[name] = isChecked;
+      });
     };
     
     /** fileInput 头像 **/
