@@ -331,6 +331,7 @@ async function main(family) {
   };
   
   const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower, eleType, areaCode);
+  const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
   /** -------- 缴费通知 -------- **/
   
@@ -354,9 +355,11 @@ async function main(family) {
     if (fm.fileExists(bgImage) && !Appearance) {
       const shadowImg = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(shadowImg);
-    } else if (setting.solidColor && !Appearance) {
+    } else if (setting.gradient.length > 0 && !setting.bwTheme) {
       const gradient = new LinearGradient();
-      const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
+      const color = setting.gradient.length > 0 
+      ? setting.gradient 
+      : [setting.rangeColor];
       const randomColor = module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
@@ -399,6 +402,7 @@ async function main(family) {
       const stack = quotaStack.addStack();
       if (spacer || spacer === 1) stack.addSpacer();
       const quotaText = stack.addText(`${text}`);
+      quotaText.textColor = textColor;
       quotaText.font = font;
       if (opacity) quotaText.textOpacity = opacity;
       if (!spacer || spacer === 1)  stack.addSpacer();
@@ -424,6 +428,7 @@ async function main(family) {
     prgsStack.centerAlignContent();
       
     const curScoreText = prgsStack.addText(tier);
+    curScoreText.textColor = textColor;
     curScoreText.font = Font.boldSystemFont(13);
     prgsStack.addSpacer();
     
@@ -434,6 +439,7 @@ async function main(family) {
     
     prgsStack.addSpacer();
     const percentText = prgsStack.addText(isPercent);
+    percentText.textColor = textColor;
     percentText.font = Font.boldSystemFont(13);  
     mainStack.addSpacer();
   };
@@ -493,6 +499,7 @@ async function main(family) {
     beneStack.layoutHorizontally();
     beneStack.centerAlignContent();
     const benefitText = beneStack.addText('昨日 ');
+    benefitText.textColor = textColor;
     benefitText.font = Font.boldSystemFont(14);  
     benefitText.textOpacity = 0.7;
     
@@ -529,6 +536,7 @@ async function main(family) {
     pointStack.addSpacer(8);
     
     const LevelText = pointStack.addText(number);
+    LevelText.textColor = textColor;
     LevelText.font = Font.mediumSystemFont(14);
     LevelText.textOpacity = 0.7;
     pointStack.addSpacer();
@@ -596,16 +604,19 @@ async function main(family) {
     upStack.layoutHorizontally();
     
     const payText = upStack.addText(pay);
-    payText.textOpacity = 0.9;
+    payText.textColor = textColor;
     payText.font = Font.boldSystemFont(27);
+    payText.textOpacity = 0.9;
     upStack.addSpacer(3);
     
     const tierText = upStack.addText(tier);
-    tierText.textOpacity = 0.7;
+    tierText.textColor = textColor;
     tierText.font = Font.boldSystemFont(10);
+    tierText.textOpacity = 0.7;
     columnStack.addSpacer(1);
     
     const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
+    powerText.textColor = textColor;
     powerText.textOpacity = 0.7;
     powerText.font = Font.mediumSystemFont(14);
   };
@@ -723,6 +734,7 @@ async function main(family) {
     titleText.textColor = iconColor;
     
     const subtitleText = verticalStack.addText(text);
+    subtitleText.textColor = textColor;
     subtitleText.font = Font.mediumSystemFont(lay.textSize);
     subtitleText.textOpacity = 0.65
     if (!gap) horStack.addSpacer();
@@ -773,6 +785,8 @@ async function main(family) {
     } else if (family === 'small') {
       widget = await smallWidget();
     };
+    
+    if (setting.alwaysDark) widget.backgroundColor =  Color.black();
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
