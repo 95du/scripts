@@ -55,6 +55,24 @@ async function main() {
   
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
+  /**
+   * 获取 JSON 字符串
+   * @param {string} string
+   * @returns {object} - JSON
+   */
+  const getCacheString = async (name, url, headers, cacheTime = 2) => {
+    const { type } = module.getFileInfo(name);
+    const cache = module.useFileManager({ 
+      cacheTime, type 
+    });
+    const json = cache.read(name);
+    if (json) return json;
+    const response = await module.apiRequest(url, headers);
+    const { ret } = response;
+    if (ret === 0) cache.write(name, response);
+    return response;
+  }; 
+  
   // 获取 access_token
   const access_token = async () => {
     const html = await module.getCacheData('https://www.laohu8.com/m/hq/s/AAPL/wiki', 72)
@@ -67,6 +85,12 @@ async function main() {
     `);
     return { Authorization: 'Bearer ' + headers.access_token };
   };
+  
+  // Request parameter
+  const random = getRandomItem(setting.values);
+  const stockCode = setting.selected === 'random' ? random.value : setting.selected;
+  const market = (setting.market === 'HK' || random.market === 'HK') ? 'hkstock/' : '';  
+  const tradeStatus = [2, 3, 4].includes(setting.statusCode);
   
   // ===========指数============ //
   const getIndex = async (index) => {
@@ -252,21 +276,13 @@ async function main() {
     return FormatterNumber;
   };
   
-  // Request parameter
-  const random = getRandomItem(setting.values);
-  const stockCode = setting.selected === 'random' ? random.value : setting.selected;
-  const market = (setting.market === 'HK' || random.market === 'HK') ? 'hkstock/' : '';  
-  const tradeStatus = [2, 3, 4].includes(setting.statusCode);
-  
-  // GET CHART DATA
+  // 获取图表数据
   const getStockTrend = async () => {
     try {
       const stockInfo = tradeStatus ? 'time_trend' : 'candle_stick';
       const url = `https://hq.laohu8.com/${market}/stock_info/${stockInfo}/day/${stockCode}?lang=zh_CN&manualRefresh=true`;
-      const request = new Request(url);
-      request.headers = await access_token();
-      const { items } = await request.loadJSON();
-      
+      const headers = await access_token();
+      const { items } = await getCacheString(`${stockCode}_chart.json`, url, headers, (tradeStatus ? 2 : 8));
       if (items?.length === 1) {
         const original = items[0];
         for (let i = 0; i < (setting.charts ?? 12); i++) {
@@ -369,7 +385,7 @@ async function main() {
     })
   };
   
-  // 创建图表
+  // 创建图表组件
   const createChart = (data) => {
     const size = new Size(750, 280);
     const ctx = new DrawContext();
@@ -432,12 +448,12 @@ async function main() {
     return context.getImage();
   };
   
-  // GET STOCK DATA
+  // 获取市值股票数据
   const fetchData = async () => {
     try {
-      const request = new Request(`https://hq.laohu8.com/${market}stock_info/detail/${stockCode}?lang=zh_CN`);
-      request.headers = await access_token();
-      const { items } = await request.loadJSON();
+      const url = `https://hq.laohu8.com/${market}stock_info/detail/${stockCode}?lang=zh_CN`;
+      const headers = await access_token();
+      const { items } = await getCacheString(`${stockCode}_detail.json`, url, headers, (tradeStatus ? 2 : 8));
       return items?.[0];
     } catch (error) {
       console.error(error);
@@ -469,7 +485,9 @@ async function main() {
   
   const randomIcons = [
     "http://img.zhitongcaijing.com/quote/tong@2x.png",
-    "http://img.zhitongcaijing.com/quote/gu@2x.png" ];
+    "http://img.zhitongcaijing.com/quote/gu@2x.png" 
+  ];
+  
   const hkIcons = [
     "http://img.zhitongcaijing.com/quote/hk@2x.png",
     "http://img.zhitongcaijing.com/quote/l03x.png",
