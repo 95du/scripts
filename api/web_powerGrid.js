@@ -680,7 +680,7 @@ async function main(family) {
     stateStack.addSpacer(5);
     
     const subText = stateStack.addText(result.title);
-    subText.textColor = Color.blue();
+    subText.textColor = textColor;
     subText.textOpacity = 0.9;
     subText.font = Font.mediumSystemFont(13);
     stateStack.addSpacer(3);
