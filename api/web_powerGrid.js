@@ -606,7 +606,7 @@ async function main(family) {
     columnStack.addSpacer(1);
     
     const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
-    powerText.textOpacity = 0.6;
+    powerText.textOpacity = 0.7;
     powerText.font = Font.mediumSystemFont(14);
   };
   
@@ -669,7 +669,7 @@ async function main(family) {
     
     const subText = stateStack.addText(result.title);
     subText.textColor = Color.blue();
-    subText.textOpacity = 0.75;
+    subText.textOpacity = 0.9;
     subText.font = Font.mediumSystemFont(13);
     stateStack.addSpacer(3);
     
