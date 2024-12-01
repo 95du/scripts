@@ -331,6 +331,7 @@ async function main(family) {
   };
   
   const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower, eleType, areaCode);
+  const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
   /** -------- 缴费通知 -------- **/
@@ -561,7 +562,7 @@ async function main(family) {
     * @param {string} string
     */
     const middleStack = mainStack.addStack();
-    middleStack.url = 'alipays://platformapi/startapp?appId=2021001164644764';
+    middleStack.url = alipayUrl;
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
@@ -695,6 +696,7 @@ async function main(family) {
     rankStack(groupStack, column);
     mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+    widget.url = alipayUrl;
     return widget;
   };
   
