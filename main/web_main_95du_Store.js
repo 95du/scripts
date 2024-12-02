@@ -442,7 +442,7 @@ async function main() {
           recommend: true,
           random: true,
           scrUrl: `${rootUrl}/run/web_module_powerGrid.js`,
-          icon: `${rootUrl}/img/icon/electric.png`
+          icon: `${rootUrl}/img/icon/electric_4.png`
         },
         {
           label: '中国电信_2',
@@ -1006,7 +1006,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${188 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${179 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
