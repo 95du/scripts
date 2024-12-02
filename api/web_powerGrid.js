@@ -309,7 +309,8 @@ async function main(family) {
     ];
   
     // 根据用电量判断所属档次
-    const tier = tiers.find((t, i) => totalPower <= t.limit || i === tiers.length - 1);
+    const tierIndex = tiers.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === tiers.length - 1);
+    const tier = tiers[tierIndex];
     // 计算占第三档比例
     const thirdTierLimit = isSummer ? 400 : 280;
     const percentageOfThird = totalPower / thirdTierLimit;
@@ -320,11 +321,12 @@ async function main(family) {
       rate: tier.rate,
       cost: (totalPower * tier.rate).toFixed(2),
       percent: percentageOfThird,
-      isPercent: `${isPercent}%`
+      isPercent: `${isPercent}%`,
+      tierIndex
     };
   };
   
-  const { tier, rate, cost, percent, isPercent } = calcElectricBill(totalPower, eleType, areaCode);
+  const { tier, rate, cost, percent, isPercent, tierIndex } = calcElectricBill(totalPower, eleType, areaCode);
   const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
@@ -619,13 +621,13 @@ async function main(family) {
   // 创建小号组件
   const smallWidget = async () => {
     const random = Math.round(Math.random());
-  const result = random === 0 
-    ? { title: '昨日', value: `${ystdayPower} °` } 
-    : { title: isArrears === 1 ? '账单' : '余额', value: isArrears === 1 ? arrears : balance };
+    const result = random === 0 
+      ? { title: '昨日', value: `${ystdayPower} °` } 
+      : { title: isArrears === 1 ? '账单' : '余额', value: isArrears === 1 ? arrears : balance };
   
-    const color = tier === '一档' 
+    const color = tierIndex == 0
       ? '#00C400' 
-      : tier === '二档' 
+      : tierIndex == 1
         ? '#FF9500' 
         : '#FF0000';
     
@@ -633,7 +635,7 @@ async function main(family) {
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tier, color);
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', '元', color);
       } else {
         const { tier } = calcElectricBill(total, eleType, areaCode);
         return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF');
