@@ -50,24 +50,23 @@ async function main(family) {
   const currentYear = month === '01' ? year - 1 : year;
   
   // ====== 绘制圆柱图形 ====== //
-  const drawBar = (color) => {
+  const drawBar = (color, width = 14) => {
     const context = new DrawContext();
-    context.size = new Size(10, 115);
+    context.size = new Size(width, 115);
     context.respectScreenScale = true;
     context.opaque = false;
     context.setStrokeColor(color);
-    context.setLineWidth(10);
-  
+    context.setLineWidth(width);
+
     const path = new Path();
-    path.move(new Point(5, 5));
-    path.addLine(new Point(5, 110));
+    path.move(new Point(width / 2, 5));
+    path.addLine(new Point(width / 2, 105));
     context.addPath(path);
     context.strokePath();
     context.setFillColor(color);
-  
-    const ellipseSize = 10;
-    context.fillEllipse(new Rect(0, 0, ellipseSize, ellipseSize));
-    context.fillEllipse(new Rect(0, 105, ellipseSize, ellipseSize));
+
+    context.fillEllipse(new Rect(0, 0, width, width));
+    context.fillEllipse(new Rect(0, 100, width, width));
     return context.getImage();
   };
   
@@ -590,7 +589,7 @@ async function main(family) {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
-    barStack.size = new Size(0, 48);
+    barStack.size = new Size(0, 49);
     const barImg = drawBar(new Color(color));
     barStack.addImage(barImg);
     barStack.addSpacer(10);
