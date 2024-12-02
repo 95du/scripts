@@ -1339,10 +1339,8 @@ input.addEventListener("change", async (e) => {
           if (item.name === 'clock') switchStyle(isChecked);
           if (item.name === 'iconBg') switchLabel(isChecked);
           if (item.name === 'alwaysDark') switchColor(isChecked);
-          if (item.name === 'music') switchColor(isChecked);
-          invoke('changeSettings', formData);
-          
           if (item.name === 'music') iframe.src = !formData.music ? '' : iframe.getAttribute('data-src');
+          invoke('changeSettings', formData);
         });
         
         label.appendChild(input);
