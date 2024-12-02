@@ -49,12 +49,6 @@ async function main(family) {
   const month = String(currentDate.getMonth() + 1).padStart(2, '0');
   const currentYear = month === '01' ? year - 1 : year;
   
- /**
-  * 获取背景图片存储目录路径
-  * @returns {string} - 目录路径
-  */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
   // ====== 绘制圆柱图形 ====== //
   const drawBar = (color) => {
     const context = new DrawContext();
@@ -351,7 +345,7 @@ async function main(family) {
   
   // ====== 设置组件背景 ====== //
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     const Appearance = Device.isUsingDarkAppearance();
     if (fm.fileExists(bgImage) && !Appearance) {
       const shadowImg = fm.readImage(bgImage);
@@ -625,12 +619,9 @@ async function main(family) {
   // 创建小号组件
   const smallWidget = async () => {
     const random = Math.round(Math.random());
-  const title = isArrears === 1 ? '账单' : random === 0 ? '估算' : '余额';
-  const value = isArrears === 1 ? arrears : (cost > 0 ? cost : balance);
- 
   const result = random === 0 
     ? { title: '昨日', value: `${ystdayPower} °` } 
-    : { title, value };
+    : { title: isArrears === 1 ? '账单' : '余额', value: isArrears === 1 ? arrears : balance };
   
     const color = tier === '一档' 
       ? '#00C400' 
@@ -642,7 +633,7 @@ async function main(family) {
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? balance : '0.00', tier, color);
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tier, color);
       } else {
         const { tier } = calcElectricBill(total, eleType, areaCode);
         return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF');
