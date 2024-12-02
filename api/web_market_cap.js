@@ -73,7 +73,10 @@ async function main() {
     return response;
   }; 
   
-  // 获取 access_token
+  /** 
+   * 获取 access_token
+   * https://www.laohu8.com/quotes?quotesMarket=US
+   */
   const access_token = async () => {
     const html = await module.getCacheData('https://www.laohu8.com/m/hq/s/AAPL/wiki', 72)
     const webView = new WebView();
@@ -429,22 +432,22 @@ async function main() {
   // ============市值=========== //
   const drawBar = (color) => {
     const context = new DrawContext();
-    context.size = new Size(10, 115);
+    const width = 10;
+    context.size = new Size(width, 115);
     context.respectScreenScale = true;
     context.opaque = false;
     context.setStrokeColor(color);
-    context.setLineWidth(10);
+    context.setLineWidth(width);
   
     const path = new Path();
-    path.move(new Point(5, 5));
-    path.addLine(new Point(5, 110));
+    path.move(new Point(width / 2, 5));
+    path.addLine(new Point(width / 2, 110));
     context.addPath(path);
     context.strokePath();
     context.setFillColor(color);
-  
-    const ellipseSize = 10;
-    context.fillEllipse(new Rect(0, 0, ellipseSize, ellipseSize));
-    context.fillEllipse(new Rect(0, 105, ellipseSize, ellipseSize));
+    
+    context.fillEllipse(new Rect(0, 0, width, width));
+    context.fillEllipse(new Rect(0, 105, width, width));
     return context.getImage();
   };
   
