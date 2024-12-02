@@ -661,7 +661,7 @@ async function main(family) {
     stateStack.centerAlignContent();
     
     const borStack = stateStack.addStack();
-    borStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#AF52DE');
+    borStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#0094FF');
     borStack.setPadding(2, 5, 2, 5);
     borStack.cornerRadius = 5;
     
