@@ -73,6 +73,7 @@ class _95du {
     }
   
     try {
+      request.timeoutInterval = 10;
       const response = await request.loadJSON();
       return response;
     } catch (error) {
@@ -90,6 +91,7 @@ class _95du {
    */
   async httpRequest(url, type) {
     const request = new Request(url);
+    request.timeoutInterval = 10;
     const fileType = type || this.getFileInfo(url).type;
     const { loadFile } = this.getMethods(fileType);
     return loadFile 
