@@ -40,12 +40,6 @@ async function main(family) {
       settings, null, 2
     ))
   };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
     
   /**
    * 获取缓存的 JSON 字符串
@@ -83,7 +77,7 @@ async function main(family) {
         return await updateCookie(loginUrl);
       }
     } catch (e) {
-      notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
+      module.notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
       return null;
     }
   };
@@ -277,7 +271,7 @@ async function main(family) {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       const image = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(image);
