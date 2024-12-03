@@ -254,7 +254,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3.5%' : '-2%') : (avatarInfo ? '-8.5%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-9.5%' : '-4%') : (avatarInfo ? '-8.5%' : '-4%')};
     }
 
     ${settings.animation ? `
