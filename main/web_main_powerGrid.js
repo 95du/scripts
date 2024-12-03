@@ -9,9 +9,9 @@ async function main() {
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const spareUrl = 'https://raw.gitcode.com/4qiao/scriptable/raw/master';
+  const spareUrl = 'https://raw.gitcode.com/4qiao/scripts/raw/master';
   const scrUrl = `${rootUrl}/api/web_powerGrid.js`;
-
+  
   /**
    * 创建，获取模块路径
    * @returns {string} - string
@@ -21,7 +21,7 @@ async function main() {
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
     .catch(() => download95duModule(spareUrl));
-  const isDev = false
+  const isDev = true
   
   /** ------- 导入模块 ------- */
   
@@ -253,7 +253,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-8%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-8%' : '-2%') : (avatarInfo ? '-8%' : '-4%')};
     }
     
     ${settings.animation ? `
