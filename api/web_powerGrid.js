@@ -537,7 +537,7 @@ async function main(family) {
     const payStack = pointStack.addStack();
     payStack.layoutHorizontally();
     payStack.centerAlignContent();
-    payStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#AF52DE');
+    payStack.backgroundColor = new Color(isArrears == 1 ? '#FF0000' : '#AF52DE');
     payStack.setPadding(2, 5, 2, 5);
     payStack.cornerRadius = 5;
     
@@ -637,7 +637,7 @@ async function main(family) {
     const random = Math.round(Math.random());
     const result = random === 0 
       ? { title: '昨日', value: `${ystdayPower} °` } 
-      : { title: isArrears === 1 ? '账单' : '余额', value: isArrears === 1 ? arrears : balance };
+      : { title: isArrears == 1 ? '账单' : '余额', value: isArrears == 1 ? arrears : balance };
   
     const color = tierIndex == 0
       ? '#00C400' 
@@ -680,7 +680,7 @@ async function main(family) {
     stateStack.centerAlignContent();
     
     const borStack = stateStack.addStack();
-    borStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#0094FF');
+    borStack.backgroundColor = new Color(isArrears == 1 ? '#FF0000' : '#0094FF');
     borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
     borStack.cornerRadius = 5;
     
