@@ -456,8 +456,7 @@ async function main() {
   const previewWidget = async () => {
     const moduleJs = await module.webModule(scrUrl);
     const { main } = await importModule(moduleJs)
-    
-
+    await main();
     if (settings.update) await updateString();
     shimoFormData('Preview');
   };
@@ -581,7 +580,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3%' : '-2%') : (avatarInfo ? '-5%' : '-2%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-6%' : '-2%') : (avatarInfo ? '-5%' : '-2%')};
     }
     
     ${settings.animation ? `
