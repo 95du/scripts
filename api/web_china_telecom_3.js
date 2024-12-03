@@ -55,12 +55,6 @@ async function main(family) {
   const flowColor = Color.dynamic(new Color(setting.flowColor), new Color(setting.flowDarkColor));
   
   /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
-  /**
    * 获取缓存的 JSON 字符串
    * @param {string} jsonName
    * @param {string} jsonUrl
@@ -220,7 +214,7 @@ async function main(family) {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       const shadowImg = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(shadowImg);
@@ -359,7 +353,7 @@ async function main(family) {
         stack: horStack,
         title: bill ? '账单' : '话费',
         balance: feeBalance,
-        newUnit: ' ＄',
+        newUnit: ' R',
         percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
         symbol: family === 'small' ? '' : 'network',
         color: feeColor
