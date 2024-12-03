@@ -49,6 +49,16 @@ async function main(family) {
   const month = String(currentDate.getMonth() + 1).padStart(2, '0');
   const currentYear = month === '01' ? year - 1 : year;
   
+  const getLayout = (scr = Device.screenSize().height) => ({
+    stackSize: scr < 926 ? 35 : 37,
+    iconSize: scr < 926 ? 23 : 25,
+    titleSize: scr < 926 ? 18 : 20,
+    textSize: scr < 926 ? 11 : 11.5,
+    left: scr < 926 ? 10 : 15,
+    right: scr < 926 ? 10 : 0,
+    gap: scr < 926 ? 8 : 10,
+  });
+  
   // ====== 绘制圆柱图形 ====== //
   const drawBar = (color, width = 14) => {
     const context = new DrawContext();
@@ -645,8 +655,9 @@ async function main(family) {
     };
     
     // 创建组件
+    const lay = getLayout();
     const widget = new ListWidget();
-    widget.setPadding(15, 12, 15, 12);
+    widget.setPadding(15, lay.left, 15, lay.right);
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
@@ -656,7 +667,7 @@ async function main(family) {
 
     // 第一组
     rankStack(groupStack, column, true)
-    groupStack.addSpacer(10);
+    groupStack.addSpacer(lay.gap);
     
     // 状态容器(中间)
     const stateStack = groupStack.addStack();
@@ -685,24 +696,17 @@ async function main(family) {
     resultText.textOpacity = 0.9;
     resultText.font = Font.boldSystemFont(14);
     stateStack.addSpacer(10);
-    groupStack.addSpacer(10);
+    groupStack.addSpacer(lay.gap);
     
     // 第二组
     rankStack(groupStack, column);
+    if (Device.screenSize().height >= 926) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.url = alipayUrl;
     return widget;
   };
   
   // ======= 电动汽车组件 ====== //
-  const getLayout = (scr = Device.screenSize().height) => ({
-    stackSize: scr < 926 ? 35 : 37,
-    iconSize: scr < 926 ? 23 : 25,
-    titleSize: scr < 926 ? 18 : 20,
-    textSize: scr < 926 ? 11 : 11.5
-  });
-  
-  // 添加到 widget
   const addVertical = async (horStack, iconName, iconColor, title, text, gap) => {
     const lay = getLayout();
     const rowStavk = horStack.addStack();
