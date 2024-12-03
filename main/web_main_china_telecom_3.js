@@ -27,8 +27,8 @@ async function main() {
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  const module = new _95du(pathName);  
-  
+  const module = new _95du(pathName); 
+   
   const {
     mainPath,
     settingPath,
@@ -258,7 +258,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-5%' : '-2%') : (avatarInfo ? '-9%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-10%' : '-4%') : (avatarInfo ? '-9%' : '-4%')};
     }
 
     ${settings.animation ? `
