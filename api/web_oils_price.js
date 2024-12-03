@@ -8,7 +8,7 @@
  * 更新日期: 2024-10-23
  */
 
-//
+
 async function main() {
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -140,7 +140,7 @@ async function main() {
   const setBackground = async (widget) => {
     const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
     const bgImage = fm.joinPath(cacheImg, Script.name());
-    if (fm.fileExists(bgImage) && !isDark) {
+    if (fm.fileExists(bgImage)) {
       const image = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(image);
     } else if (!isDark) {
