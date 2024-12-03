@@ -91,9 +91,11 @@ async function main() {
   
   // 下载或读取缓存 GIF 图片  
   const getCacheGif = async () => {
-    const url = 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/picture/widget.gif';
+    const url = `${rootUrl}/img/picture/widget.gif`;
+    const request = new Request(url);
+    request.timeoutInterval = 5;
     const filePath = fm.joinPath(depPath, 'widget.gif');
-    if (!fm.fileExists(filePath)) fm.write(filePath, await new Request(url).load());
+    if (!fm.fileExists(filePath)) fm.write(filePath, await request.load());
     const gifBase64 = fm.read(filePath).toBase64String();
     return `data:image/gif;base64,${gifBase64}`;
   };
