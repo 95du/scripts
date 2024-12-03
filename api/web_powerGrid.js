@@ -629,7 +629,9 @@ async function main(family) {
       ? '#00C400' 
       : tierIndex == 1
         ? '#FF9500' 
-        : '#FF0000';
+        : tierIndex == 2 
+          ? '#FF0000'
+          : '#00C400'
     
     // 排列顺序
     const rankStack = (groupStack, column, isFirstGroup) => {
@@ -644,7 +646,7 @@ async function main(family) {
     
     // 创建组件
     const widget = new ListWidget();
-    widget.setPadding(15, 15, 15, 0);
+    widget.setPadding(15, 10, 15, 10);
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
@@ -687,7 +689,6 @@ async function main(family) {
     
     // 第二组
     rankStack(groupStack, column);
-    if (Device.screenSize().height >= 926) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.url = alipayUrl;
     return widget;
