@@ -890,14 +890,12 @@ class _95du {
    * @param {Array} 卡片内容
    * @returns {string} - HTML
    */
-  menulists = async (items) => {
-    return await Promise.all(
-      items.map(async (item) => ({
-        ...item,
-        icon: await this.getCacheDrawSFIcon(item.icon),
-      }))
-    )
-  };
+  menulists = (items) => Promise.all(
+    items.map(async (item) => ({
+      ...item,
+      icon: await this.getCacheDrawSFIcon(item.icon),
+    }))
+  );
   
   buttonPopup = async ({
     settings,
@@ -1368,8 +1366,7 @@ input.addEventListener("change", async (e) => {
         rightLightText: colorValue,
         rightStack: stackColor,
         lightColor: colorValue,
-        textLightColor: colorValue,
-        solidColor: isChecked
+        textLightColor: colorValue
       };
       Object.entries(fields).forEach(([key, value]) => {
         const input = document.querySelector(\`input[name="\${key}"]\`);
