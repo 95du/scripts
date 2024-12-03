@@ -465,7 +465,7 @@ async function main(family) {
   const getLayout = (scr = Device.screenSize().height) => ({
     textSize: scr < 926 ? 13 : 13.5,
     barSize: scr < 926 ? 53 : 55,
-    gap1: scr < 926 ? 10 : 11,
+    gap1: scr < 926 ? 9 : 11,
     gap2: scr < 926 ? 5 : 6
   });
   
@@ -500,12 +500,10 @@ async function main(family) {
     mainStack.centerAlignContent();
     
     addText2(mainStack, cumulativePoint, 45, pointColor);
-    mainStack.addSpacer(4);
-    
-    const verticalStack = mainStack.addStack();
-    verticalStack.layoutVertically();
-    addText2(verticalStack, ' ', 16.5, null);
-    addText2(verticalStack, '分', 14, pointColor);
+    const pointStack = mainStack.addStack();
+    pointStack.layoutVertically();
+    pointStack.setPadding(20, 4, 0, 0)
+    addText2(pointStack, '分', 14, pointColor);
     mainStack.addSpacer();
       
     const iconStack = mainStack.addStack();
