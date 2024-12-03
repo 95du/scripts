@@ -646,7 +646,7 @@ async function main(family) {
     
     // 创建组件
     const widget = new ListWidget();
-    widget.setPadding(15, 10, 15, 10);
+    widget.setPadding(15, 12, 15, 12);
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
