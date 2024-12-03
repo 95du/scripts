@@ -57,6 +57,7 @@ async function main(family) {
     left: scr < 926 ? 10 : 15,
     right: scr < 926 ? 10 : 0,
     gap: scr < 926 ? 8 : 10,
+    gapStack: scr < 926 ? 3 : 5,
   });
   
   // ====== 绘制圆柱图形 ====== //
@@ -676,7 +677,7 @@ async function main(family) {
     
     const borStack = stateStack.addStack();
     borStack.backgroundColor = new Color(isArrears == 1 ? '#D50000' : '#0094FF');
-    borStack.setPadding(2, 5, 2, 5);
+    borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
     borStack.cornerRadius = 5;
     
     const titleText = borStack.addText(name);
