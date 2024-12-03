@@ -42,12 +42,6 @@ async function main() {
     ));
   };
   
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
   // 图片遮罩
   async function shadowImage(img) {
     let ctx = new DrawContext()
@@ -372,7 +366,7 @@ async function main() {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
     } else {
