@@ -49,16 +49,19 @@ async function main(family) {
   const month = String(currentDate.getMonth() + 1).padStart(2, '0');
   const currentYear = month === '01' ? year - 1 : year;
   
-  const getLayout = (scr = Device.screenSize().height) => ({
-    stackSize: scr < 926 ? 35 : 37,
-    iconSize: scr < 926 ? 23 : 25,
-    titleSize: scr < 926 ? 18 : 20,
-    textSize: scr < 926 ? 11 : 11.5,
-    left: scr < 926 ? 10 : 15,
-    right: scr < 926 ? 10 : 0,
-    gap: scr < 926 ? 8 : 10,
-    gapStack: scr < 926 ? 3 : 5,
-  });
+  // 配置尺寸
+  const isSmall = Device.screenSize().height < 926;
+  const lay = {
+    stackSize: isSmall ? 35 : 37,
+    iconSize: isSmall ? 23 : 25,
+    titleSize: isSmall ? 18 : 20,
+    textSize: isSmall ? 11 : 11.5,
+    left: isSmall ? 10 : 15,
+    right: isSmall ? 8 : 0,
+    gap: isSmall ? 8 : 10,
+    gapStack: isSmall ? 3 : 5,
+    gapMed: isSmall ? 5 : null,
+  };
   
   // ====== 绘制圆柱图形 ====== //
   const drawBar = (color, width = 14) => {
@@ -559,7 +562,7 @@ async function main(family) {
     const pointText = barStack2.addText(beforeYesterday);
     pointText.font = Font.boldSystemFont(13);
     pointText.textColor = Color.white();
-    mainStack.addSpacer();
+    mainStack.addSpacer(lay.gapMed);
     
     if (location == 0) progressBar(mainStack, tier);
     
@@ -589,7 +592,7 @@ async function main(family) {
     };
     
     createStack(middleStack, true, lastMonth, total, totalElectricity);
-    mainStack.addSpacer();
+    mainStack.addSpacer(lay.gapMed);
     
     if (location == 1) progressBar(mainStack, tier);
     arrearsNotice();
@@ -655,10 +658,11 @@ async function main(family) {
       }
     };
     
+    const valueLength = isSmall && result.value.length >= 7;
+    
     // 创建组件
-    const lay = getLayout();
     const widget = new ListWidget();
-    widget.setPadding(15, lay.left, 15, lay.right);
+    widget.setPadding(15, lay.left, 15, valueLength ? 0 : lay.right);
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
@@ -701,7 +705,7 @@ async function main(family) {
     
     // 第二组
     rankStack(groupStack, column);
-    if (Device.screenSize().height >= 926) mainStack.addSpacer();
+    if (!isSmall) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.url = alipayUrl;
     return widget;
@@ -709,7 +713,6 @@ async function main(family) {
   
   // ======= 电动汽车组件 ====== //
   const addVertical = async (horStack, iconName, iconColor, title, text, gap) => {
-    const lay = getLayout();
     const rowStavk = horStack.addStack();
     rowStavk.layoutHorizontally();
     rowStavk.centerAlignContent();
