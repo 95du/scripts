@@ -60,6 +60,7 @@ async function main(family) {
     right: isSmall ? 8 : 0,
     gap: isSmall ? 8 : 10,
     gapStack: isSmall ? 3 : 5,
+    amountSize: isSmall ? 25.5 : 27,
     gapMed: isSmall ? 5 : null,
   };
   
@@ -616,7 +617,7 @@ async function main(family) {
     
     const payText = upStack.addText(pay);
     payText.textColor = textColor;
-    payText.font = Font.boldSystemFont(27);
+    payText.font = Font.boldSystemFont(lay.amountSize);
     payText.textOpacity = 0.9;
     upStack.addSpacer(3);
     
@@ -692,7 +693,6 @@ async function main(family) {
     
     const subText = stateStack.addText(result.title);
     subText.textColor = textColor;
-    subText.textOpacity = 0.9;
     subText.font = Font.mediumSystemFont(13);
     stateStack.addSpacer(3);
     
