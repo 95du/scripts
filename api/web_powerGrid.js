@@ -693,7 +693,7 @@ async function main(family) {
     
     const subText = stateStack.addText(result.title);
     subText.textColor = textColor;
-    subText.font = Font.mediumSystemFont(13);
+    subText.font = Font.mediumSystemFont(12.8);
     stateStack.addSpacer(3);
     
     const resultText = stateStack.addText(result.value);
