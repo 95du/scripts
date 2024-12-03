@@ -8,7 +8,7 @@
  * 更新日期: 2024-10-23
  */
 
-
+//
 async function main() {
   const fm = FileManager.local();  
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -33,9 +33,6 @@ async function main() {
     interval,
     oils: array = ['海南']
   } = setting;
-  
-  // Background image
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
   
   // 初始化，预警通知
   const updateAndNotify = (oils, oilsTips) => {
@@ -142,7 +139,7 @@ async function main() {
   // 设置组件背景
   const setBackground = async (widget) => {
     const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage) && !isDark) {
       const image = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(image);
@@ -166,6 +163,7 @@ async function main() {
       widget.backgroundGradient = gradient;
       widget.backgroundImage = backgroundImage;
     } else {
+      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
       widget.backgroundImage = backgroundImage;  
     }
   };
