@@ -40,12 +40,6 @@ async function main(family) {
   const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
   
   /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
-  
-  /**
    * 获取车辆图片并使用缓存
    * @param {string} File Extension
    * @returns {image} - Request
@@ -276,7 +270,7 @@ async function main(family) {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       const shadowImg = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(shadowImg);
