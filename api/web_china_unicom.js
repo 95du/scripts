@@ -4,8 +4,8 @@
 /**
  * 脚本名称: 中国联通
  * 组件作者：95度茅台
- * 组件版本: Version 1.0.8
- * 更新日期: 2024-04-03
+ * 组件版本: Version 1.1.0
+ * 更新日期: 2024-10-24
  */
 
 async function main() {
@@ -39,15 +39,6 @@ async function main() {
     console.log(JSON.stringify(
       setting, null, 2
     ));
-  };
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImagePath = () => {
-    const bgImgPath = fm.joinPath(fm.documentsDirectory(), '95duBackground');
-    return fm.joinPath(bgImgPath, Script.name() + '.jpg');
   };
   
   // 图片遮罩
@@ -192,7 +183,7 @@ async function main() {
     textSize: scr < 926 ? 11 : 12
   });
   
-  const logo = await getCacheImage('unicom.png', 'https://gitcode.net/4qiao/framework/raw/master/img/symbol/china_unicom.png');
+  const logo = await getCacheImage('unicom.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/symbol/china_unicom.png');
   
   const subTitleColor = Color.dynamic(new Color(setting.subTitleColor), new Color('#FFFFFF'));
   
@@ -244,7 +235,7 @@ async function main() {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImagePath();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
     } else if (!setting.solidColor && !Device.isUsingDarkAppearance()) {
