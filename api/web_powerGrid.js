@@ -174,6 +174,7 @@ async function main(family) {
       'Content-Type': 'application/json;charset=utf-8'
     }
     req.body = JSON.stringify(requestBody);
+    req.timeoutInterval = 10;
     return await req.loadJSON();
   };
   
@@ -686,7 +687,7 @@ async function main(family) {
     
     // 第二组
     rankStack(groupStack, column);
-    mainStack.addSpacer();
+    if (Device.screenSize().height >= 926) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.url = alipayUrl;
     return widget;
