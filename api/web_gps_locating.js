@@ -44,13 +44,7 @@ async function main(family) {
     console.log(JSON.stringify(
       inObject, null, 2
     ));
-  }
-  
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = () => fm.joinPath(cacheImg, Script.name());
+  };
   
   async function shadowImage(img) {
     let ctx = new DrawContext();
@@ -163,7 +157,7 @@ async function main(family) {
     if (code === 0) {
       setting.token = data.token;
       writeSettings(setting);
-      notify('登录成功', !aMapkey ? '需填写高德地图Web服务API，用于转换坐标。' : data.token);  
+      notify('登录成功', !aMapkey ? '需填写高德地图Web服务API，用于转换坐标。' : data.token);
     } else {
       notify('登录失败', '账号或密码错误，无法获取数据。');
     };
@@ -213,7 +207,7 @@ async function main(family) {
     const params = { imei, coorType: 'wgs84', token };
     const { code, data } = await makeRequest(url, params);
     if (code === 0) {
-      return { speed, chargeState, percentageElectricQuantity } = data;  
+      return { speed, chargeState, percentageElectricQuantity } = data;
     }
   };
   
@@ -338,7 +332,7 @@ async function main(family) {
   
   // 设置组件背景
   const setBackground = async (widget) => {
-    const bgImage = getBgImage();
+    const bgImage = fm.joinPath(cacheImg, Script.name());
     if (fm.fileExists(bgImage)) {
       widget.backgroundImage = await shadowImage(fm.readImage(bgImage));
     } else {
@@ -842,7 +836,7 @@ async function main(family) {
     
     buttonStack.addSpacer();
     widget.addSpacer();
-    widget.backgroundColor = Color.dynamic(Color.white(), new Color('111111'));
+    widget.backgroundColor = Color.dynamic(Color.white(), new Color('#111111'));
     widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
     return widget;
   };
