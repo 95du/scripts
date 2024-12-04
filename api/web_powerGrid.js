@@ -699,7 +699,7 @@ async function main(family) {
     stateStack.addSpacer(3);
     
     const resultText = stateStack.addText(result.value);
-    resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#0094FF');
+    resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FD4A67');
     resultText.font = Font.boldSystemFont(14);
     stateStack.addSpacer(10);
     groupStack.addSpacer(lay.gap);
