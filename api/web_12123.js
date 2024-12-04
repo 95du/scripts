@@ -464,10 +464,25 @@ async function main(family) {
   /**-------------------------**/
   const getLayout = (scr = Device.screenSize().height) => ({
     textSize: scr < 926 ? 13 : 13.5,
-    barSize: scr < 926 ? 53 : 55,
-    gap1: scr < 926 ? 9 : 11,
+    barSize: scr < 926 ? 35 : 36,
+    gap1: scr < 926 ? 8 : 11,
     gap2: scr < 926 ? 5 : 6
   });
+  
+  const generateStack = (widget) => {
+    const leftBarStack = widget.addStack();
+    leftBarStack.layoutHorizontally()
+    leftBarStack.centerAlignContent()
+    return leftBarStack;
+  }
+  
+  const createBarStack = (stack, width, height, color, gap) => {
+    const columnStack = stack.addStack();
+    columnStack.size = new Size(width, height);
+    columnStack.cornerRadius = 50;
+    columnStack.backgroundColor = new Color(color);
+    stack.addSpacer(gap);
+  };
   
   const addText2 = (stack, text, font, color, opacity) => {
     const statusText = stack.addText(text);
@@ -495,7 +510,7 @@ async function main(family) {
     
     const mainStack = widget.addStack();
     mainStack.size = new Size(0, 40);
-    mainStack.setPadding(-3, 0, 0, 0)
+    mainStack.setPadding(-3, -2, 0, 0)
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
     
@@ -524,40 +539,35 @@ async function main(family) {
       : new Color('#FF8500');
     icon.imageSize = new Size(25, 25)
     iconStack.addSpacer();
-    widget.addSpacer(6);
-    
-    addText2(widget, `准驾车型  ${allowToDrive}`, textSize);
     widget.addSpacer();
     
-    const leftBarStack = widget.addStack();
-    leftBarStack.layoutHorizontally()
-    leftBarStack.centerAlignContent()
-    const columnStack = leftBarStack.addStack();
-    columnStack.size = new Size(5, barSize);
-    columnStack.cornerRadius = 50;
-    columnStack.backgroundColor = new Color(await getRandomItem(['#CA74DF', '#0088FF', '#14BAFF', '#8C7CFF']));
-    leftBarStack.addSpacer(gap1);
+    const middleBarStack = generateStack(widget)
+    createBarStack(middleBarStack, 8, 8, '#FF8500', gap1);
+    addText2(middleBarStack, `准驾车型  ${allowToDrive}`, textSize);
+    widget.addSpacer(3);
     
-    // 证件状态
-    const vStack = leftBarStack.addStack();
-    vStack.layoutVertically();
-    
-    const statusStack = vStack.addStack();
-    statusStack.layoutHorizontally();
-    statusStack.centerAlignContent();
-    
+    const statusStack = generateStack(widget)
+    createBarStack(statusStack, 8, 8, '#8C7CFF', gap1);
     addText2(statusStack, '驾驶证状态', textSize);
     statusStack.addSpacer(gap2);
     
     const barStack = statusStack.addStack();
     barStack.setPadding(2, 6, 2, 6);
     barStack.backgroundColor = new Color(statuColor.hex, 0.05);
-    barStack.cornerRadius = 5
+    barStack.cornerRadius = 5;
     barStack.borderColor = statuColor
-    barStack.borderWidth = 2
+    barStack.borderWidth = 2;
     
-    addText2(barStack, isStatus, 12, statuColor, true);
-    vStack.addSpacer(3);
+    addText2(barStack, isStatus, 11, statuColor, true);
+    widget.addSpacer();
+    
+    // 换证年检日期
+    const bottomBarStack = generateStack(widget);
+    const barColor = await getRandomItem([ '#0088FF', '#14BAFF', '#8C7CFF']);
+    createBarStack(bottomBarStack, 8, barSize, barColor, gap1);
+    
+    const vStack = bottomBarStack.addStack();
+    vStack.layoutVertically();
     addText2(vStack, `换证 ${validityEnd}`, textSize);
     vStack.addSpacer(3);
     addText2(vStack, `年检 ${validPeriodEnd}`, textSize);
