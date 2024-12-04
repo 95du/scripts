@@ -655,7 +655,7 @@ async function main(family) {
         return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', '元', color);
       } else {
         const { tier } = calcElectricBill(total, eleType, areaCode);
-        const billColor = isArrears == 1 ? new Color('#FF0000') : textColor;
+        const billColor = new Color(isArrears == 1 ? '#FF0000' : '#00B388');
         return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF', billColor);
       }
     };
