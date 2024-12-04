@@ -137,7 +137,11 @@ class _95du {
       : this.cacheStr;
     const filePath = (name) => this.fm.joinPath(basePath, name);
     const { readFile, writeFile } = this.getMethods(type);
-
+    
+    const isExpired = (filePath) => {
+      return (Date.now() - this.fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
+    };
+    
     const read = (name) => {
       const path = filePath(name);
       if (this.fm.fileExists(path)) {
@@ -148,10 +152,6 @@ class _95du {
       return null;
     };
     const write = (name, content) => writeFile(filePath(name), content);
-    
-    const isExpired = (filePath) => {
-      return (Date.now() - this.fm.creationDate(filePath).getTime()) / (60 * 60 * 1000) > cacheTime;  
-    };
     return { read, write };
   };
   
@@ -585,6 +585,50 @@ class _95du {
     const randomIndex = Math.floor(Math.random() * arr.length);
     if (count) return arr.sort(() => Math.random() - 0.5).slice(0, count);
     return arr[randomIndex];
+  };
+  
+  /**
+   * 根据设备屏幕尺寸匹配预定义的屏幕数据，计算与参考尺寸的缩放比例。
+   * - 如果未匹配到数据，返回默认比例 1。
+   * - 否则计算比例：(匹配屏幕的 widget 尺寸 - 30) / (参考 widget 尺寸 - 30) * 0.95。
+   * @returns {number} 缩放比例
+   */
+  getScaleFactor = () => {
+    const refSize = { w: 430, h: 932, widget: 170 };
+    const screens = [
+      { width: 440, height: 956, widget: 170 }, // 16 Pro Max
+      { width: 430, height: 932, widget: 170 }, // 16 Plus, 15 Plus, 15 Pro Max, 14 Pro Max
+      { width: 428, height: 926, widget: 170 }, // 14 Plus, 13 Pro Max, 12 Pro Max
+      { width: 414, height: 896, widget: 169 }, // 11 Pro Max, XS Max, 11, XR
+      { width: 402, height: 874, widget: 162 }, // 16 Pro
+      { width: 414, height: 736, widget: 159 }, // Home button Plus phones
+      { width: 393, height: 852, widget: 158 }, // 16, 15, 15 Pro, 14 Pro
+      { width: 390, height: 844, widget: 158 }, // 14, 13, 13 Pro, 12, 12 Pro
+      { width: 375, height: 812, widget: 155 }, // 13 mini, 12 mini / 11 Pro, XS, X
+      { width: 375, height: 667, widget: 148 }, // SE3, SE2, Home button Plus in Display Zoom mode
+      { width: 360, height: 780, widget: 155 }, // 11 and XR in Display Zoom mode
+      { width: 320, height: 568, widget: 141 }  // SE1
+    ];
+  
+    const { width, height } = Device.screenSize();
+    const match = screens.find(s => (s.width === width && s.height === height) || (s.width === height && s.height === width));
+  
+    if (!match ) return 1;
+    const scale = (match.widget - 30) / (refSize.widget - 30) * 0.95;
+    return Math.round(scale * 100) / 100;
+  };
+  
+  /**
+   * - 调用 `getScaleFactor` 获取当前设备的缩放比例。
+   * - 遍历基础配置的键值对，按缩放比例调整值。
+   * @param {Object} baseConfig - 基础布局配置对象，包含尺寸和间距等属性。
+   * @returns {Object} object
+   */
+  generateLayout = (baseConfig) => {
+    // 获取缩放比例
+    const scale = this.getScaleFactor();
+    const value = Object.fromEntries(Object.entries(baseConfig).map(([key, value]) => [key, value * scale]));
+    return value;
   };
   
   /**
