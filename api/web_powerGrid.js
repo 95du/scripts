@@ -601,7 +601,7 @@ async function main(family) {
   };
   
   // 小号组件
-  const addStack = (stack, month, power, pay, tier, color) => {
+  const addStack = (stack, month, power, amount, tier, color, billColor) => {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
@@ -615,10 +615,10 @@ async function main(family) {
     const upStack = columnStack.addStack();
     upStack.layoutHorizontally();
     
-    const payText = upStack.addText(pay);
-    payText.textColor = textColor;
-    payText.font = Font.boldSystemFont(lay.amountSize);
-    payText.textOpacity = 0.9;
+    const amountText = upStack.addText(amount);
+    amountText.textColor = billColor;
+    amountText.font = Font.boldSystemFont(lay.amountSize);
+    amountText.textOpacity = 0.9;
     upStack.addSpacer(3);
     
     const tierText = upStack.addText(tier);
@@ -637,8 +637,8 @@ async function main(family) {
   const smallWidget = async () => {
     const random = Math.round(Math.random());
     const result = random === 0 
-      ? { title: '昨日', value: `${ystdayPower} °` } 
-      : { title: isArrears == 1 ? '账单' : '余额', value: isArrears == 1 ? arrears : balance };
+    ? { title: '昨日', value: `${ystdayPower} °` } 
+    : { title: '余额', value: balance };
   
     const color = tierIndex == 0
       ? '#00C400' 
@@ -655,7 +655,8 @@ async function main(family) {
         return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', '元', color);
       } else {
         const { tier } = calcElectricBill(total, eleType, areaCode);
-        return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF');
+        const billColor = isArrears == 1 ? new Color('#FF0000') : textColor;
+        return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF', billColor);
       }
     };
     
@@ -681,7 +682,7 @@ async function main(family) {
     stateStack.centerAlignContent();
     
     const borStack = stateStack.addStack();
-    borStack.backgroundColor = new Color(isArrears == 1 ? '#FF0000' : '#0094FF');
+    borStack.backgroundColor = new Color('#0094FF');
     borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
     borStack.cornerRadius = 5;
     
@@ -693,13 +694,13 @@ async function main(family) {
     
     const subText = stateStack.addText(result.title);
     subText.textColor = textColor;
-    subText.font = Font.mediumSystemFont(12.8);
+    subText.textOpacity = 0.8;
+    subText.font = Font.mediumSystemFont(12.5);
     stateStack.addSpacer(3);
     
     const resultText = stateStack.addText(result.value);
-    resultText.textColor = Color.red();
-    resultText.textOpacity = 0.9;
-    resultText.font = Font.boldSystemFont(14);
+    resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#0094FF');
+    resultText.font = Font.mediumSystemFont(14);
     stateStack.addSpacer(10);
     groupStack.addSpacer(lay.gap);
     
