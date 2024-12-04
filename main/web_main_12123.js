@@ -428,7 +428,7 @@ async function main() {
     };
     
     // 修改组件布局
-    const layout = async ({ label, message, name } = {}) => {
+    const layout = async ({ label, message } = {}) => {
       const fields = [
         { hint: '左边容器宽度', value: String(settings.lrfeStackWidth) },
         { hint: '车图容器宽度', value: String(settings.carStackWidth) },
@@ -450,7 +450,7 @@ async function main() {
     
       writeSettings(settings);
       await previewWidget('medium');
-      await layout({ label, message, name }); // 重复弹窗
+      await layout({ label, message});
     };
     
     // appleOS 推送时段
