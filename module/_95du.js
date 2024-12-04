@@ -646,6 +646,28 @@ class _95du {
   };
   
   /**
+   * 将下载的音频文件保存到本地存储路径。
+   * 从本地存储读取音频文件，并将其转换为 Base64 格式。
+   * @returns {Promise<string>} Base64 编码的音频数据 URL。
+   */
+  playAudio = async () => {
+    const url = `${this.rootUrl}/update/payment_success.mp3`;
+    const audioPath = this.fm.joinPath(this.cacheStr, 'payment_success.mp3');
+  
+    if (!this.fm.fileExists(audioPath)) {
+      const req = new Request(url);
+      req.timeoutInterval = 10;
+      this.fm.write(audioPath, await req.load());
+      console.log('Audio file downloaded.');
+    }
+  
+    const audioData = this.fm.read(audioPath);
+    const audioBase64 = audioData.toBase64String();
+    const audioSource = `data:audio/mp3;base64,${audioBase64}`;
+    return audioSource;
+  };
+  
+  /**
    * 版本更新时弹出窗口
    * @returns {String} string
    */
@@ -1043,6 +1065,8 @@ class _95du {
       content = `<div class="card-container">${this.cardHtml?.(formItems)}</div>`;
     };
     
+    // js 部分
+    const audioSource = await this.playAudio()
     const height = avatarInfo && toggle ? '280px' : '260px';
     
     const js = `
@@ -1075,6 +1099,8 @@ class _95du {
       
       const clickCard = (param, label, scrUrl) => {
         hidePopup();
+        const audio = new Audio('${audioSource}');
+        audio.play().catch(err => console.log(err));
         const item = label && scrUrl ? JSON.stringify({ label, scrUrl }) : '';
         setTimeout(() => invoke(param, item), item ? 0 : 800);
       };
