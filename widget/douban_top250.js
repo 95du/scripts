@@ -187,7 +187,7 @@ const createWidget = async () => {
   
   if (config.runsInWidget) {
     const html = await new Request(url).loadString();
-    const duration = html.match(/片长(\S+)/)[1];
+    const duration = html.match(/\d+分钟/)[0];
     const durationText = iconStack.addText(duration);
     durationText.textColor = textColor;
     durationText.textOpacity = 0.75;
