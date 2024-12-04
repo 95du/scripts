@@ -1571,7 +1571,7 @@ async function main() {
     }
     
     const formData = {};
-    const createFormItem = ( item ) => {
+    const createFormItem = (item) => {
       const value = settings[item.name] ?? item.default
       formData[item.name] = value;
       
@@ -1635,7 +1635,7 @@ async function main() {
             desc.className = 'form-item-right-desc';
             desc.innerText = item.version;
             cntr.appendChild(desc);
-            handleButtonClick(button, () => invoke('widget', item));
+            handleButtonClick(button, item, () => invoke('widget', item));
             label.appendChild(cntr);
           }
         };
@@ -1668,12 +1668,14 @@ async function main() {
     };
     
     /** 点击按钮变色通用 **/
-    const handleButtonClick = (but, callback, color = 'darkGray') => {
+    const handleButtonClick = (but, item, callback) => {
       but.addEventListener('click', () => {
-        const audio = new Audio('${audioSource}');
-        audio.play().catch(err => console.log(err));
+        if (item.name !== 'repo' && item.type === 'button') {
+          const audio = new Audio('${audioSource}');
+          audio.play().catch(err => console.log(err));
+        }
         // 变成灰色，5秒后恢复
-        but.style.color = color;
+        but.style.color = 'darkGray';
         callback && callback();
         setTimeout(() => { but.style.color = '' }, 5000);
       });
@@ -1719,7 +1721,7 @@ async function main() {
       </div>\`;
       
       const button = app.querySelector('.icon-arrow_bottom');
-      handleButtonClick(button, () => invoke('widget', item));
+      handleButtonClick(button, '', () => invoke('widget', item));
     };
     
     //======== 创建列表 ========//
