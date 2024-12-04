@@ -89,7 +89,7 @@ async function main() {
     }
   };
   
-  // 下载或读取缓存 GIF 图片  
+  // 下载或读取缓存 GIF 图片
   const getCacheGif = async () => {
     const url = `${rootUrl}/img/picture/widget.gif`;
     const request = new Request(url);
@@ -98,6 +98,25 @@ async function main() {
     if (!fm.fileExists(filePath)) fm.write(filePath, await request.load());
     const gifBase64 = fm.read(filePath).toBase64String();
     return `data:image/gif;base64,${gifBase64}`;
+  };
+  
+  // 下载安装成功时的提示音
+  const playAudio = async () => {
+    const url = `${rootUrl}/update/payment_success.mp3`;
+    const audioPath = fm.joinPath(depPath, 'payment_success.mp3');
+  
+    if (!fm.fileExists(audioPath)) {
+      const req = new Request(url);
+      req.timeoutInterval = 10;
+      const audioData = await req.load();
+      fm.write(audioPath, audioData);
+      console.log('Audio file downloaded.');
+    }
+  
+    const audioData = fm.read(audioPath);
+    const audioBase64 = audioData.toBase64String();
+    const audioSource = `data:audio/mp3;base64,${audioBase64}`;
+    return audioSource;
   };
   
   // 运行组件
@@ -787,6 +806,7 @@ async function main() {
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     const gifImage = await getCacheGif();
     const scriptTags = await module.scriptTags();
+    const audioSource = await playAudio();
     
     /**
      * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
@@ -1650,6 +1670,9 @@ async function main() {
     /** 点击按钮变色通用 **/
     const handleButtonClick = (but, callback, color = 'darkGray') => {
       but.addEventListener('click', () => {
+        const audio = new Audio('${audioSource}');
+        audio.play().catch(err => console.log(err));
+        // 变成灰色，5秒后恢复
         but.style.color = color;
         callback && callback();
         setTimeout(() => { but.style.color = '' }, 5000);
