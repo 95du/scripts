@@ -100,26 +100,7 @@ async function main() {
     return `data:image/gif;base64,${gifBase64}`;
   };
   
-  // 下载安装成功时的提示音
-  const playAudio = async () => {
-    const url = `${rootUrl}/update/payment_success.mp3`;
-    const audioPath = fm.joinPath(depPath, 'payment_success.mp3');
-  
-    if (!fm.fileExists(audioPath)) {
-      const req = new Request(url);
-      req.timeoutInterval = 10;
-      const audioData = await req.load();
-      fm.write(audioPath, audioData);
-      console.log('Audio file downloaded.');
-    }
-  
-    const audioData = fm.read(audioPath);
-    const audioBase64 = audioData.toBase64String();
-    const audioSource = `data:audio/mp3;base64,${audioBase64}`;
-    return audioSource;
-  };
-  
-  // 运行组件
+  // 运行脚本
   const ScriptableRun = (name = Script.name()) => {
     Safari.open('scriptable:///run/' + encodeURIComponent(name));
 };
@@ -806,7 +787,7 @@ async function main() {
     const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     const gifImage = await getCacheGif();
     const scriptTags = await module.scriptTags();
-    const audioSource = await playAudio();
+    const audioSource = await module.playAudio();
     
     /**
      * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
@@ -1981,8 +1962,7 @@ async function main() {
         if (script.includes('组件')) saveScript(label, script, scrUrl);  
         else module.notify(script, '安装失败，脚本链接有误或已删除。');
       } catch (e) {
-        console.log(e);
-        module.notify(`${label} ⚠️`, '获取脚本失败，请在 App 设置中打开 Sync Script Order');
+        module.notify(`${label} ⚠️`, `${e}，请检查网络后重试。`, ``, null);
       }
     };
     
