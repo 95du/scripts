@@ -600,7 +600,7 @@ async function main(family) {
     return widget;
   };
   
-  // 小号组件
+  // ====== 小号组件 ====== //
   const addStack = (stack, month, power, amount, tier, color, billColor) => {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
@@ -700,7 +700,7 @@ async function main(family) {
     
     const resultText = stateStack.addText(result.value);
     resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#0094FF');
-    resultText.font = Font.mediumSystemFont(14);
+    resultText.font = Font.boldSystemFont(14);
     stateStack.addSpacer(10);
     groupStack.addSpacer(lay.gap);
     
