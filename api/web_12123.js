@@ -463,9 +463,9 @@ async function main(family) {
   
   /**-------------------------**/
   const getLayout = (scr = Device.screenSize().height) => ({
-    textSize: scr < 926 ? 13 : 13.5,
+    textSize: scr < 926 ? 12.5 : 13.5,
     barSize: scr < 926 ? 35 : 36,
-    gap1: scr < 926 ? 8 : 11,
+    gap1: scr < 926 ? 9 : 11,
     gap2: scr < 926 ? 5 : 6
   });
   
