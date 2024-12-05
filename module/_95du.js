@@ -646,7 +646,7 @@ class _95du {
   };
   
   /**
-   * 将下载的音频文件保存到本地存储路径。
+   * 远程下载的音频文件。
    * 从本地存储读取音频文件，并将其转换为 Base64 格式。
    * @returns {Promise<string>} Base64 编码的音频数据 URL。
    */
@@ -1066,7 +1066,8 @@ class _95du {
     };
     
     // js 部分
-    const audioSource = await this.playAudio()
+    let audioSource;
+    if (!avatarInfo && !widgetMessage) audioSource = await this.playAudio();
     const height = avatarInfo && toggle ? '280px' : '260px';
     
     const js = `
