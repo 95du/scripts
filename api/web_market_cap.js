@@ -73,14 +73,8 @@ async function main() {
    */
   const access_token = async () => {
     const html = await module.getCacheData('https://www.laohu8.com/m/hq/s/AAPL/wiki', 72)
-    const webView = new WebView();
-    await webView.loadHTML(html);
-    const headers = await webView.evaluateJavaScript(`
-      (() => {
-        return SETTINGS.guestUser
-      })();
-    `);
-    return { Authorization: 'Bearer ' + headers.access_token };
+    const access_token = html.match(/access_token":"([\w.-]+)"/)?.[1];
+    return { Authorization: 'Bearer ' + access_token };
   };
   
   // Request parameter
