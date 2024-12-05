@@ -119,8 +119,8 @@ async function main(family) {
       const color = val === 0 
         ? new Color(barColor, 0.35) 
         : val == max 
-          ? new Color('#FF6800') 
-          : new Color(barColor);
+        ? new Color('#FF6800') 
+        : new Color(barColor);
   
       fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
     });
@@ -256,38 +256,6 @@ async function main(family) {
     return res.sta == 00 ? res.data[0].balance : '0.00';
   };
   
-  /** -------- 提取数据 -------- **/
-  
-  const {  
-    userName: name = '用户名',
-    eleCustNumber: number = '070100',
-    eleType = '800',
-    areaCode,
-    bindingId: eleCustId
-  } =  await getUserInfo() || {};
-  
-  const balance = await getUserBalance(areaCode, eleCustId);
-  
-  // 总用电量，昨日用电
-  const { 
-    totalPower = '0.00', 
-    result = [] 
-  } = await getMonthData(areaCode, eleCustId) || {};
-  
-  const ystdayPower = result.length > 0 ? result.pop().power : '0.00';
-  const beforeYesterday = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
-  
-  const {
-    lastMonth = `${year}-${month}`,
-    totalArray,
-    totalPower: total = '0.00',
-    totalElectricity = '0.00',   
-    arrears = '0', 
-    isArrears = '0',
-    totalElectricityYear = '0.00', 
-    totalPowerYear = '0.00 °'
-  } = await getEleBill(areaCode, eleCustId) || {};
-  
   /**
    * 根据当前月份和用电量返回电费信息
    * 农业用电电价表（根据区域代码）海南，广东，广西，云南，贵州
@@ -368,7 +336,41 @@ async function main(family) {
     };
   };
   
+  /** -------- 提取数据 -------- **/
+  
+  const {  
+    userName: name = '用户名',
+    eleCustNumber: number = '070100',
+    eleType = '800',
+    areaCode,
+    bindingId: eleCustId
+  } =  await getUserInfo() || {};
+  
+  const balance = await getUserBalance(areaCode, eleCustId);
+  
+  // 总用电量，昨日用电
+  const { 
+    totalPower = '0.00', 
+    result = [] 
+  } = await getMonthData(areaCode, eleCustId) || {};
+  
+  const ystdayPower = result.length > 0 ? result.pop().power : '0.00 °';
+  const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
+  
+  const {
+    lastMonth = `${year}-${month}`,
+    totalArray,
+    totalPower: total = '0.00',
+    totalElectricity = '0.00',   
+    arrears = '0', 
+    isArrears = '0',
+    totalElectricityYear = '0.00', 
+    totalPowerYear = '0.00 °'
+  } = await getEleBill(areaCode, eleCustId) || {};
+  
+  // 电费信息
   const { tier, rate, cost, percent, isPercent, tierIndex } = calcElectricBill(totalPower, eleType, areaCode);
+  
   const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
   
@@ -397,8 +399,8 @@ async function main(family) {
     } else if (setting.gradient.length > 0 && !setting.bwTheme) {
       const gradient = new LinearGradient();
       const color = setting.gradient.length > 0 
-      ? setting.gradient 
-      : [setting.rangeColor];
+        ? setting.gradient 
+        : [setting.rangeColor];
       const randomColor = module.getRandomItem(color);
       // 渐变角度
       const angle = setting.angle;
@@ -587,7 +589,7 @@ async function main(family) {
     barStack2.setPadding(1, 7, 1, 7);
     barStack2.cornerRadius = 5;
     
-    const pointText = barStack2.addText(beforeYesterday);
+    const pointText = barStack2.addText(dayBefore);
     pointText.font = Font.boldSystemFont(13);
     pointText.textColor = Color.white();
     mainStack.addSpacer(lay.gapMed);
@@ -595,10 +597,10 @@ async function main(family) {
     if (location == 0) progressBar(mainStack, tier);
     
     /** 
-    * 中间，底部容器内容
-    * @param {image} image
-    * @param {string} string
-    */
+     * 中间，底部容器内容
+     * @param {image} image
+     * @param {string} string
+     */
     const middleStack = mainStack.addStack();
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
@@ -776,7 +778,7 @@ async function main(family) {
     return horStack;
   };
   
-  // 创建小号组件
+  // 创建电车小号组件
   const eleCarWidget = async () => {
     const response = await getCacheString(  
       `eleCar.json`,
