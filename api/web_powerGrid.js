@@ -288,23 +288,25 @@ async function main(family) {
     totalPowerYear = '0.00 °'
   } = await getEleBill(areaCode, eleCustId) || {};
   
-  /** 
+  /**
    * 根据当前月份和用电量返回电费信息
    * 农业用电电价表（根据区域代码）海南，广东，广西，云南，贵州
    */
   const calcElectricBill = (totalPower, eleType = '800', areaCode = '') => {
     const isSummer = new Date().getMonth() + 1 >= 4 && new Date().getMonth() + 1 <= 10;
-
+  
+    // 农业用电电价表
     const agriculturalRatesByCode = {
-      '070000': { rate: 0.514 },
-      '440000': { rate: 0.514 },
-      '450000': { rate: 0.510 },
-      '530000': { rate: 0.508 },
-      '520000': { rate: 0.507 }
+      '070000': { rate: 0.514 }, // 海南
+      '440000': { rate: 0.514 }, // 广东
+      '450000': { rate: 0.510 }, // 广西
+      '530000': { rate: 0.508 }, // 云南
+      '520000': { rate: 0.507 }  // 贵州
     };
   
     const agriculturalInfo = agriculturalRatesByCode[areaCode];
     const agriculturalRate = agriculturalInfo ? agriculturalInfo.rate : 0.514;
+  
     // 返回农业用电数据
     if (eleType === '800') {
       return {
@@ -317,20 +319,44 @@ async function main(family) {
       };
     }
   
-    // 普通居民电价档次设定
-    const tiers = [
-      { limit: isSummer ? 220 : 160, rate: 0.6083, name: '一档' },
-      { limit: isSummer ? 400 : 280, rate: 0.6583, name: '二档' },
-      { rate: 0.9083, name: '三档' }
-    ];
+    // 居民电价档次表（按省份划分）
+    const resRatesProv = {
+      '070000': [ // 海南
+        { limit: isSummer ? 220 : 160, rate: 0.6083, name: '一档' },
+        { limit: isSummer ? 400 : 280, rate: 0.6583, name: '二档' },
+        { rate: 0.9083, name: '三档' }
+      ],
+      '440000': [ // 广东
+        { limit: isSummer ? 210 : 170, rate: 0.61, name: '一档' },
+        { limit: isSummer ? 400 : 300, rate: 0.66, name: '二档' },
+        { rate: 0.91, name: '三档' }
+      ],
+      '450000': [ // 广西
+        { limit: isSummer ? 200 : 180, rate: 0.615, name: '一档' },
+        { limit: isSummer ? 400 : 300, rate: 0.665, name: '二档' },
+        { rate: 0.915, name: '三档' }
+      ],
+      '530000': [ // 云南
+        { limit: isSummer ? 200 : 160, rate: 0.6, name: '一档' },
+        { limit: isSummer ? 400 : 300, rate: 0.65, name: '二档' },
+        { rate: 0.9, name: '三档' }
+      ],
+      '520000': [ // 贵州
+        { limit: isSummer ? 230 : 170, rate: 0.605, name: '一档' },
+        { limit: isSummer ? 400 : 300, rate: 0.655, name: '二档' },
+        { rate: 0.905, name: '三档' }
+      ]
+    };
+  
+    const provinceRates = resRatesProv[areaCode] || resRatesProv['070000'];
   
     // 根据用电量判断所属档次
-    const tierIndex = tiers.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === tiers.length - 1);
-    const tier = tiers[tierIndex];
+    const tierIndex = provinceRates.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === provinceRates.length - 1);
+    const tier = provinceRates[tierIndex];
     // 计算占第三档比例
-    const thirdTierLimit = isSummer ? 400 : 280;
+    const thirdTierLimit = isSummer ? provinceRates[1]?.limit : provinceRates[0]?.limit;
     const percentageOfThird = totalPower / thirdTierLimit;
-    const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0;
+    const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0
   
     return {
       tier: tier.name,
