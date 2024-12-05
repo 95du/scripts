@@ -588,6 +588,30 @@ class _95du {
   };
   
   /**
+   * 创建并配置一个通用的 barStack
+   * @param {object} parentStack
+   * @param {string} layout 布局方式 ("horizontal" 或 "vertical")
+   * @param {object} size Stack 的大小（new Size(width, height)）
+   * @param {number[]} padding 内边距 [top, right, bottom, left]
+   * @param {number} cornerRadius 圆角
+   * @param {string} borderColor 边框颜色（十六进制颜色值）
+   * @param {number} borderWidth 宽度
+   * @returns {object} 返回配置的 Stack
+   */
+  createStack = (parentStack, layout = 'horizontal', size = null, padding = [0, 0, 0, 0], backgroundColor = null, cornerRadius = 0, borderColor = null, borderWidth = 0) => {
+    const stack = parentStack.addStack();
+    layout === 'vertical' ? stack.layoutVertically() : stack.layoutHorizontally();
+    stack.centerAlignContent();
+    if (size) stack.size = size;
+    stack.setPadding(...padding);
+    if (backgroundColor) stack.backgroundColor = new Color(backgroundColor);
+    stack.cornerRadius = cornerRadius;
+    if (borderColor) stack.borderColor = new Color(borderColor);
+    stack.borderWidth = borderWidth;
+    return stack;
+  };
+  
+  /**
    * 根据设备屏幕尺寸匹配预定义的屏幕数据，计算与参考尺寸的缩放比例。
    * - 如果未匹配到数据，返回默认比例 1。
    * - 否则计算比例：(匹配屏幕的 widget 尺寸 - 30) / (参考 widget 尺寸 - 30) * 0.95。
