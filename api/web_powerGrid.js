@@ -573,7 +573,6 @@ async function main(family) {
     * @param {string} string
     */
     const middleStack = mainStack.addStack();
-    middleStack.url = alipayUrl;
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
@@ -596,6 +595,9 @@ async function main(family) {
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 1) progressBar(mainStack, tier);
+    if (isArrears == 1) {
+      middleStack.url = alipayUrl;
+    }
     arrearsNotice();
     return widget;
   };
@@ -624,7 +626,7 @@ async function main(family) {
     const tierText = upStack.addText(tier);
     tierText.textColor = textColor;
     tierText.font = Font.boldSystemFont(10);
-    tierText.textOpacity = 0.7;
+    tierText.textOpacity = 0.8;
     columnStack.addSpacer(1);
     
     const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
@@ -652,7 +654,7 @@ async function main(family) {
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', '元', color);
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tier, color);
       } else {
         const { tier } = calcElectricBill(total, eleType, areaCode);
         const billColor = new Color(isArrears == 1 ? '#FF0000' : '#00B388');
@@ -708,7 +710,9 @@ async function main(family) {
     rankStack(groupStack, column);
     if (!isSmall) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-    widget.url = alipayUrl;
+    if (isArrears == 1) {
+      widget.url = alipayUrl;
+    }
     return widget;
   };
   
