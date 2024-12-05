@@ -463,16 +463,16 @@ async function main(family) {
   
   /**-------------------------**/
   const getLayout = (scr = Device.screenSize().height) => ({
+    padding: scr < 926 ? 13 : 18,
     textSize: scr < 926 ? 12.5 : 13.5,
     barSize: scr < 926 ? 35 : 36,
-    gap1: scr < 926 ? 9 : 11,
-    gap2: scr < 926 ? 5 : 6
+    gap: scr < 926 ? 8 : 10,
   });
   
   const generateStack = (widget) => {
     const leftBarStack = widget.addStack();
-    leftBarStack.layoutHorizontally()
-    leftBarStack.centerAlignContent()
+    leftBarStack.layoutHorizontally();
+    leftBarStack.centerAlignContent();
     return leftBarStack;
   }
   
@@ -484,7 +484,7 @@ async function main(family) {
     stack.addSpacer(gap);
   };
   
-  const addText2 = (stack, text, font, color, opacity) => {
+  const addHorizontalText = (stack, text, font, color, opacity) => {
     const statusText = stack.addText(text);
     statusText.font = Font.mediumSystemFont(font);
     if (color) 
@@ -494,37 +494,29 @@ async function main(family) {
   
   // 小号组件
   const smallWidget = async () => {
-    const { textSize, barSize, gap1, gap2 } = getLayout();
-    
+    const { padding, textSize, barSize, gap } = getLayout();
     const statuColor = status === 'A' ? Color.green() : Color.orange();
-    
     const pointColor = cumulativePoint >= 9 ? Color.red() : cumulativePoint >= 6 ? Color.orange() : cumulativePoint >= 3 ? Color.blue() : Color.green();
+    const emoticon = getRandomItem(['🚕', '🚚', ' ']);
     
     const widget = new ListWidget();
-    widget.url = statusUrl;
-    if (setting.smallBg) {
-      await setBackground(widget);
-    } else {
-      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-    };
-    
-    const mainStack = widget.addStack();
+    widget.setPadding(padding, padding, padding, padding);
+    const mainStack = generateStack(widget);
+    mainStack.setPadding(0, 0, 0, -2);
     mainStack.size = new Size(0, 40);
-    mainStack.setPadding(-3, -2, 0, 0)
-    mainStack.layoutHorizontally();
-    mainStack.centerAlignContent();
     
-    addText2(mainStack, cumulativePoint, 45, pointColor);
-    const pointStack = mainStack.addStack();
+    // 顶部分数区域
+    const topStack = generateStack(mainStack);
+    topStack.setPadding(-6.5, -2, 0, 0)
+    addHorizontalText(topStack, cumulativePoint, 45, pointColor);
+    const pointStack = topStack.addStack();
     pointStack.layoutVertically();
     pointStack.setPadding(20, 4, 0, 0)
-    addText2(pointStack, '分', 14, pointColor);
+    addHorizontalText(pointStack, '分', 14, pointColor);
     mainStack.addSpacer();
       
     const iconStack = mainStack.addStack();
     iconStack.layoutVertically();
-    iconStack.addSpacer(3.5);
-    
     const icons = nothing 
       ? 'car.circle' 
       : !success 
@@ -541,36 +533,51 @@ async function main(family) {
     iconStack.addSpacer();
     widget.addSpacer();
     
-    const middleBarStack = generateStack(widget)
-    createBarStack(middleBarStack, 8, 8, '#FF8500', gap1);
-    addText2(middleBarStack, `准驾车型  ${allowToDrive}`, textSize);
+    // 准驾车型
+    const allowDriveStack = generateStack(widget);
+    createBarStack(allowDriveStack, 8, 8, '#FF8500', gap);
+    addHorizontalText(allowDriveStack, '准驾车型', textSize);
+    allowDriveStack.addSpacer();  
+    addHorizontalText(allowDriveStack, `${emoticon} ${allowToDrive}`, textSize);
     widget.addSpacer(3);
     
+    // 驾照状态
     const statusStack = generateStack(widget)
-    createBarStack(statusStack, 8, 8, '#8C7CFF', gap1);
-    addText2(statusStack, '驾驶证状态', textSize);
-    statusStack.addSpacer(gap2);
-    
+    createBarStack(statusStack, 8, 8, '#8C7CFF', gap);
+    addHorizontalText(statusStack, '驾照状态', textSize);
+    statusStack.addSpacer();
     const barStack = statusStack.addStack();
     barStack.setPadding(2, 6, 2, 6);
     barStack.backgroundColor = new Color(statuColor.hex, 0.05);
     barStack.cornerRadius = 5;
     barStack.borderColor = statuColor
     barStack.borderWidth = 2;
-    
-    addText2(barStack, isStatus, 11, statuColor, true);
+    addHorizontalText(barStack, isStatus, 11, statuColor, true);
     widget.addSpacer();
     
-    // 换证年检日期
+    // 换证/年检日期
     const bottomBarStack = generateStack(widget);
-    const barColor = await getRandomItem([ '#0088FF', '#14BAFF', '#8C7CFF']);
-    createBarStack(bottomBarStack, 8, barSize, barColor, gap1);
+    const barColor = getRandomItem(['#0088FF', '#14BAFF', '#8C7CFF']);
+    createBarStack(bottomBarStack, 8, barSize, barColor, gap);
     
     const vStack = bottomBarStack.addStack();
     vStack.layoutVertically();
-    addText2(vStack, `换证 ${validityEnd}`, textSize);
-    vStack.addSpacer(3);
-    addText2(vStack, `年检 ${validPeriodEnd}`, textSize);
+    const bottomStack1 = generateStack(vStack);
+    addHorizontalText(bottomStack1, '换证', textSize);
+    bottomStack1.addSpacer();
+    addHorizontalText(bottomStack1, validityEnd, textSize);
+    vStack.addSpacer(3); // 间隔
+    const bottomStack2 = generateStack(vStack);
+    addHorizontalText(bottomStack2, '年检', textSize);
+    bottomStack2.addSpacer();
+    addHorizontalText(bottomStack2, validPeriodEnd, textSize);
+    
+    if (setting.smallBg) {
+      await setBackground(widget);
+    } else {
+      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+    };
+    widget.url = statusUrl;
     return widget;
   };
   
