@@ -144,23 +144,23 @@ const getColor = (index) => {
 };
 
 const drawBar = (color) => {
+  const width = 13;
   const context = new DrawContext();
-  context.size = new Size(10, 115);
+  context.size = new Size(width, 115);
   context.respectScreenScale = true;
   context.opaque = false;
   context.setStrokeColor(color);
-  context.setLineWidth(10);
+  context.setLineWidth(width);
 
   const path = new Path();
-  path.move(new Point(5, 5));
-  path.addLine(new Point(5, 110));
+  path.move(new Point(width / 2, 5));
+  path.addLine(new Point(width / 2, 105));
   context.addPath(path);
   context.strokePath();
   context.setFillColor(color);
 
-  const ellipseSize = 10;
-  context.fillEllipse(new Rect(0, 0, ellipseSize, ellipseSize));
-  context.fillEllipse(new Rect(0, 105, ellipseSize, ellipseSize));
+  context.fillEllipse(new Rect(0, 0, width, width));
+  context.fillEllipse(new Rect(0, 100, width, width));
   return context.getImage();
 };
 
