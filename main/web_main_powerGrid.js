@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.1.5'
-  const updateDate = '2024年12月01日'
+  const version = '1.1.6'
+  const updateDate = '2024年12月05日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -27,7 +27,7 @@ async function main() {
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  const module = new _95du(pathName);  
+  const module = new _95du(pathName);
   
   const {
     mainPath,
@@ -202,7 +202,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加第二个小号组件`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -687,7 +687,7 @@ async function main() {
           icon: `${rootUrl}/img/symbol/notice.png`
         },
         {
-          label: '显示估算',
+          label: '显示账单',
           name: 'estimate',
           type: 'switch',
           icon: {
