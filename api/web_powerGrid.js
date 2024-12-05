@@ -59,9 +59,9 @@ async function main(family) {
     left: isSmall ? 10 : 15,
     right: isSmall ? 8 : 0,
     gap: isSmall ? 8 : 10,
-    gapStack: isSmall ? 3 : 5,
+    gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
-    gapMed: isSmall ? 5 : null,
+    padding: isSmall ? 12 : 15
   };
   
   // ====== 绘制圆柱图形 ====== //
@@ -312,7 +312,8 @@ async function main(family) {
         rate: agriculturalRate,
         cost: (totalPower * agriculturalRate).toFixed(2),
         percent: 0,
-        isPercent: '0%'
+        isPercent: '0%',
+        tierIndex: 0
       };
     }
   
@@ -603,12 +604,12 @@ async function main(family) {
   };
   
   // ====== 小号组件 ====== //
-  const addStack = (stack, month, power, amount, tier, color, billColor) => {
+  const addStack = (stack, month, power, amount, tierIndex, tierColor, barColor, billColor) => {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
     barStack.size = new Size(0, 49);
-    const barImg = drawBar(new Color(color));
+    const barImg = drawBar(new Color(barColor ?? tierColor));
     barStack.addImage(barImg);
     barStack.addSpacer(10);
     
@@ -621,12 +622,12 @@ async function main(family) {
     amountText.textColor = billColor;
     amountText.font = Font.boldSystemFont(lay.amountSize);
     amountText.textOpacity = 0.9;
-    upStack.addSpacer(3);
+    upStack.addSpacer();
     
-    const tierText = upStack.addText(tier);
-    tierText.textColor = textColor;
-    tierText.font = Font.boldSystemFont(10);
-    tierText.textOpacity = 0.8;
+    const iconSymbol = SFSymbol.named(tierIndex > 0 ? `${tierIndex}.circle` : 'leaf');
+    const icon = upStack.addImage(iconSymbol.image);
+    icon.tintColor = new Color(tierColor);
+    icon.imageSize = new Size(18, 18);
     columnStack.addSpacer(1);
     
     const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
@@ -635,43 +636,43 @@ async function main(family) {
     powerText.font = Font.mediumSystemFont(14);
   };
   
+  const getTierColor = (tierIndex) => {
+    const tierColor = tierIndex == 0
+      ? '#00C400' 
+      : tierIndex == 1
+      ? '#FF7800' 
+      : '#FF0000'
+    return tierColor;
+  };
+  
+  const processNumber = (num) => {
+    const str = num.toString();
+    return str.length > 6 ? parseFloat(str.slice(0, 6)) : num;
+  };
+  
   // 创建小号组件
   const smallWidget = async () => {
     const random = Math.round(Math.random());
     const result = random === 0 
-    ? { title: '昨日', value: `${ystdayPower} °` } 
-    : { title: '余额', value: balance };
-  
-    const color = tierIndex == 0
-      ? '#00C400' 
-      : tierIndex == 1
-        ? '#FF9500' 
-        : tierIndex == 2 
-          ? '#FF0000'
-          : '#00C400'
+    ? { title: '昨日', value: processNumber(`${ystdayPower} °`) } 
+    : { title: '余额', value: processNumber(balance) };
     
     // 排列顺序
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tier, color);
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tierIndex + 1, getTierColor(tierIndex));
       } else {
-        const { tier } = calcElectricBill(total, eleType, areaCode);
+        const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
         const billColor = new Color(isArrears == 1 ? '#FF0000' : '#00B388');
-        return addStack(groupStack, lastMonth, total, totalElectricity, tier, '#8C7CFF', billColor);
+        return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex + 1, getTierColor(tierIndex), '#8C7CFF', billColor);
       }
     };
     
-    const valueLength = isSmall && result.value.length >= 7;
-    
     // 创建组件
     const widget = new ListWidget();
-    widget.setPadding(15, lay.left, 15, valueLength ? 0 : lay.right);
-    const mainStack = widget.addStack();
-    mainStack.layoutHorizontally();
-    mainStack.centerAlignContent();
-    
-    const groupStack = mainStack.addStack();
+    widget.setPadding(lay.padding, lay.padding, lay.padding, lay.padding);
+    const groupStack = widget.addStack();
     groupStack.layoutVertically();
 
     // 第一组
@@ -708,7 +709,6 @@ async function main(family) {
     
     // 第二组
     rankStack(groupStack, column);
-    if (!isSmall) mainStack.addSpacer();
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     if (isArrears == 1) {
       widget.url = alipayUrl;
