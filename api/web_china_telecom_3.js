@@ -362,7 +362,7 @@ async function main(family) {
         stack: horStack,
         title: '语音',
         balance: voiceBalance,
-        newUnit: ' min',
+        newUnit: ' Min',
         percent: `  ${voice}%`,
         symbol: 'phone.fill',
         color: voiceColor,
