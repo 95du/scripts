@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '交管 12123'
-  const version = '1.2.1'
-  const updateDate = '2024年11月10日'
+  const version = '1.2.3'
+  const updateDate = '2024年12月05日'
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -223,7 +223,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，清除缓存后再更新`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
