@@ -497,7 +497,6 @@ async function main(family) {
     const { padding, textSize, barSize, gap } = getLayout();
     const statuColor = status === 'A' ? Color.green() : Color.orange();
     const pointColor = cumulativePoint >= 9 ? Color.red() : cumulativePoint >= 6 ? Color.orange() : cumulativePoint >= 3 ? Color.blue() : Color.green();
-    const emoticon = getRandomItem(['🚕', '🚚', ' ']);
     
     const widget = new ListWidget();
     widget.setPadding(padding, padding, padding, padding);
@@ -538,7 +537,7 @@ async function main(family) {
     createBarStack(allowDriveStack, 8, 8, '#FF8500', gap);
     addHorizontalText(allowDriveStack, '准驾车型', textSize);
     allowDriveStack.addSpacer();  
-    addHorizontalText(allowDriveStack, `${emoticon} ${allowToDrive}`, textSize);
+    addHorizontalText(allowDriveStack, allowToDrive, textSize);
     widget.addSpacer(3);
     
     // 驾照状态
