@@ -541,7 +541,7 @@ async function main() {
           desc: '新旧版每日开奖结果',
           version: '1.1.0',
           type: 'button',
-          scrUrl: `${rootUrl}/run/module_macaujc.js`,
+          scrUrl: `${rootUrl}/run/web_module_macaujc.js`,
           icon: `${rootUrl}/img/icon/macaujc.png`
         },
         {
