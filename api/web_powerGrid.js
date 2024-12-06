@@ -92,9 +92,12 @@ async function main(family) {
   
   // ====== 创建图表(每月用量) ====== //
   const getTotalPower = (data) => {
-    const total = data?.map(entry => entry.totalElectricity).reverse();
-    while (total?.length < 12) total.push(0);
-    return total?.slice(0, 12);
+    const total = Array(12).fill(0);
+    data.forEach(({ startMonthDate, totalElectricity }) => {
+      const month = parseInt(startMonthDate.split('.')[0], 10);  // 提取月份
+      if (month >= 1 && month <= 12) total[month - 1] = parseFloat(totalElectricity);
+    });
+    return total;
   };
   
   // 填充矩形
