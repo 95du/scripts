@@ -610,7 +610,7 @@ async function main(family) {
   // ====== 小号组件 ====== //
   const addStack = (stack, month, power, amount, tierIndex, tierColor, barColor, billColor) => {
     const mainStack = module.createStack(stack);
-    module.createStack(mainStack, 'horizontal', (barColor ?? tierColor), new Size(7, lay.barHeight), 50);
+    module.createStack(mainStack, 'horizontal', (barColor ?? tierColor), new Size(6.5, lay.barHeight), 50);
     mainStack.addSpacer(10);
     
     const columnStack = mainStack.addStack();
