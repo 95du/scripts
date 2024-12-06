@@ -16,7 +16,7 @@ $.boxjs_loginUrl = $.getdata($.login_key);
         $.setdata($.login_url, $.login_key);
         $.msg(
           `${$.name} 获取成功`, ``, 
-          $.login_url
+          $.login_url,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('中国电信_3'),
             'media-url': 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/telecom.png'
