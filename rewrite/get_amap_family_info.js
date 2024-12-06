@@ -50,7 +50,9 @@ $.is_debug = $.getdata('is_debug');
   function setDataAndMsg(data, key, message) {  
     $.setdata(data, key);
     if (data) {
-      $.msg($.name}, ``, 
+      $.msg(
+        $.name, 
+        ``,
         `${message}成功`,
         {
           'open-url': 'scriptable:///run/' + encodeURIComponent('高德家人地图'),
@@ -58,7 +60,7 @@ $.is_debug = $.getdata('is_debug');
         }
       );
     }
-  };
+  }
   
 })()
   .catch((e) => $.logErr(e))
