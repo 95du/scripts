@@ -284,7 +284,7 @@ async function main(family) {
         cost: (totalPower * agriculturalRate).toFixed(2),
         percent: 0,
         isPercent: '0%',
-        tierIndex: 0
+        tierIndex: -1
       };
     }
   
