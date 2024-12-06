@@ -30,10 +30,10 @@ $.is_debug = $.getdata('is_debug');
         $.msg(
           $.name,
           `验证令牌/签名获取成功。`, 
-          $.rest_body.sign,
+          $.rest_body.authToken,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
-            'media-url': 'https://raw.gitcode.com/4qiao/scripts/raw/master/img/icon/4qiao.gif'
+            'media-url': 'https://raw.gitcode.com/4qiao/scripts/raw/master/img/icon/loading_green.gif'
           }
         );
         console.log($.new_body);
