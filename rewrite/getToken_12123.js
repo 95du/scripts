@@ -29,8 +29,8 @@ $.is_debug = $.getdata('is_debug');
         $.setdata($.new_body, $.body_key);
         $.msg(
           $.name,
-          '验证令牌/签名获取成功。', 
-          $.new_body.sign,
+          `验证令牌/签名获取成功。`, 
+          $.rest_body.sign,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
             'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
