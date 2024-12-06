@@ -680,19 +680,13 @@ async function main() {
   const renderWidget = async () => {
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18)
-    const mainStack = widget.addStack();
-    mainStack.layoutHorizontally();
-    mainStack.centerAlignContent();
-    
+    const mainStack = module.createStack(widget);
     const leftStack = mainStack.addStack();
     leftStack.layoutVertically();
     
     // first Column Bar
-    const barStack = leftStack.addStack();  
-    barStack.layoutHorizontally();
-    barStack.centerAlignContent();
-    barStack.size = new Size(0, barSize);
-    barStack.addImage(drawBar(barColor));
+    const barStack = module.createStack(leftStack);
+    module.createStack(barStack, 'horizontal', barColor.hex, new Size(6, barSize), 50);
     barStack.addSpacer(spacer);
     
     const firstStack = barStack.addStack();
@@ -715,10 +709,7 @@ async function main() {
     leftStack.addSpacer();
     
     // stock status
-    const stateStack = leftStack.addStack();
-    stateStack.layoutHorizontally();
-    stateStack.centerAlignContent();
-    
+    const stateStack = module.createStack(leftStack);
     const borStack = stateStack.addStack();
     borStack.backgroundColor = new Color(statusColor);
     borStack.setPadding(staBarSize, 6, staBarSize, 6);
@@ -730,7 +721,7 @@ async function main() {
     statusText.font = Font.boldSystemFont(descSize);
     stateStack.addSpacer(10);
     
-    if (familySize) {
+    if (familySize || marketStatus.length <= 5) {
       for (item of !market ? usIcons : hkIcons) {
         stateStack.addSpacer(3);
         const icons = await module.getCacheData(item);
@@ -741,11 +732,8 @@ async function main() {
     leftStack.addSpacer();
     
     // second Column Bar
-    const barStack2 = leftStack.addStack();  
-    barStack2.layoutHorizontally();
-    barStack2.centerAlignContent();
-    barStack2.size = new Size(0, barSize);
-    barStack2.addImage(drawBar(new Color(setting.columnBarColor)));
+    const barStack2 = module.createStack(leftStack);
+    module.createStack(barStack2, 'horizontal', setting.columnBarColor, new Size(6, barSize), 50);
     barStack2.addSpacer(spacer);
     
     const secondStack = barStack2.addStack();
@@ -763,9 +751,7 @@ async function main() {
     dollarText.font = Font.mediumSystemFont(!market ? dollarSize : hkSize);
     
     //
-    const changeStack = secondStack.addStack();
-    changeStack.layoutHorizontally();
-    changeStack.centerAlignContent();
+    const changeStack = module.createStack(secondStack);
     
     const changeTextElement = changeStack.addText(changeText);
     changeTextElement.textColor = new Color(changePColor);
@@ -793,9 +779,7 @@ async function main() {
       rightStack.layoutVertically();
       rightStack.size = new Size(nameCN.length >= 4 || symbol.length >= 5 ? 142 : 130 , 0);
       
-      const nameStack = rightStack.addStack();
-      nameStack.layoutHorizontally();
-      nameStack.centerAlignContent();
+      const nameStack = module.createStack(rightStack);
       
       const symbolText = nameStack.addText(nameCN);
       symbolText.textColor = nameColor;
@@ -811,9 +795,7 @@ async function main() {
       const points = pointsData();
       for (const point of points) {
         rightStack.addSpacer(0.5);
-        const stack = rightStack.addStack();
-        stack.layoutHorizontally();
-        stack.centerAlignContent();
+        const stack = module.createStack(rightStack);
       
         const labelText = stack.addText(point.label);
         labelText.textColor = point.color;
