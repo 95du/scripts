@@ -52,6 +52,7 @@ async function main(family) {
   // 配置尺寸
   const isSmall = Device.screenSize().height < 926;
   const lay = {
+    avatarSize: isSmall ? 8 : 12,
     stackSize: isSmall ? 35 : 37,
     iconSize: isSmall ? 23 : 25,
     titleSize: isSmall ? 18 : 20,
@@ -61,7 +62,7 @@ async function main(family) {
     gap: isSmall ? 8 : 10,
     gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
-    padding: isSmall ? 12 : 15
+    padding: isSmall ? 13 : 15
   };
   
   // ====== 绘制圆柱图形 ====== //
@@ -522,7 +523,7 @@ async function main(family) {
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
     barStack.backgroundColor = new Color(levelColor);
-    barStack.setPadding(1, 12, 1, 12)
+    barStack.setPadding(1, lay.avatarSize, 1, lay.avatarSize);
     barStack.cornerRadius = 10;
     
     const iconSF = SFSymbol.named('crown.fill');
@@ -729,7 +730,7 @@ async function main(family) {
     subText.font = Font.mediumSystemFont(12.5);
     stateStack.addSpacer(3);
     
-    const resultText = stateStack.addText(result.value);
+    const resultText = stateStack.addText(`${result.value}`);
     resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FD4A67');
     resultText.font = Font.boldSystemFont(14);
     stateStack.addSpacer(10);
