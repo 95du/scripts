@@ -200,13 +200,13 @@ async function main() {
     
     // Alert
     const statusStack = mainStack.addStack();
-    statusStack.addSpacer();
-    statusStack.size = new Size(0, tipsGap ? height : gap);
     statusStack.layoutHorizontally();
     statusStack.centerAlignContent();
+    statusStack.size = new Size(0, tipsGap ? height : gap);
+    statusStack.addSpacer();
     
     const columnStack = statusStack.addStack();
-    columnStack.size = new Size(5, tipsGap ? 60 : 50);
+    columnStack.size = new Size(6, tipsGap ? 60 : 50);
     columnStack.cornerRadius = 50;
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
