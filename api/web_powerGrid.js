@@ -672,7 +672,7 @@ async function main(family) {
   
   const processNumber = (num) => {
     const str = num.toString();
-    return str.length > 6 ? parseFloat(str.slice(0, 6)) : num;
+    return str.length > 6 ? parseFloat(str.slice(0, isSmall ? 5 : 6)) : num;
   };
   
   // 创建小号组件
