@@ -14,14 +14,7 @@ $.boxjs_loginUrl = $.getdata($.login_key);
       if (request.url && request.url !== $.boxjs_loginUrl) {
         $.login_url = request.url.match(/(http.+)&sign/)[1]
         $.setdata($.login_url, $.login_key);
-        $.msg(
-          `${$.name} 获取成功`, ``, 
-          $.login_url,
-          {
-            'open-url': 'scriptable:///run/' + encodeURIComponent('中国电信_3'),
-            'media-url': 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/telecom.png'
-          }
-        );
+        $.msg(`${$.name} 获取成功`, ``, $.login_url);
         console.log(`${$.name}‼️\n${request.url}`);
       }
     }
