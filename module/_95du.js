@@ -598,7 +598,7 @@ class _95du {
    * @param {number} borderWidth 宽度
    * @returns {object} 返回配置的 Stack
    */
-  createStack = (parentStack, layout = 'horizontal', size = null, padding = [0, 0, 0, 0], backgroundColor = null, cornerRadius = 0, borderColor = null, borderWidth = 0) => {
+  createStack = (parentStack, layout = 'horizontal', backgroundColor = null, size = null, cornerRadius = 0, padding = [0, 0, 0, 0], borderColor = null, borderWidth = 0) => {
     const stack = parentStack.addStack();
     layout === 'vertical' ? stack.layoutVertically() : stack.layoutHorizontally();
     stack.centerAlignContent();
