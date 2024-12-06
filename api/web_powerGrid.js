@@ -44,10 +44,13 @@ async function main(family) {
    * 该函数获取当前的年份和月份
    * @returns {Promise}
    */
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
-  const currentYear = month === '01' ? year - 1 : year;
+  const getCurrentYearMonth = () => {
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const currentYear = month === 1 ? year - 1 : year;
+    return { year, currentYear, month }
+  };
   
   // 配置尺寸
   const isSmall = Device.screenSize().height < 926;
@@ -62,7 +65,8 @@ async function main(family) {
     gap: isSmall ? 8 : 10,
     gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
-    padding: isSmall ? 12 : 15
+    padding: isSmall ? 12 : 15,
+    barHeight: isSmall ? 48 : 49,
   };
   
   // ====== 绘制圆柱图形 ====== //
@@ -208,29 +212,48 @@ async function main(family) {
     }
   };
   
-  // 月用电量
+  // 获取月用电量
   const getMonthData = async (areaCode, eleCustId) => {
-    const pointResponse = await getCacheString(
-      `queryMeteringPoint_${count}.json`,
-      'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint', {
-      areaCode,
-      eleCustNumberList: [{ areaCode, eleCustId }]
-    });
-    // 总用电和昨日
-    if (pointResponse.sta == 00) {
-      const { meteringPointId } = pointResponse?.data[0];
-      const monthResponse = await getCacheString(`queryDayElectricByMPoint_${count}.json`, 'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint', {
-        eleCustId,
-        areaCode,
-        yearMonth: year + month,
-        meteringPointId
-      });
-      return monthResponse.data;
+    const adjustYearMonth = (year, month) => (month === 1 
+      ? { year: year - 1, month: 12 } 
+      : { year, month: month - 1 });
+    
+    let { year, month } = getCurrentYearMonth();
+    
+    while (true) {
+      const formattedMonth = String(month).padStart(2, '0');
+      const yearMonth = `${year}${formattedMonth}`;
+      const pointResponse = await getCacheString(
+        `queryMeteringPoint_${count}.json`,
+        'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint',
+        {
+          areaCode,
+          eleCustNumberList: [{ areaCode, eleCustId }]
+        }
+      );
+      // 总用电和每日用电量数据
+      if (pointResponse.sta == 00) {
+        const { meteringPointId } = pointResponse?.data[0];
+        const monthResponse = await getCacheString(
+          `queryDayElectricByMPoint_${count}.json`,
+          'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
+          {
+            eleCustId,
+            areaCode,
+            yearMonth,
+            meteringPointId
+          }
+        );
+        return monthResponse.data;
+      };
+      // 账单未出来前调整到上个月
+      ({ year, month } = adjustYearMonth(year, month));
     }
   };
   
   // 账单
   const getEleBill = async (areaCode, eleCustId) => {
+    const { currentYear } = getCurrentYearMonth();
     const response = await getCacheString(  
       `selectElecBill_${count}.json`,
       'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
@@ -266,11 +289,11 @@ async function main(family) {
   
     // 农业用电电价表
     const agriculturalRatesByCode = {
-      '070000': { rate: 0.514 }, // 海南
-      '440000': { rate: 0.514 }, // 广东
-      '450000': { rate: 0.510 }, // 广西
-      '530000': { rate: 0.508 }, // 云南
-      '520000': { rate: 0.507 }  // 贵州
+      '070000': { rate: 0.514 },
+      '440000': { rate: 0.514 },
+      '450000': { rate: 0.510 },
+      '530000': { rate: 0.508 },
+      '520000': { rate: 0.507 }
     };
   
     const agriculturalInfo = agriculturalRatesByCode[areaCode];
@@ -355,11 +378,14 @@ async function main(family) {
     result = [] 
   } = await getMonthData(areaCode, eleCustId) || {};
   
-  const ystdayPower = result.length > 0 ? result.pop().power : '0.00 °';
+  const dateString = result[0]?.date;
+  const yearMonth = dateString.match(/^(\d{4})-(\d{2})/)?.[0];
+  
+  const ystdayPower = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   
   const {
-    lastMonth = `${year}-${month}`,
+    lastMonth = '2024-12',
     totalArray,
     totalPower: total = '0.00',
     totalElectricity = '0.00',   
@@ -545,7 +571,7 @@ async function main(family) {
     benefitText.font = Font.boldSystemFont(14);  
     benefitText.textOpacity = 0.7;
     
-    const benefitText2 = beneStack.addText(`${ystdayPower} °`);
+    const benefitText2 = beneStack.addText(ystdayPower);
     benefitText2.font = Font.boldSystemFont(16);
     benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red();
     beneStack.addSpacer();
@@ -555,7 +581,7 @@ async function main(family) {
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
     } else if (setting.estimate) {
-      const payText0 = beneStack.addText(cost > 0 ? cost : balance);
+      const payText0 = beneStack.addText(balance);
       payText0.font = Font.mediumSystemFont(16);
       payText0.textColor = Color.blue();
     }
@@ -587,7 +613,7 @@ async function main(family) {
     barStack2.layoutHorizontally();
     barStack2.centerAlignContent();
     barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FFA61C' : '#00C400');
-    barStack2.setPadding(1, 7, 1, 7);
+    barStack2.setPadding(1, 6, 1, 6);
     barStack2.cornerRadius = 5;
     
     const pointText = barStack2.addText(dayBefore);
@@ -606,7 +632,7 @@ async function main(family) {
     middleStack.layoutHorizontally();
     middleStack.centerAlignContent();
     
-    createStack(middleStack, false, `${year}-${month}`, totalPower, (totalPower > 0 ? balance : '0.00'));
+    createStack(middleStack, false, yearMonth, totalPower, (totalPower > 0 ? cost : '0.00'));
     
     const totalItems = getTotalPower(totalArray);
     const n = totalItems?.length;
@@ -637,7 +663,7 @@ async function main(family) {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
-    barStack.size = new Size(0, 49);
+    barStack.size = new Size(0, lay.barHeight);
     const barImg = drawBar(new Color(barColor ?? tierColor));
     barStack.addImage(barImg);
     barStack.addSpacer(10);
@@ -686,10 +712,10 @@ async function main(family) {
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
+        return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
       } else {
         const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
-        const billColor = new Color(isArrears == 1 ? '#FF0000' : '#00B388');
+        const billColor = new Color(isArrears == 1 ? '#FD4A67' : '#00B388');
         return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex, getTierColor(tierIndex), '#8C7CFF', billColor);
       }
     };
@@ -727,7 +753,7 @@ async function main(family) {
     stateStack.addSpacer(3);
     
     const resultText = stateStack.addText(`${result.value}`);
-    resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FD4A67');
+    resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FF0000');
     resultText.font = Font.boldSystemFont(14);
     stateStack.addSpacer(10);
     groupStack.addSpacer(lay.gap);
