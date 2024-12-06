@@ -603,7 +603,7 @@ class _95du {
     layout === 'vertical' ? stack.layoutVertically() : stack.layoutHorizontally();
     stack.centerAlignContent();
     if (size) stack.size = size;
-    stack.setPadding(...padding);
+    if (padding) stack.setPadding(...padding);
     if (backgroundColor) stack.backgroundColor = new Color(backgroundColor);
     stack.cornerRadius = cornerRadius;
     if (borderColor) stack.borderColor = new Color(borderColor);
