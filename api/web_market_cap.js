@@ -418,26 +418,7 @@ async function main() {
   };
   
   // ============市值=========== //
-  const drawBar = (color, width = 14) => {
-    const context = new DrawContext();
-    context.size = new Size(width, 115);
-    context.respectScreenScale = true;
-    context.opaque = false;
-    context.setStrokeColor(color);
-    context.setLineWidth(width);
 
-    const path = new Path();
-    path.move(new Point(width / 2, 5));
-    path.addLine(new Point(width / 2, 105));
-    context.addPath(path);
-    context.strokePath();
-    context.setFillColor(color);
-
-    context.fillEllipse(new Rect(0, 0, width, width));
-    context.fillEllipse(new Rect(0, 100, width, width));
-    return context.getImage();
-  };
-  
   // 获取市值股票数据
   const fetchData = async () => {
     try {
