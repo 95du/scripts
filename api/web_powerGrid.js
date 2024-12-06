@@ -62,7 +62,7 @@ async function main(family) {
     gap: isSmall ? 8 : 10,
     gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
-    padding: isSmall ? 13 : 15
+    padding: isSmall ? 12 : 15
   };
   
   // ====== 绘制圆柱图形 ====== //
