@@ -66,28 +66,7 @@ async function main(family) {
     gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
     padding: isSmall ? 12 : 15,
-    barHeight: isSmall ? 48 : 49,
-  };
-  
-  // ====== 绘制圆柱图形 ====== //
-  const drawBar = (color, width = 14) => {
-    const context = new DrawContext();
-    context.size = new Size(width, 115);
-    context.respectScreenScale = true;
-    context.opaque = false;
-    context.setStrokeColor(color);
-    context.setLineWidth(width);
-
-    const path = new Path();
-    path.move(new Point(width / 2, 5));
-    path.addLine(new Point(width / 2, 105));
-    context.addPath(path);
-    context.strokePath();
-    context.setFillColor(color);
-
-    context.fillEllipse(new Rect(0, 0, width, width));
-    context.fillEllipse(new Rect(0, 100, width, width));
-    return context.getImage();
+    barHeight: isSmall ? 45 : 46.6,
   };
   
   // ====== 创建图表(每月用量) ====== //
@@ -113,15 +92,12 @@ async function main(family) {
   const createChart = (displayData, n, barColor) => {
     const chartHeight = setting.chartHeight || 70;
     const paddingTop = 88 - chartHeight;
-    
     const ctx = new DrawContext();
     ctx.size = new Size(n * 18 - 10, chartHeight + paddingTop);
     ctx.opaque = false;
     ctx.respectScreenScale = true;
-    
     const max = Math.max(...displayData) || 1;
     const deltaY = chartHeight / max;
-  
     displayData.forEach((val, i) => {
       const barHeight = val > 0 ? val * deltaY : max * deltaY;
       const color = val === 0 
@@ -129,10 +105,8 @@ async function main(family) {
         : val == max 
         ? new Color('#FF6800') 
         : new Color(barColor);
-  
       fillRect(ctx, i * 18, paddingTop + chartHeight - barHeight, 8, barHeight, 4, color);
     });
-  
     return ctx.getImage();
   };
   
@@ -344,7 +318,6 @@ async function main(family) {
     };
   
     const provinceRates = resRatesProv[areaCode] || resRatesProv['070000'];
-  
     // 根据用电量判断所属档次
     const tierIndex = provinceRates.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === provinceRates.length - 1);
     const tier = provinceRates[tierIndex];
@@ -494,10 +467,7 @@ async function main(family) {
     const width = progressWidth;
     const height = 16;
     
-    const prgsStack = mainStack.addStack();  
-    prgsStack.layoutHorizontally();
-    prgsStack.centerAlignContent();
-      
+    const prgsStack = module.createStack(mainStack);
     const curScoreText = prgsStack.addText(tier);
     curScoreText.textColor = textColor;
     curScoreText.font = Font.boldSystemFont(13);
@@ -520,16 +490,12 @@ async function main(family) {
     const widget = new ListWidget();
     await setBackground(widget);
     widget.setPadding(0, 0, 0, 0);
-    const mainStack = widget.addStack();
-    mainStack.layoutVertically();
-    mainStack.centerAlignContent();
+    const mainStack = module.createStack(widget, 'vertical');
     mainStack.setPadding(gap, gap, gap, gap);
     mainStack.addSpacer();
     
     // avatarStack
-    const avatarStack = mainStack.addStack();
-    avatarStack.layoutHorizontally();
-    avatarStack.centerAlignContent();
+    const avatarStack = module.createStack(mainStack);
     const avatarStack2 = avatarStack.addStack();
     
     const iconSymbol = await module.getCacheData(avatar);
@@ -540,17 +506,9 @@ async function main(family) {
     avatarStack2.borderColor = new Color('#FFBF00');
     avatarStack.addSpacer(15);
     
-    const topStack = avatarStack.addStack();
-    topStack.layoutVertically();
-    topStack.centerAlignContent();
-    
-    const levelStack = topStack.addStack();
-    levelStack.layoutHorizontally();
-    levelStack.centerAlignContent();
-    
-    const barStack = levelStack.addStack();
-    barStack.layoutHorizontally();
-    barStack.centerAlignContent();
+    const topStack = module.createStack(avatarStack, 'vertical');
+    const levelStack = module.createStack(topStack);
+    const barStack = module.createStack(levelStack);
     barStack.backgroundColor = new Color(levelColor);
     barStack.setPadding(1, lay.avatarSize, 1, lay.avatarSize);
     barStack.cornerRadius = 10;
@@ -566,9 +524,7 @@ async function main(family) {
     titleText.textColor = Color.white();
     levelStack.addSpacer(8);
     
-    const beneStack = levelStack.addStack();
-    beneStack.layoutHorizontally();
-    beneStack.centerAlignContent();
+    const beneStack = module.createStack(levelStack);
     const benefitText = beneStack.addText('昨日 ');
     benefitText.textColor = textColor;
     benefitText.font = Font.boldSystemFont(14);  
@@ -590,13 +546,8 @@ async function main(family) {
     }
     topStack.addSpacer(5);
     
-    const pointStack = topStack.addStack();
-    pointStack.layoutHorizontally();
-    pointStack.centerAlignContent();
-    
-    const payStack = pointStack.addStack();
-    payStack.layoutHorizontally();
-    payStack.centerAlignContent();
+    const pointStack = module.createStack(topStack);
+    const payStack = module.createStack(pointStack);
     payStack.backgroundColor = new Color(isArrears == 1 ? '#FF0000' : '#AF52DE');
     payStack.setPadding(2, 5, 2, 5);
     payStack.cornerRadius = 5;
@@ -612,11 +563,9 @@ async function main(family) {
     LevelText.textOpacity = 0.7;
     pointStack.addSpacer();
     
-    const barStack2 = pointStack.addStack();
-    barStack2.layoutHorizontally();
-    barStack2.centerAlignContent();
-    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FFA61C' : '#00C400');
+    const barStack2 = module.createStack(pointStack);
     barStack2.setPadding(1, 6, 1, 6);
+    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FFA61C' : '#00C400');
     barStack2.cornerRadius = 5;
     
     const pointText = barStack2.addText(dayBefore);
@@ -631,10 +580,7 @@ async function main(family) {
      * @param {image} image
      * @param {string} string
      */
-    const middleStack = mainStack.addStack();
-    middleStack.layoutHorizontally();
-    middleStack.centerAlignContent();
-    
+    const middleStack = module.createStack(mainStack);
     createStack(middleStack, false, yearMonth, totalPower, (totalPower > 0 ? cost : '0.00'));
     
     const totalItems = getTotalPower(totalArray);
@@ -663,15 +609,11 @@ async function main(family) {
   
   // ====== 小号组件 ====== //
   const addStack = (stack, month, power, amount, tierIndex, tierColor, barColor, billColor) => {
-    const barStack = stack.addStack();
-    barStack.layoutHorizontally();
-    barStack.centerAlignContent();
-    barStack.size = new Size(0, lay.barHeight);
-    const barImg = drawBar(new Color(barColor ?? tierColor));
-    barStack.addImage(barImg);
-    barStack.addSpacer(10);
+    const mainStack = module.createStack(stack);
+    module.createStack(mainStack, 'horizontal', (barColor ?? tierColor), new Size(7, lay.barHeight), 50);
+    mainStack.addSpacer(10);
     
-    const columnStack = barStack.addStack();
+    const columnStack = mainStack.addStack();
     columnStack.layoutVertically();
     const upStack = columnStack.addStack();
     upStack.layoutHorizontally();
@@ -686,7 +628,6 @@ async function main(family) {
     const icon = upStack.addImage(iconSymbol.image);
     icon.tintColor = new Color(tierColor);
     icon.imageSize = new Size(18, 18);
-    columnStack.addSpacer(1);
     
     const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
     powerText.textColor = textColor;
@@ -734,10 +675,7 @@ async function main(family) {
     groupStack.addSpacer(lay.gap);
     
     // 状态容器(中间)
-    const stateStack = groupStack.addStack();
-    stateStack.layoutHorizontally();
-    stateStack.centerAlignContent();
-    
+    const stateStack = module.createStack(groupStack);
     const borStack = stateStack.addStack();
     borStack.backgroundColor = new Color('#0094FF');
     borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
@@ -772,13 +710,9 @@ async function main(family) {
   
   // ======= 电动汽车组件 ====== //
   const addVertical = async (horStack, iconName, iconColor, title, text, gap) => {
-    const rowStavk = horStack.addStack();
-    rowStavk.layoutHorizontally();
-    rowStavk.centerAlignContent();
+    const rowStavk = module.createStack(horStack);
     
-    const iconStack = rowStavk.addStack();
-    iconStack.layoutHorizontally();
-    iconStack.centerAlignContent();
+    const iconStack = module.createStack(rowStavk);
     iconStack.size = new Size(lay.stackSize, lay.stackSize);
     iconStack.cornerRadius = 50;
     iconStack.backgroundColor = iconColor;
