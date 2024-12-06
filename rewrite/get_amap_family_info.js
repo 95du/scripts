@@ -56,7 +56,7 @@ $.is_debug = $.getdata('is_debug');
         `${message}成功`,
         {
           'open-url': 'scriptable:///run/' + encodeURIComponent('高德家人地图'),
-          'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/amap_family.png'
+          'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/amap_family_0.png'
         }
       );
     }
