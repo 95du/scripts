@@ -614,7 +614,7 @@ class _95du {
   /**
    * 根据设备屏幕尺寸匹配预定义的屏幕数据，计算与参考尺寸的缩放比例。
    * - 如果未匹配到数据，返回默认比例 1。
-   * - 否则计算比例：(匹配屏幕的 widget 尺寸 - 30) / (参考 widget 尺寸 - 30) * 0.95。
+   * - 否则计算比例：(匹配屏幕的 widget 尺寸) / (参考 widget 尺寸) 
    * @returns {number} 缩放比例
    */
   getScaleFactor = () => {
@@ -637,9 +637,9 @@ class _95du {
     const { width, height } = Device.screenSize();
     const match = screens.find(s => (s.width === width && s.height === height) || (s.width === height && s.height === width));
   
-    if (!match ) return 1;
-    const scale = (match.widget - 30) / (refSize.widget - 30) * 0.95;
-    return Math.round(scale * 100) / 100;
+    if (!match) return 1;
+    const scaleFactor = match.widget / refSize.widget;
+    return Math.round(scaleFactor * 100) / 100;
   };
   
   /**
@@ -649,7 +649,6 @@ class _95du {
    * @returns {Object} object
    */
   generateLayout = (baseConfig) => {
-    // 获取缩放比例
     const scale = this.getScaleFactor();
     const value = Object.fromEntries(Object.entries(baseConfig).map(([key, value]) => [key, value * scale]));
     return value;
