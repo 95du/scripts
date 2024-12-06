@@ -666,12 +666,8 @@ async function main(family) {
   };
   
   const getTierColor = (tierIndex) => {
-    const tierColor = (tierIndex == 0 || tierIndex == 1) 
-      ? '#00C400' 
-      : tierIndex == 2
-      ? '#FF7800' 
-      : '#FF0000'
-    return tierColor;
+    const tierColors = ['#00C400', '#00C400', '#FF7800', '#FF0000'];
+    return tierColors[tierIndex] || '#00C400'; // 防止索引超出范围，提供默认值
   };
   
   const processNumber = (num) => {
