@@ -58,7 +58,7 @@ async function main(family) {
     titleSize: isSmall ? 18 : 20,
     textSize: isSmall ? 11 : 11.5,
     left: isSmall ? 10 : 15,
-    right: isSmall ? 8 : 0,
+    gapMed: isSmall ? 5 : null,
     gap: isSmall ? 8 : 10,
     gapStack: isSmall ? 4 : 6,
     amountSize: isSmall ? 25.5 : 27,
@@ -284,7 +284,7 @@ async function main(family) {
         cost: (totalPower * agriculturalRate).toFixed(2),
         percent: 0,
         isPercent: '0%',
-        tierIndex: -1
+        tierIndex: 0
       };
     }
   
@@ -333,7 +333,7 @@ async function main(family) {
       cost: (totalPower * tier.rate).toFixed(2),
       percent: percentageOfThird,
       isPercent: `${isPercent}%`,
-      tierIndex
+      tierIndex: tierIndex + 1
     };
   };
   
@@ -666,9 +666,9 @@ async function main(family) {
   };
   
   const getTierColor = (tierIndex) => {
-    const tierColor = tierIndex == 0
+    const tierColor = (tierIndex == 0 || tierIndex == 1) 
       ? '#00C400' 
-      : tierIndex == 1
+      : tierIndex == 2
       ? '#FF7800' 
       : '#FF0000'
     return tierColor;
@@ -690,11 +690,11 @@ async function main(family) {
     const rankStack = (groupStack, column, isFirstGroup) => {
       const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
       if (isCurrentMonth) {
-        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tierIndex + 1, getTierColor(tierIndex));
+        return addStack(groupStack, `${year}-${month}`, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
       } else {
         const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
         const billColor = new Color(isArrears == 1 ? '#FF0000' : '#00B388');
-        return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex + 1, getTierColor(tierIndex), '#8C7CFF', billColor);
+        return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex, getTierColor(tierIndex), '#8C7CFF', billColor);
       }
     };
     
