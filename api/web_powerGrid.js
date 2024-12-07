@@ -535,7 +535,7 @@ async function main(family) {
     benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red();
     beneStack.addSpacer();
     
-    if (isArrears == 1) {
+    if (isArrears === '1') {
       const payText0 = beneStack.addText(arrears);
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
@@ -548,11 +548,11 @@ async function main(family) {
     
     const pointStack = module.createStack(topStack);
     const payStack = module.createStack(pointStack);
-    payStack.backgroundColor = new Color(isArrears == 1 ? '#FF0000' : '#AF52DE');
+    payStack.backgroundColor = new Color(isArrears === '1' ? '#FF0000' : '#AF52DE');
     payStack.setPadding(2, 5, 2, 5);
     payStack.cornerRadius = 5;
     
-    const payText = payStack.addText(!areaCode ? '用户未登录' : isArrears == 1 ? '待缴费' : '已缴费');
+    const payText = payStack.addText(!areaCode ? '用户未登录' : isArrears === '1' ? '待缴费' : '已缴费');
     payText.font = Font.boldSystemFont(11);
     payText.textColor = Color.white();
     pointStack.addSpacer(8);
@@ -600,7 +600,7 @@ async function main(family) {
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 1) progressBar(mainStack, tier);
-    if (isArrears == 1) {
+    if (isArrears === '1') {
       middleStack.url = alipayUrl;
     }
     arrearsNotice();
@@ -645,26 +645,20 @@ async function main(family) {
     return str.length > 6 ? parseFloat(str.slice(0, isSmall ? 5 : 6)) : num;
   };
   
+  // 排列顺序
+  const rankStack = (groupStack, column, isFirstGroup) => {
+    const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
+    if (isCurrentMonth) {
+      return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
+    } else {
+      const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
+      const billColor = new Color(isArrears === '1' ? '#FD4A67' : '#00B388');
+      return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex, getTierColor(tierIndex), '#8C7CFF', billColor);
+    }
+  };
+  
   // 创建小号组件
   const smallWidget = async () => {
-    const random = Math.round(Math.random());
-    const result = random === 0 
-    ? { title: '昨日', value: processNumber(`${ystdayPower} °`) } 
-    : { title: '余额', value: processNumber(balance) };
-    
-    // 排列顺序
-    const rankStack = (groupStack, column, isFirstGroup) => {
-      const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
-      if (isCurrentMonth) {
-        return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
-      } else {
-        const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
-        const billColor = new Color(isArrears == 1 ? '#FD4A67' : '#00B388');
-        return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex, getTierColor(tierIndex), '#8C7CFF', billColor);
-      }
-    };
-    
-    // 创建组件
     const widget = new ListWidget();
     widget.setPadding(lay.padding, lay.padding, lay.padding, lay.padding);
     const groupStack = widget.addStack();
@@ -675,6 +669,11 @@ async function main(family) {
     groupStack.addSpacer(lay.gap);
     
     // 状态容器(中间)
+    const random = Math.round(Math.random());
+    const result = random === 0 
+    ? { title: '昨日', value: processNumber(`${ystdayPower} °`) } 
+    : { title: '余额', value: processNumber(balance) };
+    
     const stateStack = module.createStack(groupStack);
     const borStack = stateStack.addStack();
     borStack.backgroundColor = new Color('#0094FF');
@@ -702,7 +701,7 @@ async function main(family) {
     // 第二组
     rankStack(groupStack, column);
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-    if (isArrears == 1) {
+    if (isArrears === '1') {
       widget.url = alipayUrl;
     }
     return widget;
