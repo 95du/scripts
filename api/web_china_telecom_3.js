@@ -41,7 +41,8 @@ async function main(family) {
     
   const getLayout = (scr = Device.screenSize().height) => ({
     titleSize: scr < 926 ? 17 : 18,
-    circle: scr < 926 ? 145 : 152
+    circle: scr < 926 ? 145 : 152,
+    padding: scr < 926 ? 13 : 16
   });
   
   const logo = await module.getCacheData(fetchUrl.logo);
@@ -305,7 +306,7 @@ async function main(family) {
       iconImage.imageSize = new Size(20.5, 20.5);
     }
     iconImage.tintColor = Color.white();
-    rowStavk.addSpacer(7);
+    rowStavk.addSpacer(10);
     
     const verticalStack = rowStavk.addStack();
     verticalStack.layoutVertically();
@@ -340,11 +341,16 @@ async function main(family) {
   // 创建组件
   const createWidget = async () => {
     const widget = new ListWidget();
+    const lay = getLayout();
+    widget.setPadding(
+      lay.padding, 
+      (family !== 'small' ? lay.padding + 6 : lay.padding), 
+      lay.padding, 
+      lay.padding
+    );
     const mainStack = widget.addStack();
-    mainStack.setPadding(0, family !== 'small' ? 7 : 0, 0, 0);
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    
     const horStack = mainStack.addStack();
     horStack.layoutVertically();
     
@@ -353,7 +359,7 @@ async function main(family) {
         stack: horStack,
         title: bill ? '账单' : '话费',
         balance: feeBalance,
-        newUnit: ' R',
+        newUnit: ' ￥',
         percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
         symbol: family === 'small' ? '' : 'network',
         color: feeColor
@@ -380,29 +386,32 @@ async function main(family) {
     
     const arrangeStack = rearrangeData(leftColumn);
     addStackColumn(arrangeStack);
-    mainStack.addSpacer();
     
-    if (family !== 'small') {
-      const circleStack = mainStack.addStack();
-      const lay = getLayout();
-      circleStack.size = new Size(0, lay.circle);
-      
-      const progressData = [
-        { radius: 85, progress: fee, color: feeColor },
-        { radius: 70, progress: voice, color: voiceColor },
-        { radius: 55, progress: flow, color: flowColor }  
-      ];
-      
-      const arrangeProgress = progressData.map((item, i) => ({  
-        ...item,
-        progress: progressData[rank[i].value].progress,
-        color: progressData[rank[i].value].color
-      }));
-      
-      const canvas = await drawCircle(arrangeProgress);
-      const circle = canvas.getImage();
-      circleStack.addImage(circle);
-    };
+    if (family === 'medium' || flowBalFormat.length <= 8) {
+      mainStack.addSpacer();
+    }
+    
+    if (family === 'small') {
+      return widget;
+    }
+    
+    // 三层圆形进度环
+    const progressData = [
+      { radius: 85, progress: fee, color: feeColor },
+      { radius: 70, progress: voice, color: voiceColor },
+      { radius: 55, progress: flow, color: flowColor }  
+    ];
+    const arrangeProgress = progressData.map((item, i) => ({  
+      ...item,
+      progress: progressData[rank[i].value].progress,
+      color: progressData[rank[i].value].color
+    }));
+    
+    const canvas = await drawCircle(arrangeProgress);
+    const circle = canvas.getImage();
+    const circleStack = mainStack.addStack();
+    circleStack.size = new Size(0, lay.circle);
+    circleStack.addImage(circle);
     
     return widget;
   };
