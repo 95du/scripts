@@ -33,7 +33,7 @@ $.is_debug = $.getdata('is_debug');
           $.rest_body.authToken,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
-            'media-url': 'https://raw.gitcode.com/4qiao/scripts/raw/master/img/icon/loading_green.gif'
+            'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
           }
         );
         console.log($.new_body);
