@@ -171,6 +171,7 @@ const addItem = async (widget, item, max, index) => {
 const createWidget = async () => {
   const widget = new ListWidget();
   widget.setPadding(15, 15, 15, 15);
+  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.addSpacer(5);
@@ -181,10 +182,10 @@ const createWidget = async () => {
   topStack.addSpacer(6.5);
   
   const columnStack = topStack.addStack();
-  columnStack.size = new Size(5, 23);
+  columnStack.size = new Size(7, 23);
   columnStack.cornerRadius = 50;
   columnStack.backgroundColor = new Color('#8B5FF4');
-  topStack.addSpacer(10);
+  topStack.addSpacer(12);
   
   const nameText = topStack.addText(name).font = Font.boldSystemFont(17);
   topStack.addSpacer(15);
