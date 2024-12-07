@@ -485,6 +485,16 @@ async function main() {
           icon: `${rootUrl}/img/icon/exchange_rate.png`
         },
         {
+          label: '马溜狗',
+          desc: '显示未来两小时天气',
+          version: '1.5.0',
+          type: 'button',
+          recommend: true,
+          random: true,
+          scrUrl: `${rootUrl}/widget/bottomBar.js`,
+          icon: `${rootUrl}/img/icon/bottomBars.png`
+        },
+        {
           label: '埃隆·马斯克',
           desc: '最新前沿科技资讯',
           version: '1.1.0',
@@ -525,16 +535,6 @@ async function main() {
           type: 'button',
           scrUrl: `${rootUrl}/widget/oils.js`,
           icon: `${rootUrl}/img/icon/oilPrice2.png`
-        },
-        {
-          label: '负一屏底栏',
-          desc: '显示未来两小时天气',
-          version: '1.5.0',
-          type: 'button',
-          recommend: true,
-          random: true,
-          scrUrl: `${rootUrl}/widget/bottomBar.js`,
-          icon: `${rootUrl}/img/icon/bottomBars.png`
         },
         {
           label: '澳门六合彩',
