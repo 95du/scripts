@@ -686,7 +686,7 @@ async function main() {
     const marketTimeText = firstStack.addText(familySize ? latestTime : `${nameCN}  ${symbol}`);
     marketTimeText.textColor = textColor;
     marketTimeText.font = Font.mediumSystemFont(marketTSize);
-    marketTimeText.textOpacity = 0.6;
+    marketTimeText.textOpacity = 0.7;
     leftStack.addSpacer();
     
     // stock status
