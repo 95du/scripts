@@ -401,11 +401,10 @@ async function main(family) {
       { radius: 70, progress: voice, color: voiceColor },
       { radius: 55, progress: flow, color: flowColor }  
     ];
-    const arrangeProgress = progressData.map((item, i) => ({  
-      ...item,
-      progress: progressData[rank[i].value].progress,
-      color: progressData[rank[i].value].color
-    }));
+    const arrangeProgress = progressData.map((item, i) => {
+      const { progress, color } = progressData[rank[i].value];
+      return { ...item, progress, color };
+    });
     
     const canvas = await drawCircle(arrangeProgress);
     const circle = canvas.getImage();
