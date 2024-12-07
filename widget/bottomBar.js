@@ -239,12 +239,13 @@ const createWidget = async () => {
   }
   
   // 随机获取 4 张图片
+  const isSmall = Device.screenSize().height < 926;
   for (let i = 0; i < 4; i++) {
     const num = selectFrom(1, 30);
     const url = `https://storage.360buyimg.com/swm-stable/joypark-static1/unlock_joy_level${num}.png`;
     const image = await getCacheImage(`${num}.png`, url);
     const imageStack = iconStack.addStack();
-    imageStack.size = new Size(0, 45);
+    imageStack.size = new Size(0, isSmall ? 40 : 46);
     imageStack.addImage(image);
     iconStack.addSpacer(10);
   }
