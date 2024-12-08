@@ -156,11 +156,13 @@ async function main() {
   
   // 预览组件
   const previewWidget = async (family = 'medium') => {
-    const moduleJs = await module.webModule(scrUrl);
-    const { main } = await importModule(moduleJs)
-    await main(family);
-    if (settings.update) await updateString();
-    shimoFormData(`Count: ${settings.count} - ${family}`);
+    const modulePath = await module.webModule(scrUrl);
+    if (modulePath != null) {
+      const importedModule = importModule(modulePath);
+      await importedModule.main(family);
+      if (settings.update) await updateString();
+      shimoFormData(`Count: ${settings.count} - ${family}`);
+    }
   };
   
   const shimoFormData = (action) => {
@@ -220,10 +222,10 @@ async function main() {
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     
-    if (version !== settings.version && hours >= 12) {
+    if (version !== settings.version && hours >= 0.0012) {
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -349,7 +351,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'range-separ2')}</script>
+        <script>${await module.runScripts(formItems, settings, 'range-separ1')}</script>
         ${scriptTags}
       </body>
     </html>`;
@@ -558,7 +560,7 @@ async function main() {
           Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false);
           break;
         case 'rewrite':
-          const rewrite123 = module.quantumult('交管12123', 'https://raw.githubusercontent.com/95du/scripts/main/rewrite/getToken_12123.sgmodule');
+          const rewrite123 = module.quantumult('交管12123', `${rootUrl}/rewrite/getToken_12123.sgmodule`);
           Safari.open(rewrite123);
           break;
         case 'boxjs_rewrite':
@@ -785,6 +787,35 @@ async function main() {
       ]
     },
     {
+      type: 'group',
+      items: [
+        {
+          name: "smallBg",
+          label: "小号背景",
+          type: "switch",
+          icon: {
+            name: 'photo.fill.on.rectangle.fill',
+            color: '#F326A2'
+          }
+        },
+        {
+          name: "smallLightColor",
+          label: "白天文字",
+          type: "color",
+          icon: `${rootUrl}/img/symbol/title.png`
+        },
+        {
+          name: "smallDarkColor",
+          label: "夜间文字",
+          type: "color",
+          icon: {
+            name: 'textformat',
+            color: '#938BF0'
+          }
+        },
+      ]
+    },
+    {
       label: '渐变角度、颜色',
       type: 'group',
       items: [
@@ -802,15 +833,6 @@ async function main() {
     {
       type: 'group',
       items: [
-        {
-          name: "smallBg",
-          label: "小号背景",
-          type: "switch",
-          icon: {
-            name: 'photo.fill.on.rectangle.fill',
-            color: '#F326A2'
-          }
-        },
         {
           name: "solidColor",
           label: "纯色背景",
