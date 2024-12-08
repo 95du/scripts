@@ -1306,7 +1306,7 @@ class _95du {
     }
     
     const formData = {};
-    const createFormItem = ( item ) => {
+    const createFormItem = (item) => {
       const value = settings[item.name] ?? item.default;
       formData[item.name] = value;
       
@@ -1538,13 +1538,13 @@ input.addEventListener("change", async (e) => {
     };
     
     /** ☘️创建列表通用组容器☘️ **/
-    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body') => {
+    const createGroup = (fragment, title, headerClass = 'el__header', bodyClass = 'el__body', margin) => {
       const groupDiv = fragment.appendChild(document.createElement('div'));
       groupDiv.className = 'list';
     
       if (title) {
         const elTitle = groupDiv.appendChild(document.createElement('div'));
-        elTitle.className = headerClass;
+        elTitle.className = headerClass + (margin ? ' with-negative-margin' : '');
         elTitle.textContent = title;
       }
     
@@ -1684,7 +1684,8 @@ input.addEventListener("change", async (e) => {
           createCollapsible(elBody, item);
         } else {
           if (!elBody) {
-            elBody = createGroup(fragment, title, 'list__header', 'list__body');
+            const header = item.header ? 'el__header' : 'list__header';
+            elBody = createGroup(fragment, title, header, 'list__body', item.header);
           }
           const label = createFormItem(item);
           elBody.appendChild(label);
