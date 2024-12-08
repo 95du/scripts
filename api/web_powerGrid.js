@@ -568,7 +568,7 @@ async function main(family) {
     
     const barStack2 = module.createStack(pointStack);
     barStack2.setPadding(2, 6, 2, 6);
-    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FF9500' : '#00C400');
+    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FF9500' : '#8C7CFF');
     barStack2.cornerRadius = 5;
     
     const typeText = barStack2.addText(isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type);
@@ -590,7 +590,7 @@ async function main(family) {
     const n = totalItems?.length;
     
     if (setting.chart && n > 0) {
-      const chartColor = count % 2 === 0 ? '#8C7CFF' : '#34C579'
+      const chartColor = count % 2 === 0 ? '#8C7CFF' : '#00C400'
       const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
