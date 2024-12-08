@@ -267,6 +267,7 @@ async function main(family) {
       : new Color('#D30000');
   
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
+  const _textColor = Color.dynamic(new Color(setting.smallLightColor || '#000000'), new Color(setting.smallDarkColor || '#FFFFFF'));
   
   // 设置组件背景
   const setBackground = async (widget) => {
@@ -487,8 +488,7 @@ async function main(family) {
   const addHorizontalText = (stack, text, font, color, opacity) => {
     const statusText = stack.addText(text);
     statusText.font = Font.mediumSystemFont(font);
-    if (color) 
-    statusText.textColor = color;
+    statusText.textColor = color || _textColor;
     if (!opacity) statusText.textOpacity = 0.9;
   };
   
@@ -534,7 +534,7 @@ async function main(family) {
     
     // 准驾车型
     const allowDriveStack = generateStack(widget);
-    createBarStack(allowDriveStack, 8, 8, '#FF8500', gap);
+    createBarStack(allowDriveStack, 8, 8, '#8C7CFF', gap);
     addHorizontalText(allowDriveStack, '准驾车型', textSize);
     allowDriveStack.addSpacer();  
     addHorizontalText(allowDriveStack, allowToDrive, textSize);
@@ -542,7 +542,7 @@ async function main(family) {
     
     // 驾照状态
     const statusStack = generateStack(widget)
-    createBarStack(statusStack, 8, 8, '#8C7CFF', gap);
+    createBarStack(statusStack, 8, 8, '#FF7800', gap);
     addHorizontalText(statusStack, '驾照状态', textSize);
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
