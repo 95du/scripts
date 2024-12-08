@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.1.6'
-  const updateDate = '2024年12月05日'
+  const version = '1.1.7'
+  const updateDate = '2024年12月08日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -202,7 +202,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加用电类型，分档电价的收费标准等`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -268,7 +268,8 @@ async function main() {
      */
     const listItems = [
       `<li>${updateDate}</li>`,
-      `<li>增加多账号循环显示</li>`,
+      `<li>增加用电类型，分档电价的收费标准，显示前天用电</li>`,
+      `<li>修复已知问题</li>`,
       `<li>性能优化，改进用户体验</li>`
     ].join('\n');
     
@@ -687,14 +688,13 @@ async function main() {
           icon: `${rootUrl}/img/symbol/notice.png`
         },
         {
-          label: '显示账单',
-          name: 'estimate',
+          label: '显示前日',
+          name: 'dayBefore',
           type: 'switch',
           icon: {
             name: 'hand.draw.fill',
             color: '#3FC8FF'
-          },
-          default: true
+          }
         },
         {
           label: '显示图表',
