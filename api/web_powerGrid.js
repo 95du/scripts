@@ -55,7 +55,7 @@ async function main(family) {
   // 配置尺寸
   const isSmall = Device.screenSize().height < 926;
   const lay = {
-    avatarSize: isSmall ? 8 : 12,
+    avatarSize: isSmall ? 8 : 10,
     stackSize: isSmall ? 35 : 37,
     iconSize: isSmall ? 23 : 25,
     titleSize: isSmall ? 18 : 20,
