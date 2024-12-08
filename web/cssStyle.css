@@ -764,6 +764,10 @@ button .iconfont {
   color: var(--list-header-color);
 }
 
+.el__header.with-negative-margin {
+  margin-bottom: -12px;
+}
+
 .el__body {
   margin-top: 5px;
   margin-bottom: 30px;
