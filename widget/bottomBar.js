@@ -1,65 +1,114 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: purple; icon-glyph: grin-squint;
+// icon-color: deep-purple; icon-glyph: comments;
 /**
  * 组件作者：95度茅台
- * Version 1.5.0
- * 2024-12-07
+ * Version 1.3.1
+ * 2024-01-07 11:30
  * Telegram 交流群 https://t.me/+ CpAbO_q_SGo2ZWE1
+ *
+ * ⚠️ 小机型修改第 20 行中的数字 63
+ * 修改第 21 行的数字小于 5 可切换为二十四节气，否则脚本将自动切换。
  */
 
 const fm = FileManager.local();
-const mainPath = fm.joinPath(fm.documentsDirectory(), 'bottomBar');
-if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
-const settingPath = fm.joinPath(mainPath, 'setting.json');
+const path = fm.joinPath(fm.documentsDirectory(), 'bottomBar');
+if (!fm.fileExists(path)) fm.createDirectory(path);
+const cache = fm.joinPath(path, 'cache_path');
+if (!fm.fileExists(cache)) fm.createDirectory(cache);
+const cacheFile = fm.joinPath(path, 'setting.json');
+
 const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
 
-const runScriptable = () => {
-  Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
-};
+const df = new DateFormatter();
+df.dateFormat = 'HH:mm';
+const GMT = df.string(new Date());
 
-const getFormattedTime = () => {
-  const df = new DateFormatter();
-  df.dateFormat = 'HH:mm';
-  return df.string(new Date());
-};
+const stackSize = 63 // 容器尺寸
+const length = 5
 
+const stackBackground = Color.dynamic(new Color('#EFEBE9', 0.6), new Color('#161D2A', 0.5));
+const barColor = Color.dynamic(new Color('#8C7CFF'), new Color('#00C400'));
+const alphaColor = Color.dynamic(new Color('#8C7CFF', 0.2), new Color('#00C400', 0.2))
+
+/**
+ * 获取背景图片存储目录路径
+ * @returns {image} - image
+ */
+const getBgImage = () => fm.joinPath(cache, Script.name());
+
+/**
+ * 存储当前设置
+ * @param { JSON } string
+ */
 const setCacheData = (data) => {
-  fm.writeString(settingPath, JSON.stringify({ ...data, updateTime: Date.now() }, null, 2));
-  console.log(JSON.stringify(
-    data, null, 2
-  ))
+  const cacheData = { ...data, updateTime: Date.now() };
+  fm.writeString(cacheFile, JSON.stringify(cacheData, null, 2));
+  console.log(JSON.stringify(cacheData, null, 2));
 };
 
-const getSetting = () => {
-  if (fm.fileExists(settingPath)) {
-    const data = fm.readString(settingPath);
+const getCacheSetting = () => {
+  if (fm.fileExists(cacheFile)) {
+    const data = fm.readString(cacheFile);
     return JSON.parse(data);
   }
 };
 
-const useFileManager = () => {
-  const fullPath = (name) => fm.joinPath(mainPath, name);
+/**
+ * 获取图片、string并使用缓存
+ * @param {string} File Extension
+ * @returns {image} - Request
+ */
+const useFileManager = ({ cacheTime, type } = {}) => {
   return {
-    readImage: (name) => fm.fileExists(fullPath(name)) ? fm.readImage(fullPath(name)) : null,
-    writeImage: (name, image) => fm.writeImage(fullPath(name), image)
+    read: (name) => {
+      const filePath = fm.joinPath(cache, name);
+      if (fm.fileExists(filePath)) {
+        if (hasExpired(filePath) > cacheTime) fm.remove(filePath);
+        else return type ? fm.readString(filePath) : fm.readImage(filePath);
+      }
+    },
+    write: (name, content) => {
+      const filePath = fm.joinPath(cache, name);
+      type ? fm.writeString(filePath, content) : fm.writeImage(filePath, content);
+    }
   };
+  
+  function hasExpired(filePath) {
+    const createTime = fm.creationDate(filePath).getTime();
+    return (Date.now() - createTime) / (60 * 60 * 1000);
+  }
+};
+
+/**
+ * 获取 JSON String 字符串
+ * @param {string} name url
+ * @returns {string} - String
+ * @returns {object} - JSON
+ */
+const getJson = async (url) => await new Request(url).loadJSON();
+
+const getCacheData = async (name, url, cacheTime, type = 'string') => {
+  const cache = useFileManager({ cacheTime, type });
+  const cachedData = cache.read(name);
+  if (cachedData) {
+    return type === 'json' ? JSON.parse(cachedData) : cachedData;
+  }
+
+  const responseData = type === 'json' ? await getJson(url) : await new Request(url).loadString();
+  cache.write(name, type === 'string' ? responseData : JSON.stringify(responseData));
+  return responseData;
 };
 
 // 获取图片，使用缓存
 const getCacheImage = async (name, url) => {
-  const cache = useFileManager();
-  const image = cache.readImage(name);
+  const cache = useFileManager({ cacheTime: 240 });
+  const image = cache.read(name);
   if (image) return image;
   const img = await new Request(url).loadImage();
-  cache.writeImage(name, img);
+  cache.write(name, img);
   return img;
 };
-
-// 获取随机数组元素
-const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
-
-const getJson = async (url) => await new Request(url).loadJSON();
 
 /**
  * 获取指定位置的天气信息
@@ -69,22 +118,21 @@ const getJson = async (url) => await new Request(url).loadJSON();
  * @returns {Object} 
  */
 const getLocation = async () => {
-  const setting = getSetting();
-  if (setting) {
-    const pushTime = Date.now() - setting.updateTime;
+  const cacheData = getCacheSetting();
+  if (cacheData) {
+    const pushTime = Date.now() - cacheData.updateTime;
     const duration = pushTime % (24 * 3600 * 1000);
     const intervalTime = Math.floor(duration / (3600 * 1000));
     if (intervalTime <= 3) {
-      return setting;
+      return cacheData;
     } else {
       try {
         const location = await Location.current();
-        const { longitude, latitude } = location;
-        const { title, content } = await getWeather(longitude, latitude);
+        const { title, content } = await getWeather({ location });
         setCacheData({ ...location, title, content });
         return location;
       } catch (error) {
-        return setting;
+        return cacheData;
       }
     }
   } else {
@@ -98,7 +146,7 @@ const getLocation = async () => {
  * 获取天气信息
  * @param  {Type} paramName
  */
-const getWeather = async (longitude, latitude) => {
+const getWeather = async ({ location } = opts) => {
   try {
     const request = new Request('https://ssfc.api.moji.com/sfc/json/nowcast');
     request.method = 'POST'
@@ -108,29 +156,43 @@ const getWeather = async (longitude, latitude) => {
         language: 'CN'
       }, 
       params: {
-        lat: latitude,
-        lon: longitude
+        lat: location.latitude,
+        lon: location.longitude
       }
     });
-    
     const { radarData } = await request.loadJSON();
     return radarData;
   } catch (e) {
     console.log(e + '⚠️使用缓存');
-    return getCacheSetting();
+    return getSetting();
   }
 };
 
-// 天气预警
-const getAlert = async (longitude, latitude) => {
-  const options = {
-    method: 'POST',
-    body: JSON.stringify({ lon: longitude, lat: latitude })
-  };
-  
-  const response = await Object.assign(new Request('https://h5ctywhr.api.moji.com/weatherthird/getCityInfo'), options).loadJSON();
-  const { data } = await getJson(`https://co.moji.com/api/weather2/weather?lang=zh&city=${response.cityId}`);
-  return getRandomItem(data.alerts);
+/**
+ * 获取随机图标
+ * @returns {string} url
+ */
+const getIcon = async () => {
+  const images = [
+    `${rootUrl}/img/icon/weChat.png`,
+    `${rootUrl}/img/icon/weather.png`
+  ];
+  const appIconUrl = images[Math.floor(Math.random() * images.length)];
+  const iconName = appIconUrl.split('/').pop(); 
+  return await getCacheImage(iconName, appIconUrl);
+};
+
+/**
+ * 获取每日一句中英文及配图
+ * @returns {Object} string
+ */
+const getOneWord = async () => {
+  const { note, content, fenxiang_img } = await getCacheData('ciba.json', atob('aHR0cHM6Ly9vcGVuLmljaWJhLmNvbS9kc2FwaQ=='), 12, 'json');
+  return { 
+    note: `${note}\n${content}`,
+    _note: note,
+    imgUrl: fenxiang_img
+  }
 };
 
 const shimoFormData = async (title, content) => {
@@ -141,40 +203,146 @@ const shimoFormData = async (title, content) => {
   };
   req.body = JSON.stringify({
     formRev: 1,
-    responseContent: [{
-      type: 4,
-      guid: '07hwJbPJ',
-      text: { content },
-    }],
+    responseContent: [
+      {
+        type: 4,
+        guid: '07hwJbPJ',
+        text: { content },
+      },
+    ],
     userName: `bottomBar  -  ${Device.systemName()} ${Device.systemVersion()} ${title}`
   });
-  req.load();
+  await req.loadJSON();
 };
 
-const getIcon = async () => {
-  const images = [
-    `${rootUrl}/img/icon/weChat.png`,
-    `${rootUrl}/img/icon/weather.png`
-  ];
-  const appIconUrl = getRandomItem(images);
-  const iconName = appIconUrl.split('/').pop(); 
-  return await getCacheImage(iconName, appIconUrl);
+/**
+ * 获取接下来的节气信息及距离当前日期的天数
+ * @returns {Promise<Array>} object
+ */
+const getSolarTerm = async () => {
+  const html = await getCacheData('solarTerm.html', 'https://www.iamwawa.cn/jieqi.html', 240, 'string');
+  const webView = new WebView();
+  await webView.loadHTML(html);
+
+  const solarTermData = await webView.evaluateJavaScript(`
+    (() => {
+      const rows = document.querySelectorAll('table.table tbody tr');  
+      const currentDate = new Date();
+      const result = [];
+      
+      rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length === 4) {
+          const solarTerm = cells[0].textContent.trim();
+          const dateStr = cells[1].textContent.trim();
+          const timeStr = cells[3].textContent.trim();
+          
+          const fullDateStr = \`\${dateStr} \${timeStr}\`.replace(/[年月日时分秒]/g, match => ({ '年': '-', '月': '-', '日': '', '时': ':', '分': ':', '秒': '' }[match]));
+          
+          const date = new Date(fullDateStr);
+          if (date >= currentDate) {
+            const formattedDate = date.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' });
+            const dayOfWeek = date.toLocaleDateString('zh-CN', { weekday: 'short' });
+            const daysUntil = Math.ceil((date - currentDate) / (1000 * 60 * 60 * 24));
+
+            result.push({ solarTerm, dayOfWeek, formattedDate, daysUntil, date: fullDateStr });
+          }
+        }
+      });
+
+      return result;
+    })();
+  `);
+
+  const sortedArray = solarTermData.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return sortedArray.slice(0, 2);
 };
 
-// 创建组件
-const createWidget = async () => {
-  const { longitude, latitude } = await getLocation();
-  let { title, content } = await getWeather(longitude, latitude);
-  if (title === '不会下雨') {
-    const { type } = await getAlert(longitude, latitude) || {};
-    const result = `${type}预警`;
-    title = type ? result : title;
-  };
+// Column Chart
+const drawBar = () => {
+  const context = new DrawContext();
+  context.size = new Size(12, 115);
+  context.respectScreenScale = true;
+  context.opaque = false;
+  context.setStrokeColor(barColor);
+  context.setLineWidth(12);
+
+  const path = new Path();
+  path.move(new Point(6, 5));
+  path.addLine(new Point(6, 110));
+  context.addPath(path);
+  context.strokePath();
+  context.setFillColor(barColor);
+
+  const ellipseSize = 12;
+  context.fillEllipse(new Rect(0, 0, ellipseSize, ellipseSize));
+  context.fillEllipse(new Rect(0, 103, ellipseSize, ellipseSize));
+  return context.getImage();
+};
+
+/**
+ * Draws a circle on a canvas with an arc and text representing progress.
+ * @param {HTMLCanvasElement} canvas
+ * @returns {Promise<Image>}
+ */
+const drawArc = async (deg, barColor, canvas, canvSize, canvWidth) => {
+  const ctr = new Point(canvSize / 2, canvSize / 2);
+
+  canvas.setFillColor(barColor);
+  canvas.setStrokeColor(alphaColor);
+  canvas.setLineWidth(canvWidth);
   
-  // 组件内容
+  const canvRadius = 62
+  const ellipseRect = new Rect(ctr.x - canvRadius, ctr.y - canvRadius, 2 * canvRadius, 2 * canvRadius);
+  canvas.strokeEllipse(ellipseRect);
+
+  for (let t = 0; t < deg; t++) {
+    const x = ctr.x + canvRadius * Math.sin((t * Math.PI) / 180) - canvWidth / 2;
+    const y = ctr.y - canvRadius * Math.cos((t * Math.PI) / 180) - canvWidth / 2;
+    const rect = new Rect(x, y, canvWidth, canvWidth);
+    canvas.fillEllipse(rect);
+  }
+};
+
+const drawCircle = async () => {
+  const canvSize = 200
+  const canvWidth = 15
+  
+  const canvas = new DrawContext();  
+  canvas.opaque = false;
+  canvas.respectScreenScale = true;
+  canvas.size = new Size(canvSize, canvSize);
+
+  const solarTerms = await getSolarTerm();
+  const indexToGet = solarTerms[0].daysUntil > 0 ? 0 : 1;
+  const { daysUntil } = solarTerms[indexToGet];
+  drawArc(Math.floor(daysUntil / 20 * 360), barColor, canvas, canvSize, canvWidth);
+  
+  const canvTextSize = 42
+  const canvTextRect = new Rect(0, 100 - canvTextSize / 2, canvSize, canvTextSize);
+  canvas.setTextAlignedCenter();
+  canvas.setTextColor(barColor);
+  canvas.setFont(Font.boldSystemFont(canvTextSize));
+  canvas.drawTextInRect(
+    Math.floor(daysUntil).toString(),
+    canvTextRect
+  );
+  return canvas.getImage();
+};
+
+/**
+ * 创建组件
+ * @param {object} options
+ * @param {string} string
+ * @param {image} image
+ */
+const createWidget = async () => {
+  const { title, content } = await getWeather({ location: await getLocation() });
+  const { note, _note, imgUrl } = await getOneWord();
+  
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
-  const bgImage = fm.joinPath(mainPath, Script.name());
+  const bgImage = await getBgImage();
   if (fm.fileExists(bgImage)) {
     widget.backgroundImage = fm.readImage(bgImage);
   } else {
@@ -184,10 +352,10 @@ const createWidget = async () => {
   const weatherStack = widget.addStack();
   weatherStack.layoutHorizontally();
   weatherStack.centerAlignContent();
-  weatherStack.setPadding(18, 15, 18, 17);
+  weatherStack.backgroundColor = stackBackground;
+  weatherStack.setPadding(15, 15, 15, 17);
   weatherStack.cornerRadius = 23;
-  weatherStack.size = new Size(0, 63)
-  weatherStack.backgroundColor = Color.dynamic(new Color('#EFEBE9', 0.6), new Color('#161D2A', 0.5));
+  weatherStack.size = new Size(0, stackSize);
   
   const imageElement = weatherStack.addImage(await getIcon());
   imageElement.imageSize = new Size(38, 38);
@@ -206,8 +374,7 @@ const createWidget = async () => {
   weatherText.textOpacity = 0.9;
   statusStack.addSpacer();
   
-  const currentTime = getFormattedTime();
-  const statusText = statusStack.addText(currentTime);
+  const statusText = statusStack.addText(GMT);
   statusText.font = Font.mediumSystemFont(15);
   statusText.textOpacity = 0.45;
   twoHoursStack.addSpacer(2);
@@ -218,37 +385,60 @@ const createWidget = async () => {
   contentText.url = 'https://html5.moji.com/tpd/mojiweatheraggr/index.html#/home'
   widget.addSpacer();
   
+  /** 
+  * Bottom Content
+  * @param {object} options
+  * @param {string} string
+  */
   const butStack = widget.addStack();
-  butStack.backgroundColor = new Color('#EFEBE9', 0.2);
-  butStack.setPadding(12, 12, 12, 12);
+  butStack.layoutHorizontally();
+  butStack.centerAlignContent();
+  butStack.addSpacer();
+  butStack.backgroundColor = stackBackground;
+  butStack.setPadding(5, 0, 5, 0);
   butStack.cornerRadius = 23;
   butStack.size = new Size(0, 80);
+  
+  if (_note.length >= length) {
+    const barStack = butStack.addStack();  
+    barStack.size = new Size(0, 42);
+    barStack.addImage(drawBar());
+    butStack.addSpacer(12);
+    
+    const solarTermStack = butStack.addStack();
+    solarTermStack.layoutVertically()
+    
+    const solarTerms = await getSolarTerm();
+    for (const item of solarTerms) {
+      solarTermStack.addSpacer(2.5);
+      const { solarTerm, dayOfWeek, daysUntil, hoursUntil } = item;
+      const [ month, day ] = item.formattedDate.match(/\d+/g);  
+      const date = `${month.padStart(2, '0')}月${day.padStart(2, '0')}日`;
+      const daysValue = Math.floor(daysUntil);
+      const getDayText = (dayNumber) => daysValue < 0 ? `第 ${-dayNumber} 天` : `还有 ${dayNumber} 天`;
+      const days = daysValue < 0
+        ? getDayText(daysValue)
+        : hoursUntil <= 24
+        ? `还有 ${hoursUntil} 小时`
+        : getDayText(daysValue);
+      
+      const textElement = solarTermStack.addText(`${solarTerm} - ${date} ${dayOfWeek}，${days}`);
+      textElement.font = Font.mediumSystemFont(13.5);
+      textElement.textOpacity = 0.85
+      textElement.url = imgUrl;
+      solarTermStack.addSpacer(2.5);
+    };
+    
+    butStack.addSpacer();
+    const circle = await drawCircle();
+    butStack.addImage(circle);
+  } else {
+    const textElement = butStack.addText(note);
+    textElement.font = Font.mediumSystemFont(14);
+    textElement.textOpacity = 0.8;
+    textElement.url = imgUrl;
+  };
   butStack.addSpacer();
-  
-  const iconStack = butStack.addStack();
-  iconStack.layoutHorizontally();
-  iconStack.bottomAlignContent();
-  
-  const image = await getCacheImage('monkey.png', 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/monkey.png');
-  iconStack.addImage(image)
-  iconStack.addSpacer();
-  
-  function selectFrom(a, b) {
-    const choices = b - a + 1;
-    return Math.floor(Math.random() * choices + a);
-  }
-  
-  // 随机获取 4 张图片
-  const isSmall = Device.screenSize().height < 926;
-  for (let i = 0; i < 4; i++) {
-    const num = selectFrom(1, 30);
-    const url = `https://storage.360buyimg.com/swm-stable/joypark-static1/unlock_joy_level${num}.png`;
-    const image = await getCacheImage(`${num}.png`, url);
-    const imageStack = iconStack.addStack();
-    imageStack.size = new Size(0, isSmall ? 40 : 46);
-    imageStack.addImage(image);
-    iconStack.addSpacer(10);
-  }
   
   if (config.runsInApp) {
     widget.presentMedium();
@@ -256,7 +446,9 @@ const createWidget = async () => {
     Script.setWidget(widget);
     Script.complete();
   };
+  
   shimoFormData(title, content);
+  return widget;
 };
 
 const createErrorWidget = () => {
@@ -272,7 +464,8 @@ const downloadModule = async (scriptName, url) => {
   if (fm.fileExists(modulePath)) {
     return modulePath;
   } else {
-    const moduleJs = await new Request(url).load().catch(() => {
+    const req = new Request(url);
+    const moduleJs = await req.load().catch(() => {
       return null;
     });
     if (moduleJs) {
@@ -282,12 +475,16 @@ const downloadModule = async (scriptName, url) => {
   }
 };
 
+const runScriptable = () => {
+  Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
+};
+
 const presentMenu = async() => {
   const alert = new Alert();
-  alert.message = "【 iOS 16 负一屏底栏 】\n高仿iOS通知信息样式，内容显示未来两小时天气";
+  alert.message = "【 iOS 16 负一屏底栏 】\n高仿iOS通知信息样式，内容显示未来两小时天气，\n底部每日一句中英文或二十四节气";
   const actions = ['95du茅台', '更新代码', '重置所有', '透明背景', '预览组件'];
 
-  actions.forEach((action, index) => {
+  actions.forEach(( action, index ) => {
     alert[ index === 1 || index === 2 
       ? 'addDestructiveAction'
       : 'addAction' ](action);
@@ -300,7 +497,7 @@ const presentMenu = async() => {
   }
   
   if (menu === 1) {
-    const code = new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/bottomBar.js').loadString();
+    const code = await new Request(`${rootUrl}/widget/bottomBar.js`).loadString();
     if (!code.includes('95度茅台')) {
       const finish = new Alert();
       finish.title = "更新失败"
