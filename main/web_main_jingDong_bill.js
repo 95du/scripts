@@ -807,8 +807,8 @@ async function main() {
     previewImgHtml = async () => {
       const displayStyle = settings.clock ? 'none' : 'block';
       const previewImgUrl = [
-        `${rootUrl}img/picture/jingDong_bill_0.png`,  
-        `${rootUrl}img/picture/jingDong_bill_1.png`
+        `${rootUrl}/img/picture/jingDong_bill_0.png`,  
+        `${rootUrl}/img/picture/jingDong_bill_1.png`
       ];
       
       if ( settings.topStyle ) {
@@ -1822,7 +1822,7 @@ async function main() {
             name: "textLightColor",
             label: "白天文字",
             type: "color",
-            icon: `${rootUrl}img/symbol/title.png`
+            icon: `${rootUrl}/img/symbol/title.png`
           },
           {
             name: "textDarkColor",
