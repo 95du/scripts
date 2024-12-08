@@ -284,7 +284,8 @@ async function main(family) {
         cost: (totalPower * agriculturalRate).toFixed(2),
         percent: 0,
         isPercent: '0%',
-        tierIndex: 0
+        tierIndex: 0,
+        type: '农用'
       };
     }
   
@@ -332,7 +333,8 @@ async function main(family) {
       cost: (totalPower * tier.rate).toFixed(2),
       percent: percentageOfThird,
       isPercent: `${isPercent}%`,
-      tierIndex: tierIndex + 1
+      tierIndex: tierIndex + 1,
+      type: eleType === '500' ? '居民' : '未知'
     };
   };
   
@@ -362,8 +364,8 @@ async function main(family) {
   
   const {
     lastMonth = '2024-12',
-    totalArray,
-    totalPower: total = '0.00',
+    totalArray = [],
+    totalPower: ls_totalPower = '0.00',
     totalElectricity = '0.00',   
     arrears = '0', 
     isArrears = '0',
@@ -372,7 +374,8 @@ async function main(family) {
   } = await getEleBill(areaCode, eleCustId) || {};
   
   // 电费信息
-  const { tier, rate, cost, percent, isPercent, tierIndex } = calcElectricBill(totalPower, eleType, areaCode);
+  const { tier, rate, cost, percent, isPercent, tierIndex, type } = calcElectricBill(totalPower, eleType, areaCode);
+  const { tier: ls_tier, rate: ls_rate, tierIndex: ls_tierIndex } = calcElectricBill(ls_totalPower, eleType, areaCode);
   
   const alipayUrl = 'alipays://platformapi/startapp?appId=2021001164644764';
   const textColor = Color.dynamic(new Color(setting.textLightColor), new Color(setting.textDarkColor));
@@ -388,7 +391,7 @@ async function main(family) {
     if (hours_duration >= 12 && isArrears == 1) {
       setting.updateTime = Date.now()
       writeSettings(setting);
-      module.notify('用电缴费通知 ‼️', `${name}，第${tier} ( 电价 ${rate} 元/度 )` + `\n上月用电 ${total} 度 ，待缴电费 ${arrears} 元`);
+      module.notify('用电缴费通知 ‼️', `${name}，第${ls_tier} ( 电价 ${ls_rate} 元/度 )` + `\n上月用电 ${ls_totalPower} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
@@ -532,19 +535,19 @@ async function main(family) {
     
     const benefitText2 = beneStack.addText(ystdayPower);
     benefitText2.font = Font.boldSystemFont(16);
-    benefitText2.textColor = isArrears == 1 ? Color.blue() : Color.red();
+    benefitText2.textColor = isArrears === '1' ? Color.blue() : Color.red();
     beneStack.addSpacer();
     
     if (isArrears === '1') {
       const payText0 = beneStack.addText(arrears);
       payText0.font = Font.boldSystemFont(16);
       payText0.textColor = new Color('#FF2400');
-    } else if (setting.estimate) {
+    } else {
       const payText0 = beneStack.addText(balance);
       payText0.font = Font.mediumSystemFont(16);
       payText0.textColor = Color.blue();
     }
-    topStack.addSpacer(5);
+    topStack.addSpacer(4.5);
     
     const pointStack = module.createStack(topStack);
     const payStack = module.createStack(pointStack);
@@ -557,20 +560,20 @@ async function main(family) {
     payText.textColor = Color.white();
     pointStack.addSpacer(8);
     
-    const LevelText = pointStack.addText(number);
+    const LevelText = pointStack.addText(`${ls_tier} ${ls_rate} 元/度`);
     LevelText.textColor = textColor;
     LevelText.font = Font.mediumSystemFont(14);
     LevelText.textOpacity = 0.7;
     pointStack.addSpacer();
     
     const barStack2 = module.createStack(pointStack);
-    barStack2.setPadding(1, 6, 1, 6);
-    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FFA61C' : '#00C400');
+    barStack2.setPadding(2, 6, 2, 6);
+    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FF9500' : '#00C400');
     barStack2.cornerRadius = 5;
     
-    const pointText = barStack2.addText(dayBefore);
-    pointText.font = Font.boldSystemFont(13);
-    pointText.textColor = Color.white();
+    const typeText = barStack2.addText(isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type);
+    typeText.font = Font.boldSystemFont(isArrears === '1' ? 12.3: 11);
+    typeText.textColor = Color.white();
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 0) progressBar(mainStack, tier);
@@ -593,10 +596,11 @@ async function main(family) {
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(127, 60);
     } else {
-      createStack(middleStack, 1, `${year} 年`, totalPowerYear, totalElectricityYear);
+      const { currentYear } = getCurrentYearMonth();
+      createStack(middleStack, 1, `${currentYear} 年`, totalPowerYear, totalElectricityYear);
     };
     
-    createStack(middleStack, true, lastMonth, total, totalElectricity);
+    createStack(middleStack, true, lastMonth, ls_totalPower, totalElectricity);
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 1) progressBar(mainStack, tier);
@@ -651,9 +655,8 @@ async function main(family) {
     if (isCurrentMonth) {
       return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
     } else {
-      const { tier, tierIndex } = calcElectricBill(total, eleType, areaCode);
       const billColor = new Color(isArrears === '1' ? '#FD4A67' : '#00B388');
-      return addStack(groupStack, lastMonth, total, totalElectricity, tierIndex, getTierColor(tierIndex), '#8C7CFF', billColor);
+      return addStack(groupStack, lastMonth, ls_totalPower, totalElectricity, ls_tierIndex, getTierColor(ls_tierIndex),  '#8C7CFF', billColor);
     }
   };
   
