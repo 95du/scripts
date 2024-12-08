@@ -425,31 +425,27 @@ async function main() {
         });
       } else {
         if (!fm.isFileDownloaded(filePath)) {
-          await fm.downloadFileFromiCloud(filePath);
-        }
-        if (/.(js|json)$/.test(filePath)) {
-          QuickLook.present(filePath);
-          return
-        }
-        if (/.(jpg|jpeg|gif|png|heic|heif|webp)$/i.test(filePath)) {
-          QuickLook.present(filePath, false);
-          return
-        }
-        try {
-          const image = fm.readImage(filePath);
-          QuickLook.present(image, false);
-          return
-        } catch (e) {
-          console.warn(e);
-        }
-        try {
-          const text = fm.readString(filePath);
-          QuickLook.present(text);
-        } catch (e) {
-          console.warn(e);
-        }
+        await fm.downloadFileFromiCloud(filePath);
       }
-    };
+      try {
+        const image = fm.readImage(filePath);
+        QuickLook.present(image, false);
+        return
+      } catch (e) {
+        console.warn(e);
+      }
+      try {
+        const text = filePath.endsWith('.json') 
+          ? JSON.stringify(JSON.parse(fm.readString(filePath)), null, 4)
+          : fm.readString(filePath)
+        QuickLook.present(text);
+        return
+      } catch (e) {
+        console.warn(e);
+      }
+      QuickLook.present(filePath);
+    }
+  };
   
     const remove = async (list) => {
       for (const file of list) {
