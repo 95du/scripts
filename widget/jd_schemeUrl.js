@@ -2,7 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-brown; icon-glyph: paper-plane;
 /**
- * 小组件作者：95度茅台
+ * 脚本作者：95度茅台
  * Version 1.0.0
  * 2023-03-07 14:30
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
@@ -36,33 +36,19 @@
 
 */
 
-const uri = Script.name();
-const F_MGR = FileManager.local();
-const folder = F_MGR.joinPath(F_MGR.documentsDirectory(), "JD_SchemeUrl");
-if (!F_MGR.fileExists(folder)) {
-  F_MGR.createDirectory(folder);
-}
-const cacheFile = F_MGR.joinPath(folder, 'setting.json');
-const bgPath = F_MGR.joinPath(F_MGR.documentsDirectory(), "95duBackground");
-const bgImage = F_MGR.joinPath(bgPath, uri + ".jpg");
+const fm = FileManager.local();
+const folder = fm.joinPath(fm.documentsDirectory(), "JD_SchemeUrl");
+if (!fm.fileExists(folder)) fm.createDirectory(folder);
 
-if (F_MGR.fileExists(cacheFile)) {
-  data = F_MGR.readString(cacheFile)
+const settingPath = fm.joinPath(folder, 'setting.json');
+if (fm.fileExists(settingPath)) {
+  data = fm.readString(settingPath)
   setting = JSON.parse(data);
-}
-
-const notify = async (title, body, url) => {
-  let n = new Notification()
-  n.title = title
-  n.body = body
-  n.sound = 'piano_success'
-  if (url) {n.openURL = url}
-  return await n.schedule()
 }
 
 async function presentMenu() {
   const alert = new Alert();
-  alert.message = '\n1，运行制作生成跳转链接\n2，桌面组件点击跳转到指定App页面\n3，具体方法请查看脚本代码开头注释\n\n小组件作者:95度茅台'
+  alert.message = '1，运行制作生成跳转链接\n2，桌面组件点击跳转到指定App页面\n3，具体方法请查看脚本代码开头注释'
   const actions = [
     '更新代码', '重置所有', '更多组件', '透明背景', '生成链接'
   ];
@@ -73,31 +59,31 @@ async function presentMenu() {
   alert.addCancelAction('取消');
   const mainMenu = await alert.presentSheet();
   if (mainMenu === 1) {
-    await F_MGR.remove(folder);
-    if (F_MGR.fileExists(bgImage)) {
-      await F_MGR.remove(bgImage);
+    await fm.remove(folder);
+    if (fm.fileExists(bgImage)) {
+      await fm.remove(bgImage);
     }
-    Safari.open('scriptable:///run/' + encodeURIComponent(uri));
+    Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   }
   if (mainMenu === 2) {
     script = {
       name: 'store.js',
-      code: 'https://gitcode.net/4qiao/scriptable/raw/master/vip/main95duStore.js'
+      code: 'https://raw.githubusercontent.com/95du/scripts/master/main/web_main_95du_Store.js'
     }
     await importModule(await downloadModule()).main();
   }
   if (mainMenu === 3) {
     script = {
       name: 'image.js',
-      code: 'https://gitcode.net/4qiao/scriptable/raw/master/vip/mainTableBackground.js'
+      code: 'https://raw.githubusercontent.com/95du/scripts/master/main/main_background.js'
     }
-    await importModule(await downloadModule()).main();
+    await importModule(await downloadModule()).main(folder);
   }
   if (mainMenu === 4) {
     await generateLink();
   }
   if (mainMenu === 0) {
-    const reqUpdate = new Request(atob('aHR0cHM6Ly9naXRjb2RlLm5ldC80cWlhby9zY3JpcHRhYmxlL3Jhdy9tYXN0ZXIvYXBpL2pkX3NjaGVtZVVybC5qcw=='));
+    const reqUpdate = new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/jd_schemeUrl.js');
     const codeString = await reqUpdate.loadString();
     const finish = new Alert();
     if (codeString.indexOf("95度茅台") == -1) {
@@ -105,11 +91,11 @@ async function presentMenu() {
       finish.addAction('OK')
       await finish.presentAlert();
     } else {
-      F_MGR.writeString(  
+      fm.writeString(  
         module.filename,
         codeString
       );
-      Safari.open('scriptable:///run/' + encodeURIComponent(uri));
+      Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   }
 }
@@ -126,29 +112,40 @@ async function generateLink() {
     const openUrl = encodeURIComponent(value);
   if ((openUrl.indexOf('jd.com') > -1 || openUrl.indexOf('3.cn') > -1) && value.indexOf('openApp') === -1) {
     const schemeUrl = `openApp.jdMobile://virtual?params=%7B%22category%22%3A%22jump%22%2C%22des%22%3A%22m%22%2C%22url%22%3A%22${openUrl}%22%7D`
-    setting = {schemeUrl: schemeUrl}
-    F_MGR.writeString(cacheFile, JSON.stringify(setting));
+    setting = { schemeUrl }
+    fm.writeString(settingPath, JSON.stringify(setting));
     console.log(schemeUrl);
     Pasteboard.copy(schemeUrl);
     Safari.open(schemeUrl);
   } else {
-    notify('生成失败 ⚠️', '请输入正确的链接。')
+    console.log('生成失败 ⚠️', '请输入正确的链接。');
   }
 }
 
 async function createWidget() {
   const widget = new ListWidget();
-  widget.backgroundImage = F_MGR.readImage(bgImage);
-  const image = await getImage('https://gitcode.net/4qiao/scriptable/raw/master/img/jingdong/openUrl.png');
-  const jdImage = widget.addImage(image);
-  jdImage.centerAlignImage();
-  jdImage.url = setting.schemeUrl;
-  return widget;
+  widget.url = setting.schemeUrl;
+  const bgImage = fm.joinPath(folder, Script.name());
+  if (fm.fileExists(bgImage)) {
+    widget.backgroundImage = fm.readImage(bgImage);
+  }
+  
+  function selectFrom( a, b ) {
+    const choices = b - a + 1;
+    return Math.floor(Math.random() * choices + a);
+  }
+  const num = selectFrom( 1, 30 );
+  const image = await new Request(`https://storage.360buyimg.com/swm-stable/joypark-static1/unlock_joy_level${num}.png`).loadImage();
+  const widgetImage = widget.addImage(image);
+  widgetImage.centerAlignImage();
+ 
+  Script.setWidget(widget);  
+  Script.complete();
 }
 
 async function downloadModule() {
-  const modulePath = F_MGR.joinPath(folder, script.name);
-  if (F_MGR.fileExists(modulePath)) {
+  const modulePath = fm.joinPath(folder, script.name);
+  if (fm.fileExists(modulePath)) {
     return modulePath;
   } else {
     const req = new Request(script.code);
@@ -156,20 +153,14 @@ async function downloadModule() {
       return null;
     });
     if (moduleJs) {
-      F_MGR.write(modulePath, moduleJs);
+      fm.write(modulePath, moduleJs);
       return modulePath;
     }
   }
 }
 
-async function getImage(url) {
-  return await new Request(url).loadImage();
-}
-
 if (config.runsInApp) {
   await presentMenu();
 } else {
-  widget = await createWidget();
-  Script.setWidget(widget);
-  Script.complete();
+  await createWidget();
 }
