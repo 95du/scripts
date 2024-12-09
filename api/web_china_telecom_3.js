@@ -592,7 +592,7 @@ async function main(family) {
     voiceStack.addSpacer();
     addHorizontalText(voiceStack, 'Min', '#FF6800');
     
-    widget.backgroundColor = Color.dynamic(Color.white(), new Color('#1E1E1E'));
+    widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     return widget;
   };
   
