@@ -339,6 +339,7 @@ async function main(family) {
   // 创建组件
   const createWidget = async () => {
     const widget = new ListWidget();
+    await setBackground(widget);
     const lay = getLayout();
     widget.setPadding(
       lay.padding, 
@@ -591,6 +592,7 @@ async function main(family) {
     voiceStack.addSpacer();
     addHorizontalText(voiceStack, 'Min', '#FF6800');
     
+    widget.backgroundColor = Color.dynamic(Color.white(), new Color('#1E1E1E'));
     return widget;
   };
   
@@ -606,10 +608,8 @@ async function main(family) {
       widget = await createWidget();
     }
     
-    await setBackground(widget);
-    hourlyWrite(flowBalance, voiceBalance);
-    
     if (setting.alwaysDark) widget.backgroundColor = new Color('#000000');
+    hourlyWrite(flowBalance, voiceBalance);
     if (feeBalance < 0) {
       widget.url = fetchUrl.alipayUrl;
     }
