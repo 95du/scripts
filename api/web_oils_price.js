@@ -202,6 +202,7 @@ async function main() {
     const statusStack = mainStack.addStack();
     statusStack.layoutHorizontally();
     statusStack.centerAlignContent();
+    statusStack.setPadding(3, 0, 3, 0)
     statusStack.size = new Size(0, tipsGap ? height : gap);
     statusStack.addSpacer();
     
