@@ -274,11 +274,9 @@ async function main(family) {
       drawArc(canvas, radius, Math.floor(progress * 3.6), color);
     });
 
-    const imgWidth = 52;
-    const imgHeight = 52;
-    const iconX = (canvSize - imgWidth) / 2;
-    const iconY = (canvSize - imgHeight) / 2;
-    canvas.drawImageInRect(logo, new Rect(iconX, iconY, imgWidth, imgHeight));
+    const imgSize = 52;
+    const x = (canvSize - imgSize) / 2;
+    canvas.drawImageInRect(logo, new Rect(x, x, imgSize, imgSize));
     
     return canvas;
   };
@@ -415,8 +413,199 @@ async function main(family) {
     return widget;
   };
   
+  /** 
+   * 新的小号组件，两个半圆🚫
+   */
+  const isSmall = Device.screenSize().height < 926;
+  const lay = {
+    textSize: isSmall ? 14 : 13.5,
+    stackGap: isSmall ? 6 : 9,
+    padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18]
+  };
+  
+  // 封装 canvas 初始化的过程
+  const setupCanvas = (() => {
+    const canvasSize = 188;
+    const arcWidth = 12;
+    const arcRadius = 72;
+  
+    const canvas = new DrawContext();
+    canvas.opaque = false;
+    canvas.respectScreenScale = true;
+    canvas.size = new Size(canvasSize, canvasSize);
+  
+    return { canvas, canvasSize, arcWidth, arcRadius };
+  })();
+  
+  // 绘制圆形路径和小圆形
+  const drawCircleArr = (center, radius, startAngle, endAngle, color, canvas, arcWidth) => {
+    for (let t = startAngle; t <= endAngle; t += Math.PI / 180) {
+      const x = center.x + radius * Math.cos(t) - arcWidth / 2;
+      const y = center.y + radius * Math.sin(t) - arcWidth / 2;
+      const rect = new Rect(x, y, arcWidth, arcWidth);
+      canvas.setFillColor(color);
+      canvas.fillEllipse(rect);
+    }
+  };
+  
+  const drawCircularPath = (canvas, start, end, ctr, radius, steps, isFilled = false, fillColor, width = 1) => {
+    const path = new Path();
+    
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const angle = start + (end - start) * t;
+      const x = ctr.x + radius * Math.cos(angle);
+      const y = ctr.y + radius * Math.sin(angle);
+      i === 0 ? path.move(new Point(x, y)) : path.addLine(new Point(x, y));
+    }
+  
+    if (isFilled) {
+      canvas.setFillColor(fillColor);
+      canvas.addPath(path);
+      canvas.fillPath();
+    } else {
+      canvas.setStrokeColor(fillColor);
+      canvas.setLineWidth(width);
+      canvas.addPath(path);
+      canvas.strokePath();
+    }
+  };
+  
+  // 绘制弧线背景和填充
+  const drawArcBackground = (canvas, center, radius, startAngle, endAngle, fillColor, arcWidth) => {
+    // 绘制主弧线
+    drawCircularPath(canvas, startAngle, endAngle, center, radius, 100, false, fillColor, arcWidth);
+  
+    // 绘制连接的下半圆
+    const halfCircleRadius = arcWidth / 2;
+    const halfCircleStart = endAngle; // 起点为主弧线的终点
+    const halfCircleEnd = halfCircleStart + Math.PI; // 绘制半圆
+    const halfCircleCenter = {
+      x: center.x + radius * Math.cos(endAngle),
+      y: center.y + radius * Math.sin(endAngle),
+    };
+  
+    drawCircularPath(canvas, halfCircleStart, halfCircleEnd, halfCircleCenter, halfCircleRadius, 100, true, fillColor);
+  };
+  
+  // 获取绘制进度信息
+  const getProgress = (total, value) => {
+    const startAngle = 170 * (Math.PI / 180); // 起始角度（170°）
+    const endAngle = startAngle + (200 * Math.PI / 180); // 终止角度（200°弧度）
+    const clampedValue = Math.min(Math.max(value, 0), total); // 限制范围在 0 到 total
+    const progressAngle = startAngle + (clampedValue / total) * (endAngle - startAngle);
+    return { startAngle, endAngle, progressAngle };
+  };
+  
+  // 绘制进度条
+  const drawProgressArc = () => {
+    const { canvas, canvasSize, arcWidth, arcRadius } = setupCanvas;
+    const center = new Point(canvasSize / 2, canvasSize / 2);
+  
+    // 流量相关进度
+    const flowColor = new Color('#A85EFF');
+    const { startAngle: flowStart, endAngle: flowEnd, progressAngle: flowProgress } = getProgress(flowTotal, flowBalance);
+    
+    // 绘制流量背景和进度条
+    drawArcBackground(canvas, center, arcRadius, flowStart, flowEnd, new Color(flowColor.hex, 0.2), arcWidth);
+    drawCircleArr(center, arcRadius, flowStart, flowProgress, flowColor, canvas, arcWidth);
+  
+    // 通话相关进度
+    const voiceColor = new Color('#FF9500');
+    const { startAngle: voiceStart, endAngle: voiceEnd, progressAngle: voiceProgress } = getProgress(voiceTotal, voiceBalance);
+  
+    // 绘制通话背景和进度条
+    drawArcBackground(canvas, center, arcRadius - 17, voiceStart, voiceEnd, new Color(voiceColor.hex, 0.2), arcWidth);
+    drawCircleArr(center, arcRadius - 17, voiceStart, voiceProgress, voiceColor, canvas, arcWidth);
+  
+    // 绘制图标
+    const imgSize = 28;
+    const imgXY = (canvasSize - imgSize) / 2;
+    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 22, imgSize, imgSize));
+  
+    return canvas.getImage();
+  };
+  
+  // 组件部分
+  const generateStack = (widget) => {
+    const stack = widget.addStack();
+    stack.layoutHorizontally();
+    stack.centerAlignContent();
+    return stack;
+  };
+    
+  const createBarStack = (stack, width, height, color, gap) => {
+    const columnStack = stack.addStack();
+    if (width) columnStack.size = new Size(width, height);
+    columnStack.cornerRadius = 50;
+    columnStack.backgroundColor = new Color(color);
+    if (gap) stack.addSpacer(gap);
+  };
+  
+  const addHorizontalText = (stack, text, color, blod) => {
+    const balanceText = stack.addText(`${text}`);
+    balanceText.font = Font[blod ? 'boldSystemFont' : 'mediumSystemFont'](lay.textSize);
+    if (color) balanceText.textColor = new Color(color);
+  };
+  
+  const inSideStack = (widget, width, height, color, alpha) => {
+    const stack = widget.addStack();
+    const barStack = generateStack(stack);
+    barStack.setPadding(height, width, height, width);
+    barStack.cornerRadius = 5.5;
+    barStack.backgroundColor = new Color(color, alpha ?? 0.2);
+    return barStack;
+  };
+  
+  // 设置小部件
+  const setupWidget = async () => {
+    const widget = new ListWidget();
+    widget.setPadding(...lay.padding);
+    
+    const halfCircleImage = await drawProgressArc();
+    widget.backgroundImage = halfCircleImage
+    widget.addSpacer();
+    
+    // 余额
+    const mediumStack = generateStack(widget);
+    mediumStack.addSpacer();
+    const balanceStack = inSideStack(mediumStack, 5, 1.5, '#00C400', 1, true);
+    balanceStack.size = new Size(68, 0);
+    addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
+    mediumStack.addSpacer();
+    widget.addSpacer(lay.stackGap);
+    
+    // 流量
+    const flowStack = inSideStack(widget, 12, 2, '#A85EFF');
+    createBarStack(flowStack, 8, 8, '#A85EFF', 10);
+    addHorizontalText(flowStack, flowBalance);
+    flowStack.addSpacer();
+    const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB'
+    addHorizontalText(flowStack, formatFlowUsage, '#A85EFF');
+    widget.addSpacer(5);
+    
+    // 语音
+    const voiceStack = inSideStack(widget, 12, 2, '#FF9500');
+    createBarStack(voiceStack, 8, 8, '#FF6800', 10);
+    addHorizontalText(voiceStack, voiceBalance);
+    voiceStack.addSpacer();
+    addHorizontalText(voiceStack, 'Min', '#FF6800');
+    
+    return widget;
+  };
+  
+  // 运行组件
   const runWidget = async () => {
-    const widget = config.widgetFamily !== 'large' ? await createWidget() : null;
+    const param = args.widgetParameter;
+    const isNumber = param && !isNaN(Number(param));
+    let widget;
+
+    if (isNumber) {
+      widget = await setupWidget();
+    } else if (family !== 'large') {
+      widget = await createWidget();
+    }
+    
     await setBackground(widget);
     hourlyWrite(flowBalance, voiceBalance);
     
