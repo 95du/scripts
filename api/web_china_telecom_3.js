@@ -24,6 +24,7 @@ async function main(family) {
     settingPath, 
     cacheImg, 
     cacheStr,
+    getDeviceData
   } = module;
   
   const setting = module.settings;
@@ -421,7 +422,9 @@ async function main(family) {
   const lay = {
     textSize: isSmall ? 14 : 13.5,
     stackGap: isSmall ? 6 : 9,
-    padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18]
+    padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18],
+    balStackSize: isSmall ? 66 : 68,
+    screenSize: getDeviceData(true)
   };
   
   // 封装 canvas 初始化的过程
@@ -560,33 +563,38 @@ async function main(family) {
   
   // 设置小部件
   const setupWidget = async () => {
-    const widget = new ListWidget();
-    widget.setPadding(...lay.padding);
-    
+    const { padding, balStackSize, screenSize } = lay;
     const halfCircleImage = await drawProgressArc();
-    widget.backgroundImage = halfCircleImage
-    widget.addSpacer();
+    
+    const widget = new ListWidget();
+    widget.setPadding(0, 0, 0, 0);
+    const bodyStack = widget.addStack();
+    bodyStack.layoutVertically();
+    bodyStack.setPadding(...padding);
+    bodyStack.size = new Size(screenSize.small, screenSize.small);
+    bodyStack.backgroundImage = halfCircleImage;
+    bodyStack.addSpacer();
     
     // 余额
-    const mediumStack = generateStack(widget);
+    const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, 1.5, '#00C400', 1, true);
-    balanceStack.size = new Size(68, 0);
+    const balanceStack = inSideStack(mediumStack, 5, 1.5, '#00C400', 1);
+    balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
-    widget.addSpacer(lay.stackGap);
+    bodyStack.addSpacer(lay.stackGap);
     
     // 流量
-    const flowStack = inSideStack(widget, 12, 2, '#A85EFF');
+    const flowStack = inSideStack(bodyStack, 12, 2, '#A85EFF');
     createBarStack(flowStack, 8, 8, '#A85EFF', 10);
     addHorizontalText(flowStack, flowBalance);
     flowStack.addSpacer();
     const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB'
     addHorizontalText(flowStack, formatFlowUsage, '#A85EFF');
-    widget.addSpacer(5);
+    bodyStack.addSpacer(5);
     
     // 语音
-    const voiceStack = inSideStack(widget, 12, 2, '#FF9500');
+    const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
     createBarStack(voiceStack, 8, 8, '#FF6800', 10);
     addHorizontalText(voiceStack, voiceBalance);
     voiceStack.addSpacer();
