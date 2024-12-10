@@ -770,7 +770,7 @@ class _95du {
    * @returns {Object} object
    */
   generateLayout = (baseConfig) => {
-    const scale = this.getScaleFactor();
+    const scale = this.getDeviceSize();
     const value = Object.fromEntries(Object.entries(baseConfig).map(([key, value]) => [key, value * scale]));
     return value;
   };
