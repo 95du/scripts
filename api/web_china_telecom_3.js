@@ -24,7 +24,7 @@ async function main(family) {
     settingPath, 
     cacheImg, 
     cacheStr,
-    getDeviceData
+    getDeviceSize
   } = module;
   
   const setting = module.settings;
@@ -423,7 +423,7 @@ async function main(family) {
     stackGap: isSmall ? 6 : 9,
     padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18],
     balStackSize: isSmall ? 66 : 68,
-    screenSize: getDeviceData(true)
+    widgetSize: getDeviceSize(true)
   };
   
   // 封装 canvas 初始化的过程
@@ -545,10 +545,11 @@ async function main(family) {
     if (gap) stack.addSpacer(gap);
   };
   
-  const addHorizontalText = (stack, text, color, blod) => {
+  const addHorizontalText = (stack, text, color, opacity) => {
     const balanceText = stack.addText(`${text}`);
-    balanceText.font = Font[blod ? 'boldSystemFont' : 'mediumSystemFont'](lay.textSize);
+    balanceText.font = Font.boldSystemFont(lay.textSize);
     if (color) balanceText.textColor = new Color(color);
+    if (opacity) balanceText.textOpacity = opacity || 1;
   };
   
   const inSideStack = (widget, width, height, color, alpha) => {
@@ -562,7 +563,8 @@ async function main(family) {
   
   // 设置小部件
   const setupWidget = async () => {
-    const { padding, balStackSize, screenSize } = lay;
+    const { padding, balStackSize, widgetSize } = lay;
+    const randomColor = module.getRandomItem(['#00C400', '#FF9500', '#0099F0', '#A85EFF']);
     const halfCircleImage = await drawProgressArc();
     
     const widget = new ListWidget();
@@ -570,14 +572,14 @@ async function main(family) {
     const bodyStack = widget.addStack();
     bodyStack.layoutVertically();
     bodyStack.setPadding(...padding);
-    bodyStack.size = new Size(screenSize.small, screenSize.small);
+    bodyStack.size = new Size(widgetSize.small.w, widgetSize.small.h);
     bodyStack.backgroundImage = halfCircleImage;
     bodyStack.addSpacer();
     
     // 余额
     const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, 1.5, '#00C400', 1);
+    const balanceStack = inSideStack(mediumStack, 5, 1.5, randomColor, 1);
     balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
@@ -586,7 +588,7 @@ async function main(family) {
     // 流量
     const flowStack = inSideStack(bodyStack, 12, 2, '#A85EFF');
     createBarStack(flowStack, 8, 8, '#A85EFF', 10);
-    addHorizontalText(flowStack, flowBalance);
+    addHorizontalText(flowStack, flowBalance, null, 0.85);
     flowStack.addSpacer();
     const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB'
     addHorizontalText(flowStack, formatFlowUsage, '#A85EFF');
@@ -595,7 +597,7 @@ async function main(family) {
     // 语音
     const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
     createBarStack(voiceStack, 8, 8, '#FF6800', 10);
-    addHorizontalText(voiceStack, voiceBalance);
+    addHorizontalText(voiceStack, voiceBalance, null, 0.85);
     voiceStack.addSpacer();
     addHorizontalText(voiceStack, 'Min', '#FF6800');
     return widget;
