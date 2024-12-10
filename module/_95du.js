@@ -759,7 +759,15 @@ class _95du {
       s => (s.width === width && s.height === height) || (s.width === height && s.height === width)
     );
   
-    if (!match) return widgetSize ? null : 1;
+    if (!match) {
+      const defaultSizes = {
+        small: { w: 170, h: 170 },
+        medium: { w: 364, h: 170 },
+        large: { w: 364, h: 392 }
+      };
+      return widgetSize ? defaultSizes : 1; // 返回默认 sizes 或比例 1
+    }
+
     return widgetSize ? match.sizes : Math.round((match.widget / refSize.widget) * 100) / 100;
   };
   
