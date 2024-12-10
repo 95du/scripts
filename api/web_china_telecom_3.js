@@ -420,9 +420,11 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     textSize: isSmall ? 14 : 13.5,
-    stackGap: isSmall ? 7 : 10,
-    padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18],
+    stackGap: isSmall ? 8 : 10,
+    padding: isSmall ? [12, 17, 12, 17] : [14, 18, 14, 18],
     balStackSize: isSmall ? 66 : 68,
+    stackPadding: isSmall ? 1 : 1.5,
+    logoPadding: isSmall ? 25 : 23,
     widgetSize: getDeviceSize(true)
   };
   
@@ -475,20 +477,43 @@ async function main(family) {
   };
   
   // 绘制弧线背景和填充
-  const drawArcBackground = (canvas, center, radius, startAngle, endAngle, fillColor, arcWidth) => {
+  const drawArcBackground = (canvas, ctr, radius, startAngle, endAngle, fillColor, width) => {
     // 绘制主弧线
-    drawCircularPath(canvas, startAngle, endAngle, center, radius, 100, false, fillColor, arcWidth);
+    drawCircularPath(canvas, startAngle, endAngle, ctr, radius, 100, false, fillColor, width);
   
-    // 绘制连接的下半圆
-    const halfCircleRadius = arcWidth / 2;
-    const halfCircleStart = endAngle; // 起点为主弧线的终点
-    const halfCircleEnd = halfCircleStart + Math.PI; // 绘制半圆
-    const halfCircleCenter = {
-      x: center.x + radius * Math.cos(endAngle),
-      y: center.y + radius * Math.sin(endAngle),
+    // 计算左下半圆的中心点
+    const leftCircleCenter = {
+      x: ctr.x + radius * Math.cos(startAngle),
+      y: ctr.y + radius * Math.sin(startAngle),
     };
+    // 绘制左下半圆
+    drawCircularPath(
+      canvas,
+      startAngle + Math.PI,
+      startAngle + 2 * Math.PI,
+      leftCircleCenter,
+      width / 2,
+      100,
+      true,
+      fillColor
+    );
   
-    drawCircularPath(canvas, halfCircleStart, halfCircleEnd, halfCircleCenter, halfCircleRadius, 100, true, fillColor);
+    // 计算右下半圆的中心点
+    const rightCircleCenter = {
+      x: ctr.x + radius * Math.cos(endAngle),
+      y: ctr.y + radius * Math.sin(endAngle),
+    };
+    // 绘制右下半圆
+    drawCircularPath(
+      canvas,
+      endAngle,
+      endAngle + Math.PI,
+      rightCircleCenter,
+      width / 2,
+      100,
+      true,
+      fillColor
+    );
   };
   
   // 获取绘制进度信息
@@ -522,7 +547,7 @@ async function main(family) {
     // 绘制图标
     const imgSize = 28;
     const imgXY = (canvasSize - imgSize) / 2;
-    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 23, imgSize, imgSize));
+    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - lay.logoPadding, imgSize, imgSize));
   
     return canvas.getImage();
   };
@@ -561,7 +586,7 @@ async function main(family) {
   
   // 设置小部件
   const setupWidget = async () => {
-    const { padding, balStackSize, widgetSize } = lay;
+    const { padding, stackPadding,  balStackSize, widgetSize } = lay;
     const randomColor = module.getRandomItem(['#00C400', '#FF9500', '#0099F0', '#A85EFF']);
     const halfCircleImage = await drawProgressArc();
     
@@ -577,7 +602,7 @@ async function main(family) {
     // 余额
     const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, 1.5, randomColor, 1);
+    const balanceStack = inSideStack(mediumStack, 5, stackPadding, randomColor, 1);
     balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
