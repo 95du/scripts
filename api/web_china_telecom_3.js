@@ -428,7 +428,7 @@ async function main(family) {
   
   // 封装 canvas 初始化的过程
   const setupCanvas = (() => {
-    const canvasSize = 185;
+    const canvasSize = 186.5
     const arcWidth = 12;
     const arcRadius = 72;
   
@@ -524,7 +524,7 @@ async function main(family) {
     // 绘制图标
     const imgSize = 28;
     const imgXY = (canvasSize - imgSize) / 2;
-    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 24, imgSize, imgSize));
+    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 23, imgSize, imgSize));
   
     return canvas.getImage();
   };
