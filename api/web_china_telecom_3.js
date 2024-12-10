@@ -587,7 +587,7 @@ async function main(family) {
   // 设置小部件
   const setupWidget = async () => {
     const { padding, stackPadding,  balStackSize, widgetSize } = lay;
-    const randomColor = module.getRandomItem(['#00C400', '#FF9500', '#0099F0', '#A85EFF']);
+    const randomColor = module.getRandomItem(['#00C400', '#0099F0', '#A85EFF']);
     const halfCircleImage = await drawProgressArc();
     
     const widget = new ListWidget();
