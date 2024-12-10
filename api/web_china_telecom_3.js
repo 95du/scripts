@@ -420,11 +420,11 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     textSize: isSmall ? 14 : 13.5,
-    stackGap: isSmall ? 8 : 10,
-    padding: isSmall ? [12, 17, 12, 17] : [14, 18, 14, 18],
+    stackGap: isSmall ? 6 : 10,
     balStackSize: isSmall ? 66 : 68,
     stackPadding: isSmall ? 1 : 1.5,
     logoPadding: isSmall ? 25 : 23,
+    padding: isSmall ? [11, 17, 11, 17] : [14, 18, 14, 18],
     widgetSize: getDeviceSize(true)
   };
   
