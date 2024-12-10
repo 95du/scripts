@@ -617,41 +617,147 @@ class _95du {
    * - 否则计算比例：(匹配屏幕的 widget 尺寸) / (参考 widget 尺寸) 
    * @returns {number} 缩放比例
    */
-    getDeviceData = (widgetSize = false) => {
-    const refSize = { w: 430, h: 932, widget: 170 };
+  getDeviceSize = (widgetSize = false) => {
+    const refSize = { widget: 174 };
     const screens = [
       /** 16 Pro Max */
-      { width: 440, height: 956, widget: 170, sizes: { small: 170, medium: 364, large: 382 } },
+      {
+        width: 440,
+        height: 956,
+        widget: 174,
+        sizes: {
+          small: { w: 174, h: 174 },
+          medium: { w: 372, h: 174 },
+          large: { w: 372, h: 400 }
+        }
+      },
       /** 16 Plus, 15 Plus, 15 Pro Max, 14 Pro Max */
-      { width: 430, height: 932, widget: 170, sizes: { small: 170, medium: 364, large: 382 } },
+      {
+        width: 430,
+        height: 932,
+        widget: 170,
+        sizes: {
+          small: { w: 170, h: 170 },
+          medium: { w: 364, h: 170 },
+          large: { w: 364, h: 396 }
+        }
+      },
       /** 14 Plus, 13 Pro Max, 12 Pro Max */
-      { width: 428, height: 926, widget: 170, sizes: { small: 170, medium: 364, large: 382 } },
+      {
+        width: 428,
+        height: 926,
+        widget: 170,
+        sizes: {
+          small: { w: 170, h: 170 },
+          medium: { w: 364, h: 170 },
+          large: { w: 364, h: 392 }
+        }
+      },
       /** 11 Pro Max, XS Max, 11, XR */
-      { width: 414, height: 896, widget: 169, sizes: { small: 169, medium: 360, large: 379 } },
+      {
+        width: 414,
+        height: 896,
+        widget: 169,
+        sizes: {
+          small: { w: 169, h: 169 },
+          medium: { w: 360, h: 169 },
+          large: { w: 360, h: 380 }
+        }
+      },
       /** 16 Pro */
-      { width: 402, height: 874, widget: 162, sizes: { small: 162, medium: 344, large: 366 } },
+      {
+        width: 402,
+        height: 874,
+        widget: 162,
+        sizes: {
+          small: { w: 162, h: 162 },
+          medium: { w: 344, h: 162 },
+          large: { w: 344, h: 370 }
+        }
+      },
       /** Home button Plus phones */
-      { width: 414, height: 736, widget: 159, sizes: { small: 157, medium: 348, large: 357 } },
+      {
+        width: 414,
+        height: 736,
+        widget: 159,
+        sizes: {
+          small: { w: 159, h: 159 },
+          medium: { w: 348, h: 159 },
+          large: { w: 348, h: 357 }
+        }
+      },
       /** 16, 15, 15 Pro, 14 Pro */
-      { width: 393, height: 852, widget: 158, sizes: { small: 158, medium: 338, large: 354 } },
+      {
+        width: 393,
+        height: 852,
+        widget: 158,
+        sizes: {
+          small: { w: 158, h: 158 },
+          medium: { w: 338, h: 158 },
+          large: { w: 338, h: 354 }
+        }
+      },
       /** 14, 13, 13 Pro, 12, 12 Pro */
-      { width: 390, height: 844, widget: 158, sizes: { small: 158, medium: 338, large: 354 } },
+      {
+        width: 390,
+        height: 844,
+        widget: 158,
+        sizes: {
+          small: { w: 158, h: 158 },
+          medium: { w: 338, h: 158 },
+          large: { w: 338, h: 352 }
+        }
+      },
       /** 13 mini, 12 mini / 11 Pro, XS, X */
-      { width: 375, height: 812, widget: 155, sizes: { small: 155, medium: 329, large: 345 } },
+      {
+        width: 375,
+        height: 812,
+        widget: 155,
+        sizes: {
+          small: { w: 155, h: 155 },
+          medium: { w: 329, h: 155 },
+          large: { w: 329, h: 345 }
+        }
+      },
       /** SE3, SE2, Home button Plus in Display Zoom mode */
-      { width: 375, height: 667, widget: 148, sizes: { small: 148, medium: 321, large: 324 } },
+      {
+        width: 375,
+        height: 667,
+        widget: 148,
+        sizes: {
+          small: { w: 148, h: 148 },
+          medium: { w: 321, h: 148 },
+          large: { w: 321, h: 324 }
+        }
+      },
       /** 11 and XR in Display Zoom mode */
-      { width: 360, height: 780, widget: 155, sizes: { small: 155, medium: 338, large: 354 } },
+      {
+        width: 360,
+        height: 780,
+        widget: 155,
+        sizes: {
+          small: { w: 155, h: 155 },
+          medium: { w: 338, h: 155 },
+          large: { w: 338, h: 354 }
+        }
+      },
       /** SE1 */
-      { width: 320, height: 568, widget: 141, sizes: { small: 141, medium: null, large: null } },
-      /** iPad Pro 2 */
-      { width: 834, height: 1194, widget: 155, sizes: { small: 155, medium: 342, large: 342, extraLarge: 715.5 } },
-      /** iPad 6 */
-      { width: 810, height: 1024, widget: 141, sizes: { small: 141, medium: 305.5, large: 305.5, extraLarge: 634.5 } }
+      {
+        width: 320,
+        height: 568,
+        widget: 141,
+        sizes: {
+          small: { w: 141, h: 141 },
+          medium: null,
+          large: null
+        }
+      }
     ];
   
     const { width, height } = Device.screenSize();
-    const match = screens.find(s =>  (s.width === width && s.height === height) || (s.width === height && s.height === width));
+    const match = screens.find(
+      s => (s.width === width && s.height === height) || (s.width === height && s.height === width)
+    );
   
     if (!match) return widgetSize ? null : 1;
     return widgetSize ? match.sizes : Math.round((match.widget / refSize.widget) * 100) / 100;
