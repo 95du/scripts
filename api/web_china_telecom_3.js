@@ -492,9 +492,9 @@ async function main(family) {
   };
   
   // 获取绘制进度信息
-  const getProgress = (total, value) => {
-    const startAngle = 170 * (Math.PI / 180); // 起始角度（170°）
-    const endAngle = startAngle + (200 * Math.PI / 180); // 终止角度（200°弧度）
+  const getProgressAngle = (total, value) => {
+    const startAngle = 168 * (Math.PI / 180); // 起始角度（170°）
+    const endAngle = startAngle + (204 * Math.PI / 180); // 终止角度（200°弧度）
     const clampedValue = Math.min(Math.max(value, 0), total); // 限制范围在 0 到 total
     const progressAngle = startAngle + (clampedValue / total) * (endAngle - startAngle);
     return { startAngle, endAngle, progressAngle };
@@ -507,16 +507,14 @@ async function main(family) {
   
     // 流量相关进度
     const flowColor = new Color('#A85EFF');
-    const { startAngle: flowStart, endAngle: flowEnd, progressAngle: flowProgress } = getProgress(flowTotal, flowBalance);
-    
+    const { startAngle: flowStart, endAngle: flowEnd, progressAngle: flowProgress } = getProgressAngle(flowTotal, flowBalance);
     // 绘制流量背景和进度条
     drawArcBackground(canvas, center, arcRadius, flowStart, flowEnd, new Color(flowColor.hex, 0.2), arcWidth);
     drawCircleArr(center, arcRadius, flowStart, flowProgress, flowColor, canvas, arcWidth);
-  
+    
     // 通话相关进度
     const voiceColor = new Color('#FF9500');
-    const { startAngle: voiceStart, endAngle: voiceEnd, progressAngle: voiceProgress } = getProgress(voiceTotal, voiceBalance);
-  
+    const { startAngle: voiceStart, endAngle: voiceEnd, progressAngle: voiceProgress } = getProgressAngle(voiceTotal, voiceBalance);
     // 绘制通话背景和进度条
     drawArcBackground(canvas, center, arcRadius - 17, voiceStart, voiceEnd, new Color(voiceColor.hex, 0.2), arcWidth);
     drawCircleArr(center, arcRadius - 17, voiceStart, voiceProgress, voiceColor, canvas, arcWidth);
