@@ -420,7 +420,7 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     textSize: isSmall ? 14 : 13.5,
-    stackGap: isSmall ? 6 : 9,
+    stackGap: isSmall ? 7 : 10,
     padding: isSmall ? [12, 16, 12, 16] : [14, 18, 14, 18],
     balStackSize: isSmall ? 66 : 68,
     widgetSize: getDeviceSize(true)
@@ -428,7 +428,7 @@ async function main(family) {
   
   // 封装 canvas 初始化的过程
   const setupCanvas = (() => {
-    const canvasSize = 188;
+    const canvasSize = 185;
     const arcWidth = 12;
     const arcRadius = 72;
   
@@ -524,7 +524,7 @@ async function main(family) {
     // 绘制图标
     const imgSize = 28;
     const imgXY = (canvasSize - imgSize) / 2;
-    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 22, imgSize, imgSize));
+    canvas.drawImageInRect(logo, new Rect(imgXY, imgXY - 24, imgSize, imgSize));
   
     return canvas.getImage();
   };
