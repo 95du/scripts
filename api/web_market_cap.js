@@ -424,7 +424,7 @@ async function main() {
     try {
       const url = `https://hq.laohu8.com/${market}stock_info/detail/${stockCode}?lang=zh_CN`;
       const headers = await access_token();
-      const { items } = await getCacheString(`${stockCode}_detail.json`, url, headers, (tradeStatus ? 2 : 8));
+      const { items } = await getCacheString(`${stockCode}_detail.json`, url, headers, (tradeStatus === true ? 0 : 8));
       return items?.[0];
     } catch (error) {
       console.error(error);
