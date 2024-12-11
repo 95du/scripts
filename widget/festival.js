@@ -111,13 +111,6 @@ const todayAndNext = async () => {
   return festivalObj;
 };
 
-const { status, oDate, timestamp, term, cnDay, yjJumpUrl } = await todayAndNext();
-
-const date = formatDate(timestamp);
-const daysUntil = daysRemaining(oDate);
-const moreDays = daysUntil < 1 ? '今天是 ✨' : `还有 ${daysUntil} 天`;
-const sta = status === '1' ? '休' : status === '2' ? '班' : '';
-
 // Circle
 const drawArc = async (deg, fillColor, canvas, canvSize, canvWidth) => {
   const ctr = new Point(canvSize / 2, canvSize / 2);
@@ -137,7 +130,7 @@ const drawArc = async (deg, fillColor, canvas, canvSize, canvWidth) => {
   }
 };
 
-const drawCircle = async () => {
+const drawCircle = async (daysUntil, sta, cnDay) => {
   const canvSize = 200  
   const canvWidth = 18
   
@@ -148,7 +141,7 @@ const drawCircle = async () => {
   
   drawArc(Math.floor(daysUntil / 15 * 360), new Color('#FFDD00'), canvas, canvSize, canvWidth);
   
-  const canvTextSize = sta ? 55 : 36
+  const canvTextSize = sta ? 55 : 34
   const canvTextRect = new Rect(0, 100 - canvTextSize / 2, canvSize, canvTextSize);
   canvas.setTextAlignedCenter();
   canvas.setTextColor(Color.white());
@@ -158,7 +151,7 @@ const drawCircle = async () => {
   return canvas.getImage();
 };
 
-const setBackground = async (widget) => {
+const setBackground = async (widget, daysUntil) => {
   if (daysUntil > 0) {
     widget.backgroundImage = await getCacheData('background.png', 'https://sweixinfile.hisense.com/media/M00/8C/2B/Ch4FyWdJ-dKAQ8zNAA1BuzEeeSc937.png');
   } else {
@@ -175,39 +168,46 @@ const setBackground = async (widget) => {
     gradient.endPoint = new Point(x, 1 - y);
     
     gradient.locations = [0, 1];
-    gradient.colors = solarTerms.includes(term) ? termColor : festivalColors;
+    gradient.colors = !solarTerms.includes(term) ? termColor : festivalColors;
     widget.backgroundGradient = gradient;
   }
 };
 
 const setupWidget = async () => {
-  const widget = new ListWidget();
-  await setBackground(widget);
-  widget.url = yjJumpUrl;
+  const { status, oDate, timestamp, term, festivalList, festivalInfoList, cnDay, yjJumpUrl } = await todayAndNext();
+  const name = (term && term === festivalList) ? term : festivalInfoList[0].name;
+  const date = formatDate(timestamp);
+  const daysUntil = daysRemaining(oDate);
+  const moreDays = daysUntil < 1 ? '今天是 ✨' : `还有 ${daysUntil} 天`;
+  const sta = status === '1' ? '休' : status === '2' ? '班' : '';
   
-  widget.setPadding(10, 8, 10, 8);
+  const widget = new ListWidget();
+  await setBackground(widget, daysUntil);
+  widget.url = yjJumpUrl;
+  widget.setPadding(0, 0, 0, 0);
   const mainStack = widget.addStack();
-  mainStack.setPadding(0, 0, 6, 0);
   mainStack.layoutVertically();
+  mainStack.setPadding(12, 12, 12, 12);
   
   const topStack = mainStack.addStack();  
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
+  topStack.size = new Size(0, 70);
   topStack.addSpacer();
   
   const festivalStack = topStack.addStack();
   festivalStack.layoutVertically();
-  const festivalText = festivalStack.addText(term);
-  festivalText.font = Font.boldSystemFont(term.length > 3 ? 17 : 21);
+  const festivalText = festivalStack.addText(name);
+  festivalText.font = Font.boldSystemFont(name.length > 3 ? 17 : 21);
   festivalText.textColor = new Color('#FFDD00');
   festivalStack.addSpacer(5);
   
   const countdownText = festivalStack.addText(moreDays);
-  countdownText.font = Font.mediumSystemFont(14);
+  countdownText.font = Font.mediumSystemFont(13);
   countdownText.textColor = Color.white();
-  topStack.addSpacer();
+ topStack.addSpacer();
   
-  const circle = await drawCircle();
+  const circle = await drawCircle(daysUntil, sta, cnDay);
   topStack.addImage(circle);
   mainStack.addSpacer();
   
@@ -220,23 +220,18 @@ const setupWidget = async () => {
   mainStack.addSpacer();
   
   const bottomStack = mainStack.addStack();
-  bottomStack.layoutHorizontally();
-  bottomStack.centerAlignContent();
-  bottomStack.addSpacer();
+  bottomStack.backgroundColor = new Color('#333333', 0.2);
+  bottomStack.setPadding(10, 0, 10, 0);
+  bottomStack.cornerRadius = 12
   
-  const barStack = bottomStack.addStack();
-  barStack.backgroundColor = new Color('#333333', 0.2);
-  barStack.setPadding(10, 0, 10, 0);
-  barStack.cornerRadius = 12
-  
-  const dateStack = barStack.addStack();
+  const dateStack = bottomStack.addStack();
   dateStack.layoutHorizontally();
   dateStack.addSpacer();
   const dateText = dateStack.addText(date);
   dateText.textColor = Color.white();
-  dateText.font = Font.boldSystemFont(17);
+  dateText.font = Font.boldSystemFont(18);
   dateStack.addSpacer();
-  bottomStack.addSpacer();
+  mainStack.addSpacer(5);
   
   return widget;
 };
