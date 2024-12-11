@@ -428,6 +428,7 @@ async function main() {
       return items?.[0];
     } catch (error) {
       console.error(error);
+      await fetchData();
     }
   };
   
