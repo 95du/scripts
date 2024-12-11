@@ -360,7 +360,7 @@ async function main(family) {
         balance: feeBalance,
         newUnit: ' ￥',
         percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
-        symbol: family === 'small' ? '' : 'network',
+        symbol: '',
         color: feeColor
       },
       {
