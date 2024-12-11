@@ -192,6 +192,7 @@ const setupWidget = async () => {
   const topStack = mainStack.addStack();  
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
+  topStack.setPadding(0, 0, 0, -2);
   topStack.size = new Size(0, 70);
   topStack.addSpacer();
   
