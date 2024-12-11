@@ -618,7 +618,7 @@ class _95du {
    * @returns {number} 缩放比例
    */
   getDeviceSize = (widgetSize = false) => {
-    const refSize = { widget: 174 };
+    const refSize = { widget: 170 };
     const screens = [
       /** 16 Pro Max */
       {
