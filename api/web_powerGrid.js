@@ -568,7 +568,7 @@ async function main(family) {
     
     const barStack2 = module.createStack(pointStack);
     barStack2.setPadding(2, 6, 2, 6);
-    barStack2.backgroundColor = new Color(count % 2 === 0 ? '#FF9500' : '#8C7CFF');
+    barStack2.backgroundColor = new Color(isArrears === '1' ? '#8C7CFF' : '#FF9500');
     barStack2.cornerRadius = 5;
     
     const typeText = barStack2.addText(isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type);
