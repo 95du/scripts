@@ -229,7 +229,7 @@ const createWidget = async () => {
   iconStack.layoutHorizontally();
   iconStack.bottomAlignContent();
   
-  const image = await getCacheImage('monkey.png', 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/monkey.png');
+  const image = await getCacheImage('monkey.png', `$rootUrl}/img/icon/monkey.png`);
   iconStack.addImage(image)
   iconStack.addSpacer();
   
@@ -267,7 +267,7 @@ const createErrorWidget = () => {
 };
 
 const downloadModule = async (scriptName, url) => {
-  const modulePath = fm.joinPath(path, scriptName);
+  const modulePath = fm.joinPath(mainPath, scriptName);
   if (fm.fileExists(modulePath)) {
     return modulePath;
   } else {
@@ -281,56 +281,70 @@ const downloadModule = async (scriptName, url) => {
   }
 };
 
-const presentMenu = async() => {
-  const alert = new Alert();
-  alert.message = "【 iOS 16 负一屏底栏 】\n高仿iOS通知信息样式，内容显示未来两小时天气";
-  const actions = ['95du茅台', '更新代码', '重置所有', '透明背景', '预览组件'];
+const actions = [
+  { 
+    name: '95du茅台', 
+    handler: async () => {
+      const module = await downloadModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`);
+      await importModule(module).main();
+    } 
+  },
+  { 
+    name: '更新代码', 
+    handler: async () => {
+      const code = await new Request(`${rootUrl}/widget/bottomBar.js`).loadString();
+      if (!code.includes('95度茅台')) {
+        const alert = new Alert();
+        alert.title = "更新失败";
+        alert.addAction('OK');
+        await alert.presentAlert();
+      } else {
+        fm.writeString(module.filename, code);
+        runScriptable();
+      }
+    }
+  },
+  { 
+    name: '重置所有', 
+    handler: () => {
+      fm.remove(path);
+      runScriptable();
+    } 
+  },
+  { 
+    name: '透明背景', 
+    handler: async () => {
+      const module = await downloadModule('image.js', `${rootUrl}/main/main_background.js`);
+      await importModule(module).main(mainPath);
+      await createWidget();
+    } 
+  },
+  { 
+    name: '预览组件', 
+    handler: createWidget 
+  }
+];
 
+const presentMenu = async () => {
+  const alert = new Alert();
+  alert.message = "【 iOS 16 负一屏底栏 】\n高仿iOS通知信息样式，内容显示未来两小时天气"
   actions.forEach((action, index) => {
-    alert[ index === 1 || index === 2 
-      ? 'addDestructiveAction'
-      : 'addAction' ](action);
+    const addAction = (index === 1 || index === 2) ? 'addDestructiveAction' : 'addAction';
+    alert[addAction](action.name);
   });
   alert.addCancelAction('取消');
-  
   const menu = await alert.presentSheet();
-  if (menu === 0) {
-    await importModule(await downloadModule('store.js', `${rootUrl}/main/web_main_95du_Store.js`)).main();
-  }
-  
-  if (menu === 1) {
-    const code = new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/bottomBar.js').loadString();
-    if (!code.includes('95度茅台')) {
-      const finish = new Alert();
-      finish.title = "更新失败"
-      finish.addAction('OK')
-      finish.presentAlert();
-    } else {
-      fm.writeString(module.filename, code);
-      runScriptable();
-    }
-  }
-  
-  if (menu === 2) {
-    fm.remove(path);
-    runScriptable();
-  }
-  
-  if (menu === 3) {
-    await importModule(await downloadModule('image.js', `${rootUrl}/main/main_background.js`)).main(cache);
-    await createWidget();
-  }
-  
-  if (menu === 4) {
-    await createWidget();
+  if (menu >= 0 && menu < actions.length) {
+    await actions[menu].handler();
   }
 };
 
-const runWidget = async () => {  
+const runWidget = async () => {
   if (config.runsInApp) {
     await presentMenu();
   } else {
-    config.widgetFamily === 'medium' ? await createWidget() : createErrorWidget();
+    config.widgetFamily === 'medium' ? await createWidget() : await createErrorWidget();
   }
 };
+
 await runWidget();
