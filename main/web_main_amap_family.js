@@ -34,7 +34,7 @@ async function main() {
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  const module = new _95du(pathName);  
+  const module = new _95du(pathName);
   
   const {
     mainPath,
@@ -139,9 +139,13 @@ async function main() {
   
   // 预览组件，获取版本名称和链接
   const previewWidget = async () => {
-    await importModule(await module.webModule(scrUrl)).main();
-    if (settings.update) await updateString();
-    shimoFormData();
+    const modulePath = await module.webModule(scrUrl);
+    if (modulePath != null) {
+      const importedModule = importModule(modulePath);
+      await importedModule.main();
+      if (settings.update) await updateString();
+      shimoFormData();
+    }
   };
   
   // 格式化日期
@@ -217,7 +221,6 @@ async function main() {
     await module.appleOS_update();
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
