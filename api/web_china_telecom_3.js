@@ -568,13 +568,6 @@ async function main(family) {
     if (gap) stack.addSpacer(gap);
   };
   
-  const addHorizontalText = (stack, text, color, opacity) => {
-    const balanceText = stack.addText(`${text}`);
-    balanceText.font = Font.boldSystemFont(lay.textSize);
-    if (color) balanceText.textColor = new Color(color);
-    if (opacity) balanceText.textOpacity = opacity || 1;
-  };
-  
   const inSideStack = (widget, width, height, color, alpha) => {
     const stack = widget.addStack();
     const barStack = generateStack(stack);
@@ -582,6 +575,15 @@ async function main(family) {
     barStack.cornerRadius = 5.5;
     barStack.backgroundColor = new Color(color, alpha ?? 0.2);
     return barStack;
+  };
+  
+  const addHorizontalText = (stack, text, color, opacity, bold) => {
+    const balanceText = stack.addText(`${text}`);
+    balanceText.font = Font[bold 
+      ? 'boldSystemFont' 
+      : 'mediumSystemFont'](lay.textSize);
+    if (color) balanceText.textColor = new Color(color);
+    if (opacity) balanceText.textOpacity = opacity || 1;
   };
   
   // 设置小部件
@@ -611,7 +613,7 @@ async function main(family) {
     // 流量
     const flowStack = inSideStack(bodyStack, 12, 2, '#A85EFF');
     createBarStack(flowStack, 8, 8, '#A85EFF', 10);
-    addHorizontalText(flowStack, flowBalance, null, 0.85);
+    addHorizontalText(flowStack, flowBalance, null, 0.85, false);
     flowStack.addSpacer();
     const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB'
     addHorizontalText(flowStack, formatFlowUsage, '#A85EFF');
@@ -620,7 +622,7 @@ async function main(family) {
     // 语音
     const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
     createBarStack(voiceStack, 8, 8, '#FF6800', 10);
-    addHorizontalText(voiceStack, voiceBalance, null, 0.85);
+    addHorizontalText(voiceStack, voiceBalance, null, 0.85, false);
     voiceStack.addSpacer();
     addHorizontalText(voiceStack, 'Min', '#FF6800');
     return widget;
