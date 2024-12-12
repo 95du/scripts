@@ -208,12 +208,8 @@ async function main() {
       previewImage
     } = options;
     
-    const avatarImage = fm.joinPath(cacheImg, 'userSetAvatar.png');
-    const authorAvatar = await module.toBase64(
-    fm.fileExists(avatarImage) 
-      ? fm.readImage(avatarImage) 
-      : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`)
-    );
+    const avatarPath = fm.joinPath(cacheImg, 'userSetAvatar.png');
+    const authorAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
@@ -515,7 +511,7 @@ async function main() {
       switch (code) {
         case 'setAvatar':
           fm.writeImage(
-            avatarImage, 
+            avatarPath, 
             await module.drawSquare( Image.fromData(Data.fromBase64String(data)) )
           );
           break;
