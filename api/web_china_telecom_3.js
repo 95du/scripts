@@ -577,11 +577,11 @@ async function main(family) {
     return barStack;
   };
   
-  const addHorizontalText = (stack, text, color, opacity, medium) => {
+  const addHorizontalText = (stack, text, color, opacity, bold) => {
     const balanceText = stack.addText(`${text}`);
-    balanceText.font = Font[medium 
-      ? 'mediumSystemFont' 
-      : 'boldSystemFont'](lay.textSize);
+    balanceText.font = Font[bold 
+      ? 'boldSystemFont' 
+      : 'mediumSystemFont'](lay.textSize);
     if (color) balanceText.textColor = new Color(color);
     if (opacity) balanceText.textOpacity = opacity || 1;
   };
@@ -604,7 +604,7 @@ async function main(family) {
     // 余额
     const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, stackPadding, randomColor, 1, true);
+    const balanceStack = inSideStack(mediumStack, 5, stackPadding, randomColor, 1);
     balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
@@ -613,18 +613,18 @@ async function main(family) {
     // 流量
     const flowStack = inSideStack(bodyStack, 12, 2, '#A85EFF');
     createBarStack(flowStack, 8, 8, '#A85EFF', 10);
-    addHorizontalText(flowStack, flowBalance, null, 0.85, true);
+    addHorizontalText(flowStack, flowBalance, null, 0.85);
     flowStack.addSpacer();
-    const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB'
-    addHorizontalText(flowStack, formatFlowUsage, '#A85EFF');
+    const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB';
+    addHorizontalText(flowStack, formatFlowUsage, '#A85EFF', null, true)
     bodyStack.addSpacer(5);
     
     // 语音
     const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
     createBarStack(voiceStack, 8, 8, '#FF6800', 10);
-    addHorizontalText(voiceStack, voiceBalance, null, 0.85, true);
+    addHorizontalText(voiceStack, voiceBalance, null, 0.85);
     voiceStack.addSpacer();
-    addHorizontalText(voiceStack, 'Min', '#FF6800');
+    addHorizontalText(voiceStack, 'Min', '#FF6800', null, true);
     return widget;
   };
   
