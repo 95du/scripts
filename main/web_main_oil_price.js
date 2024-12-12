@@ -106,29 +106,19 @@ async function main() {
     }
   };
   
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
+  const ScriptableRun = () => {
+    Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  // ScriptableRun
-  const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
   // 预览组件
   const previewWidget = async () => {
-    await importModule(await module.webModule(scrUrl)).main();
-    if (settings.update) await updateString();
-    shimoFormData(settings.province);
+    const modulePath = await module.webModule(scrUrl);
+    if (modulePath != null) {
+      const importedModule = importModule(modulePath);
+      await importedModule.main();
+      if (settings.update) await updateString();
+      shimoFormData(settings.province);
+    }
   };
   
   const shimoFormData = (action) => {
@@ -193,12 +183,21 @@ async function main() {
     await module.appleOS_update();
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，随机两种油价预警内容`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
+  };
+  
+  /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
   };
   
   // ====== web start ======= //
@@ -209,10 +208,15 @@ async function main() {
       previewImage
     } = options;
     
+    const avatarImage = fm.joinPath(cacheImg, 'userSetAvatar.png');
+    const authorAvatar = await module.toBase64(
+    fm.fileExists(avatarImage) 
+      ? fm.readImage(avatarImage) 
+      : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`)
+    );
+    
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
-    
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
     const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
@@ -485,9 +489,9 @@ async function main() {
           await installScript(data);
           break;
         case 'setAvatar':
-          const avatarImage = Image.fromData(Data.fromBase64String(data));
           fm.writeImage(
-            getAvatarImg(), await module.drawSquare(avatarImage)
+            avatarImage, 
+            await module.drawSquare( Image.fromData(Data.fromBase64String(data)) )
           );
           break;
         case 'telegram':
@@ -669,6 +673,10 @@ async function main() {
             {
               label: 'Group - 1',
               values: [
+                {
+                  label: '#6CC996',
+                  value: '#6CC996'
+                },
                 {
                   label: '#82B1FF',
                   value: '#82B1FF'
