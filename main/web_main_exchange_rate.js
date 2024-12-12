@@ -27,7 +27,7 @@ async function main() {
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  const module = new _95du(pathName);  
+  const module = new _95du(pathName);
   
   const {
     mainPath,
@@ -207,12 +207,8 @@ async function main() {
       previewImage
     } = options;
 
-    const avatarImage = fm.joinPath(cacheImg, 'userSetAvatar.png');
-    const authorAvatar = await module.toBase64(
-    fm.fileExists(avatarImage) 
-      ? fm.readImage(avatarImage) 
-      : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`)
-  );
+    const avatarPath = fm.joinPath(cacheImg, 'userSetAvatar.png');
+    const authorAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
@@ -220,7 +216,7 @@ async function main() {
     const appImage = await module.getCacheImage(`${rootUrl}/img/icon/dollar.png`);
     
     const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
-
+    
     const scriptTags = await module.scriptTags();
     
     /**
@@ -522,7 +518,7 @@ async function main() {
           break;
         case 'setAvatar':
           fm.writeImage(
-            avatarImage, 
+            avatarPath, 
             await module.drawSquare( Image.fromData(Data.fromBase64String(data)) )
           );
           break;
