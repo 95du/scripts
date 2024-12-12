@@ -134,11 +134,13 @@ async function main() {
   
   // 预览组件，获取版本名称和链接
   const previewWidget = async (family = 'medium') => {
-    const moduleJs = await module.webModule(scrUrl);
-    const { main } = await importModule(moduleJs)
-    await main(family);
-    if (settings.update) await updateString();
-    shimoFormData(family);
+    const modulePath = await module.webModule(scrUrl);
+    if (modulePath != null) {
+      const importedModule = importModule(modulePath);
+      await importedModule.main(family);
+      if (settings.update) await updateString();
+      shimoFormData(family);
+    }
   };
   
   const shimoFormData = (action) => {
@@ -755,7 +757,7 @@ async function main() {
         },
         {
           name: "bill",
-          label: "显示账单",
+          label: "实时话费",
           type: "switch",
           icon: {
             name: 'dollarsign',
