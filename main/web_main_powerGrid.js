@@ -110,31 +110,19 @@ async function main() {
     }
   };
   
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
+  const ScriptableRun = () => {
+    Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   };
-  
-  // 获取头像图片
-  const getAvatarImg = () => {
-    return fm.joinPath(cacheImg, 'userSetAvatar.png');
-  };
-  
-  // ScriptableRun
-  const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
   // 预览组件
   const previewWidget = async (family = 'medium') => {
-    const moduleJs = await module.webModule(scrUrl);
-    const { main } = await importModule(moduleJs)
-    await main(family);
-    if (settings.update) await updateString();
-    shimoFormData(family);
+    const modulePath = await module.webModule(scrUrl);
+    if (modulePath != null) {
+      const importedModule = importModule(modulePath);
+      await importedModule.main(family);
+      if (settings.update) await updateString();
+      shimoFormData(family);
+    }
   };
   
   const shimoFormData = (action) => {
@@ -206,6 +194,16 @@ async function main() {
     }
   };
   
+  /**
+   * 获取背景图片存储目录路径
+   * @returns {string} - 目录路径
+   */
+  const getBgImage = (image) => {
+    const filePath =  fm.joinPath(cacheImg, Script.name());
+    if (image) fm.writeImage(filePath, image);
+    return filePath;
+  };
+  
   // ====== web start ======= //
   const renderAppView = async (options) => {
     const {
@@ -214,10 +212,15 @@ async function main() {
       previewImage
     } = options;
 
+    const avatarImage = fm.joinPath(cacheImg, 'userSetAvatar.png');
+    const authorAvatar = await module.toBase64(
+    fm.fileExists(avatarImage) 
+      ? fm.readImage(avatarImage) 
+      : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`)
+    );
+    
     const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
     const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
-    
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
     
     const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
     
@@ -527,9 +530,9 @@ async function main() {
           await installScript(data);
           break;
         case 'setAvatar':
-          const avatarImage = Image.fromData(Data.fromBase64String(data));
           fm.writeImage(
-            getAvatarImg(), await module.drawSquare(avatarImage)
+            avatarImage, 
+            await module.drawSquare( Image.fromData(Data.fromBase64String(data)) )
           );
           break;
         case 'telegram':
