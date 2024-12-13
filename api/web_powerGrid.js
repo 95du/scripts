@@ -190,39 +190,25 @@ async function main(family) {
   };
   
   // 获取月用电量
-  const getMonthData = async (areaCode, eleCustId) => {
-    const { year, month } = getCurrentYearMonth();
-    const formattedMonth = String(month).padStart(2, '0');
-    const yearMonth = `${year}${formattedMonth}`;
-    
-    const pointResponse = await getCacheString(
-      `queryMeteringPoint_${count}.json`,
-      'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint',
+  const getMonthData = async (areaCode, eleCustId, meteringPointId, yearMonth) => {
+    const response = await getCacheString(
+      `queryDayElectricByMPoint_${count}.json`,
+      'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
       {
+        eleCustId,
         areaCode,
-        eleCustNumberList: [{ areaCode, eleCustId }]
+        yearMonth,
+        meteringPointId,
       }
     );
-    // 总用电和每日用电量数据
-    if (pointResponse.sta == 00) {
-      const { meteringPointId } = pointResponse?.data[0];
-      const monthResponse = await getCacheString(
-        `queryDayElectricByMPoint_${count}.json`,
-        'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
-        {
-          eleCustId,
-          areaCode,
-          yearMonth,
-          meteringPointId
-        }
-      );
-      return monthResponse.data;
+    if (response.sta == 00) {
+      return response.data;
     }
   };
-  
-  // 账单
+
+  // 月账单
   const getEleBill = async (areaCode, eleCustId) => {
-    const { currentYear } = getCurrentYearMonth();
+    const { currentYear, month } = getCurrentYearMonth();
     const response = await getCacheString(  
       `selectElecBill_${count}.json`,
       'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
@@ -230,13 +216,18 @@ async function main(family) {
       areaCode,
       eleCustId
     });
-
+  
     if (response.sta == 00) {
-      const { totalElectricityYear, totalPowerYear } = response.data;
-      const totalArray = response.data.billUserAndYear;
-      const eleBill = totalArray[0];
-      const lastMonth = eleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      return { lastMonth, ...eleBill, totalArray, totalElectricityYear, totalPowerYear };
+      const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
+      const lsEleBill = totalArray[0];
+      const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
+      return { 
+        ...lsEleBill, 
+        lastMonth, 
+        totalArray, 
+        totalElectricityYear, 
+        totalPowerYear 
+      };
     }
   };
   
@@ -330,6 +321,24 @@ async function main(family) {
     };
   };
   
+  // 判断年月
+  const isStartMonth = (yearMonth) => {
+    const { year, month } = getCurrentYearMonth();
+    const [startYear, startMonth] = yearMonth.split('-').map(Number);
+  
+    let adjustYear = year;
+    let adjustMonth = month;
+  
+    if (startYear === year && month !== startMonth) {
+      adjustMonth = (month - startMonth === 1) ? month : month - 1;
+    } else if (startYear !== year && month === 1 && startMonth !== month) {
+      adjustYear -= 1;
+      adjustMonth = 12;
+    }
+  
+    return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
+  };
+  
   /** -------- 提取数据 -------- **/
   
   const {  
@@ -342,28 +351,30 @@ async function main(family) {
   
   const balance = await getUserBalance(areaCode, eleCustId);
   
-  // 总用电量，昨日用电
-  const { 
-    totalPower = '0.00', 
-    result = [] 
-  } = await getMonthData(areaCode, eleCustId) || {};
-  
-  const dateString = result[0]?.date;
-  const yearMonth = dateString.match(/^(\d{4})-(\d{2})/)?.[0];
-  
-  const ystdayPower = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
-  const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
-  
+  // 提取账单
   const {
-    lastMonth = '2024-12',
     totalArray = [],
+    meteringPointId,
+    lastMonth = '2024-12',
     totalPower: ls_totalPower = '0.00',
-    totalElectricity = '0.00',   
-    arrears = '0', 
+    totalElectricity: ls_totalElectricity = '0.00', 
+    arrears = '0.00', 
     isArrears = '0',
     totalElectricityYear = '0.00', 
     totalPowerYear = '0.00 °'
   } = await getEleBill(areaCode, eleCustId) || {};
+  
+  // 用电信息
+  const { 
+    totalPower = '0.00 °', 
+    result = [] 
+  } = await getMonthData(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth)) || {};
+  
+  const dateString = result[0]?.date;
+  const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0];
+  
+  const ystdayPower = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
+  const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   
   // 电费信息
   const { tier, rate, cost, percent, isPercent, tierIndex, type } = calcElectricBill(totalPower, eleType, areaCode);
@@ -592,7 +603,7 @@ async function main(family) {
       createStack(middleStack, 1, `${currentYear} 年`, totalPowerYear, totalElectricityYear);
     };
     
-    createStack(middleStack, true, lastMonth, ls_totalPower, totalElectricity);
+    createStack(middleStack, true, lastMonth, ls_totalPower, ls_totalElectricity);
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 1) progressBar(mainStack, tier);
@@ -625,7 +636,7 @@ async function main(family) {
     icon.tintColor = new Color(tierColor);
     icon.imageSize = new Size(18, 18);
     
-    const powerText = columnStack.addText(`${month.match(/-(\d+)/)[1]}月 ${power} °`);
+    const powerText = columnStack.addText(`${month?.match(/-(\d+)/)[1]}月 ${power} °`);
     powerText.textColor = textColor;
     powerText.textOpacity = 0.7;
     powerText.font = Font.mediumSystemFont(14);
@@ -648,7 +659,7 @@ async function main(family) {
       return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
     } else {
       const billColor = new Color(isArrears === '1' ? '#FD4A67' : '#00B388');
-      return addStack(groupStack, lastMonth, ls_totalPower, totalElectricity, ls_tierIndex, getTierColor(ls_tierIndex),  '#8C7CFF', billColor);
+      return addStack(groupStack, lastMonth, ls_totalPower, ls_totalElectricity, ls_tierIndex, getTierColor(ls_tierIndex),  '#8C7CFF', billColor);
     }
   };
   
