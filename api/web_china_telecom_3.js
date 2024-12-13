@@ -423,7 +423,7 @@ async function main(family) {
     stackGap: isSmall ? 6 : 10,
     balStackSize: isSmall ? 66 : 68,
     stackPadding: isSmall ? 1 : 1.5,
-    logoPadding: isSmall ? 25 : 23,
+    logoPadding: isSmall ? 26 : 24,
     padding: isSmall ? [11, 17, 11, 17] : [14, 18, 14, 18],
     widgetSize: getDeviceSize(true)
   };
@@ -431,7 +431,7 @@ async function main(family) {
   // 封装 canvas 初始化的过程
   const setupCanvas = (() => {
     const canvasSize = 186.5
-    const arcWidth = 12;
+    const arcWidth = 11.5;
     const arcRadius = 72;
   
     const canvas = new DrawContext();
@@ -541,8 +541,8 @@ async function main(family) {
     const voiceColor = new Color('#FF9500');
     const { startAngle: voiceStart, endAngle: voiceEnd, progressAngle: voiceProgress } = getProgressAngle(voiceTotal, voiceBalance);
     // 绘制通话背景和进度条
-    drawArcBackground(canvas, center, arcRadius - 17, voiceStart, voiceEnd, new Color(voiceColor.hex, 0.2), arcWidth);
-    drawCircleArr(center, arcRadius - 17, voiceStart, voiceProgress, voiceColor, canvas, arcWidth);
+    drawArcBackground(canvas, center, arcRadius - 16, voiceStart, voiceEnd, new Color(voiceColor.hex, 0.2), arcWidth);
+    drawCircleArr(center, arcRadius - 16, voiceStart, voiceProgress, voiceColor, canvas, arcWidth);
   
     // 绘制图标
     const imgSize = 28;
