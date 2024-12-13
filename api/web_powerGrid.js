@@ -191,40 +191,32 @@ async function main(family) {
   
   // 获取月用电量
   const getMonthData = async (areaCode, eleCustId) => {
-    const adjustYearMonth = (year, month) => (month === 1 
-      ? { year: year - 1, month: 12 } 
-      : { year, month: month - 1 });
+    const { year, month } = getCurrentYearMonth();
+    const formattedMonth = String(month).padStart(2, '0');
+    const yearMonth = `${year}${formattedMonth}`;
     
-    let { year, month } = getCurrentYearMonth();
-    
-    while (true) {
-      const formattedMonth = String(month).padStart(2, '0');
-      const yearMonth = `${year}${formattedMonth}`;
-      const pointResponse = await getCacheString(
-        `queryMeteringPoint_${count}.json`,
-        'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint',
+    const pointResponse = await getCacheString(
+      `queryMeteringPoint_${count}.json`,
+      'https://95598.csg.cn/ucs/ma/zt/charge/queryMeteringPoint',
+      {
+        areaCode,
+        eleCustNumberList: [{ areaCode, eleCustId }]
+      }
+    );
+    // 总用电和每日用电量数据
+    if (pointResponse.sta == 00) {
+      const { meteringPointId } = pointResponse?.data[0];
+      const monthResponse = await getCacheString(
+        `queryDayElectricByMPoint_${count}.json`,
+        'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
         {
+          eleCustId,
           areaCode,
-          eleCustNumberList: [{ areaCode, eleCustId }]
+          yearMonth,
+          meteringPointId
         }
       );
-      // 总用电和每日用电量数据
-      if (pointResponse.sta == 00) {
-        const { meteringPointId } = pointResponse?.data[0];
-        const monthResponse = await getCacheString(
-          `queryDayElectricByMPoint_${count}.json`,
-          'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
-          {
-            eleCustId,
-            areaCode,
-            yearMonth,
-            meteringPointId
-          }
-        );
-        return monthResponse.data;
-      };
-      // 账单未出来前调整到上个月
-      ({ year, month } = adjustYearMonth(year, month));
+      return monthResponse.data;
     }
   };
   
