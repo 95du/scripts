@@ -355,7 +355,7 @@ async function main(family) {
   const {
     totalArray = [],
     meteringPointId,
-    lastMonth = '2024-12',
+    lastMonth = '2099-12',
     totalPower: ls_totalPower = '0.00',
     totalElectricity: ls_totalElectricity = '0.00', 
     arrears = '0.00', 
@@ -371,7 +371,7 @@ async function main(family) {
   } = await getMonthData(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth)) || {};
   
   const dateString = result[0]?.date;
-  const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0];
+  const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
   
   const ystdayPower = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
