@@ -440,28 +440,6 @@ async function main(family) {
     }
   };
   
-  // createStack(中号组件)
-  const createStack = (middleStack, spacer, month, total, money) => {
-    const quotaStack = middleStack.addStack();  
-    quotaStack.layoutVertically();
-    quotaStack.centerAlignContent();
-
-    const addTextStack = (text, font, opacity, addSpacer) => {
-      const stack = quotaStack.addStack();
-      if (spacer || spacer === 1) stack.addSpacer();
-      const quotaText = stack.addText(`${text}`);
-      quotaText.textColor = textColor;
-      quotaText.font = font;
-      if (opacity) quotaText.textOpacity = opacity;
-      if (!spacer || spacer === 1)  stack.addSpacer();
-      if (!addSpacer) quotaStack.addSpacer(3);
-    };
-
-    addTextStack(month, Font.mediumSystemFont(14), 0.7);
-    addTextStack(`${total} °`, Font.boldSystemFont(18));
-    addTextStack(money, Font.boldSystemFont(14), 0.7, true);
-  };
-  
   /** 
    * progressBar Stack
    * @param {image} image
@@ -487,6 +465,36 @@ async function main(family) {
     percentText.textColor = textColor;
     percentText.font = Font.boldSystemFont(13);  
     mainStack.addSpacer();
+  };
+  
+  // createStack(中号组件)
+  const createStack = (middleStack, spacer, month, total, money) => {
+    const quotaStack = middleStack.addStack();  
+    quotaStack.layoutVertically();
+    quotaStack.centerAlignContent();
+
+    const addTextStack = (text, font, opacity, addSpacer) => {
+      const stack = quotaStack.addStack();
+      if (spacer || spacer === 1) stack.addSpacer();
+      const quotaText = stack.addText(`${text}`);
+      quotaText.textColor = textColor;
+      quotaText.font = font;
+      if (opacity) quotaText.textOpacity = opacity;
+      if (!spacer || spacer === 1)  stack.addSpacer();
+      if (!addSpacer) quotaStack.addSpacer(3);
+    };
+
+    addTextStack(month, Font.mediumSystemFont(14), 0.7);
+    addTextStack(`${total} °`, Font.boldSystemFont(18));
+    addTextStack(money, Font.boldSystemFont(14), 0.7, true);
+  };
+  
+  // 添加文本
+  const addBodyText = (stack, text, color, fontSize, bold, opacity) => {
+    const titleText = stack.addText(text);
+    titleText.font = bold ? Font.boldSystemFont(fontSize) : Font.mediumSystemFont(fontSize);
+    titleText.textColor = color;
+    if (opacity) titleText.textOpacity = opacity;
   };
   
   //=========> 中号组件 <=========//
@@ -517,31 +525,21 @@ async function main(family) {
     barStack.setPadding(1, lay.avatarSize, 1, lay.avatarSize);
     barStack.cornerRadius = 10;
     
-    const iconSF = SFSymbol.named('crown.fill');
-    const barIcon = barStack.addImage(iconSF.image);
-    barIcon.imageSize = new Size(20, 20);
-    barIcon.tintColor = new Color('#FDDA0D');
+    const sf = SFSymbol.named('crown.fill');
+    const icon = barStack.addImage(sf.image);
+    icon.imageSize = new Size(20, 20);
+    icon.tintColor = new Color('#FDDA0D');
     barStack.addSpacer(4);
     
-    const titleText = barStack.addText(userName);
-    titleText.font = Font.boldSystemFont(14);
-    titleText.textColor = Color.white();
+    addBodyText(barStack, userName, Color.white(), 14, 'bold');
     levelStack.addSpacer(8);
     
     const beneStack = module.createStack(levelStack);
-    const benefitText = beneStack.addText('昨日 ');
-    benefitText.textColor = textColor;
-    benefitText.font = Font.boldSystemFont(14);  
-    benefitText.textOpacity = 0.7;
-    
-    const benefitText2 = beneStack.addText(ystdayPower);
-    benefitText2.font = Font.boldSystemFont(16);
-    benefitText2.textColor = isArrears === '1' ? Color.blue() : Color.red();
+    addBodyText(beneStack, '昨日 ', textColor, 14, 'bold', 0.7);
+    addBodyText(beneStack, ystdayPower, (isArrears === '1' ? Color.blue() : Color.red()), 16, 'bold');
     beneStack.addSpacer();
     
-    const arrearsText = beneStack.addText(isArrears === '1' ? arrears : balance);
-    arrearsText.font = Font.boldSystemFont(16);
-    arrearsText.textColor = isArrears === '1' ? new Color('#FF2400') : Color.blue();
+    addBodyText(beneStack, (isArrears === '1' ? arrears : balance), isArrears === '1' ? new Color('#FF2400') : Color.blue(), 16, 'bold', 0.7);
     topStack.addSpacer(4.5);
     
     const pointStack = module.createStack(topStack);
@@ -549,26 +547,17 @@ async function main(family) {
     payStack.backgroundColor = new Color(isArrears === '1' ? '#FF0000' : '#AF52DE');
     payStack.setPadding(2, 5, 2, 5);
     payStack.cornerRadius = 5;
-    
-    const payText = payStack.addText(!areaCode ? '用户未登录' : isArrears === '1' ? '待缴费' : '已缴费');
-    payText.font = Font.boldSystemFont(11);
-    payText.textColor = Color.white();
+    addBodyText(payStack, (!areaCode ? '用户未登录' : isArrears === '1' ? '待缴费' : '已缴费'), Color.white(), 11, 'bold');
     pointStack.addSpacer(8);
     
-    const LevelText = pointStack.addText(`${ls_tier} ${ls_rate} 元/度`);
-    LevelText.textColor = textColor;
-    LevelText.font = Font.mediumSystemFont(14);
-    LevelText.textOpacity = 0.7;
+    addBodyText(pointStack, (`${ls_tier} ${ls_rate} 元/度`), textColor, 14, null, 0.7);
     pointStack.addSpacer();
     
     const barStack2 = module.createStack(pointStack);
     barStack2.setPadding(2, 6, 2, 6);
     barStack2.backgroundColor = new Color(isArrears === '1' ? '#8C7CFF' : '#FF9500');
     barStack2.cornerRadius = 5;
-    
-    const typeText = barStack2.addText(isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type);
-    typeText.font = Font.boldSystemFont(isArrears === '1' ? 12.3: 11);
-    typeText.textColor = Color.white();
+    addBodyText(barStack2, (isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type), Color.white(), (isArrears === '1' ? 12.3: 11), 'bold')
     mainStack.addSpacer(lay.gapMed);
     
     if (location == 0) progressBar(mainStack, tier);
