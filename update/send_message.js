@@ -17,7 +17,7 @@ async function main() {
   const body = JSON.stringify({
     chat_id: "5635611671",
     photo: "https://image.fosunholiday.com/cl/image/comment/675dd9aa45fc72782a7dd2a8_upload.png",
-    caption: escapeMarkdown(`
+    caption: `
 *英格兰超级联赛* 2024\\-2025
 🔗 [点击访问主页](https://tiyu.baidu.com/match/英超/date_time/2024-12-15/tab/赛程/from/baidu_aladdin)
 
@@ -32,7 +32,7 @@ async function main() {
 >*下一场比赛*
 >第 16 轮
 >12月20日 23:30  阿森纳 \\-  曼城
-    `),
+    `,
     parse_mode: "MarkdownV2"
   });
   
