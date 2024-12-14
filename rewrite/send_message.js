@@ -6,9 +6,7 @@
  * author: 95du茅台
  * 更新日期: 2024-04-29
  */
-const $ = new Env('交管12123');
-$.body_key = 'body_12123';
-$.body = $.getdata($.body_key);
+const $ = new Env('测试');
 $.is_debug = $.getdata('is_debug');
 
 !(async () => {
