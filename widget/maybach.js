@@ -342,6 +342,8 @@ const getInfo = async () => {
   
   const carLogo = await getCacheData('maybachLogo.png', `${repo}/img/car/maybachLogo.png`);
   
+  const icons = ['car.rear.and.tire.marks', 'minus.plus.and.fluid.batteryblock', 'auto.headlight.low.beam.fill', 'figure.seated.side.air.upper'];
+  
   const [fullTime, parkingTime] = [formatDate(updateTime), formatDate(updateTime, true)];
   
   const json = {
@@ -355,7 +357,7 @@ const getInfo = async () => {
   };
   
   if (!setting.owner) writeSettings(json);
-  return { mapUrl, carLogo, speed, addressStr, fullTime, parkingTime, state, status, json };
+  return { mapUrl, carLogo, icons, speed, addressStr, fullTime, parkingTime, state, status, json };
 };
 
 // 设置组件背景
@@ -528,7 +530,7 @@ const smallWidget = async (widget = new ListWidget()) => {
 // 封装 canvas 初始化的过程
 const setupCanvas = (() => {
   const canvSize = 185;
-  const width = 14.5;
+  const width = 14;
   const radius = 72;
   
   const canvas = new DrawContext();
@@ -548,6 +550,36 @@ const drawArc = (ctr, radius, startAngle, endAngle, color, canvas, canvWidth) =>
     canvas.setFillColor(color);
     canvas.fillEllipse(rect);
   }
+};
+
+// 线性渐变颜色函数
+const interpolateColor = (start, end, t) => {
+  const r = Math.round(start.red * 255 + t * (end.red * 255 - start.red * 255));
+  const g = Math.round(start.green * 255 + t * (end.green * 255 - start.green * 255));
+  const b = Math.round(start.blue * 255 + t * (end.blue * 255 - start.blue * 255));
+  return new Color(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+};
+
+const getGradientColor = (level) => {
+  const gradientColors = [
+    { level: 0, color: new Color("#8200FF") }, // 紫色  
+    { level: 90, color: new Color("#FF00FF") }, // 粉色
+    { level: 150, color: new Color("#FF0000") } // 红色
+  ];
+  
+  const gradient = gradientColors.find((_, i) => 
+    i < gradientColors.length - 1 && level >= gradientColors[i].level && level <= gradientColors[i + 1].level
+  );
+
+  if (gradient) {
+    const { level: startLevel, color: startColor } = gradient;
+    const { level: endLevel, color: endColor } = gradientColors[gradientColors.indexOf(gradient) + 1];
+    const t = (level - startLevel) / (endLevel - startLevel);
+    return interpolateColor(startColor, endColor, t);
+  }
+
+  const gradientColor = gradientColors[gradientColors.length - 1].color;  
+  return gradientColor;
 };
 
 // 绘制背景(两个函数)
@@ -616,7 +648,7 @@ const drawTickMarks = (radius, strokeColor, color, startBgAngle, totalBgAngle, c
     canvas.strokePath();
     
     // 绘制刻度数字（每隔20显示一个数字）
-    if (i % (total / 10) === 0) { // 每 20 增加一个数字
+    if (i % (total / 10) === 0) {
       const value = (i / total) * 200; // 根据总刻度计算速度值
       const numX = ctr.x + numberRadius * Math.cos(angle);
       const numY = ctr.y + numberRadius * Math.sin(angle);
@@ -668,7 +700,17 @@ const drawSpeedArc = async (speed, progressColor) => {
 
   // 绘制背景和进度条
   drawArcBackground(canvas, ctr, radius, startAngle, endAngle, new Color(progressColor, 0.18), width);
-  drawArc(ctr, radius, startAngle, progressAngle, new Color(progressColor), canvas, width);
+
+  if (speed >= 100) {
+    // 绘制渐变进度条
+    for (let t = 0; t <= 100; t++) {
+      const angle = startAngle + (t / 100) * (progressAngle - startAngle);
+      const color = getGradientColor((t / 100) * speed);
+      drawArc(ctr, radius, angle, angle + 0.01, color, canvas, width);
+    }
+  } else {
+    drawArc(ctr, radius, startAngle, progressAngle, new Color(progressColor), canvas, width);  
+  }
   
   // 添加刻度线和数字
   const startBgAngle = startAngle;
@@ -676,10 +718,10 @@ const drawSpeedArc = async (speed, progressColor) => {
   drawTickMarks(radius, new Color(progressColor, 0.6), Color.lightGray(), startBgAngle, totalBgAngle, ctr, canvas, speed);
   
   // 添加红色刻度线
-  if (speed > 5) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
+  if (speed > 3) drawSpecialTick(radius, Color.red(), progressAngle, ctr, canvas);
   // 绘制文字
   const textSize = 28;
-  const speedColor = Device.isUsingDarkAppearance() ? Color.white() : Color.black();
+  const speedColor = Color.dynamic(Color.black(), Color.white());
   const speedFont = Font.boldSystemFont(textSize);
   
   const textRect = new Rect(0, 60, canvSize, textSize);
@@ -689,8 +731,9 @@ const drawSpeedArc = async (speed, progressColor) => {
   canvas.drawTextInRect(`${speed}`, textRect);
   
   // 在速度文字下方添加 "km·h"
-  const unitSize = 18;
-  const unitColor = new Color(Device.isUsingDarkAppearance() ? 'FFFFFF' : '000000', 0.7);
+  const unitSize = 17;
+  const unitColor = Color.
+  dynamic(new Color('000000', 0.7), new Color('FFFFFF', 0.7));
   const unitFont = Font.systemFont(unitSize);
   
   const unitRect = new Rect(0, 95, canvSize, unitSize);
@@ -703,15 +746,12 @@ const drawSpeedArc = async (speed, progressColor) => {
 
 // 仪表盘小号组件
 const dashboardWidget = async () => {
-  const { speed, parkingTime, mapUrl } = await getInfo();
-  const progressColor = speed <= 50 
-    ? "#A85EFF" 
-    : speed <= 120 
-    ? '#FF7800' 
-    : '#FF0000';
+  const { speed, parkingTime, icons, mapUrl } = await getInfo();
+  // #08C58B
+  const progressColor = speed <= 90 ? "#FF9500" : speed <= 120 ? '#A85EFF' : '#FF0000';
   
   const widget = new ListWidget();
-  widget.setPadding(3, 0, 0, 0);
+  widget.setPadding(2, 0, 0, 0);
   
   const stack = widget.addStack();
   stack.layoutHorizontally();
@@ -737,26 +777,26 @@ const dashboardWidget = async () => {
   
   const barStack = buttonStack.addStack();
   barStack.size = new Size(120, 30);
-  barStack.setPadding(6, 12, 6, 12);
+  barStack.setPadding(6, 0, 6, 0);
   barStack.cornerRadius = 9
-  barStack.backgroundColor = Color.dynamic(
-    new Color(progressColor, 0.3), 
-    new Color('#8C7CFF', 0.3)
-  );
+  barStack.borderColor = new Color(progressColor, 0.5);
+  barStack.borderWidth = 2;
   
-  const statusText = barStack.addText(speed <= 5 
-    ? '已静止' 
-    : speed > 125 
-    ? '已超速' 
-    : '正在行驶'
-  );
-  statusText.font = Font.boldSystemFont(14);
-  statusText.centerAlignText();
-  statusText.textOpacity = 0.8
+  // #8C7CFF
+  const iconStack = barStack.addStack();
+  iconStack.layoutHorizontally();
+  iconStack.addSpacer();
+  
+  for (item of icons) {
+    const sf = SFSymbol.named(item);
+    const icon = iconStack.addImage(sf.image);
+    icon.imageSize = new Size(18, 18);
+    iconStack.addSpacer();
+  };
+  
   buttonStack.addSpacer();
   widget.addSpacer();
-  
-  widget.backgroundColor = Color.dynamic(Color.white(), new Color('111111'));
+  widget.backgroundColor = Color.dynamic(Color.white(), new Color('000000'));
   widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
   return widget;
 };
@@ -789,7 +829,7 @@ const inputCookie = async () => {
  */
 const presentMenu = async () => {
   const alert = new Alert();
-  alert.message = '\n显示车辆实时位置、车速、停车时间\n模拟电子围栏、模拟停红绿灯\n设置间隔时间推送车辆状态信息';
+  alert.message = '显示车辆实时位置、车速、停车时间\n模拟电子围栏、模拟停红绿灯\n设置间隔时间推送车辆状态信息';
   const actions = ['更新代码', '重置所有', '输入凭证', '中号组件', '小号组件'];
   actions.forEach((action,index) => {
     alert[index === 0 || index === 1 
@@ -827,16 +867,17 @@ const runWidget = async () => {
   if (config.runsInWidget && setting.cookie) {
     const family = config.widgetFamily;
     const param = args.widgetParameter;
+    const isNumber = param && !isNaN(Number(param));
     let widget;
 
     if (family === 'medium') {
       widget = await createWidget();
-    } else if (param == 1) {
-      widget = await dashboardWidget();
-    } else if (family === 'small') {
+    } else if (isNumber) {
       widget = await smallWidget();
-    };
-    
+    } else if (family === 'small') {
+      widget = await dashboardWidget();
+    }
+
     widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * 15);
     Script.setWidget(widget);
     Script.complete();
