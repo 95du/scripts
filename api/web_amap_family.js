@@ -493,7 +493,7 @@ async function main() {
   // 机型尺寸
   const getLayout = (scr = Device.screenSize().height) => ({
     stackSize: scr < 926 ? 35 : 37,
-    iconSize: scr < 926 ? 23 : 25,
+    iconSize: scr < 926 ? 21 : 23,
     padding: scr < 926 ? 2 : 3,
     titleSize: scr < 926 ? 18 : 20,
     textSize: scr < 926 ? 11 : 11.5
