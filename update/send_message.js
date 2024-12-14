@@ -13,7 +13,7 @@ const $ = new Env('苏格兰');
 });
 
 async function main() {
-  const url = 'https://api.telegram.org/bot<Your_Bot_Token>/sendPhoto';
+  const url = 'https://api.telegram.org/bot7967816926:AAEe2Mue02NTGAuIuQHxsyorKXxEsRzK7L4/sendPhoto';
   const body = JSON.stringify({
     chat_id: "5635611671",
     photo: "https://image.fosunholiday.com/cl/image/comment/675dd9aa45fc72782a7dd2a8_upload.png",
