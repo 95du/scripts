@@ -129,7 +129,7 @@ async function main() {
         oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
       }
     } catch (e) {
-      console.error('\n⚠️ 无法更新数据，可能节点冲突，请关闭 VPN 后重试。');
+      console.error('⚠️ 无法更新数据，可能节点冲突，请关闭 VPN 后重试。');
     }
   };
   
