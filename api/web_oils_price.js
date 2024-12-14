@@ -125,7 +125,7 @@ async function main() {
       const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
       
       return {
-        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000) || 0,
+        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
         oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
       }
     } catch (e) {
@@ -212,7 +212,7 @@ async function main() {
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
     
-    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 90 || date < 1 ? '' : ` 【 剩余 ${date} 天 】`));
+    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 90 || date < 1 ? '' : ` 【 剩余 ${date || 0} 天 】`));
     oilTipsText.textColor = textColor
     oilTipsText.font = Font.mediumSystemFont(tipsGap ? font : 14);
     oilTipsText.leftAlignText();
