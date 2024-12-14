@@ -610,6 +610,14 @@ async function main(family) {
     mediumStack.addSpacer();
     bodyStack.addSpacer(lay.stackGap);
     
+    // 语音
+    const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
+    createBarStack(voiceStack, 8, 8, '#FF6800', 10);
+    addHorizontalText(voiceStack, voiceBalance, null, 0.85);
+    voiceStack.addSpacer();
+    addHorizontalText(voiceStack, 'Min', '#FF6800', null, true);
+    bodyStack.addSpacer(5);
+    
     // 流量
     const flowStack = inSideStack(bodyStack, 12, 2, '#A85EFF');
     createBarStack(flowStack, 8, 8, '#A85EFF', 10);
@@ -617,14 +625,6 @@ async function main(family) {
     flowStack.addSpacer();
     const formatFlowUsage = flowBalance < 1 ? 'MB' : 'GB';
     addHorizontalText(flowStack, formatFlowUsage, '#A85EFF', null, true)
-    bodyStack.addSpacer(5);
-    
-    // 语音
-    const voiceStack = inSideStack(bodyStack, 12, 2, '#FF9500');
-    createBarStack(voiceStack, 8, 8, '#FF6800', 10);
-    addHorizontalText(voiceStack, voiceBalance, null, 0.85);
-    voiceStack.addSpacer();
-    addHorizontalText(voiceStack, 'Min', '#FF6800', null, true);
     return widget;
   };
   
