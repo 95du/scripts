@@ -189,8 +189,8 @@ async function main(family) {
     }
   };
   
-  // 获取月用电量
-  const getMonthData = async (areaCode, eleCustId, meteringPointId, yearMonth) => {
+  // 获取每日用电量
+  const getMonthPower = async (areaCode, eleCustId, meteringPointId, yearMonth) => {
     const response = await getCacheString(
       `queryDayElectricByMPoint_${count}.json`,
       'https://95598.csg.cn/ucs/ma/zt/charge/queryDayElectricByMPoint',
@@ -208,7 +208,7 @@ async function main(family) {
 
   // 月账单
   const getEleBill = async (areaCode, eleCustId) => {
-    const { currentYear, month } = getCurrentYearMonth();
+    const { currentYear } = getCurrentYearMonth();
     const response = await getCacheString(  
       `selectElecBill_${count}.json`,
       'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
@@ -317,32 +317,30 @@ async function main(family) {
       percent: percentageOfThird,
       isPercent: `${isPercent}%`,
       tierIndex: tierIndex + 1,
-      type: eleType === '500' ? '居民' : '未知'
+      type: eleType === '500' ? '居民' : '企业'
     };
   };
   
-  // 判断年月
+  // 判断年月(账单未出来前获取上月)
   const isStartMonth = (yearMonth) => {
     const { year, month } = getCurrentYearMonth();
-    const [startYear, startMonth] = yearMonth.split('-').map(Number);
-  
     let adjustYear = year;
     let adjustMonth = month;
-  
-    if (startYear === year && month !== startMonth) {
+    
+    const [startYear, startMonth] = yearMonth.split('-').map(Number);
+    if (startYear === year) {
       adjustMonth = (month - startMonth === 1) ? month : month - 1;
-    } else if (startYear !== year && month === 1 && startMonth !== month) {
+    } else if (startYear !== year) {
       adjustYear -= 1;
       adjustMonth = 12;
-    }
-  
+    };
     return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
   };
   
   /** -------- 提取数据 -------- **/
   
   const {  
-    userName: name = '用户名',
+    userName = '用户名',
     eleCustNumber: number = '070100',
     eleType = '800',
     areaCode,
@@ -364,11 +362,11 @@ async function main(family) {
     totalPowerYear = '0.00 °'
   } = await getEleBill(areaCode, eleCustId) || {};
   
-  // 用电信息
+  // 月用电信息
   const { 
     totalPower = '0.00 °', 
     result = [] 
-  } = await getMonthData(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth)) || {};
+  } = await getMonthPower(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth)) || {};
   
   const dateString = result[0]?.date;
   const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
@@ -525,7 +523,7 @@ async function main(family) {
     barIcon.tintColor = new Color('#FDDA0D');
     barStack.addSpacer(4);
     
-    const titleText = barStack.addText(name);
+    const titleText = barStack.addText(userName);
     titleText.font = Font.boldSystemFont(14);
     titleText.textColor = Color.white();
     levelStack.addSpacer(8);
@@ -541,15 +539,9 @@ async function main(family) {
     benefitText2.textColor = isArrears === '1' ? Color.blue() : Color.red();
     beneStack.addSpacer();
     
-    if (isArrears === '1') {
-      const payText0 = beneStack.addText(arrears);
-      payText0.font = Font.boldSystemFont(16);
-      payText0.textColor = new Color('#FF2400');
-    } else {
-      const payText0 = beneStack.addText(balance);
-      payText0.font = Font.mediumSystemFont(16);
-      payText0.textColor = Color.blue();
-    }
+    const arrearsText = beneStack.addText(isArrears === '1' ? arrears : balance);
+    arrearsText.font = Font.boldSystemFont(16);
+    arrearsText.textColor = isArrears === '1' ? new Color('#FF2400') : Color.blue();
     topStack.addSpacer(4.5);
     
     const pointStack = module.createStack(topStack);
@@ -597,7 +589,7 @@ async function main(family) {
       const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
-      drawImage.imageSize = new Size(127, 60);
+      drawImage.imageSize = new Size(127, setting.chartHeight || 60);
     } else {
       const { currentYear } = getCurrentYearMonth();
       createStack(middleStack, 1, `${currentYear} 年`, totalPowerYear, totalElectricityYear);
@@ -686,7 +678,7 @@ async function main(family) {
     borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
     borStack.cornerRadius = 5;
     
-    const titleText = borStack.addText(name);
+    const titleText = borStack.addText(userName);
     titleText.textColor = Color.white();
     titleText.textOpacity = 0.9;
     titleText.font = Font.boldSystemFont(11.5);
