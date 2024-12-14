@@ -125,7 +125,7 @@ async function main() {
       const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
       
       return {
-        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
+        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000) || 0,
         oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
       }
     } catch (e) {
