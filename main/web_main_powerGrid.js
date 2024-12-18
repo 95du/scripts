@@ -170,8 +170,10 @@ async function main() {
       const moduleDir = fm.joinPath(mainPath, 'Running');
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
       fm.writeString(modulePath, str)
-      settings.version = version;
-      writeSettings(settings);
+      if (!settings.update) {
+        settings.version = version;
+        writeSettings(settings);
+      }
     }
   };
   
