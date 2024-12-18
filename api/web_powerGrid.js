@@ -307,7 +307,7 @@ async function main(family) {
     const tierIndex = provinceRates.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === provinceRates.length - 1);
     const tier = provinceRates[tierIndex];
     // 计算占第三档比例
-    const thirdTierLimit = isSummer ? provinceRates[1]?.limit : provinceRates[0]?.limit;
+    const thirdTierLimit = provinceRates[1]?.limit;
     const percentageOfThird = totalPower / thirdTierLimit;
     const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0
     
@@ -556,7 +556,12 @@ async function main(family) {
     
     const barStack2 = module.createStack(pointStack);
     barStack2.setPadding(2, 6, 2, 6);
-    barStack2.backgroundColor = new Color(isArrears === '1' ? '#8C7CFF' : '#FF9500');
+    barStack2.backgroundColor = new Color(isArrears === '1' 
+      ? '#8C7CFF' 
+      : eleType === '500' 
+        ? '#FF9500' 
+        : '#00V400'
+    );
     barStack2.cornerRadius = 5;
     addBodyText(barStack2, (isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type), Color.white(), (isArrears === '1' ? 12.3: 11), 'bold')
     mainStack.addSpacer(lay.gapMed);
