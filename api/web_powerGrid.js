@@ -112,6 +112,7 @@ async function main(family) {
   
   // ======= 绘制进度条 ======= //
   const creatProgress =(width, height, percent, isPercent, barColor) => {
+    const percentage = Math.max(0, Math.min(1, percent));
     const cxt = new DrawContext();
     cxt.opaque = false;
     cxt.respectScreenScale = true;
@@ -125,14 +126,14 @@ async function main(family) {
     cxt.fillPath();
   
     const currPath = new Path();
-    currPath.addRoundedRect(new Rect(0, 5, width * percent, barHeight), barHeight / 2, barHeight / 2);
+    currPath.addRoundedRect(new Rect(0, 5, width * percentage, barHeight), barHeight / 2, barHeight / 2);
     cxt.addPath(currPath);
     cxt.setFillColor(barColor);
     cxt.fillPath();
   
     const circlePath = new Path();
     const diameter = height * 0.85;
-    circlePath.addEllipse(new Rect((width - diameter) * percent, (height - diameter) / 2, diameter, diameter));
+    circlePath.addEllipse(new Rect((width - diameter) * percentage, (height - diameter) / 2, diameter, diameter));
     cxt.addPath(circlePath);
     cxt.setFillColor(new Color(levelColor));
     cxt.fillPath();
@@ -309,7 +310,7 @@ async function main(family) {
     const thirdTierLimit = isSummer ? provinceRates[1]?.limit : provinceRates[0]?.limit;
     const percentageOfThird = totalPower / thirdTierLimit;
     const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0
-  
+    
     return {
       tier: tier.name,
       rate: tier.rate,
@@ -658,8 +659,8 @@ async function main(family) {
     // 状态容器(中间)
     const random = Math.round(Math.random());
     const result = random === 0 
-    ? { title: '昨日', value: ystdayPower } 
-    : { title: '余额', value: processNumber(balance) };
+      ? { title: '昨日', value: ystdayPower } 
+      : { title: '余额', value: processNumber(balance) };
     
     const stateStack = module.createStack(groupStack);
     const borStack = stateStack.addStack();
