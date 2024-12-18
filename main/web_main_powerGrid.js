@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.1.8'
-  const updateDate = '2024年12月14日'
+  const version = '1.1.9'
+  const updateDate = '2024年12月18日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -192,7 +192,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，保复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，保复占比错误问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
