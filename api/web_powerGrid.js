@@ -560,7 +560,7 @@ async function main(family) {
       ? '#8C7CFF' 
       : eleType === '500' 
         ? '#FF9500' 
-        : '#00V400'
+        : '#00C400'
     );
     barStack2.cornerRadius = 5;
     addBodyText(barStack2, (isArrears === '1' ? balance : setting.dayBefore ? dayBefore : type), Color.white(), (isArrears === '1' ? 12.3: 11), 'bold')
