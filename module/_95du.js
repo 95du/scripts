@@ -1377,7 +1377,7 @@ class _95du {
             option.textContent = val.label;
             group.appendChild(option);
           });
-          select.appendChild(optgroup);
+          select.appendChild(group);
         });
         select.style.width = '100px';
       })();
