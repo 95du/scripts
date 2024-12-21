@@ -1357,6 +1357,33 @@ class _95du {
     }
   };
   
+  /**
+   * 更新select 元素的选项
+   * @param {JSON} valuesItems
+   * @param {WebView} webView
+   */
+  updateSelect = async (items) => {
+     webView.evaluateJavaScript(`
+      (() => {
+        const valuesArr = ${JSON.stringify(items)};
+        const select = document.querySelector('[name="selected"]');
+        select.innerHTML = ''
+        valuesArr.forEach(grp => {
+          const group = document.createElement('optgroup');
+          group.label = grp.label;
+          grp.values.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val.value;
+            option.textContent = val.label;
+            group.appendChild(option);
+          });
+          select.appendChild(optgroup);
+        });
+        select.style.width = '100px';
+      })();
+    `, false).catch(console.error);
+  };
+  
   // 增加右侧 desc 颜色(中国电信_3)
   addColorDesc = (settings) => {
     let htmlFragment = '';
