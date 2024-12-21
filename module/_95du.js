@@ -1362,7 +1362,7 @@ class _95du {
    * @param {JSON} valuesItems
    * @param {WebView} webView
    */
-  updateSelect = async (items) => {
+  updateSelect = (webView, items) => {
      webView.evaluateJavaScript(`
       (() => {
         const valuesArr = ${JSON.stringify(items)};
