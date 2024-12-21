@@ -151,7 +151,7 @@ const drawCircle = async (daysUntil, sta, cnDay) => {
   return canvas.getImage();
 };
 
-const setBackground = async (widget, daysUntil) => {
+const setBackground = async (widget, daysUntil, term) => {
   if (daysUntil > 0) {
     widget.backgroundImage = await getCacheData('background.png', 'https://sweixinfile.hisense.com/media/M00/8C/2B/Ch4FyWdJ-dKAQ8zNAA1BuzEeeSc937.png');
   } else {
@@ -182,7 +182,7 @@ const setupWidget = async () => {
   const sta = status === '1' ? '休' : status === '2' ? '班' : '';
   
   const widget = new ListWidget();
-  await setBackground(widget, daysUntil);
+  await setBackground(widget, daysUntil, term);
   widget.url = yjJumpUrl;
   widget.setPadding(0, 0, 0, 0);
   const mainStack = widget.addStack();
