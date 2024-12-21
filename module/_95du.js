@@ -1371,10 +1371,11 @@ class _95du {
         valuesArr.forEach(grp => {
           const group = document.createElement('optgroup');
           group.label = grp.label;
-          grp.values.forEach(val => {
+          grp.values.forEach((val, index) => {
             const option = document.createElement('option');
             option.value = val.value;
             option.textContent = val.label;
+            if (grp.label[1] && index == 0) option.selected = true;
             group.appendChild(option);
           });
           select.appendChild(group);
