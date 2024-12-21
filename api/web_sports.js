@@ -611,7 +611,7 @@ async function main(family) {
     }
     
     if (config.runsInApp) {
-      await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
+      await widget.presentMedium();
     } else {
       widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
       Script.setWidget(widget);
