@@ -551,17 +551,18 @@ async function main(family) {
   const createStack = async (mainStack, logoUrl, imgSize, teamName, size) => {
     const indexStack = mainStack.addStack();
     indexStack.layoutVertically();
-    if (size) indexStack.size = new Size(size, size);
-    
     const logoStack = indexStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.addSpacer();
     const logo = await module.getCacheData(logoUrl, 240, `${teamName}.png`);
     const logoImage = logoStack.addImage(logo);
     logoImage.imageSize = new Size(imgSize, imgSize);
-    if (!teamName) logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
+    if (!teamName) {
+      indexStack.size = new Size(size, size - 5);
+      logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
+    }
     logoStack.addSpacer();
-    indexStack.addSpacer(5);
+    indexStack.addSpacer(size ? teamName : 5);
     
     if (teamName) {
       const titleStack = indexStack.addStack();
