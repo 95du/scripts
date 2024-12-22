@@ -33,7 +33,14 @@ async function main(family) {
     chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
   } else {
     chooseSports = setting.selected;
-  }
+  };
+  
+  const isSmall = Device.screenSize().height < 926;
+  const lay = {
+    iconSize: isSmall ? 52 : 55,
+    titleSize: isSmall ? 15 : 16,
+    textSize: isSmall ? 12 : 13,
+  };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
@@ -48,12 +55,51 @@ async function main(family) {
     ));
   };
   
-  // 获取赛况分析
+  // 更新赛程文件
+  const updateCacheFile = ({ closestDiff } = result) => {
+    const filename = `${chooseSports}.html`;
+    const filePath = fm.joinPath(cacheStr, filename);
+    if (closestDiff <= 2 && closestDiff > 0 && fm.fileExists(filePath)) {
+      fm.remove(filePath);
+      console.log('更新' + filename);
+    }
+  };
+  
+  // 实时比分通知
+  const scoreNotice = (
+    status, 
+    roundInfo, 
+    matchTime, 
+    team1Name, 
+    team1Score, 
+    team2Name, 
+    team2Score
+  ) => {
+    let matchName = `${team1Name}_${team2Name}`;
+    if (status === '进行中') {
+      if (!setting[matchName]) {
+        setting[matchName] = { team1Score: 0, team2Score: 0 };
+      }
+      
+      if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
+        setting[matchName] = { team1Score, team2Score };
+        writeSettings(setting);
+        module.notify(`${roundInfo} ${matchTime}`, `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`);
+      }
+    } else {
+      if (setting[matchName]) {
+        delete setting[matchName];
+        writeSettings(setting);
+        module.notify('比赛结束', `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`);
+      }
+    }
+  };
+  
+  // 获取赛况
   const getRaceSchedule = async (url) => {
     const request = new Request(url);
     request.timeoutInterval = 5;
     const html = await request.loadString();
-  
     const webView = new WebView();
     await webView.loadHTML(html);
   
@@ -118,11 +164,9 @@ async function main(family) {
     return data;
   };
   
+  // 实时赛况分析
   const getRaceScheduleList = async (url) => {
-    const request = new Request(url);
-    request.timeoutInterval = 5;
-    const html = await request.loadString();
-  
+    const html = await module.getCacheData(url, 4, `${chooseSports}.html`);
     const webView = new WebView();
     await webView.loadHTML(html);
   
@@ -212,17 +256,43 @@ async function main(family) {
     if (isNaN(targetDate.getTime())) {
       return null;
     }
-    const now = new Date();
-    const diffMilliseconds = targetDate - now; // 计算时间差（毫秒）
+    const diffMilliseconds = targetDate - new Date(); // 计算时间差（毫秒）
     const diffHours = diffMilliseconds / (1000 * 60 * 60);
     return diffHours.toFixed(2);
   };
   
-  const extractDate = (data) => {
-    const date = data.items[1].date;
-    const time = data.items[1].matches[0].time;
-    const match = date.match(/^\d{2,4}-\d{2}-\d{2}|^\d{2}-\d{2}/);
-    return getHourDifference(`${match[0]} ${time}`) || null;
+  const getClosestMatch = (data) => {
+    let matches = null;
+    let closestDiff = Infinity;
+    let hasTodayMatch = false;
+    data.items.forEach(item => {
+      item.matches.forEach(match => {
+        const matchDate = item.date;
+        const matchTime = match.time;
+        const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
+        const diff = getHourDifference(`${dateMatch} ${matchTime}`);
+        if (Math.abs(diff) < Math.abs(closestDiff)) {
+          closestDiff = diff;
+        }
+        if (item.date.includes('今天') && match.statusText === '未开赛') {
+          hasTodayMatch = true
+        }
+        if (match.statusText === '进行中' || (diff > 0 && diff < setting.autoSWitch)) {
+          matches = match;
+        }
+      });
+    });
+  
+    return {
+      hasTodayMatch,
+      closestDiff,
+      matches,
+      statusText: hasTodayMatch 
+        ? '今天还有比赛' 
+        : (data.items.some(item => item.matches.some(match => match.statusText !== '已结束')) 
+        ? '今天没有比赛' 
+        : '未开赛')
+    }
   };
   
   // ====== 设置组件背景 ====== //
@@ -273,43 +343,35 @@ async function main(family) {
     leagueStack.addSpacer();
     createText(leagueStack, data.league.season, 16, true);
     widget.addSpacer();
-  }
-  
-  let hasDisplayedDate = false;
-  const addDateColumn = (widget, item, data) => {
-    if (!hasDisplayedDate) {
-      if (
-        item.date.includes('今天') || 
-        item.date.includes('明天') || 
-        !data.items.some(i => i.date.includes('明天'))
-      ) {
-        const dateStack = widget.addStack();
-        dateStack.layoutHorizontally();
-        dateStack.centerAlignContent();
-        dateStack.backgroundColor = item.date.includes('今天') 
-        ? new Color('#CCC400', 0.15) 
-        : item.date.includes('明天') 
-        ? new Color('#8C7CFF', 0.15) 
-        : new Color('#999999', 0.2);
-        dateStack.cornerRadius = 2;
-        dateStack.setPadding(1, 0, 1, 0);
-  
-        createText(dateStack, item.date.replace(/\//, '    '), 13, null, 0.7);
-        dateStack.addSpacer();
-        createText(dateStack, item.listNum, 13, null, 0.7);
-        hasDisplayedDate = true;
-        widget.addSpacer(5);
-      }
-    }
   };
   
-  const createTextStack = (stack, text, width) => {
+  // 日期栏
+  const addDateColumn = (widget, item) => {
+    const dateStack = widget.addStack();
+    dateStack.layoutHorizontally();
+    dateStack.centerAlignContent();
+    dateStack.cornerRadius = 2;
+    dateStack.setPadding(1, 0, 1, 0);
+    dateStack.backgroundColor = item.date.includes('今天') 
+    ? new Color('#CCC400', 0.15) 
+    : item.date.includes('明天') 
+    ? new Color('#8C7CFF', 0.15) 
+    : new Color('#999999', 0.2);
+    
+    createText(dateStack, item.date.replace(/\//, '    '), 13, null, 0.7);
+    dateStack.addSpacer();
+    createText(dateStack, item.listNum, 13, null, 0.7);
+    widget.addSpacer(5);
+  };
+  
+  const createTextStack = (stack, text, width, textOpacity) => {
     const rowStack = stack.addStack();
     rowStack.layoutHorizontally();
     rowStack.centerAlignContent();
     if (width) rowStack.size = new Size(width, 20);
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(13);
+    rowText.textOpacity = textOpacity === true ? 0.5 : 1;
     rowText.textColor = textColor;
     if (width) rowStack.addSpacer();
     return rowText;
@@ -330,7 +392,6 @@ async function main(family) {
   const createWidget = async () => {
     const url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;
     const data = await getRaceScheduleList(url);
-    const diff = extractDate(data);
     const maxMatches = 4
     let count = 0;
     
@@ -340,9 +401,12 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
+      if (item.date.includes('今天') || (count > 0 && count < 2)) {
+        addDateColumn(widget, item);
+      }
+      
       // 如果已获取足够的比赛，跳出循环
       if (count >= maxMatches) break;
-      addDateColumn(widget, item, data)
       if (item.matches.length === 0) {
         continue;
       }
@@ -350,42 +414,38 @@ async function main(family) {
       for (const match of item.matches) { // 如果已获取足够的比赛，跳出外层循环
         if (count >= maxMatches) break;
         count++;
-    
+        const textOpacity = match.statusText === '已结束';
+        
         const stack = widget.addStack();
         stack.layoutHorizontally();
         stack.centerAlignContent();
         widget.addSpacer(3);
         // 比赛时间
-        const timeText = createTextStack(stack, match.time, 46);
+        const timeText = createTextStack(stack, match.time, 46, textOpacity);
         // 主队图标
         const homeImg = await module.getCacheData(match.team1Img, 240, `${match.team1Name}.png`);
-        stack.addImage(homeImg).imageSize = new Size(20, 20);
+        const homeImage = stack.addImage(homeImg);
+        homeImage.imageSize = new Size(20, 20);
         stack.addSpacer(8);
         // 主队名称
         const team1Stack = stack.addStack();
         team1Stack.centerAlignContent()
         team1Stack.size = new Size(100, 20);
-        const team1NameText = createTextStack(team1Stack, match.team1Name)
+        const team1NameText = createTextStack(team1Stack, match.team1Name, null, textOpacity);
         team1Stack.addSpacer();
         // 比分
-        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`);
+        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, null, textOpacity);
         stack.addSpacer();
         // 客队名称
-        const team2NameText = createTextStack(stack, match.team2Name);
+        const team2NameText = createTextStack(stack, match.team2Name, null, textOpacity);
         stack.addSpacer(6);
         // 客队图标
         const awayImg = await module.getCacheData(match.team2Img, 240, `${match.team2Name}.png`);
-        stack.addImage(awayImg).imageSize = new Size(20, 20);
-        // 设置已结束颜色
-        if (match.team1Score && match.statusText === '已结束') {
-          timeText.textOpacity = 0.6;
-          team1NameText.textOpacity = 0.6;
-          scoreText.textOpacity = 0.6;
-          team2NameText.textOpacity = 0.6;
-        }
+        const awayIcon = stack.addImage(awayImg);
+        awayIcon.imageSize = new Size(20, 20);
       }
     };
-    return { widget, data, diff };
+    return { widget, data };
   };
   
   // 三段进度条
@@ -511,11 +571,11 @@ async function main(family) {
     }
   };
   
-  const createHeading = async (infoStack, raceData, data) => {
+  const createHeading = async (infoStack, roundInfo, matchTime, data) => {
     infoStack.layoutHorizontally();
     infoStack.setPadding(0, 25, 0, 0);
     infoStack.addSpacer();
-    const infoText = infoStack.addText(`${raceData.roundInfo}  ${raceData.matchTime}`);
+    const infoText = infoStack.addText(`${roundInfo}  ${matchTime}`);
     infoText.font = Font.systemFont(15);
     infoText.textColor = textColor; 
     infoStack.addSpacer();
@@ -527,30 +587,36 @@ async function main(family) {
   };
   
   // 创建组件
-  const createLiveWidget = async (data, status) => {
-    const leagueLogo = data.league.logo
-    const json = data?.items[status === '进行中' ? 0 : 1]?.matches[0] || {};
-    const raceScheduleData = await getRaceSchedule(json.analyseUrl);
+  const createLiveWidget = async (result, data) => {
+    const { matches, hasTodayMatch, closestDiff } = result;
+    const status = matches.statusText;
+    const raceScheduleData = await getRaceSchedule(matches.analyseUrl);
+    
     const { total, homeWin, draw, awayWin } = raceScheduleData.odds;
     const {
+      roundInfo,
+      matchTime,
       team1: { name: team1Name, img: team1Img },
       team2: { name: team2Name, img: team2Img }
     } = raceScheduleData;
     
-    const scoreLength = json.team1Score.length >= 2 && json.team2Score.length >= 2;
+    const leagueLogo = data.league.logo
+    const scoreLength = matches.team1Score.length >= 2 && matches.team2Score.length >= 2;
+    // 比分通知🔔
+    scoreNotice(status, roundInfo, matchTime, team1Name, matches.team1Score, team2Name, matches.team2Score);
     
-    // 
+    // 创建组件
     const widget = new ListWidget();
-    widget.url = json.analyseUrl;
+    widget.url = matches.analyseUrl;
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
-    await createHeading(infoStack, raceScheduleData, data);
+    await createHeading(infoStack, roundInfo, matchTime, data);
     widget.addSpacer(3);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    await createStack(mainStack, team1Img, 55, team1Name);
+    await createStack(mainStack, team1Img, lay.iconSize, team1Name);
     mainStack.addSpacer();
     if (raceScheduleData.vsLogo) {
       await createStack(mainStack, raceScheduleData.vsLogo, 42, null, 65);
@@ -563,7 +629,7 @@ async function main(family) {
       const scoreStack = mediumStack.addStack();
       scoreStack.layoutHorizontally();
       scoreStack.addSpacer();
-      const scoreText = scoreStack.addText(`${json.team1Score} - ${json.team2Score}`);
+      const scoreText = scoreStack.addText(`${matches.team1Score} - ${matches.team2Score}`);
       scoreText.textOpacity = 0.9;
       scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
       scoreText.textColor = textColor;
@@ -581,7 +647,7 @@ async function main(family) {
     }
     
     mainStack.addSpacer();
-    await createStack(mainStack, team2Img, 55, team2Name);
+    await createStack(mainStack, team2Img, lay.iconSize, team2Name);
     widget.addSpacer();
     
     let progressChart = createThreeStageBar(total, homeWin, draw, awayWin);
@@ -597,11 +663,14 @@ async function main(family) {
   
   // 
   const runWidget = async () => {
-    let { widget = null, diff = 1, data = {} } = await createWidget();
-    console.log(diff)
-    const status = data?.items[0]?.matches[0].statusText;
-    if (diff <= 1 || status === '进行中' || status !== '已结束') {
-      widget = await createLiveWidget(data, status);
+    let { widget = null, data = {} } = await createWidget();
+    const result = getClosestMatch(data);
+    updateCacheFile(result);
+    console.error(
+      JSON.stringify(result, null, 2)
+    );
+    if (result.matches) {
+      widget = await createLiveWidget(result, data);
     }
     
     if (setting.alwaysDark) {
