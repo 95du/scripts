@@ -297,8 +297,7 @@ async function main(family) {
           return {
             hasTodayMatch: true,
             closestDiff: diff,
-            matches: match,
-            statusText: `今天还有${item.matches.length}场比赛`,
+            matches: match
           };
         }
         // 2. 比赛结束在30分钟以内，则保留
@@ -317,7 +316,7 @@ async function main(family) {
           if (Math.abs(diff) < Math.abs(closestDiff)) {
             closestDiff = diff;
             matches = match;
-            hasTodayMatch = hasTodayMatch || isToday; // 更新是否今天的比赛
+            hasTodayMatch = hasTodayMatch || isToday;
           }
         }
       }
