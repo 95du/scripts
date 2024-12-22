@@ -119,8 +119,10 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-      widget.backgroundImage = backgroundImage;
+      if (family === 'medium') {
+        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
+        widget.backgroundImage = backgroundImage;
+      }
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
   };
@@ -197,12 +199,11 @@ async function main(family) {
     let widget;
     if (family !== 'small') {
       widget = await createWidget();
+      await setBackground(widget);
     }
     
     if (setting.alwaysDark) {
       widget.backgroundColor =  Color.black();
-    } else {
-      await setBackground(widget);
     }
     
     if (config.runsInApp) {
