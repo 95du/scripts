@@ -666,7 +666,7 @@ async function main(family) {
     let { widget = null, data = {} } = await createWidget();
     const result = getClosestMatch(data);
     updateCacheFile(result);
-    console.error(
+    console.log(
       JSON.stringify(result, null, 2)
     );
     if (result.matches) {
