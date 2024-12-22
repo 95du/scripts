@@ -37,7 +37,7 @@ async function main(family) {
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
-    iconSize: isSmall ? 52 : 55,
+    iconSize: isSmall ? 50 : 53,
     titleSize: isSmall ? 15 : 16,
     textSize: isSmall ? 12 : 13,
   };
@@ -48,7 +48,7 @@ async function main(family) {
    * 存储当前设置
    * @param { JSON } string
    */
-  const writeSettings = async (setting) => {
+  const writeSettings = (setting) => {
     fm.writeString(settingPath, JSON.stringify(setting, null, 2));
     console.log(JSON.stringify(
       setting, null, 2
@@ -75,7 +75,8 @@ async function main(family) {
     team2Name, 
     team2Score
   ) => {
-    let matchName = `${team1Name}_${team2Name}`;
+    const matchName = `${team1Name}_${team2Name}`;
+    const liveScore = `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`;
     if (status === '进行中') {
       if (!setting[matchName]) {
         setting[matchName] = { team1Score: 0, team2Score: 0 };
@@ -84,13 +85,13 @@ async function main(family) {
       if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
-        module.notify(`${roundInfo} ${matchTime}`, `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`);
+        module.notify(`${roundInfo} ${matchTime}`, liveScore);
       }
-    } else {
+    } else if (status === '已结束') {
       if (setting[matchName]) {
         delete setting[matchName];
         writeSettings(setting);
-        module.notify('比赛结束', `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`);
+        module.notify('比赛结束', liveScore);
       }
     }
   };
@@ -277,7 +278,7 @@ async function main(family) {
         if (item.date.includes('今天') && match.statusText === '未开赛') {
           hasTodayMatch = true
         }
-        if (match.statusText === '进行中' || (diff > 0 && diff < setting.autoSWitch)) {
+        if (match.statusText === '进行中' || (diff > 0 && diff < setting.autoSwitch)) {
           matches = match;
         }
       });
@@ -565,7 +566,7 @@ async function main(family) {
       const titleStack = indexStack.addStack();
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
-      titleText.font = Font.boldSystemFont(14);
+      titleText.font = Font.mediumSystemFont(14);
       titleText.textColor = textColor;
       titleStack.addSpacer();
     }
@@ -573,17 +574,20 @@ async function main(family) {
   
   const createHeading = async (infoStack, roundInfo, matchTime, data) => {
     infoStack.layoutHorizontally();
-    infoStack.setPadding(0, 25, 0, 0);
+    infoStack.size = new Size(0, 25);
     infoStack.addSpacer();
     const infoText = infoStack.addText(`${roundInfo}  ${matchTime}`);
     infoText.font = Font.systemFont(15);
     infoText.textColor = textColor; 
     infoStack.addSpacer();
     
-    const logoStack = infoStack.addStack();
-    const logo = await module.getCacheData(data.league.logo, 240, `${data.league.name}.png`);
-    logoStack.size = new Size(25, 25);
-    logoStack.backgroundImage = logo;
+    if (setting.rightIcon) {
+      infoStack.setPadding(0, 25, 0, 0)
+      const logoStack = infoStack.addStack();
+      const logo = await module.getCacheData(data.league.logo, 240, `${data.league.name}.png`);
+      logoStack.size = new Size(25, 25)
+      logoStack.backgroundImage = logo;
+    }
   };
   
   // 创建组件
@@ -639,7 +643,7 @@ async function main(family) {
       const statusStack = mediumStack.addStack();
       statusStack.layoutHorizontally();
       statusStack.addSpacer();
-      const statusText = statusStack.addText(status || '');
+      const statusText = statusStack.addText(status || '未知');
       statusText.textOpacity = 0.8;
       statusText.font = Font.mediumSystemFont(14);
       statusText.textColor = status === '已结束' ? new Color(textColor.hex, 0.65) : Color.red();
