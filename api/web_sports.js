@@ -640,14 +640,14 @@ async function main(family) {
       scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
       scoreText.textColor = textColor;
       scoreStack.addSpacer();
-      mediumStack.addSpacer(6);
+      mediumStack.addSpacer(5);
       
       const statusStack = mediumStack.addStack();
       statusStack.layoutHorizontally();
       statusStack.addSpacer();
       const statusText = statusStack.addText(status || '未知');
       statusText.textOpacity = 0.8;
-      statusText.font = Font.mediumSystemFont(14);
+      statusText.font = Font.mediumSystemFont(13.5);
       statusText.textColor = status === '已结束' ? new Color(textColor.hex, 0.65) : Color.red();
       statusStack.addSpacer();
     }
