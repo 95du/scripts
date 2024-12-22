@@ -57,12 +57,14 @@ async function main(family) {
   };
   
   // 更新赛程文件
-  const updateCacheFile = ({ matches } = result) => {
+  const updateCacheFile = ({ matches, closestDiff } = result) => {
     const filename = `${chooseSports}.html`;
     const filePath = fm.joinPath(cacheStr, filename);
-    if (fm.fileExists(filePath) && matches.statusText === '进行中') {
-      fm.remove(filePath);
-      console.log('更新' + filename);
+    if (fm.fileExists(filePath)) {
+      if (matches?.statusText === '进行中' || (closestDiff < 2 && closestDiff > 0)) {
+        fm.remove(filePath);
+        console.log('更新' + filename);
+      }
     }
   };
   
@@ -250,7 +252,7 @@ async function main(family) {
   };
   
   // 计算剩余多少小时
-  const getHourDifference = (dateStr) => {
+  const getHourDiff = (dateStr) => {
     const currentYear = new Date().getFullYear();
     const targetDate = dateStr.match(/^\d{4}-/)
       ? new Date(`${dateStr.replace(' ', 'T')}:00`)
@@ -263,38 +265,74 @@ async function main(family) {
     return diffHours.toFixed(2);
   };
   
+  /**
+   * 获取距离当前时间最近的比赛信息
+   *
+   * 优先级逻辑：
+   * 1. 优先返回“进行中”的比赛。
+   * 2. 如果没有进行中的比赛，返回“已结束”但在 30 分钟以内的比赛。
+   * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）。
+   * 
+   * @param {Object} data - 比赛数据
+   * @returns {Object} 返回比赛结果
+   *  - hasTodayMatch: {boolean} 是否今天还有比赛。
+   *  - closestDiff: {number} 距离最近的比赛时间差（小时）。
+   *  - matches: {Object|null} 最近的比赛对象（可能为 null）。
+   *  - statusText: {string} 比赛状态
+   */
   const getClosestMatch = (data) => {
-    let matches = null;
     let closestDiff = Infinity;
+    let matches = null;
     let hasTodayMatch = false;
-    data.items.forEach(item => {
-      item.matches.forEach(match => {
+    for (const item of data.items) {
+      const isToday = item.date.includes('今天');
+      for (const match of item.matches) {
         const matchDate = item.date;
         const matchTime = match.time;
         const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
-        const diff = getHourDifference(`${dateMatch} ${matchTime}`);
-        if (Math.abs(diff) < Math.abs(closestDiff)) {
-          closestDiff = diff;
+        // 计算比赛时间差
+        const diff = getHourDiff(`${dateMatch} ${matchTime}`);
+        // 1. 优先返回进行中的比赛
+        if (match.statusText === '进行中') {
+          return {
+            hasTodayMatch: true,
+            closestDiff: diff,
+            matches: match,
+            statusText: `今天还有${item.matches.length}场比赛`,
+          };
         }
-        if (item.date.includes('今天') && match.statusText === '未开赛') {
-          hasTodayMatch = true
+        // 2. 比赛结束在30分钟以内，则保留
+        if (match.statusText === '已结束') {
+          const endTime = new Date(`${dateMatch} ${matchTime}`);
+          const diffMinutes = (Date.now() - endTime.getTime()) / (1000 * 60);
+          if (diffMinutes > 0 && diffMinutes <= 30) {
+            matches = match;
+            hasTodayMatch = hasTodayMatch || isToday;
+            continue;
+          }
+          continue; // 超过30分钟的跳过
         }
-        if (match.statusText === '进行中' || (diff > 0 && diff < setting.autoSwitch)) {
-          matches = match;
+        // 3. 未开赛的比赛，检查是否在自动设置时间范围内
+        if (match.statusText === '未开赛' && diff >= 0 && diff < setting.autoSwitch) {
+          if (Math.abs(diff) < Math.abs(closestDiff)) {
+            closestDiff = diff;
+            matches = match;
+            hasTodayMatch = hasTodayMatch || isToday; // 更新是否今天的比赛
+          }
         }
-      });
-    });
-  
+      }
+    };
+    
     return {
       hasTodayMatch,
       closestDiff,
       matches,
-      statusText: hasTodayMatch 
-        ? '今天还有比赛' 
-        : (data.items.some(item => item.matches.some(match => match.statusText !== '已结束')) 
-        ? '今天没有比赛' 
+      statusText: hasTodayMatch
+        ? '今天还有比赛'
+        : (data.items.some(item => item.matches.some(match => match.statusText !== '已结束'))
+        ? '今天没有比赛'
         : '未开赛')
-    }
+    };
   };
   
   // ====== 设置组件背景 ====== //
@@ -450,7 +488,7 @@ async function main(family) {
     return { widget, data };
   };
   
-  // 三段进度条
+  // 三段进度条⚽️🇩🇪🇩🇪
   const createThreeStageBar = (total, homeWin, draw, awayWin) => {
     const width = 200;
     const height = 4;
