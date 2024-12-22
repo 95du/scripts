@@ -640,7 +640,7 @@ async function main(family) {
       scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
       scoreText.textColor = textColor;
       scoreStack.addSpacer();
-      mediumStack.addSpacer(5);
+      mediumStack.addSpacer(4);
       
       const statusStack = mediumStack.addStack();
       statusStack.layoutHorizontally();
