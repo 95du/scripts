@@ -61,7 +61,7 @@ async function main(family) {
     const filename = `${chooseSports}.html`;
     const filePath = fm.joinPath(cacheStr, filename);
     if (fm.fileExists(filePath)) {
-      if (matches?.statusText === '进行中' || (closestDiff < 2 && closestDiff > 0)) {
+      if (matches?.statusText === '进行中' || (closestDiff < 1)) {
         fm.remove(filePath);
         console.log('更新' + filename);
       }
@@ -292,32 +292,21 @@ async function main(family) {
         const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
         // 计算比赛时间差
         const diff = getHourDiff(`${dateMatch} ${matchTime}`);
+        if (Math.abs(diff) < Math.abs(closestDiff)) {
+          closestDiff = diff;
+        }
+        
         // 1. 优先返回进行中的比赛
         if (match.statusText === '进行中') {
           return {
-            hasTodayMatch: true,
             closestDiff: diff,
             matches: match
           };
         }
-        // 2. 比赛结束在30分钟以内，则保留
-        if (match.statusText === '已结束') {
-          const endTime = new Date(`${dateMatch} ${matchTime}`);
-          const diffMinutes = (Date.now() - endTime.getTime()) / (1000 * 60);
-          if (diffMinutes > 0 && diffMinutes <= 30) {
-            matches = match;
-            hasTodayMatch = hasTodayMatch || isToday;
-            continue;
-          }
-          continue; // 超过30分钟的跳过
-        }
         // 3. 未开赛的比赛，检查是否在自动设置时间范围内
         if (match.statusText === '未开赛' && diff >= 0 && diff < setting.autoSwitch) {
-          if (Math.abs(diff) < Math.abs(closestDiff)) {
-            closestDiff = diff;
-            matches = match;
-            hasTodayMatch = hasTodayMatch || isToday;
-          }
+          matches = match;
+          hasTodayMatch = hasTodayMatch || isToday;
         }
       }
     };
@@ -440,7 +429,7 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if (item.date.includes('今天') || (count > 0 && count < 2)) {
+      if (item.date.includes('今天') || (count > 0 && count <= 1)) {
         addDateColumn(widget, item);
       }
       
