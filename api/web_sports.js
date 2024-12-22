@@ -38,6 +38,7 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     iconSize: isSmall ? 50 : 53,
+    vsLogoSize: isSmall ? 42 : 45,
     titleSize: isSmall ? 15 : 16,
     textSize: isSmall ? 12 : 13,
   };
@@ -359,7 +360,7 @@ async function main(family) {
     ? new Color('#8C7CFF', 0.15) 
     : new Color('#999999', 0.2);
     
-    createText(dateStack, item.date.replace(/\//, '    '), 13, null, 0.7);
+    createText(dateStack, item.date.replace(/\//, '   '), 13, null, 0.7);
     dateStack.addSpacer();
     createText(dateStack, item.listNum, 13, null, 0.7);
     widget.addSpacer(5);
@@ -623,7 +624,7 @@ async function main(family) {
     await createStack(mainStack, team1Img, lay.iconSize, team1Name);
     mainStack.addSpacer();
     if (raceScheduleData.vsLogo) {
-      await createStack(mainStack, raceScheduleData.vsLogo, 42, null, 65);
+      await createStack(mainStack, raceScheduleData.vsLogo, lay.vsLogoSize, null, 65);
     } else {
       const mediumStack = mainStack.addStack();
       if (scoreLength) mediumStack.size = new Size(148, 0);
