@@ -57,10 +57,10 @@ async function main(family) {
   };
   
   // 更新赛程文件
-  const updateCacheFile = ({ closestDiff } = result) => {
+  const updateCacheFile = ({ matches } = result) => {
     const filename = `${chooseSports}.html`;
     const filePath = fm.joinPath(cacheStr, filename);
-    if (closestDiff <= 2 && closestDiff > 0 && fm.fileExists(filePath)) {
+    if (fm.fileExists(filePath) && matches.statusText === '进行中') {
       fm.remove(filePath);
       console.log('更新' + filename);
     }
