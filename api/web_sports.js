@@ -111,20 +111,15 @@ async function main(family) {
       (() => {
         const roundInfo = document.querySelector('.info-time span:first-child')?.innerText || '';
         const matchTime = document.querySelector('.info-time span:last-child')?.innerText || '';
-  
         const team1Name = document.querySelector('.header-team-name .team-name')?.innerText || '';
         const team1Img = (document.querySelector('.header-team-logo')?.style.backgroundImage.match(/https.+(?=\\))/)?.[0] || '').replace(/"$/, '');
-  
         const team2Name = document.querySelector('.header-team.team-right .team-name')?.innerText || '';
         const team2Img = (document.querySelector('.header-team.team-right .header-team-logo-wrap .header-team-logo')?.style.backgroundImage.match(/https.+(?=\\))/)?.[0] || '').replace(/"$/, '');
-        
         const vsLogo = document.querySelector('.info-vs-img-box img') ? document.querySelector('.info-vs-img-box img').src : null;
-  
         // 获取赛前预测的百分比
         const preMatchPredictions = [...document.querySelectorAll('.analysis-result-compare .compare-team p')];
         const team1Prediction = preMatchPredictions[0]?.innerText.trim() || '0%';
         const team2Prediction = preMatchPredictions[2]?.innerText.trim() || '0%';
-        
         // 赔率数据提取
         const oddsDescription = document.querySelector('.analysis-result-history')?.innerText.trim() || '';
         const oddsCount = document.querySelector('.analysis-result-history span.c-gap-left-small')?.innerText.trim() || '';
@@ -184,7 +179,6 @@ async function main(family) {
         leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
         leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim();
         leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
-  
         // 获取所有包含比赛信息的元素
         const matchElements = document.querySelectorAll('.c-pull-refresh-content .wa-match-schedule-list-wrapper');
         
@@ -194,7 +188,6 @@ async function main(family) {
           
           const matchItems = wrapper.querySelectorAll('.wa-match-schedule-list-item');
           const matches = [];
-  
           matchItems.forEach(item => {
             const time = item.querySelector('.vs-info-date-content p:first-of-type')?.textContent.trim();
             const round = item.querySelector('.vs-info-date-content p:nth-of-type(2)')?.textContent.trim();
@@ -202,15 +195,12 @@ async function main(family) {
             // 使用正则提取 matchId
             const matchId = analyseUrl.match(/\\/detail\\/(.*?)\\/tab/)?.[1] || null;
             const indexApi = 'https://tiyu.baidu.com/go/api/matchDetail/odds?matchId=' + matchId;
-  
             // 提取比赛状态
             const statusText = item.querySelector('.status-text')?.textContent.trim() || '已结束';
-  
             // 提取队伍信息和图片
             const team1Name = item.querySelectorAll('.team-row-name')[0]?.textContent.trim();
             const team1Score = item.querySelectorAll('.team-row-score')[0]?.textContent.trim();
             const team1Img = item.querySelectorAll('.team-row-logo img')[0]?.src.replace(/&amp;/g, '&');
-  
             const team2Name = item.querySelectorAll('.team-row-name')[1]?.textContent.trim();
             const team2Score = item.querySelectorAll('.team-row-score')[1]?.textContent.trim();
             const team2Img = item.querySelectorAll('.team-row-logo img')[1]?.src.replace(/&amp;/g, '&');
