@@ -476,15 +476,14 @@ async function main(family) {
     const width = 200;
     const height = 4;
     const radius = height / 2;
-  
+    // 初始间隔宽度
+    let interval = 2.5
+    let intervals = 2 * interval;
+    
     const ctx = new DrawContext();
     ctx.size = new Size(width, height + 13);
     ctx.opaque = false;
     ctx.respectScreenScale = true;
-  
-    // 初始间隔宽度
-    let interval = 2.5
-    let intervals = 2 * interval;
   
     // 初步计算每个阶段的宽度
     const stages = [homeWin, draw, awayWin];
@@ -508,14 +507,12 @@ async function main(family) {
     }
   
     const [homeWinWidth, drawWidth, awayWinWidth] = widths;
-  
     // 绘制主场获胜阶段（红色）
     const homeWinPath = new Path();
     homeWinPath.addRoundedRect(new Rect(0, 0, homeWinWidth, height), radius, radius);
     ctx.addPath(homeWinPath);
     ctx.setFillColor(Color.red());
     ctx.fillPath();
-  
     // 绘制平局阶段（橙色）
     const drawPath = new Path();
     drawPath.addRoundedRect(
@@ -523,7 +520,6 @@ async function main(family) {
     ctx.addPath(drawPath);
     ctx.setFillColor(Color.orange());
     ctx.fillPath();
-  
     // 绘制客场获胜阶段（蓝色）
     const awayWinPath = new Path();
     awayWinPath.addRoundedRect(
@@ -542,14 +538,12 @@ async function main(family) {
     ctx.setTextColor(Color.red());
     const homeWinTextWidth = homeWinText.length * textSize * 0.65;
     ctx.drawText(homeWinText, new Point(0, height + 2));
-  
     // 绘制右侧文字（靠右对齐）
     const awayWinText = `${awayWin}%`;
     const awayWinTextWidth = awayWinText.length * textSize * 0.69;
     ctx.setFont(font);
     ctx.setTextColor(Color.blue());
     ctx.drawText(awayWinText, new Point(width - awayWinTextWidth, height + 2));
-  
     // 绘制中间文字，确保居中显示在平局阶段
     if (drawWidth > 0) {
       const drawText = `${draw}%平局`;
@@ -561,7 +555,6 @@ async function main(family) {
       const rightLimit = width - awayWinTextWidth - drawTextWidth - margin;
       const adjustedDrawX = Math.max(drawX, leftLimit);
       const finalDrawX = Math.min(adjustedDrawX, width - awayWinTextWidth - drawTextWidth - margin);
-    
       ctx.setFont(font);
       ctx.setTextColor(Color.orange());
       ctx.drawText(drawText, new Point(finalDrawX, height + 2));
