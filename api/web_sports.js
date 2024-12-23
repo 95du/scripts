@@ -57,11 +57,11 @@ async function main(family) {
   };
   
   // 更新赛程文件
-  const updateCacheFile = ({ matches, closestDiff } = result) => {
+  const updateCacheFile = ({ matches, hasTodayMatch } = result) => {
     const filename = `${chooseSports}.html`;
     const filePath = fm.joinPath(cacheStr, filename);
     if (fm.fileExists(filePath)) {
-      if (matches?.statusText === '进行中' || (closestDiff < 1)) {
+      if (matches?.statusText === '进行中' || hasTodayMatch) {
         fm.remove(filePath);
         console.log('更新' + filename);
       }
@@ -271,56 +271,64 @@ async function main(family) {
    * 优先级逻辑：
    * 1. 优先返回“进行中”的比赛。
    * 2. 如果没有进行中的比赛，返回“已结束”但在 30 分钟以内的比赛。
-   * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）。
-   * 
-   * @param {Object} data - 比赛数据
-   * @returns {Object} 返回比赛结果
-   *  - hasTodayMatch: {boolean} 是否今天还有比赛。
-   *  - closestDiff: {number} 距离最近的比赛时间差（小时）。
-   *  - matches: {Object|null} 最近的比赛对象（可能为 null）。
-   *  - statusText: {string} 比赛状态
+   * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const getClosestMatch = (data) => {
     let closestDiff = Infinity;
-    let matches = null;
+    let closestMatch = null;
+    let remainingMin = null;
     let hasTodayMatch = false;
+  
     for (const item of data.items) {
       const isToday = item.date.includes('今天');
       for (const match of item.matches) {
         const matchDate = item.date;
         const matchTime = match.time;
         const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
-        // 计算比赛时间差
         const diff = getHourDiff(`${dateMatch} ${matchTime}`);
-        if (Math.abs(diff) < Math.abs(closestDiff)) {
-          closestDiff = diff;
-        }
-        
-        // 1. 优先返回进行中的比赛
         if (match.statusText === '进行中') {
           return {
-            closestDiff: diff,
-            matches: match
+            matches: match,
+            hasTodayMatch: isToday
           };
         }
-        // 3. 未开赛的比赛，检查是否在自动设置时间范围内
-        if (match.statusText === '未开赛' && diff >= 0 && diff < setting.autoSwitch) {
-          matches = match;
-          hasTodayMatch = hasTodayMatch || isToday;
-        }
+        
+        if (match.statusText === '未开赛' && diff > 0 && diff < 60) {
+          const currentRemainingMin = Math.ceil(diff * 60);
+          if (diff < closestDiff) {
+            hasTodayMatch = isToday;
+            closestMatch = match;
+            remainingMin = currentRemainingMin;
+          }
+        };
       }
-    };
+    }
+  
+    for (const item of data.items) {
+      for (const match of item.matches) {
+        if (match.statusText === '已结束' && remainingMin > 25) {
+          return {
+            matches: match,
+            hasTodayMatch,
+            remainingMin
+          }
+        };
+      }
+    }
     
-    return {
-      hasTodayMatch,
-      closestDiff,
-      matches,
-      statusText: hasTodayMatch
-        ? '今天还有比赛'
-        : (data.items.some(item => item.matches.some(match => match.statusText !== '已结束'))
-        ? '今天没有比赛'
-        : '未开赛')
-    };
+    if (closestMatch) {
+      return {
+        remainingMin,
+        hasTodayMatch,
+        matches: closestMatch,
+        statusText: hasTodayMatch ? `还有 ${remainingMin} 分钟` : '未开赛',
+      };
+    }
+  
+    return { 
+      matches: null,
+      hasTodayMatch: false
+    }
   };
   
   // ====== 设置组件背景 ====== //
@@ -429,7 +437,7 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if (item.date.includes('今天') || (count > 0 && count <= 1)) {
+      if ((item.date.includes('今天') && item.matches[0].length > 0) || count > 0 && count < 2) {
         addDateColumn(widget, item);
       }
       
