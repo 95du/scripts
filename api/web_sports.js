@@ -286,7 +286,7 @@ async function main(family) {
           }
         }
         
-        if (match.statusText === '未开赛' && diff > 0 && diff < 60) {
+        if (match.statusText === '未开赛' && diff > 0 && diff < setting.autoSwitch) {
           if (diff < nextDiff) {
             nextMatch = match;
             nextDiff = Math.ceil(diff);
