@@ -252,7 +252,7 @@ async function main(family) {
   };
   
   // 计算剩余多少小时
-  const getHourDiff = (dateStr) => {
+  const getMinutesDiff = (dateStr) => {
     const currentYear = new Date().getFullYear();
     const targetDate = dateStr.match(/^\d{4}-/)
       ? new Date(`${dateStr.replace(' ', 'T')}:00`)
@@ -261,7 +261,7 @@ async function main(family) {
       return null;
     }
     const diffMilliseconds = targetDate - new Date(); // 计算时间差（毫秒）
-    const diffHours = diffMilliseconds / (1000 * 60 * 60);
+    const diffHours = diffMilliseconds / (1000 * 60);
     return diffHours.toFixed(2);
   };
   
@@ -274,60 +274,57 @@ async function main(family) {
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const getClosestMatch = (data) => {
-    let closestDiff = Infinity;
-    let closestMatch = null;
-    let remainingMin = null;
+    let nextDiff = Infinity;
+    let nextMatch = null;
+    let lastEndedMatch = null;
     let hasTodayMatch = false;
-  
+    
     for (const item of data.items) {
       const isToday = item.date.includes('今天');
+      if (!isToday) continue
       for (const match of item.matches) {
         const matchDate = item.date;
         const matchTime = match.time;
         const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
-        const diff = getHourDiff(`${dateMatch} ${matchTime}`);
-        if (match.statusText === '进行中') {
-          return {
-            matches: match,
-            hasTodayMatch: isToday
-          };
+        const diff = getMinutesDiff(`${dateMatch} ${matchTime}`);
+  
+        if (match.statusText === '进行中') return { matches: match };
+        if (match.statusText === '已结束') {
+          if (!lastEndedMatch || diff < getMinutesDiff(lastEndedMatch.time)) {
+            lastEndedMatch = match;
+            hasTodayMatch = isToday;
+          }
         }
         
         if (match.statusText === '未开赛' && diff > 0 && diff < 60) {
-          const currentRemainingMin = Math.ceil(diff * 60);
-          if (diff < closestDiff) {
-            hasTodayMatch = isToday;
-            closestMatch = match;
-            remainingMin = currentRemainingMin;
+          if (diff < nextDiff) {
+            nextMatch = match;
+            nextDiff = Math.ceil(diff);
+            hasTodayMatch = isToday
           }
-        };
+        }
       }
-    }
-  
-    for (const item of data.items) {
-      for (const match of item.matches) {
-        if (match.statusText === '已结束' && remainingMin > 25) {
-          return {
-            matches: match,
-            hasTodayMatch,
-            remainingMin
-          }
-        };
+    };
+    
+    if (nextDiff > 25 && lastEndedMatch && nextMatch) {
+      return {
+        matches: lastEndedMatch,
+        nextDiff,
+        hasTodayMatch
       }
     }
     
-    if (closestMatch) {
+    if (nextMatch) {
       return {
-        remainingMin,
-        hasTodayMatch,
-        matches: closestMatch,
-        statusText: hasTodayMatch ? `还有 ${remainingMin} 分钟` : '未开赛',
-      };
+        matches: nextMatch,
+        nextDiff,
+        hasTodayMatch
+      }
     }
-  
-    return { 
+    
+    return {
       matches: null,
-      hasTodayMatch: false
+      hasTodayMatch
     }
   };
   
