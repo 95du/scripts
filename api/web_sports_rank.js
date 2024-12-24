@@ -142,7 +142,7 @@ async function main(family) {
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
-    const maxCol = family === 'medium' ? 6 : 15;
+    const maxCol = family === 'medium' ? 6 : family === 'large' ? 15 : 5
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
@@ -151,7 +151,7 @@ async function main(family) {
       
       const indexStack = teamStack.addStack();
       indexStack.size = new Size(20, 0);
-      const indexText = indexStack.addText(team.teamRank);
+      const indexText = indexStack.addText(`${i + 1}`);
       indexText.font = Font.boldSystemFont(15);
       const textColor = i <= 2 
         ? '#FF0000' : i <= 3
