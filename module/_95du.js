@@ -1129,12 +1129,14 @@ class _95du {
     margin,
     text,
     text2,
-    toggle = false
+    toggle = false,
+    lablename = '组件脚本',
+    elementById = 'store'
   }) => {
     const cells = [
       {
-        label: '组件脚本',
-        name: 'store',
+        label: lablename,
+        name: elementById,
         type: 'cell',
         icon: 'message.circle.fill'
       }
@@ -1876,7 +1878,7 @@ input.addEventListener("change", async (e) => {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateOnDarkModeChange);
     
     // 监听其他 elementById
-    ['store', 'install', 'app'].forEach(id => {
+    ['store', 'install', 'app', 'website'].forEach(id => {
       const elementById = document.getElementById(id).addEventListener('click', () => invoke(id));
     });
     
