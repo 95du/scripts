@@ -69,7 +69,8 @@ async function main(family) {
   };
   
   // 实时比分通知
-  const scoreNotice = (
+  const scoreNotice = async (
+    matchId,
     status, 
     roundInfo, 
     matchTime, 
@@ -79,16 +80,21 @@ async function main(family) {
     team2Score
   ) => {
     const matchName = `${team1Name}_${team2Name}`;
-    const liveScore = `${team1Name} ${team1Score} - ${team2Score} ${team2Name}`;
+    const liveScore = `${team1Name}  ${team1Score} - ${team2Score}  ${team2Name}`;
+    
     if (status === '进行中') {
       if (!setting[matchName]) {
         setting[matchName] = { team1Score: 0, team2Score: 0 };
       }
-      
       if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
+        if (chooseSports === 'nba' || chooseSports === 'cba') {
+          return module.notify(`${roundInfo} ${matchTime}`, liveScore);
+        }
         module.notify(`${roundInfo} ${matchTime}`, liveScore);
+        const [goal] = await getGoalsAndPenalties(matchId);
+        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player}\n${goal.assist}`);
       }
     } else if (status === '已结束') {
       if (setting[matchName]) {
@@ -97,6 +103,60 @@ async function main(family) {
         module.notify('比赛结束', liveScore);
       }
     }
+  };
+  
+  // 进球事件
+  const getGoalsAndPenalties = async (matchId) => {
+    const url = `https://tiyu.baidu.com/live/detail/${matchId}/tab/赛况`;
+    const request = new Request(url);
+    request.timeoutInterval = 5;
+    const html = await request.loadString();
+    const webView = new WebView();
+    await webView.loadHTML(html);
+  
+    const events = await webView.evaluateJavaScript(`
+      (() => {
+        const events = [];
+        const items = document.querySelectorAll('.match-events-item.c-row');
+        items.forEach(item => {
+          const time = item.querySelector('.events-item-mid')?.textContent.trim().replace("'", "");
+          // 主场信息
+          const homePlayer = item.querySelector('.events-item-left')?.textContent.trim();
+          const homeAssist = item.querySelector('.events-item-left .c-line-clamp1 span')?.textContent.trim();
+          // 客场信息
+          const awayPlayer = item.querySelector('.events-item-right p')?.textContent.trim();
+          const awayAssist = item.querySelector('.events-item-right .c-line-clamp1 span')?.textContent.trim();
+          const isGoal = item.querySelector('.events-item-mid.events-item-goal') !== null;
+          const isPenalty = item.querySelector('.events-item-mid.events-item-kick') !== null;
+          const eventType = isPenalty ? '点球' : isGoal ? '进球' : null;
+          if (!eventType) return;
+  
+          // 主场事件
+          if (homePlayer) {
+            events.push({
+              time,
+              side: '主场',
+              type: eventType,
+              player: homePlayer,
+              assist: homeAssist ? \`\${homeAssist} (助攻)\` : null
+            });
+          }
+  
+          // 客场事件
+          if (awayPlayer) {
+            events.push({
+              time,
+              side: '客场',
+              type: eventType,
+              player: awayPlayer,
+              assist: awayAssist ? \`\${awayAssist} (助攻)\` : null
+            });
+          }
+        });
+        return events;
+      })();
+    `);
+    return events;
   };
   
   // 获取赛况
@@ -282,6 +342,7 @@ async function main(family) {
         if (match.statusText === '已结束') {
           if (!lastEndedMatch || diff < getMinutesDiff(lastEndedMatch.time)) {
             lastEndedMatch = match;
+            nextDiff = Math.ceil(diff);
             hasTodayMatch = isToday;
           }
         }
@@ -295,8 +356,8 @@ async function main(family) {
         }
       }
     };
-    
-    if (nextDiff > 25 && lastEndedMatch && nextMatch) {
+    // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
+    if (nextDiff > 25 && lastEndedMatch && nextMatch || nextDiff >= -130) {
       return {
         matches: lastEndedMatch,
         nextDiff,
@@ -314,7 +375,7 @@ async function main(family) {
     
     return {
       matches: null,
-      hasTodayMatch
+      hasTodayMatch: false
     }
   };
   
@@ -400,7 +461,7 @@ async function main(family) {
     return rowText;
   };
   
-  const createText = (stack, text, textSize, font, opacity) => {
+  const createText = (stack, text, textSize, font, opacity, color) => {
     const rowText = stack.addText(text);
     rowText.textColor = textColor;
     rowText.font = Font[font 
@@ -623,7 +684,7 @@ async function main(family) {
     const leagueLogo = data.league.logo
     const scoreLength = matches.team1Score.length >= 2 && matches.team2Score.length >= 2;
     // 比分通知🔔
-    scoreNotice(status, roundInfo, matchTime, team1Name, matches.team1Score, team2Name, matches.team2Score);
+    scoreNotice(matches.matchId, status, roundInfo, matchTime, team1Name, matches.team1Score, team2Name, matches.team2Score);
     
     // 创建组件
     const widget = new ListWidget();
