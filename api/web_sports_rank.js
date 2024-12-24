@@ -38,8 +38,7 @@ async function main(family) {
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
-  const getMatchRankings = async (leagueName) => {
-    const url = `https://tiyu.baidu.com/match/${leagueName}/tab/排名`;
+  const getMatchRankings = async (url, leagueName) => {
     const html = await module.getCacheData(url, 4, `${leagueName}.html`);
     const webView = new WebView();
     await webView.loadHTML(html);
@@ -94,7 +93,6 @@ async function main(family) {
   // ====== 设置组件背景 ====== //
   const setBackground = async (widget) => {
     const bgImage = fm.joinPath(cacheImg, Script.name());
-    //const Appearance = Device.isUsingDarkAppearance();
     if (fm.fileExists(bgImage)) {
       const shadowImg = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(shadowImg);
@@ -134,10 +132,13 @@ async function main(family) {
   };
   
   const createWidget = async () => {
+    const url = `https://tiyu.baidu.com/match/${chooseSports}/tab/排名`;
+    const data = await getMatchRankings(url, chooseSports);
+    const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
+    
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
-    const data = await getMatchRankings(chooseSports);
-    const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
+    widget.url = url;
     const maxCol = family === 'medium' ? 6 : 15;
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
