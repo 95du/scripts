@@ -128,7 +128,8 @@ async function main(family) {
           const awayAssist = item.querySelector('.events-item-right .c-line-clamp1 span')?.textContent.trim();
           const isGoal = item.querySelector('.events-item-mid.events-item-goal') !== null;
           const isPenalty = item.querySelector('.events-item-mid.events-item-kick') !== null;
-          const eventType = isPenalty ? '点球' : isGoal ? '进球' : null;
+          const isOwnGoal = item.querySelector('.events-item-mid.wulong-goal') !== null;
+        const eventType = isOwnGoal ? '乌龙球' : isPenalty ? '点球' : isGoal ? '进球' : null;
           if (!eventType) return;
   
           // 主场事件
@@ -744,7 +745,7 @@ async function main(family) {
   
   // 
   const runWidget = async () => {
-    let { widget = null, data = {} } = await createWidget();
+    let { widget, data = {} } = await createWidget();
     const result = getClosestMatch(data);
     updateCacheFile(result);
     console.log(
