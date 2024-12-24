@@ -120,7 +120,7 @@ async function main(family) {
       if (family === 'medium') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
       } else {
-        const random = module.getRandomItem([3, 4]);
+        const random = Math.ceil(Math.random() * 6);
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
       }
       widget.backgroundImage = backgroundImage;
