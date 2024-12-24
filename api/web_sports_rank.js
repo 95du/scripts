@@ -118,9 +118,12 @@ async function main(family) {
       widget.backgroundGradient = gradient;
     } else {
       if (family === 'medium') {
-        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-        widget.backgroundImage = backgroundImage;
+        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
+      } else {
+        const random = module.getRandomItem([3, 4]);
+        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
       }
+      widget.backgroundImage = backgroundImage;
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
   };
