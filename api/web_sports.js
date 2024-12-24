@@ -434,7 +434,7 @@ async function main(family) {
     if (league.name.includes('法国')) {
       icon.tintColor = textColor;
     };
-    leagueStack.addSpacer(10);
+    leagueStack.addSpacer(12);
     
     createText(leagueStack, league.name, 16, true);
     leagueStack.addSpacer();
