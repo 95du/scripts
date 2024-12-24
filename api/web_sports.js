@@ -126,6 +126,7 @@ async function main(family) {
           // 客场信息
           const awayPlayer = item.querySelector('.events-item-right p')?.textContent.trim();
           const awayAssist = item.querySelector('.events-item-right .c-line-clamp1 span')?.textContent.trim();
+          // 进球类型
           const isGoal = item.querySelector('.events-item-mid.events-item-goal') !== null;
           const isPenalty = item.querySelector('.events-item-mid.events-item-kick') !== null;
           const isOwnGoal = item.querySelector('.events-item-mid.wulong-goal') !== null;
@@ -302,7 +303,7 @@ async function main(family) {
     return data;
   };
   
-  // 计算剩余多少小时
+  // 计算剩余多少分钟
   const getMinutesDiff = (dateStr) => {
     const currentYear = new Date().getFullYear();
     const targetDate = dateStr.match(/^\d{4}-/)
@@ -423,21 +424,21 @@ async function main(family) {
     }
   };
   
-  const addLeagueStack = async (widget, data) => {
+  const addLeagueStack = async (widget, { league } = data) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
-    const leagueImg = await module.getCacheData(data.league.logo, 240, `${data.league.name}.png`);
-    const iconImage = leagueStack.addImage(leagueImg)
-    iconImage.imageSize = new Size(23, 23);
-    if (data.league.name.includes('法国')) {
-      iconImage.tintColor = textColor;
+    const leagueImg = await module.getCacheData(league.logo, 240, `${league.name}.png`);
+    const icon = leagueStack.addImage(leagueImg)
+    icon.imageSize = new Size(23, 23);
+    if (league.name.includes('法国')) {
+      icon.tintColor = textColor;
     };
-    leagueStack.addSpacer(12);
+    leagueStack.addSpacer(10);
     
-    createText(leagueStack, data.league.name, 16, true);
+    createText(leagueStack, league.name, 16, true);
     leagueStack.addSpacer();
-    createText(leagueStack, data.league.season, 16, true);
+    createText(leagueStack, league.season, 16, true);
     widget.addSpacer();
   };
   
@@ -449,10 +450,10 @@ async function main(family) {
     dateStack.cornerRadius = 2;
     dateStack.setPadding(1, 0, 1, 0);
     dateStack.backgroundColor = item.date.includes('今天') 
-    ? new Color('#CCC400', 0.15) 
-    : item.date.includes('明天') 
-    ? new Color('#8C7CFF', 0.15) 
-    : new Color('#999999', 0.2);
+      ? new Color('#CCC400', 0.15) 
+      : item.date.includes('明天') 
+      ? new Color('#8C7CFF', 0.15) 
+      : new Color('#999999', 0.2);
     
     createText(dateStack, item.date.replace(/\//, '   '), 13, null, 0.8);
     dateStack.addSpacer();
@@ -486,16 +487,10 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if ((item.date.includes('今天') && item.matches[0].length > 0) || count > 0 && count < 2) {
+      if (item.date.includes('今天') && item.matches[0].length > 0 || count > 0 && count < 2) {
         addDateColumn(widget, item);
       }
       
-      // 如果已获取足够的比赛，跳出循环
-      if (count >= maxMatches) break;
-      if (item.matches.length === 0) {
-        continue;
-      }
-    
       for (const match of item.matches) { // 如果已获取足够的比赛，跳出外层循环
         if (count >= maxMatches) break;
         count++;
@@ -625,23 +620,23 @@ async function main(family) {
   };
   
   const createStack = async (mainStack, logoUrl, imgSize, teamName, size) => {
-    const indexStack = mainStack.addStack();
-    indexStack.layoutVertically();
-    const logoStack = indexStack.addStack();
+    const verticalStack = mainStack.addStack();
+    verticalStack.layoutVertically();
+    const logoStack = verticalStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.addSpacer();
     const logo = await module.getCacheData(logoUrl, 240, `${teamName}.png`);
     const logoImage = logoStack.addImage(logo);
     logoImage.imageSize = new Size(imgSize, imgSize);
     if (!teamName) {
-      indexStack.size = new Size(size, size - 5);
+      verticalStack.size = new Size(size, size - 5);
       logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
     }
     logoStack.addSpacer();
-    indexStack.addSpacer(size ? teamName : 5);
+    verticalStack.addSpacer(size ? teamName : 5);
     
     if (teamName) {
-      const titleStack = indexStack.addStack();
+      const titleStack = verticalStack.addStack();
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
       titleText.font = Font.mediumSystemFont(14);
@@ -650,7 +645,7 @@ async function main(family) {
     }
   };
   
-  const createHeading = async (infoStack, roundInfo, matchTime, data) => {
+  const createHeading = async (infoStack, roundInfo, matchTime, { league } = data) => {
     infoStack.layoutHorizontally();
     infoStack.size = new Size(0, 25);
     infoStack.addSpacer();
@@ -662,7 +657,7 @@ async function main(family) {
     if (setting.rightIcon) {
       infoStack.setPadding(0, 25, 0, 0)
       const logoStack = infoStack.addStack();
-      const logo = await module.getCacheData(data.league.logo, 240, `${data.league.name}.png`);
+      const logo = await module.getCacheData(league.logo, 240, `${league.name}.png`);
       logoStack.size = new Size(25, 25)
       logoStack.backgroundImage = logo;
     }
@@ -673,8 +668,8 @@ async function main(family) {
     const { matches, hasTodayMatch, closestDiff } = result;
     const status = matches.statusText;
     const raceScheduleData = await getRaceSchedule(matches.analyseUrl);
-    
     const { total, homeWin, draw, awayWin } = raceScheduleData.odds;
+    
     const {
       roundInfo,
       matchTime,
@@ -684,7 +679,7 @@ async function main(family) {
     
     const leagueLogo = data.league.logo
     const scoreLength = matches.team1Score.length >= 2 && matches.team2Score.length >= 2;
-    // 比分通知🔔
+    // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matches.matchId, status, roundInfo, matchTime, team1Name, matches.team1Score, team2Name, matches.team2Score);
     
     // 创建组件
