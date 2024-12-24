@@ -412,6 +412,17 @@ async function main(family) {
     }
   };
   
+  const createText = (stack, text, textSize, font, opacity, color) => {
+    const rowText = stack.addText(text);
+    rowText.textColor = textColor;
+    rowText.font = Font[font 
+      ? 'mediumSystemFont' 
+      : 'systemFont'](textSize);
+    if (opacity) {
+      rowText.textOpacity = opacity;
+    }
+  };
+  
   const addLeagueStack = async (widget, data) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
@@ -443,9 +454,9 @@ async function main(family) {
     ? new Color('#8C7CFF', 0.15) 
     : new Color('#999999', 0.2);
     
-    createText(dateStack, item.date.replace(/\//, '   '), 13, null, 0.7);
+    createText(dateStack, item.date.replace(/\//, '   '), 13, null, 0.8);
     dateStack.addSpacer();
-    createText(dateStack, item.listNum, 13, null, 0.7);
+    createText(dateStack, item.listNum, 13, null, 0.8);
     widget.addSpacer(5);
   };
   
@@ -460,17 +471,6 @@ async function main(family) {
     rowText.textColor = textColor;
     if (width) rowStack.addSpacer();
     return rowText;
-  };
-  
-  const createText = (stack, text, textSize, font, opacity, color) => {
-    const rowText = stack.addText(text);
-    rowText.textColor = textColor;
-    rowText.font = Font[font 
-      ? 'mediumSystemFont' 
-      : 'systemFont'](textSize);
-    if (opacity) {
-      rowText.textOpacity = opacity;
-    }
   };
   
   // 创建组件
