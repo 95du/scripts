@@ -119,7 +119,7 @@ async function main(family) {
       widget.backgroundGradient = gradient;
     } else {
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-      if (family === 'large' && (chooseSports === '意甲' || chooseSports === 'nba')) {
+      if (family === 'large' && (chooseSports === '意甲' && chooseSports === 'nba')) {
         return
       }
       const random = Math.ceil(Math.random() * 6);
