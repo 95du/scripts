@@ -116,9 +116,9 @@ async function main(family) {
         new Color('#00000000')
       ];
       widget.backgroundGradient = gradient;
-    } else if (chooseSports !== '意甲') {
+    } else {
       let backgroundImage = '';
-      if (family === 'medium') {
+      if (family === 'small') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
       } else {
         const random = Math.ceil(Math.random() * 6);
