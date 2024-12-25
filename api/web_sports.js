@@ -27,12 +27,11 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports = '西甲';
+  let chooseSports = setting.selected;
   const param = args.widgetParameter;
   if (param) {
-    chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
-  } else {
-    chooseSports = setting.selected;
+    const validParam = setting.values.some(item => item.value === param.trim());
+    chooseSports = validParam ? param.trim() : setting.selected;
   };
   
   const isSmall = Device.screenSize().height < 926;
