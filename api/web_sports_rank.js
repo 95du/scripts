@@ -29,7 +29,7 @@ async function main(family) {
   
   let chooseSports = '西甲';
   const param = args.widgetParameter;
-  if (param !== null) {
+  if (param) {
     chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
   } else {
     chooseSports = setting.selected;
@@ -158,7 +158,7 @@ async function main(family) {
         ? '#FCA100' : '#00C400';
       indexText.textColor = new Color(textColor);
       teamStack.addSpacer(8);
-      
+      console.log(team.teamLogo)
       // 队标
       const teamLogoUrl = team.teamLogo || ''; // 修复潜在错误
       if (teamLogoUrl) {
