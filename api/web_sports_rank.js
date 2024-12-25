@@ -27,13 +27,12 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports = '西甲'
+  let chooseSports = setting.selected;
   const param = args.widgetParameter;
-  if (param && typeof param === 'string') {
-    chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
-  } else {
-    chooseSports = setting.selected;
-  }
+  if (param) {
+    const validParam = setting.values.some(item => item.value === param.trim());
+    chooseSports = validParam ? param.trim() : setting.selected;
+  };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
