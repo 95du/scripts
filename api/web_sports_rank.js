@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-12-21
  */
-
+await main(config.widgetFamily || 'large');
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -29,7 +29,7 @@ async function main(family) {
   
   let chooseSports = setting.selected;
   const param = args.widgetParameter;
-  if (param) {
+  if (param != null) {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['nba', 'cba'].includes(trimmedParam);
     chooseSports = validParam ? trimmedParam : chooseSports;
@@ -117,14 +117,11 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      let backgroundImage = '';
-      if (family === 'small') {
-        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-      } else {
+      if (family === 'large' && (chooseSports !== '意甲' && chooseSports !== 'nba')) {
         const random = Math.ceil(Math.random() * 6);
-        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+        widget.backgroundImage = backgroundImage;
       }
-      widget.backgroundImage = backgroundImage;
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
   };
@@ -143,8 +140,8 @@ async function main(family) {
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
-    
-    const maxCol = family === 'medium' ? 6 : 15;
+    await setBackground(widget);
+    const maxCol = family === 'medium' ? 6 : data.matchData.length >= 15 ? 15 : data.matchData.length
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
@@ -211,7 +208,6 @@ async function main(family) {
   // 渲染组件
   const runWidget = async () => {
     const widget = family === 'small' ? createErrorWidget() : await createWidget();
-    await setBackground(widget);
     if (setting.alwaysDark) {
       widget.backgroundColor =  Color.black();
     }
