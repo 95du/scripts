@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-12-21
  */
-
+await main(config.widgetFamily)
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -27,12 +27,13 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports = '西甲';
+  let chooseSports
   const param = args.widgetParameter;
   if (param) {
-    chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
+    chooseSports = param
+    //replace(/[^\w\s\u4e00-\u9fa5]/g, '');
   } else {
-    chooseSports = setting.selected;
+    chooseSports = setting.selected || '意甲'
   }
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
@@ -158,7 +159,7 @@ async function main(family) {
         ? '#FCA100' : '#00C400';
       indexText.textColor = new Color(textColor);
       teamStack.addSpacer(8);
-      console.log(team.teamLogo)
+      
       // 队标
       const teamLogoUrl = team.teamLogo || ''; // 修复潜在错误
       if (teamLogoUrl) {
