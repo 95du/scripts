@@ -141,7 +141,6 @@ async function main(family) {
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
-    setBackground(widget);
     
     const maxCol = family === 'medium' ? 6 : 15;
     for (let i = 0; i < maxCol; i++) {
@@ -213,6 +212,8 @@ async function main(family) {
     
     if (setting.alwaysDark) {
       widget.backgroundColor =  Color.black();
+    } else {
+      await setBackground(widget);
     }
     
     if (config.runsInApp) {
