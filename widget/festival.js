@@ -166,9 +166,9 @@ const setBackground = async (widget, daysUntil, term) => {
     const y = 0.5 + 0.5 * Math.sin(radianAngle);
     gradient.startPoint = new Point(1 - x, y);
     gradient.endPoint = new Point(x, 1 - y);
-    
+    console.log(solarTerms)
     gradient.locations = [0, 1];
-    gradient.colors = !solarTerms.includes(term) ? termColor : festivalColors;
+    gradient.colors = solarTerms.includes(term) ? termColor : festivalColors;
     widget.backgroundGradient = gradient;
   }
 };
