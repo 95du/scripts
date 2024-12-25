@@ -27,9 +27,9 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports = '西甲';
+  let chooseSports = '西甲'
   const param = args.widgetParameter;
-  if (param) {
+  if (param && typeof param === 'string') {
     chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
   } else {
     chooseSports = setting.selected;
@@ -135,14 +135,14 @@ async function main(family) {
   };
   
   const createWidget = async () => {
-    const url = `https://tiyu.baidu.com/match/${chooseSports}/tab/排名`;
+    const url = `https://tiyu.baidu.com/match/${encodeURIComponent(chooseSports)}/tab/${encodeURIComponent('排名')}`;
     const data = await getMatchRankings(url, chooseSports);
     const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
-    const maxCol = family === 'medium' ? 6 : family === 'large' ? 15 : 5
+    const maxCol = family === 'medium' ? 6 : 15;
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
@@ -198,10 +198,20 @@ async function main(family) {
     return widget;
   };
   
+  const createErrorWidget = () => {
+    const widget = new ListWidget();
+    const text = widget.addText('仅支持中大尺寸');
+    text.font = Font.systemFont(16);
+    text.centerAlignText();
+    return widget;
+  };
+  
   // 渲染组件
   const runWidget = async () => {
     let widget;
-    if (family !== 'small') {
+    if (family === 'small') {
+      widget = createErrorWidget();
+    } else {
       widget = await createWidget();
       await setBackground(widget);
     }
