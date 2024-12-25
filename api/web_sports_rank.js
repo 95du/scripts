@@ -119,12 +119,12 @@ async function main(family) {
       widget.backgroundGradient = gradient;
     } else {
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-      if (family === 'large' && (chooseSports === '意甲' && chooseSports === 'nba')) {
-        return
-      }
-      const random = Math.ceil(Math.random() * 6);
+      if (family === 'medium') {
+        const random = Math.ceil(Math.random() * 6);
       const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
       widget.backgroundImage = backgroundImage;
+      }
+      
       
     }
   };
