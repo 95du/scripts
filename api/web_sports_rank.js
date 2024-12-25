@@ -30,9 +30,10 @@ async function main(family) {
   let chooseSports = setting.selected;
   const param = args.widgetParameter;
   if (param) {
-    const validParam = setting.values.some(item => item.value === param.trim());
-    chooseSports = validParam ? param.trim() : setting.selected;
-  };
+    const trimmedParam = param.trim();
+    const validParam = setting.values.some(item => item.value === trimmedParam) || ['nba', 'cba'].includes(trimmedParam);
+    chooseSports = validParam ? trimmedParam : chooseSports;
+  }
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
@@ -116,6 +117,7 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
+      let backgroundImage = '';
       if (family === 'medium') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
       } else {
