@@ -118,15 +118,15 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      let backgroundImage = null;
       if (family === 'medium') {
         const random = Math.floor(Math.random() * 4);
-        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/player_${random}.png`);
+        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/player_${random}.png`);
+        widget.backgroundImage = backgroundImage;
       } else {
         const random = Math.ceil(Math.random() * 6);
-        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+        widget.backgroundImage = backgroundImage;
       }
-      widget.backgroundImage = backgroundImage;
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
   };
