@@ -201,7 +201,7 @@ async function main(family) {
   // 渲染组件
   const runWidget = async () => {
     let widget;
-    if (family === 'medium' || family === 'large') {
+    if (family !== 'small') {
       widget = await createWidget();
       await setBackground(widget);
     }
