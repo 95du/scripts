@@ -118,7 +118,7 @@ async function main(family) {
     } else {
       if (family === 'medium') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-      } else if (family === 'large') {
+      } else {
         const random = Math.ceil(Math.random() * 6);
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
       }
@@ -209,11 +209,9 @@ async function main(family) {
   // 渲染组件
   const runWidget = async () => {
     const widget = family === 'small' ? createErrorWidget() : await createWidget();
-    
+    await setBackground(widget);
     if (setting.alwaysDark) {
       widget.backgroundColor =  Color.black();
-    } else {
-      await setBackground(widget);
     }
     
     if (config.runsInApp) {
