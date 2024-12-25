@@ -29,7 +29,7 @@ async function main(family) {
   
   let chooseSports = '西甲';
   const param = args.widgetParameter;
-  if (param !== null) {
+  if (param) {
     chooseSports = param.replace(/[^\w\s\u4e00-\u9fa5]/g, '');
   } else {
     chooseSports = setting.selected;
@@ -740,7 +740,7 @@ async function main(family) {
   
   // 
   const runWidget = async () => {
-    let { widget, data = {} } = await createWidget();
+    let { widget = null, data = {} } = await createWidget();
     const result = getClosestMatch(data);
     updateCacheFile(result);
     console.log(
