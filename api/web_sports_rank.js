@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-12-21
  */
-
+await main(config.widgetFamily)
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -201,7 +201,7 @@ async function main(family) {
   // 渲染组件
   const runWidget = async () => {
     let widget;
-    if (family !== 'small') {
+    if (family === 'medium' || family === 'large') {
       widget = await createWidget();
       await setBackground(widget);
     }
