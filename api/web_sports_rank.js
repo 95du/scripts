@@ -144,7 +144,7 @@ async function main(family) {
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
     await setBackground(widget);
-    const maxCol = family === 'medium' ? 6 : data.matchData.length >= 15 ? 15 : data.matchData.length
+    const maxCol = family === 'medium' ? 6 : data.matchData.length >= 14 ? 14 : data.matchData.length
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
