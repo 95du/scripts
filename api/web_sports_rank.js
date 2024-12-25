@@ -34,7 +34,7 @@ async function main(family) {
   } else {
     chooseSports = setting.selected;
   }
-  module.notify('测试', chooseSports)
+  
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
