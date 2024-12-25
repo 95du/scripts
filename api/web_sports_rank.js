@@ -118,7 +118,7 @@ async function main(family) {
     } else {
       if (family === 'medium') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
-      } else {
+      } else if (family === 'large') {
         const random = Math.ceil(Math.random() * 6);
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
       }
@@ -141,6 +141,8 @@ async function main(family) {
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
+    setBackground(widget);
+    
     const maxCol = family === 'medium' ? 6 : 15;
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
@@ -207,13 +209,7 @@ async function main(family) {
   
   // 渲染组件
   const runWidget = async () => {
-    let widget;
-    if (family === 'small') {
-      widget = createErrorWidget();
-    } else {
-      widget = await createWidget();
-      await setBackground(widget);
-    }
+    const widget = family === 'small' ? createErrorWidget() : await createWidget();
     
     if (setting.alwaysDark) {
       widget.backgroundColor =  Color.black();
