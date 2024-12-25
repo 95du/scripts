@@ -8,7 +8,7 @@
  * 发布时间: 2024-12-21
  */
 
-async function main(family) {
+async function main(family, chooseSports = '西甲') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -27,13 +27,7 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports = setting.selected;
-  const param = args.widgetParameter;
-  if (param) {
-    const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['nba', 'cba'].includes(trimmedParam);
-    chooseSports = validParam ? trimmedParam : chooseSports;
-  }
+  
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
