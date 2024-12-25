@@ -8,7 +8,7 @@
  * 发布时间: 2024-12-21
  */
 
-async function main(family, chooseSports = '西甲') {
+async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -27,7 +27,13 @@ async function main(family, chooseSports = '西甲') {
     cacheStr,
   } = module;
   
-  
+  let chooseSports = setting.selected;
+  const param = args.widgetParameter;
+  if (param) {
+    const trimmedParam = param.trim();
+    const validParam = setting.values.some(item => item.value === trimmedParam) || ['nba', 'cba'].includes(trimmedParam);
+    chooseSports = validParam ? trimmedParam : chooseSports;
+  }
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
@@ -110,7 +116,7 @@ async function main(family, chooseSports = '西甲') {
         new Color('#00000000')
       ];
       widget.backgroundGradient = gradient;
-    } else {
+    } else if (chooseSports !== '意甲') {
       let backgroundImage = '';
       if (family === 'medium') {
         backgroundImage = await module.getCacheData(`${rootUrl}/img/background/glass_0.png`);
