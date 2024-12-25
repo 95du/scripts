@@ -8,6 +8,7 @@
  * 发布时间: 2024-12-21
  */
 
+
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -117,12 +118,14 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      if (family === 'large' && (chooseSports !== '意甲' && chooseSports !== 'nba')) {
-        const random = Math.ceil(Math.random() * 6);
-        const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
-        widget.backgroundImage = backgroundImage;
-      }
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+      if (family === 'large' && (chooseSports === '意甲' || chooseSports === 'nba')) {
+        return
+      }
+      const random = Math.ceil(Math.random() * 6);
+      const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+      widget.backgroundImage = backgroundImage;
+      
     }
   };
   
