@@ -118,14 +118,16 @@ async function main(family) {
       ];
       widget.backgroundGradient = gradient;
     } else {
-      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-      //if (family === 'medium') {
+      let backgroundImage = null;
+      if (family === 'medium') {
+        const random = Math.floor(Math.random() * 4);
+        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/player_${random}.png`);
+      } else {
         const random = Math.ceil(Math.random() * 6);
-      const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+        backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
+      }
       widget.backgroundImage = backgroundImage;
-      
-      
-      
+      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
   };
   
