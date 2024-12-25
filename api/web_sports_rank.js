@@ -212,7 +212,6 @@ async function main(family) {
     if (family === 'small') {
       widget = createErrorWidget();
     } else {
-      module.notify('测试', family)
       widget = await createWidget();
       await setBackground(widget);
     }
