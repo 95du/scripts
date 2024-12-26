@@ -100,7 +100,7 @@ async function main(family) {
     `);
     setting[leagueName] = data;
     module.writeSettings(setting);
-    return setting[leagueName];
+    return data;
   };
     
   // ====== 设置组件背景 ====== //
@@ -151,7 +151,8 @@ async function main(family) {
   
   const createWidget = async () => {
     const url = `https://tiyu.baidu.com/match/${encodeURIComponent(chooseSports)}/tab/${encodeURIComponent('排名')}`;
-    const data = await getMatchRankings(url, chooseSports);
+    const webViewData = await getMatchRankings(url, chooseSports);
+    const data = setting[chooseSports];
     const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
     
     const widget = new ListWidget();
