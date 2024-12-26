@@ -1497,16 +1497,21 @@ class _95du {
         });
         
         select.addEventListener('change', (e) => {
-        const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
-        const convertValue = value => value === 'true' ? true : (value === 'false' ? false : (!isNaN(value) ? parseFloat(value) : value));
-      
-        const convertedValues = item.multiple ? selectedValues.map(convertValue) : convertValue(selectedValues[0]);
-      
-        formData[item.name] = convertedValues;
-        invoke('changeSettings', formData);
-        selectWidth();
-      });
-      
+          const selectedValues = Array.from(e.target.selectedOptions, option => option.value);
+          const selectedOption = item.options.flatMap(option => option.values).find(opt => opt.value === selectedValues[0]);
+        
+          if (selectedOption && selectedOption.type) {
+            formData[item.name] = selectedOption.value;
+            formData['type'] = selectedOption.type;
+          } else {
+            const convertValue = value => value === 'true' ? true : (value === 'false' ? false : (!isNaN(value) ? parseFloat(value) : value));
+            formData[item.name] = item.multiple ? selectedValues.map(convertValue) : convertValue(selectedValues[0]);
+            delete formData['market'];
+          }
+          invoke('changeSettings', formData);
+          selectWidth();
+        });
+        
         const selCont = document.createElement('div');
         selCont.classList.add('form-item__input__select');
         selCont.appendChild(select);
