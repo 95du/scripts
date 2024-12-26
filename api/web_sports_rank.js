@@ -9,7 +9,7 @@
  */
 
 
-async function main(family) {
+async function main(family = 'large') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -119,7 +119,8 @@ async function main(family) {
       widget.backgroundGradient = gradient;
     } else {
       if (family === 'medium') {
-        const random = Math.floor(Math.random() * 4);
+        //const random = Math.floor(Math.random() * 4);
+        const random = module.getRandomItem([0, 3]);
         const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/player_${random}.png`);
         widget.backgroundImage = backgroundImage;
       } else {
