@@ -30,8 +30,9 @@ async function main(family) {
   let chooseSports = setting.selected;
   const param = args.widgetParameter;
   if (param) {
-    const validParam = setting.values.some(item => item.value === param.trim());
-    chooseSports = validParam ? param.trim() : setting.selected;
+    const trimmedParam = param.trim();
+    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
+    chooseSports = validParam ? trimmedParam : chooseSports;
   };
   
   const isSmall = Device.screenSize().height < 926;
@@ -88,7 +89,7 @@ async function main(family) {
       if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
-        if (chooseSports === 'nba' || chooseSports === 'cba') {
+        if (chooseSports === 'NBA' || chooseSports === 'cba') {
           return module.notify(`${roundInfo} ${matchTime}`, liveScore);
         }
         
@@ -348,7 +349,7 @@ async function main(family) {
             hasTodayMatch = isToday;
           }
         }
-        
+        console.log(diff)
         if (match.statusText === '未开赛' && diff > 0 && diff < setting.autoSwitch) {
           if (diff < nextDiff) {
             nextMatch = match;
@@ -461,16 +462,17 @@ async function main(family) {
     widget.addSpacer(5);
   };
   
-  const createTextStack = (stack, text, width, textOpacity) => {
+  const createTextStack = (stack, text, width, textOpacity, right, left) => {
     const rowStack = stack.addStack();
     rowStack.layoutHorizontally();
     rowStack.centerAlignContent();
     if (width) rowStack.size = new Size(width, 20);
+    if (left) rowStack.addSpacer();
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(13);
     rowText.textOpacity = textOpacity === true ? 0.5 : 1;
     rowText.textColor = textColor;
-    if (width) rowStack.addSpacer();
+    if (right) rowStack.addSpacer();
     return rowText;
   };
   
@@ -487,7 +489,7 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if (item.date.includes('今天') && item.matches[0].length > 0 || count > 0 && count < 2) {
+      if (item.date.includes('今天') || item.matches[0].length > 0 || count > 0 && count < 2) {
         addDateColumn(widget, item);
       }
       
@@ -495,34 +497,26 @@ async function main(family) {
         if (count >= maxMatches) break;
         count++;
         const textOpacity = match.statusText === '已结束';
-        
+        const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
         const stack = widget.addStack();
         stack.layoutHorizontally();
         stack.centerAlignContent();
         widget.addSpacer(3);
         // 比赛时间
-        const timeText = createTextStack(stack, match.time, 46, textOpacity);
+        const timeText = createTextStack(stack, match.time, 46, textOpacity, 'right');
         // 主队图标
         const homeImg = await module.getCacheData(match.team1Img, 240, `${match.team1Name}.png`);
-        const homeImage = stack.addImage(homeImg);
-        homeImage.imageSize = new Size(20, 20);
+        const homeImage = stack.addImage(homeImg).imageSize = new Size(20, 20);
         stack.addSpacer(8);
         // 主队名称
-        const team1Stack = stack.addStack();
-        team1Stack.centerAlignContent()
-        team1Stack.size = new Size(100, 20);
-        const team1NameText = createTextStack(team1Stack, match.team1Name, null, textOpacity);
-        team1Stack.addSpacer();
-        // 比分
-        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, null, textOpacity);
-        stack.addSpacer();
+        const team1NameText = createTextStack(stack, match.team1Name, null, textOpacity, 'right');
+        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, stackSize, textOpacity, 'right', 'left');
         // 客队名称
-        const team2NameText = createTextStack(stack, match.team2Name, null, textOpacity);
+        const team2NameText = createTextStack(stack, match.team2Name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
         // 客队图标
         const awayImg = await module.getCacheData(match.team2Img, 240, `${match.team2Name}.png`);
-        const awayIcon = stack.addImage(awayImg);
-        awayIcon.imageSize = new Size(20, 20);
+        const awayIcon = stack.addImage(awayImg).imageSize = new Size(20, 20);
       }
     };
     return { widget, data };
