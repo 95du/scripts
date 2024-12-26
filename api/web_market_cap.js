@@ -80,7 +80,7 @@ async function main() {
   // Request parameter
   const random = getRandomItem(setting.values);
   const stockCode = setting.selected === 'random' ? random.value : setting.selected;
-  const market = (setting.market === 'HK' || random.market === 'HK') ? 'hkstock/' : '';  
+  const market = (setting.type === 'HK' || random.type === 'HK') ? 'hkstock/' : '';  
   const tradeStatus = [2, 3, 4].includes(setting.statusCode);
   
   // ===========指数============ //
