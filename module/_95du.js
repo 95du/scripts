@@ -1506,7 +1506,7 @@ class _95du {
           } else {
             const convertValue = value => value === 'true' ? true : (value === 'false' ? false : (!isNaN(value) ? parseFloat(value) : value));
             formData[item.name] = item.multiple ? selectedValues.map(convertValue) : convertValue(selectedValues[0]);
-            delete formData['market'];
+            delete formData['type'];
           }
           invoke('changeSettings', formData);
           selectWidth();
