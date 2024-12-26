@@ -123,7 +123,7 @@ async function main(family = 'large') {
         const random = module.getRandomItem([0, 3]);
         const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/player_${random}.png`);
         widget.backgroundImage = backgroundImage;
-      } else {
+      } else if (setting.largeBg) {
         const random = Math.ceil(Math.random() * 6);
         const backgroundImage = await module.getCacheData(`${rootUrl}/img/background/football-player_${random}.png`);
         widget.backgroundImage = backgroundImage;
@@ -147,7 +147,7 @@ async function main(family = 'large') {
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
     await setBackground(widget);
-    const maxCol = family === 'medium' ? 6 : data.matchData.length >= 14 ? 14 : data.matchData.length
+    const maxCol = family === 'medium' ? 6 : data.matchData.length >= setting.lines ? setting.lines : data.matchData.length
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
