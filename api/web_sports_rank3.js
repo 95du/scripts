@@ -9,7 +9,7 @@
  */
 
 
-async function main(family) {
+async function main(family = 'large') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
