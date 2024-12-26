@@ -122,7 +122,7 @@ async function main() {
     lightColor: '#000000',
     darkColor: '#FFFFFF',
     rangeColor: '#3F8BFF',
-    cacheTime: 2,
+    lines: 13,
     selected: '西甲',
     values
   };
@@ -731,6 +731,28 @@ async function main() {
       type: 'group',
       items: [
         {
+          name: "largeBg",
+          label: "大号背景",
+          type: "switch",
+          icon: {
+            name: 'square.fill.on.circle.fill',
+            color: '#FFC294'
+          },
+          default: true
+        },
+        {
+          label: '列表数量',
+          name: 'lines',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'checklist',
+            color: '#F9A825'
+          },
+          message: '设置桌面组件的时长\n( 单位: 分钟 )',
+          desc: settings.lines
+        },
+        {
           name: "lightColor",
           label: "白天文字",
           type: "color",
@@ -967,7 +989,7 @@ async function main() {
           name: 'addSport',
           type: 'cell',
           icon: {
-            name: 'figure.australian.football',
+            name: 'figure.soccer',
             color: '#FF8800'
           },
           sta: 'removeSport'
