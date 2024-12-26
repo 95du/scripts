@@ -82,7 +82,7 @@ async function main(family = 'large') {
         });
   
         return {
-          leagueInfo,
+          league: leagueInfo,
           matchData
         };
       })();
@@ -132,10 +132,28 @@ async function main(family = 'large') {
     }
   };
   
-  const addText = (stack, text) => {
+  const createText = (stack, text, textSize) => {
     const columnText = stack.addText(text);
-    columnText.font = Font.mediumSystemFont(13);
+    columnText.font = Font.mediumSystemFont(textSize || 13);
     columnText.textColor = textColor;
+  };
+  
+  const addLeagueStack = async (widget, { league } = data) => {
+    const leagueStack = widget.addStack();
+    leagueStack.layoutHorizontally();
+    leagueStack.centerAlignContent();
+    const leagueImg = await module.getCacheData(league.logo, 240, `${league.name}.png`);
+    const icon = leagueStack.addImage(leagueImg)
+    icon.imageSize = new Size(23, 23);
+    if (league.name.includes('法国')) {
+      icon.tintColor = textColor;
+    };
+    leagueStack.addSpacer(12);
+    
+    createText(leagueStack, league.name, 16);
+    leagueStack.addSpacer();
+    createText(leagueStack, league.season, 16);
+    widget.addSpacer();
   };
   
   const createWidget = async () => {
@@ -147,6 +165,7 @@ async function main(family = 'large') {
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
     await setBackground(widget);
+    if (family === 'large') await addLeagueStack(widget, data);
     const maxCol = family === 'medium' ? 6 : data.matchData.length >= setting.lines ? setting.lines : data.matchData.length
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
@@ -176,7 +195,7 @@ async function main(family = 'large') {
       const teamInfoStack = teamStack.addStack();
       teamInfoStack.centerAlignContent();
       teamInfoStack.size = new Size(stackSize, 0);
-      addText(teamInfoStack, team.teamName);
+      createText(teamInfoStack, team.teamName);
       teamInfoStack.addSpacer(8);
       if (team.teamFill) {
         const barStack = teamInfoStack.addStack();
@@ -192,9 +211,9 @@ async function main(family = 'large') {
       teamInfoStack.addSpacer();
       
       const roundStack = teamStack.addStack();
-      addText(roundStack, team.round);
+      createText(roundStack, team.round);
       roundStack.addSpacer();
-      addText(teamStack, team.points || team.goalStats);
+      createText(teamStack, team.points || team.goalStats);
           
       if (i !== maxCol - 1) {
         widget.addSpacer(3);
