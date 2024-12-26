@@ -91,9 +91,10 @@ async function main(family) {
         if (chooseSports === 'nba' || chooseSports === 'cba') {
           return module.notify(`${roundInfo} ${matchTime}`, liveScore);
         }
-        module.notify(`${roundInfo} ${matchTime}`, liveScore);
+        
         const [goal] = await getGoalsAndPenalties(matchId);
-        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player}\n${goal.assist}`);
+        const assist = goal.assist ? `\n${goal.assist}` : '';
+        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player}${goal.assist}`);
       }
     } else if (status === '已结束') {
       if (setting[matchName]) {
