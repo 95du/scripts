@@ -94,7 +94,7 @@ async function main(family) {
         
         const [goal] = await getGoalsAndPenalties(matchId);
         const assist = goal.assist ? `\n${goal.assist}` : '';
-        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player}${goal.assist}`);
+        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player} ${goal.type}${assist}`);
       }
     } else if (status === '已结束') {
       if (setting[matchName]) {
