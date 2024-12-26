@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-12-21
  */
-//
+
 
 async function main(family = 'large') {
   const fm = FileManager.local();
@@ -151,8 +151,8 @@ async function main(family = 'large') {
   
   const createWidget = async () => {
     const url = `https://tiyu.baidu.com/match/${encodeURIComponent(chooseSports)}/tab/${encodeURIComponent('排名')}`;
-    const data = await getMatchRankings(url, chooseSports);
-    //const data = setting[chooseSports];
+    const data2 = await getMatchRankings(url, chooseSports);
+    const data = setting[chooseSports];
     const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
     
     const widget = new ListWidget();
