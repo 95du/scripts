@@ -464,7 +464,7 @@ async function main(family) {
     widget.addSpacer(5);
   };
   
-  const createTextStack = (stack, text, width, textOpacity, right, left) => {
+  const createTextStack = (stack, text, width, textOpacity, right, left, scoreColor) => {
     const rowStack = stack.addStack();
     rowStack.layoutHorizontally();
     rowStack.centerAlignContent();
@@ -473,7 +473,7 @@ async function main(family) {
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(13);
     rowText.textOpacity = textOpacity === true ? 0.5 : 1;
-    rowText.textColor = textColor;
+    rowText.textColor = scoreColor && /\d/.test(text) && !setting.autoSwitch ? Color.red() : textColor;
     if (right) rowStack.addSpacer();
     return rowText;
   };
@@ -512,7 +512,8 @@ async function main(family) {
         stack.addSpacer(8);
         // 主队名称
         const team1NameText = createTextStack(stack, match.team1Name, null, textOpacity, 'right');
-        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, stackSize, textOpacity, 'right', 'left');
+        // 比分
+        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, stackSize, textOpacity, 'right', 'left', '#FF0000');
         // 客队名称
         const team2NameText = createTextStack(stack, match.team2Name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
