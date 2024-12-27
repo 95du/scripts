@@ -664,7 +664,7 @@ async function main(family) {
     // 状态容器(中间)
     const random = Math.round(Math.random());
     const result = random === 0 
-      ? { title: '昨日', value: ystdayPower.toFixed(1) } 
+      ? { title: '昨日', value: ystdayPower } 
       : { title: '余额', value: processNumber(balance) };
     
     const stateStack = module.createStack(groupStack);
