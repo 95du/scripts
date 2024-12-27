@@ -683,7 +683,7 @@ async function main(family) {
     subText.textColor = textColor;
     subText.textOpacity = 0.8;
     subText.font = Font.mediumSystemFont(12.5);
-    stateStack.addSpacer(3);
+    stateStack.addSpacer(2);
     
     const resultText = stateStack.addText(`${result.value}`);
     resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FF0000');
