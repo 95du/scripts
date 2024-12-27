@@ -243,7 +243,7 @@ async function main(family) {
         // 提取联赛名称、赛季信息和Logo
         const header = document.querySelector('.wa-match-header');
         leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
-        leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim();
+        leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim().replace('赛季', '');
         leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
         // 获取所有包含比赛信息的元素
         const matchElements = document.querySelectorAll('.c-pull-refresh-content .wa-match-schedule-list-wrapper');
