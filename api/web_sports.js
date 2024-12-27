@@ -94,7 +94,6 @@ async function main(family) {
         }
         
         const [goal] = await getGoalsAndPenalties(matchId);
-        console.log(goal)
         const assist = goal.assist ? `\n${goal.assist} 第 ${goal.time} 分钟` : '';
         module.notify(`${liveScore}`, `${goal.player}  ${goal.type}❗️${assist}`);
       }
@@ -352,7 +351,7 @@ async function main(family) {
             hasTodayMatch = isToday;
           }
         }
-        console.log(diff)
+        
         if (match.statusText === '未开赛' && diff > 0 && diff < setting.switchTime) {
           if (diff < nextDiff) {
             nextMatch = match;
@@ -363,7 +362,7 @@ async function main(family) {
       }
     };
     // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
-    if (nextDiff > 25 && lastEndedMatch && nextMatch || nextDiff >= -125) {
+    if (nextDiff > 25 && lastEndedMatch && nextMatch && nextDiff >= -125) {
       return {
         matches: lastEndedMatch,
         nextDiff,
@@ -492,7 +491,7 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if (item.date.includes('今天') && item.matches[0].length > 0 || count > 0 && count < 2) {
+      if (item.date.includes('今天') && item.matches[0].statusText !== '已结束' || count > 0 && count < 2) {
         addDateColumn(widget, item);
       }
       
