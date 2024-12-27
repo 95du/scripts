@@ -57,13 +57,13 @@ async function main(family) {
   };
   
   // 更新赛程文件
-  const updateCacheFile = ({ matches, hasTodayMatch } = result) => {
+  const updateCacheFile = ({ matches, diff, hasTodayMatch } = result) => {
     const filename = `${chooseSports}.html`;
     const filePath = fm.joinPath(cacheStr, filename);
     if (fm.fileExists(filePath)) {
-      if (matches?.statusText === '进行中' || hasTodayMatch) {
+      if (matches?.statusText === '进行中' || (diff > 0 && diff < 60) || hasTodayMatch) {
         fm.remove(filePath);
-        console.log('更新' + filename);
+        console.log(diff);
       }
     }
   };
@@ -94,8 +94,9 @@ async function main(family) {
         }
         
         const [goal] = await getGoalsAndPenalties(matchId);
-        const assist = goal.assist ? `\n${goal.assist}` : '';
-        module.notify(`${roundInfo}  ${liveScore}`, `${goal.player} ${goal.type}${assist}`);
+        console.log(goal)
+        const assist = goal.assist ? `\n${goal.assist} 第 ${goal.time} 分钟` : '';
+        module.notify(`${liveScore}`, `${goal.player}  ${goal.type}❗️${assist}`);
       }
     } else if (status === '已结束') {
       if (setting[matchName]) {
@@ -122,11 +123,13 @@ async function main(family) {
         items.forEach(item => {
           const time = item.querySelector('.events-item-mid')?.textContent.trim().replace("'", "");
           // 主场信息
-          const homePlayer = item.querySelector('.events-item-left')?.textContent.trim();
-          const homeAssist = item.querySelector('.events-item-left .c-line-clamp1 span')?.textContent.trim();
+          const homeElement = item.querySelector('.events-item-left');
+          const homePlayer = homeElement?.querySelector('p')?.textContent.trim();
+          const homeAssist = homeElement?.querySelector('.c-line-clamp1 span')?.textContent.trim();
           // 客场信息
-          const awayPlayer = item.querySelector('.events-item-right p')?.textContent.trim();
-          const awayAssist = item.querySelector('.events-item-right .c-line-clamp1 span')?.textContent.trim();
+          const awayElement = item.querySelector('.events-item-right');
+          const awayPlayer = awayElement?.querySelector('p')?.textContent.trim();
+          const awayAssist = awayElement?.querySelector('.c-line-clamp1 span')?.textContent.trim();
           // 进球类型
           const isGoal = item.querySelector('.events-item-mid.events-item-goal') !== null;
           const isPenalty = item.querySelector('.events-item-mid.events-item-kick') !== null;
@@ -350,7 +353,7 @@ async function main(family) {
           }
         }
         console.log(diff)
-        if (match.statusText === '未开赛' && diff > 0 && diff < setting.autoSwitch) {
+        if (match.statusText === '未开赛' && diff > 0 && diff < setting.switchTime) {
           if (diff < nextDiff) {
             nextMatch = match;
             nextDiff = Math.ceil(diff);
@@ -360,7 +363,7 @@ async function main(family) {
       }
     };
     // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
-    if (nextDiff > 25 && lastEndedMatch && nextMatch || nextDiff >= -130) {
+    if (nextDiff > 25 && lastEndedMatch && nextMatch || nextDiff >= -125) {
       return {
         matches: lastEndedMatch,
         nextDiff,
@@ -489,7 +492,7 @@ async function main(family) {
     await addLeagueStack(widget, data);
     
     for (const item of data.items) {
-      if (item.date.includes('今天') || item.matches[0].length > 0 || count > 0 && count < 2) {
+      if (item.date.includes('今天') && item.matches[0].length > 0 || count > 0 && count < 2) {
         addDateColumn(widget, item);
       }
       
