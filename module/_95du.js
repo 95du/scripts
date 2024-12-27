@@ -1119,7 +1119,7 @@ class _95du {
   
   buttonPopup = async ({
     settings,
-    widgetMessage = '组件描述',
+    widgetMessage = '组件简介',
     formItems,
     avatarInfo,
     appImage,
