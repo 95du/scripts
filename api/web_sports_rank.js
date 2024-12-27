@@ -29,65 +29,62 @@ async function main(family = 'large') {
   } = module;
   
   let chooseSports = setting.selected;
+  if (setting.type) {
+    chooseSports = 'NBA'
+  }
   const param = args.widgetParameter;
   if (param != null) {
-    const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['nba', 'cba'].includes(trimmedParam);
-    chooseSports = validParam ? trimmedParam : chooseSports;
-  }
+    if (param.includes('东部')) {
+      setting.type = '常规赛东部排名'
+      chooseSports = 'NBA'
+    } else if (param.includes('西部')) {
+      setting.type = '常规赛西部排名'
+      chooseSports = 'NBA'
+    } else {
+      const trimmedParam = param.trim();
+      const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('cba');
+      chooseSports = validParam ? trimmedParam : chooseSports;
+    }
+  };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
-  const getMatchRankings = async (url, leagueName) => {
+  const getMatchRankings = async (url, leagueName, type = '球队名称') => {
     const html = await module.getCacheData(url, 4, `${leagueName}.html`);
     const webView = new WebView();
     await webView.loadHTML(html);
   
     const data = await webView.evaluateJavaScript(`
-      (() => {
-        const leagueInfo = {};
-        const matchData = [];
-  
-        // 提取联赛名称、赛季信息和Logo
-        const header = document.querySelector('.wa-match-header');
-        leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
-        leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim();
-        leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
-  
-        // 获取所有的队伍列表
-        const teamElements = document.querySelectorAll('.team-list-item');
-  
-        teamElements.forEach(team => {
-          const teamFill = team.querySelector('.team-fill')?.textContent.trim() || null;
-          const teamRank = team.querySelector('.team-rank')?.textContent.trim();
-          const teamLogo = team.querySelector('.team-logo')?.style.backgroundImage
-            .match(/https.+/)?.[0].replace(/["\\)]+$/, '') || '';
-          const teamName = team.querySelector('.team-name')?.textContent.trim();
-          const round = team.querySelectorAll('.rank-list-item')[0]?.textContent.trim();
-          const winDrawLoss = team.querySelectorAll('.rank-list-item')[1]?.textContent.trim();
-          const goalStats = team.querySelectorAll('.rank-list-item')[2]?.textContent.trim();
-          const points = team.querySelectorAll('.rank-list-item')[3]?.textContent.trim();
-  
-          matchData.push({
-            teamFill,
-            teamRank,
-            teamLogo,
-            teamName,
-            round,
-            winDrawLoss,
-            goalStats,
-            points
-          });
-        });
-  
-        return {
-          league: leagueInfo,
-          matchData
-        };
-      })();
-    `);
-  
+    (() => {
+      const rankSection = Array.from(document.querySelectorAll('.component-c-rank-common')).find(section => section.querySelector('.rank-item')?.textContent.trim() === \`${type}\`);
+
+      // 获取队伍信息
+      const teamElements = rankSection.querySelectorAll('.team-list-item');
+      const matchData = Array.from(teamElements).map(team => ({
+        teamFill: team.querySelector('.team-fill')?.textContent.trim() || null,
+        teamRank: team.querySelector('.team-rank')?.textContent.trim(),
+        teamLogo: team.querySelector('.team-logo')?.style.backgroundImage
+          ?.match(/https.+/)?.[0].replace(/["\\)]+$/, '') || '',
+        teamName: team.querySelector('.team-name')?.textContent.trim(),
+        round: team.querySelectorAll('.rank-list-item')[0]?.textContent.trim() || null,
+        winDrawLoss: team.querySelectorAll('.rank-list-item')[1]?.textContent.trim() || null,
+        goalStats: team.querySelectorAll('.rank-list-item')[2]?.textContent.trim() || null,
+        points: team.querySelectorAll('.rank-list-item')[3]?.textContent.trim() || null
+      }));
+
+      // 获取联赛信息
+      const leagueInfo = {};
+      const header = document.querySelector('.wa-match-header');
+      leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
+      leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim();
+      leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
+
+      return {
+        league: leagueInfo,
+        matchData
+      };
+    })();`);
     return data;
   };
     
@@ -158,15 +155,16 @@ async function main(family = 'large') {
   
   const createWidget = async () => {
     const url = `https://tiyu.baidu.com/match/${encodeURIComponent(chooseSports)}/tab/${encodeURIComponent('排名')}`;
-    const data = await getMatchRankings(url, chooseSports);
-    const stackSize = (chooseSports.includes('nba') || chooseSports.includes('cba')) ? 150 : 200;
+    const data = await getMatchRankings(url, chooseSports, setting.type || '球队名称');
+    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 150 : 200
+    const maxCol = family === 'medium' ? 6 : data.matchData.length >= setting.lines ? setting.lines : data.matchData.length;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
     widget.url = url;
     await setBackground(widget);
     if (family === 'large') await addLeagueStack(widget, data);
-    const maxCol = family === 'medium' ? 6 : data.matchData.length >= setting.lines ? setting.lines : data.matchData.length
+    
     for (let i = 0; i < maxCol; i++) {
       const team = data.matchData[i];
       const teamStack = widget.addStack();
