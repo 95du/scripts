@@ -63,7 +63,7 @@ async function main(family) {
     left: isSmall ? 10 : 15,
     gapMed: isSmall ? 5 : null,
     gap: isSmall ? 8 : 10,
-    gapStack: isSmall ? 3 : 4,
+    gapStack: isSmall ? 3 : 5,
     amountSize: isSmall ? 25.5 : 27,
     padding: isSmall ? 12 : 15,
     barHeight: isSmall ? 45 : 46.6,
@@ -670,7 +670,7 @@ async function main(family) {
     const stateStack = module.createStack(groupStack);
     const borStack = stateStack.addStack();
     borStack.backgroundColor = new Color('#0094FF');
-    borStack.setPadding(2, lay.gapStack, 2, lay.gapStack);
+    borStack.setPadding(1.5, lay.gapStack, 1.5, lay.gapStack);
     borStack.cornerRadius = 5;
     
     const titleText = borStack.addText(userName);
@@ -683,12 +683,11 @@ async function main(family) {
     subText.textColor = textColor;
     subText.textOpacity = 0.8;
     subText.font = Font.mediumSystemFont(12.5);
-    stateStack.addSpacer(2);
+    stateStack.addSpacer(3);
     
     const resultText = stateStack.addText(`${result.value}`);
     resultText.textColor = new Color(result.value < 0 ? '#FF6800' : '#FF0000');
     resultText.font = Font.boldSystemFont(14);
-    stateStack.addSpacer(10);
     groupStack.addSpacer(lay.gap);
     
     // 第二组
