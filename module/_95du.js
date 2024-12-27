@@ -1119,7 +1119,7 @@ class _95du {
   
   buttonPopup = async ({
     settings,
-    widgetMessage = '',
+    widgetMessage = '组件描述',
     formItems,
     avatarInfo,
     appImage,
@@ -1506,7 +1506,7 @@ class _95du {
           } else {
             const convertValue = value => value === 'true' ? true : (value === 'false' ? false : (!isNaN(value) ? parseFloat(value) : value));
             formData[item.name] = item.multiple ? selectedValues.map(convertValue) : convertValue(selectedValues[0]);
-            delete formData['type'];
+            formData['type'] = null;
           }
           invoke('changeSettings', formData);
           selectWidth();
