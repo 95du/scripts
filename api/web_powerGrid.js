@@ -63,7 +63,7 @@ async function main(family) {
     left: isSmall ? 10 : 15,
     gapMed: isSmall ? 5 : null,
     gap: isSmall ? 8 : 10,
-    gapStack: isSmall ? 4 : 6,
+    gapStack: isSmall ? 3 : 4,
     amountSize: isSmall ? 25.5 : 27,
     padding: isSmall ? 12 : 15,
     barHeight: isSmall ? 45 : 46.6,
