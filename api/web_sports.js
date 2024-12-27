@@ -642,7 +642,7 @@ async function main(family) {
     }
   };
   
-  const createHeading = async (infoStack, roundInfo, matchTime, { league } = data) => {
+  const createHeading = async (infoStack, roundInfo, matchTime) => {
     infoStack.layoutHorizontally();
     infoStack.size = new Size(0, 25);
     infoStack.addSpacer();
@@ -650,14 +650,6 @@ async function main(family) {
     infoText.font = Font.systemFont(15);
     infoText.textColor = textColor; 
     infoStack.addSpacer();
-    
-    if (setting.rightIcon) {
-      infoStack.setPadding(0, 25, 0, 0)
-      const logoStack = infoStack.addStack();
-      const logo = await module.getCacheData(league.logo, 240, `${league.name}.png`);
-      logoStack.size = new Size(25, 25)
-      logoStack.backgroundImage = logo;
-    }
   };
   
   // 创建组件
@@ -684,7 +676,7 @@ async function main(family) {
     widget.url = matches.analyseUrl;
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
-    await createHeading(infoStack, roundInfo, matchTime, data);
+    await createHeading(infoStack, roundInfo, matchTime);
     widget.addSpacer(3);
     
     const mainStack = widget.addStack();
@@ -743,7 +735,7 @@ async function main(family) {
     console.log(
       JSON.stringify(result, null, 2)
     );
-    if (result.matches) {
+    if (result.matches && setting.autoSwitch) {
       widget = await createLiveWidget(result, data);
     }
     
