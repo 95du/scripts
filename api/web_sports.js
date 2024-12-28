@@ -44,6 +44,7 @@ async function main(family) {
   };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
+  const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   
   /**
    * 存储当前设置
@@ -56,24 +57,11 @@ async function main(family) {
     ));
   };
   
-  // 更新赛程文件
-  const updateCacheFile = ({ matches, diff, hasTodayMatch } = result) => {
-    const filename = `${chooseSports}.html`;
-    const filePath = fm.joinPath(cacheStr, filename);
-    if (fm.fileExists(filePath)) {
-      if (matches?.statusText === '进行中' || (diff > 0 && diff < 60) || hasTodayMatch) {
-        fm.remove(filePath);
-        console.log(diff);
-      }
-    }
-  };
-  
   // 实时比分通知
   const scoreNotice = async (
     matchId,
-    status, 
-    roundInfo, 
-    matchTime, 
+    matchStatus, 
+    liveStageText, 
     team1Name, 
     team1Score, 
     team2Name, 
@@ -82,7 +70,7 @@ async function main(family) {
     const matchName = `${team1Name}_${team2Name}`;
     const liveScore = `${team1Name}  ${team1Score} - ${team2Score}  ${team2Name}`;
     
-    if (status === '进行中') {
+    if (matchStatus === '1') {
       if (!setting[matchName]) {
         setting[matchName] = { team1Score: 0, team2Score: 0 };
       }
@@ -90,14 +78,15 @@ async function main(family) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
         if (chooseSports === 'NBA' || chooseSports === 'cba') {
-          return module.notify(`${roundInfo} ${matchTime}`, liveScore);
+          return module.notify(liveStageText, liveScore)
         }
-        
-        const [goal] = await getGoalsAndPenalties(matchId);
-        const assist = goal.assist ? `\n${goal.assist} 第 ${goal.time} 分钟` : '';
-        module.notify(`${liveScore}`, `${goal.player}  ${goal.type}❗️${assist}`);
+        // 进球事件
+        const events = await getGoalsAndPenalties(matchId);
+        const goal = events.left?.goal || events.right?.goal;
+        const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} 第 ${events.passedTime} 分钟` : '';
+        module.notify(`${liveScore}`, `${goal.playerName}  ${events.goaltype}❗️${assist}`);
       }
-    } else if (status === '已结束') {
+    } else if (matchStatus === '2') {
       if (setting[matchName]) {
         delete setting[matchName];
         writeSettings(setting);
@@ -108,210 +97,98 @@ async function main(family) {
   
   // 进球事件
   const getGoalsAndPenalties = async (matchId) => {
-    const url = `https://tiyu.baidu.com/live/detail/${matchId}/tab/赛况`;
+    const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
     const request = new Request(url);
     request.timeoutInterval = 5;
-    const html = await request.loadString();
-    const webView = new WebView();
-    await webView.loadHTML(html);
-  
-    const events = await webView.evaluateJavaScript(`
-      (() => {
-        const events = [];
-        const items = document.querySelectorAll('.match-events-item.c-row');
-        items.forEach(item => {
-          const time = item.querySelector('.events-item-mid')?.textContent.trim().replace("'", "");
-          // 主场信息
-          const homeElement = item.querySelector('.events-item-left');
-          const homePlayer = homeElement?.querySelector('p')?.textContent.trim();
-          const homeAssist = homeElement?.querySelector('.c-line-clamp1 span')?.textContent.trim();
-          // 客场信息
-          const awayElement = item.querySelector('.events-item-right');
-          const awayPlayer = awayElement?.querySelector('p')?.textContent.trim();
-          const awayAssist = awayElement?.querySelector('.c-line-clamp1 span')?.textContent.trim();
-          // 进球类型
-          const isGoal = item.querySelector('.events-item-mid.events-item-goal') !== null;
-          const isPenalty = item.querySelector('.events-item-mid.events-item-kick') !== null;
-          const isOwnGoal = item.querySelector('.events-item-mid.wulong-goal') !== null;
-        const eventType = isOwnGoal ? '乌龙球' : isPenalty ? '点球' : isGoal ? '进球' : null;
-          if (!eventType) return;
-  
-          // 主场事件
-          if (homePlayer) {
-            events.push({
-              time,
-              side: '主场',
-              type: eventType,
-              player: homePlayer,
-              assist: homeAssist ? \`\${homeAssist} (助攻)\` : null
-            });
-          }
-  
-          // 客场事件
-          if (awayPlayer) {
-            events.push({
-              time,
-              side: '客场',
-              type: eventType,
-              player: awayPlayer,
-              assist: awayAssist ? \`\${awayAssist} (助攻)\` : null
-            });
-          }
-        });
-        return events;
-      })();
-    `);
-    return events;
+    
+    try {
+      const html = await request.loadString();
+      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+      const value = JSON.parse(match);
+      const tabsList = value.data.data.tabsList;
+      const result = tabsList.find(tab => tab.data && tab.data.events);
+      // 如果找到结果，则处理 events
+      if (result) {
+        const { list } = result.data.events;
+        const events = list.filter(event => [
+          '进球', 
+          '点球', 
+          '点球不进', 
+          '乌龙球'
+        ].includes(event.goaltype || event.type));
+        const firstObject = events[0];
+        if (firstObject) {
+          return firstObject;
+        }
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
   
   // 获取赛况
-  const getRaceSchedule = async (url) => {
+  const getRaceSchedule = async (matchId) => {
+    const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
     const request = new Request(url);
     request.timeoutInterval = 5;
-    const html = await request.loadString();
-    const webView = new WebView();
-    await webView.loadHTML(html);
-  
-    const data = await webView.evaluateJavaScript(`
-      (() => {
-        const roundInfo = document.querySelector('.info-time span:first-child')?.innerText || '';
-        const matchTime = document.querySelector('.info-time span:last-child')?.innerText || '';
-        const team1Name = document.querySelector('.header-team-name .team-name')?.innerText || '';
-        const team1Img = (document.querySelector('.header-team-logo')?.style.backgroundImage.match(/https.+(?=\\))/)?.[0] || '').replace(/"$/, '');
-        const team2Name = document.querySelector('.header-team.team-right .team-name')?.innerText || '';
-        const team2Img = (document.querySelector('.header-team.team-right .header-team-logo-wrap .header-team-logo')?.style.backgroundImage.match(/https.+(?=\\))/)?.[0] || '').replace(/"$/, '');
-        const vsLogo = document.querySelector('.info-vs-img-box img') ? document.querySelector('.info-vs-img-box img').src : null;
-        // 获取赛前预测的百分比
-        const preMatchPredictions = [...document.querySelectorAll('.analysis-result-compare .compare-team p')];
-        const team1Prediction = preMatchPredictions[0]?.innerText.trim() || '0%';
-        const team2Prediction = preMatchPredictions[2]?.innerText.trim() || '0%';
-        // 赔率数据提取
-        const oddsDescription = document.querySelector('.analysis-result-history')?.innerText.trim() || '';
-        const oddsCount = document.querySelector('.analysis-result-history span.c-gap-left-small')?.innerText.trim() || '';
-        const rates = [...document.querySelectorAll('.analysis-result-history + .wa-livedetail-progressbar .progressbar-rate span')];
-        const homeWin = rates[0]?.innerText.replace('%', '').trim() || '0';
-       
-        let draw = '0';
-        let awayWin = '0';
-        if (rates.length === 2) {
-          awayWin = rates[1]?.innerText.replace('%', '').trim() || '0';
-        } else if (rates.length === 3) {
-          draw = rates[1]?.innerText.replace('%', '').replace('平局', '').trim() || '0';
-          awayWin = rates[2]?.innerText.replace('%', '').trim() || '0';
-        };
-  
-        return {
-          roundInfo,
-          matchTime,
-          vsLogo,
-          team1: {
-            name: team1Name,
-            img: team1Img,
-            prediction: team1Prediction
-          },
-          team2: {
-            name: team2Name,
-            img: team2Img,
-            prediction: team2Prediction
-          },
-          odds: {
-            count: oddsCount,
-            total: 100,
-            homeWin,
-            draw,
-            awayWin,
-            description: oddsDescription
-          }
-        };
-      })();
-    `);
-    return data;
+    
+    try {
+      const { tplData } = await request.loadJSON();
+      const value = tplData.data;
+      const { victory, draw, lost } = value.tabsList[0].data.result.percentage;
+      const percentage = {
+        total: 100,
+        draw: parseInt(draw, 10),
+        homeWin: parseInt(victory, 10),
+        awayWin: parseInt(lost, 10),
+      };
+      return { header: value.header, percentage };
+    } catch (error) {
+      console.log(error);
+    }
   };
   
   // 实时赛况分析
-  const getRaceScheduleList = async (url) => {
-    const html = await module.getCacheData(url, 4, `${chooseSports}.html`);
-    const webView = new WebView();
-    await webView.loadHTML(html);
-  
-    const data = await webView.evaluateJavaScript(`
-      (() => {
-        const leagueInfo = {};
-        const matchData = [];
-  
-        // 提取联赛名称、赛季信息和Logo
-        const header = document.querySelector('.wa-match-header');
-        leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
-        leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim().replace('赛季', '');
-        leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
-        // 获取所有包含比赛信息的元素
-        const matchElements = document.querySelectorAll('.c-pull-refresh-content .wa-match-schedule-list-wrapper');
-        
-        matchElements.forEach(wrapper => {
-          const date = wrapper.querySelector('.wa-match-schedule-list-title .date')?.textContent.trim();
-          const listNum = wrapper.querySelector('.wa-match-schedule-list-title .list-num')?.textContent.trim();
-          
-          const matchItems = wrapper.querySelectorAll('.wa-match-schedule-list-item');
-          const matches = [];
-          matchItems.forEach(item => {
-            const time = item.querySelector('.vs-info-date-content p:first-of-type')?.textContent.trim();
-            const round = item.querySelector('.vs-info-date-content p:nth-of-type(2)')?.textContent.trim();
-            const analyseUrl = 'https:' + item.querySelector('a')?.getAttribute('href').replace(/&amp;/g, '&').replace(/赛况/, '分析');
-            // 使用正则提取 matchId
-            const matchId = analyseUrl.match(/\\/detail\\/(.*?)\\/tab/)?.[1] || null;
-            const indexApi = 'https://tiyu.baidu.com/go/api/matchDetail/odds?matchId=' + matchId;
-            // 提取比赛状态
-            const statusText = item.querySelector('.status-text')?.textContent.trim() || '已结束';
-            // 提取队伍信息和图片
-            const team1Name = item.querySelectorAll('.team-row-name')[0]?.textContent.trim();
-            const team1Score = item.querySelectorAll('.team-row-score')[0]?.textContent.trim();
-            const team1Img = item.querySelectorAll('.team-row-logo img')[0]?.src.replace(/&amp;/g, '&');
-            const team2Name = item.querySelectorAll('.team-row-name')[1]?.textContent.trim();
-            const team2Score = item.querySelectorAll('.team-row-score')[1]?.textContent.trim();
-            const team2Img = item.querySelectorAll('.team-row-logo img')[1]?.src.replace(/&amp;/g, '&');
-  
-            if (time && round && team1Name && team2Name) {
-              matches.push({
-                time,
-                round,
-                analyseUrl,
-                indexApi,
-                matchId,
-                statusText,
-                team1Name,
-                team1Score,
-                team1Img,
-                team2Name,
-                team2Score,
-                team2Img
-              });
-            }
-          });
-  
-          if (matches.length > 0) {
-            matchData.push({
-              date,
-              listNum,
-              matches
-            });
+  const getRaceScheduleList = async (chooseSports) => {
+    const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
+    const request = new Request(url);
+request.timeoutInterval = 5;
+
+    try {
+      const { tplData } = await request.loadJSON();
+      const tabsData = tplData.data.tabsList[0].data;
+      const hasMatchStatus2 = (list) => list.some(match => 
+        match.matchStatus === '2');
+    
+      let data = [];
+      let foundMatchStatus2 = false;
+      let lastStatus2Item = null;
+      for (let i = tabsData.length - 1; i >= 0; i--) {
+        const item = tabsData[i];
+        if (hasMatchStatus2(item.list)) {
+          if (!foundMatchStatus2) {
+            foundMatchStatus2 = true;
+            const completedMatches = item.list.filter(match => match.matchStatus === '2');
+            item.list = [completedMatches[completedMatches.length - 1]];
+            lastStatus2Item = item;
           }
-        });
-  
-        return {
-          league: leagueInfo,
-          items: matchData
-        };
-      })();
-    `);
-    return data;
+        } else {
+          data.unshift(item);
+        }
+      }
+    
+      if (lastStatus2Item) {
+        data.unshift(lastStatus2Item)
+      }
+      return { data, header: tplData.data.header };
+    } catch (error) {
+      console.log(error);
+    }
   };
   
   // 计算剩余多少分钟
   const getMinutesDiff = (dateStr) => {
-    const currentYear = new Date().getFullYear();
-    const targetDate = dateStr.match(/^\d{4}-/)
-      ? new Date(`${dateStr.replace(' ', 'T')}:00`)
-      : new Date(`${currentYear}-${dateStr.replace(' ', 'T')}:00`);
+    const targetDate = new Date(`${dateStr.replace(' ', 'T')}:00`)
     if (isNaN(targetDate.getTime())) {
       return null;
     }
@@ -334,17 +211,13 @@ async function main(family) {
     let lastEndedMatch = null;
     let hasTodayMatch = false;
     
-    for (const item of data.items) {
-      const isToday = item.date.includes('今天');
+    for (const item of data) {
+      const isToday = item.dateText.includes('今天');
       if (!isToday) continue
-      for (const match of item.matches) {
-        const matchDate = item.date;
-        const matchTime = match.time;
-        const dateMatch = matchDate.match(/\d{2,4}-\d{2}-\d{2}|\d{2}-\d{2}/)?.[0];
-        const diff = getMinutesDiff(`${dateMatch} ${matchTime}`);
-  
-        if (match.statusText === '进行中') return { matches: match };
-        if (match.statusText === '已结束') {
+      for (const match of item.list) {
+        const diff = getMinutesDiff(match.startTime);
+        if (match.status === '1') return { matches: match };
+        if (match.status === '2') {
           if (!lastEndedMatch || diff < getMinutesDiff(lastEndedMatch.time)) {
             lastEndedMatch = match;
             nextDiff = Math.ceil(diff);
@@ -352,7 +225,7 @@ async function main(family) {
           }
         }
         
-        if (match.statusText === '未开赛' && diff > 0 && diff < setting.switchTime) {
+        if (match.matchStatus === '0' && diff > 0 && diff < setting.switchTime) {
           if (diff < nextDiff) {
             nextMatch = match;
             nextDiff = Math.ceil(diff);
@@ -427,40 +300,40 @@ async function main(family) {
     }
   };
   
-  const addLeagueStack = async (widget, { league } = data) => {
+  const addLeagueStack = async (widget, header) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
-    const leagueImg = await module.getCacheData(league.logo, 240, `${league.name}.png`);
+    const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
     const icon = leagueStack.addImage(leagueImg)
     icon.imageSize = new Size(23, 23);
-    if (league.name.includes('法国')) {
+    if (header.name.includes('法国')) {
       icon.tintColor = textColor;
     };
     leagueStack.addSpacer(12);
     
-    createText(leagueStack, league.name, 16, true);
+    createText(leagueStack, header.name, 16);
     leagueStack.addSpacer();
-    createText(leagueStack, league.season, 16, true);
+    createText(leagueStack, header.info, 16);
     widget.addSpacer();
   };
   
   // 日期栏
-  const addDateColumn = (widget, item) => {
+  const addDateColumn = (widget, length, item) => {
     const dateStack = widget.addStack();
     dateStack.layoutHorizontally();
     dateStack.centerAlignContent();
     dateStack.cornerRadius = 2;
     dateStack.setPadding(1, 0, 1, 0);
-    dateStack.backgroundColor = item.date.includes('今天') 
+    dateStack.backgroundColor = item.dateText.includes('今天') 
       ? new Color('#CCC400', 0.15) 
-      : item.date.includes('明天') 
+      : item.dateText.includes('明天') 
       ? new Color('#8C7CFF', 0.15) 
       : new Color('#999999', 0.2);
     
-    createText(dateStack, item.date.replace(/\//, '   '), 13, null, 0.8);
+    createText(dateStack, item.dateText.replace(/\//, '   '), 13, null, 0.8);
     dateStack.addSpacer();
-    createText(dateStack, item.listNum, 13, null, 0.8);
+    createText(dateStack, `${length}场比赛`, 13, null, 0.8);
     widget.addSpacer(5);
   };
   
@@ -480,45 +353,46 @@ async function main(family) {
   
   // 创建组件
   const createWidget = async () => {
-    const url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;
-    const data = await getRaceScheduleList(url);
-    const maxMatches = 4
-    let count = 0;
+    const { data, header} = await getRaceScheduleList(chooseSports);
     
     const widget = new ListWidget();
-    widget.url = url;
+    widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
     widget.setPadding(15, 17, 15, 17);
-    await addLeagueStack(widget, data);
     
-    for (const item of data.items) {
-      if (item.date.includes('今天') && item.matches[0].statusText !== '已结束' || count > 0 && count < 2) {
-        addDateColumn(widget, item);
+    const maxMatches = 4
+    let count = 0;
+    for (const item of data) {
+      if (count === 0) await addLeagueStack(widget, header);
+      if (item.dateText.includes('今天') && item.list[0].matchStatus !== '2' || count > 0 && count < 2) {
+        addDateColumn(widget, item.list.length, item);
       }
       
-      for (const match of item.matches) { // 如果已获取足够的比赛，跳出外层循环
+      for (const match of item.list) {
         if (count >= maxMatches) break;
         count++;
-        const textOpacity = match.statusText === '已结束';
+        const { leftLogo, rightLogo, time, matchId } = match;
+        const textOpacity = match.matchStatus === '2';
         const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
+        
         const stack = widget.addStack();
         stack.layoutHorizontally();
         stack.centerAlignContent();
         widget.addSpacer(3);
         // 比赛时间
-        const timeText = createTextStack(stack, match.time, 46, textOpacity, 'right');
+        const timeText = createTextStack(stack, time, 46, textOpacity, 'right');
         // 主队图标
-        const homeImg = await module.getCacheData(match.team1Img, 240, `${match.team1Name}.png`);
+        const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogo.name}.png`);
         const homeImage = stack.addImage(homeImg).imageSize = new Size(20, 20);
         stack.addSpacer(8);
         // 主队名称
-        const team1NameText = createTextStack(stack, match.team1Name, null, textOpacity, 'right');
+        const team1NameText = createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const scoreText = createTextStack(stack, `${match.team1Score} - ${match.team2Score}`, stackSize, textOpacity, 'right', 'left', '#FF0000');
+        const scoreText = createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', '#FF0000');
         // 客队名称
-        const team2NameText = createTextStack(stack, match.team2Name, null, textOpacity, null, 'left');
+        const team2NameText = createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
         // 客队图标
-        const awayImg = await module.getCacheData(match.team2Img, 240, `${match.team2Name}.png`);
+        const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
         const awayIcon = stack.addImage(awayImg).imageSize = new Size(20, 20);
       }
     };
@@ -642,11 +516,16 @@ async function main(family) {
     }
   };
   
-  const createHeading = async (infoStack, roundInfo, matchTime) => {
+  /**
+   * 如果header.liveStage === 中场
+   * 获取matchDesc ➕ dateFormat 
+   * 否则liveStageText
+   */
+  const createHeading = (infoStack, headerLiveStageText) => {
     infoStack.layoutHorizontally();
     infoStack.size = new Size(0, 25);
     infoStack.addSpacer();
-    const infoText = infoStack.addText(`${roundInfo}  ${matchTime}`);
+    const infoText = infoStack.addText( headerLiveStageText);
     infoText.font = Font.systemFont(15);
     infoText.textColor = textColor; 
     infoStack.addSpacer();
@@ -655,37 +534,43 @@ async function main(family) {
   // 创建组件
   const createLiveWidget = async (result, data) => {
     const { matches, hasTodayMatch, closestDiff } = result;
-    const status = matches.statusText;
-    const raceScheduleData = await getRaceSchedule(matches.analyseUrl);
-    const { total, homeWin, draw, awayWin } = raceScheduleData.odds;
+    const { header, percentage } = await getRaceSchedule(matches.matchId);
+    const { total, homeWin, draw, awayWin } = percentage;
     
     const {
-      roundInfo,
-      matchTime,
-      team1: { name: team1Name, img: team1Img },
-      team2: { name: team2Name, img: team2Img }
-    } = raceScheduleData;
+      key,
+      matchStatus,
+      matchStatusText,
+      matchDesc,
+      dateFormat,
+      liveStage,
+      liveStageText,
+      leftLogo,
+      leftGoal,
+      rightLogo,
+      rightGoal,
+    } = header;
     
-    const leagueLogo = data.league.logo
-    const scoreLength = matches.team1Score.length >= 2 && matches.team2Score.length >= 2;
+    const headerLiveStageText = liveStage === '中场' ? `${matchDesc}  ${dateFormat}` : liveStageText;
+    const scoreLength = leftGoal.length >= 2 && rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
-    scoreNotice(matches.matchId, status, roundInfo, matchTime, team1Name, matches.team1Score, team2Name, matches.team2Score);
+    scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
     const widget = new ListWidget();
-    widget.url = matches.analyseUrl;
+    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId || key}&tab=赛况`;
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
-    await createHeading(infoStack, roundInfo, matchTime);
+    createHeading(infoStack, headerLiveStageText);
     widget.addSpacer(3);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    await createStack(mainStack, team1Img, lay.iconSize, team1Name);
+    await createStack(mainStack, leftLogo.logo, lay.iconSize, leftLogo.name);
     mainStack.addSpacer();
     if (raceScheduleData.vsLogo) {
-      await createStack(mainStack, raceScheduleData.vsLogo, lay.vsLogoSize, null, 65);
+      await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
       const mediumStack = mainStack.addStack();
       if (scoreLength) mediumStack.size = new Size(148, 0);
@@ -695,7 +580,7 @@ async function main(family) {
       const scoreStack = mediumStack.addStack();
       scoreStack.layoutHorizontally();
       scoreStack.addSpacer();
-      const scoreText = scoreStack.addText(`${matches.team1Score} - ${matches.team2Score}`);
+      const scoreText = scoreStack.addText(`${leftGoal} - ${rightGoal}`);
       scoreText.textOpacity = 0.9;
       scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
       scoreText.textColor = textColor;
@@ -705,15 +590,15 @@ async function main(family) {
       const statusStack = mediumStack.addStack();
       statusStack.layoutHorizontally();
       statusStack.addSpacer();
-      const statusText = statusStack.addText(status || '未知');
+      const statusText = statusStack.addText(matchStatusText);
       statusText.textOpacity = 0.8;
       statusText.font = Font.mediumSystemFont(13.5);
-      statusText.textColor = status === '已结束' ? new Color(textColor.hex, 0.65) : Color.red();
+      statusText.textColor = matchStatus === '2' ? new Color(textColor.hex, 0.65) : Color.red();
       statusStack.addSpacer();
     }
     
     mainStack.addSpacer();
-    await createStack(mainStack, team2Img, lay.iconSize, team2Name);
+    await createStack(mainStack, rightLogo.logo, lay.iconSize, rightLogo.name);
     widget.addSpacer();
     
     let progressChart = createThreeStageBar(total, homeWin, draw, awayWin);
@@ -731,7 +616,6 @@ async function main(family) {
   const runWidget = async () => {
     let { widget = null, data = {} } = await createWidget();
     const result = getClosestMatch(data);
-    updateCacheFile(result);
     console.log(
       JSON.stringify(result, null, 2)
     );
