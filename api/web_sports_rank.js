@@ -28,64 +28,77 @@ async function main(family = 'large') {
     cacheStr,
   } = module;
   
+  const paramMap = {
+    '常规东部': { 
+      type: '常规赛东部排名', 
+      sport: 'NBA' 
+    },
+    '常规西部': { 
+      type: '常规赛西部排名', 
+      sport: 'NBA' 
+    },
+    '季前东部': { 
+      type: '季前赛东部排名', 
+      sport: 'NBA' 
+    },
+    '季前西部': { 
+      type: '季前赛西部排名', 
+      sport: 'NBA' 
+    },
+  };
+  
   let chooseSports = setting.selected;
   if (setting.type) {
-    chooseSports = 'NBA'
+    chooseSports = 'NBA';
   }
   const param = args.widgetParameter;
   if (param != null) {
-    if (param.includes('东部')) {
-      setting.type = '常规赛东部排名'
-      chooseSports = 'NBA'
-    } else if (param.includes('西部')) {
-      setting.type = '常规赛西部排名'
-      chooseSports = 'NBA'
+    const matchedKey = Object.keys(paramMap).find(key => param.includes(key));
+    if (matchedKey) {
+      setting.type = paramMap[matchedKey].type;
+      chooseSports = paramMap[matchedKey].sport;
     } else {
       const trimmedParam = param.trim();
       const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('cba');
       chooseSports = validParam ? trimmedParam : chooseSports;
     }
-  };
+  }
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
-  const getMatchRankings = async (url, leagueName, type = '球队名称') => {
-    const html = await module.getCacheData(url, 4, `${leagueName}.html`);
-    const webView = new WebView();
-    await webView.loadHTML(html);
-  
-    const data = await webView.evaluateJavaScript(`
-    (() => {
-      const rankSection = Array.from(document.querySelectorAll('.component-c-rank-common')).find(section => section.querySelector('.rank-item')?.textContent.trim() === \`${type}\`);
-
-      // 获取队伍信息
-      const teamElements = rankSection.querySelectorAll('.team-list-item');
-      const matchData = Array.from(teamElements).map(team => ({
-        teamFill: team.querySelector('.team-fill')?.textContent.trim() || null,
-        teamRank: team.querySelector('.team-rank')?.textContent.trim(),
-        teamLogo: team.querySelector('.team-logo')?.style.backgroundImage
-          ?.match(/https.+/)?.[0].replace(/["\\)]+$/, '') || '',
-        teamName: team.querySelector('.team-name')?.textContent.trim(),
-        round: team.querySelectorAll('.rank-list-item')[0]?.textContent.trim() || null,
-        winDrawLoss: team.querySelectorAll('.rank-list-item')[1]?.textContent.trim() || null,
-        goalStats: team.querySelectorAll('.rank-list-item')[2]?.textContent.trim() || null,
-        points: team.querySelectorAll('.rank-list-item')[3]?.textContent.trim() || null
-      }));
-
-      // 获取联赛信息
-      const leagueInfo = {};
-      const header = document.querySelector('.wa-match-header');
-      leagueInfo.name = header.querySelector('.wa-match-header-name')?.textContent.trim();
-      leagueInfo.season = header.querySelector('.wa-match-header-rank')?.textContent.trim();
-      leagueInfo.logo = header.querySelector('.logo-img img')?.src.replace(/&amp;/g, '&');
-
-      return {
-        league: leagueInfo,
-        matchData
-      };
-    })();`);
-    return data;
+  const getMatchRankings = async (name, type = null) => {
+    const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(name)}&tab=${encodeURIComponent('排名')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
+    
+    try {
+      const { tplData } = await module.getCacheData(url, 6, `${name}.json`);
+      const { tabsList, header } = tplData.data;
+      // 提取数据列表
+      const targetTab = tabsList?.[0]?.tabList?.[0];
+      const list = tabsList?.length === 1 && targetTab?.data?.length === 1
+        ? targetTab.data[0].list
+        : tabsList
+          ?.flatMap((tab) => tab.tabList)
+          .find((tab) => tab?.data?.some((item) => !type || item.title === type))
+          ?.data?.find((item) => !type || item.title === type)?.list;
+      // 处理 record 数据
+      const rankList = list.map((item) => {
+        const [teamInfo, rounds, winDrawLoss, goals, points] = item.record;
+        return {
+          ...item,
+          ...teamInfo,
+          rounds,
+          winDrawLoss,
+          goals,
+          points,
+          record: undefined,
+        };
+      });
+      return { header, rankList };
+    } catch (error) {
+      console.error(error.message);
+      return [];
+    }
   };
     
   // ====== 设置组件背景 ====== //
@@ -135,45 +148,44 @@ async function main(family = 'large') {
     columnText.textColor = textColor;
   };
   
-  const addLeagueStack = async (widget, { league } = data) => {
+  const addLeagueStack = async (widget, header) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
-    const leagueImg = await module.getCacheData(league.logo, 240, `${league.name}.png`);
+    const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
     const icon = leagueStack.addImage(leagueImg)
     icon.imageSize = new Size(23, 23);
-    if (league.name.includes('法国')) {
+    if (header.name.includes('法国')) {
       icon.tintColor = textColor;
     };
     leagueStack.addSpacer(12);
     
-    createText(leagueStack, league.name, 16);
+    createText(leagueStack, setting.type || header.name, 16);
     leagueStack.addSpacer();
-    createText(leagueStack, league.season, 16);
+    createText(leagueStack, header.info, 16);
     widget.addSpacer();
   };
   
   const createWidget = async () => {
-    const url = `https://tiyu.baidu.com/match/${encodeURIComponent(chooseSports)}/tab/${encodeURIComponent('排名')}`;
-    const data = await getMatchRankings(url, chooseSports, setting.type || '球队名称');
+    const { header, rankList } = await getMatchRankings(chooseSports, setting.type || '西甲');
     const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 150 : 200
-    const maxCol = family === 'medium' ? 6 : data.matchData.length >= setting.lines ? setting.lines : data.matchData.length;
+    const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
-    widget.url = url;
+    //widget.url = url;
     await setBackground(widget);
-    if (family === 'large') await addLeagueStack(widget, data);
+    if (family === 'large') await addLeagueStack(widget, header);
     
     for (let i = 0; i < maxCol; i++) {
-      const team = data.matchData[i];
+      const team = rankList[i];
       const teamStack = widget.addStack();
       teamStack.layoutHorizontally();
       teamStack.centerAlignContent();
       
       const indexStack = teamStack.addStack();
       indexStack.size = new Size(20, 0);
-      const indexText = indexStack.addText(`${i + 1}`);
+      const indexText = indexStack.addText(team.rank);
       indexText.font = Font.boldSystemFont(15);
       const textColor = i <= 2 
         ? '#FF0000' : i <= 3
@@ -182,9 +194,9 @@ async function main(family = 'large') {
       teamStack.addSpacer(8);
       
       // 队标
-      const teamLogoUrl = team.teamLogo || ''; // 修复潜在错误
+      const teamLogoUrl = team.logo || ''; // 修复潜在错误
       if (teamLogoUrl) {
-        const teamLogo = await module.getCacheData(teamLogoUrl, 240, `${team.teamName}.png`);
+        const teamLogo = await module.getCacheData(teamLogoUrl, 240, `${team.name}.png`);
         const logoImg = teamStack.addImage(teamLogo);
         logoImg.imageSize = new Size(20, 20);
       }
@@ -193,25 +205,24 @@ async function main(family = 'large') {
       const teamInfoStack = teamStack.addStack();
       teamInfoStack.centerAlignContent();
       teamInfoStack.size = new Size(stackSize, 0);
-      createText(teamInfoStack, team.teamName);
+      createText(teamInfoStack, team.name);
       teamInfoStack.addSpacer(8);
-      if (team.teamFill) {
+      if (team.fillsName) {
         const barStack = teamInfoStack.addStack();
         barStack.layoutHorizontally();
         barStack.setPadding(0.5, 5, 0.5, 5)
         barStack.cornerRadius = 5
         barStack.backgroundColor = Color.blue();
-        const fillText = barStack.addText(team.teamFill);
+        const fillText = barStack.addText(team.fillsName);
         fillText.font = Font.boldSystemFont(11);
         fillText.textColor = Color.white()
       }
       
       teamInfoStack.addSpacer();
-      
       const roundStack = teamStack.addStack();
-      createText(roundStack, team.round);
+      createText(roundStack, team.rounds);
       roundStack.addSpacer();
-      createText(teamStack, team.points || team.goalStats);
+      createText(teamStack, team.points || team.goals);
           
       if (i !== maxCol - 1) {
         widget.addSpacer(3);
