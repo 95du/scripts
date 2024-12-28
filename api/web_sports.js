@@ -217,19 +217,19 @@ request.timeoutInterval = 5;
     matchList.forEach((match) => {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
-      const minutesUntilStart = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
+      const nextDiff = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
       
       if (matchStatus === 1) {
         matches = match;
       } else if (matchStatus === 2) {
         matches = match;
-        nextTime = minutesUntilStart;
+        nextTime = nextDiff;
       } else if (matchStatus === 0) {
         hasTodayMatch = true;
         // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
-        if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
+        if (nextDiff <= 25 && nextDiff > 0 && nextDiff < setting.autoSwitch) {
           matches = match;
-          nextTime = minutesUntilStart
+          nextTime = nextDiff;
         }
       }
     });
