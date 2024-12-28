@@ -167,7 +167,7 @@ request.timeoutInterval = 5;
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
         if (item.weekday === '今天') {
-          today = item;
+          today = item || null;
         }
         let currentList = [...item.list];
         if (foundMatchStatus2) break;
@@ -346,7 +346,7 @@ request.timeoutInterval = 5;
         const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
         
         //===== 🔔 比分通知 🔔 =====//
-        if (!setting.autoSwitch) {
+        if (!setting.autoSwitch && matchStatus === '1') {
           scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
         }
         
@@ -590,9 +590,11 @@ request.timeoutInterval = 5;
   // 
   const runWidget = async () => {
     let { widget = null, today = {} } = await createWidget();
-    const result = processMatches(today);
-    if (result.matches && setting.autoSwitch) {
-      widget = await createLiveWidget(result);
+    if (today && Object.keys(today).length > 0) {
+      const result = processMatches(today);
+      if (result?.matches && setting.autoSwitch) {
+        widget = await createLiveWidget(result);
+      }
     }
     
     if (setting.alwaysDark) {
