@@ -83,8 +83,10 @@ async function main(family) {
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
         const goal = events.left?.goal || events.right?.goal;
-        const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} 第 ${events.passedTime} 分钟` : '';
-        module.notify(`${liveScore}`, `${goal.playerName}  ${events.goaltype}❗️${assist}`);
+        if (events && goal) {
+          const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName}助攻，第 ${events.passedTime} 分钟` : '';
+          module.notify(`${liveScore}`, `${goal.playerName}  ${events.goaltype}❗️${assist}`);
+        }
       }
     } else if (matchStatus === '2') {
       if (setting[matchName]) {
@@ -569,7 +571,7 @@ request.timeoutInterval = 5;
     mainStack.centerAlignContent();
     await createStack(mainStack, leftLogo.logo, lay.iconSize, leftLogo.name);
     mainStack.addSpacer();
-    if (raceScheduleData.vsLogo) {
+    if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
       const mediumStack = mainStack.addStack();
