@@ -5,7 +5,7 @@
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事
  * 组件版本: Version 1.0.0
- * 发布时间: 2024-12-21
+ * 发布时间: 2024-12-28
  */
 
 async function main(family) {
@@ -160,42 +160,33 @@ request.timeoutInterval = 5;
       const { tplData } = await request.loadJSON();
       const tabsData = tplData.data.tabsList[0].data;
     
-      const hasMatchSta1 = (list) => list.some(match => match.matchStatus === '1');
-      const hasMatchSta2 = (list) => list.some(match => match.matchStatus === '2');
-    
       let data = [];
       let today = {};
       let foundMatchStatus2 = false;
-      let lastStatus2Item = null;
-    
+      
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
         if (item.weekday === '今天') {
           today = item;
         }
-        if (hasMatchSta1(item.list)) {
-          lastStatus2Item = null;
+        let currentList = [...item.list];
+        if (foundMatchStatus2) break;
+        
+        const completedMatches = currentList.filter(match => match.matchStatus === '2');
+        const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
+        
+        if (completedMatches.length > 0) {
+          item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
+          data.unshift(item);
           foundMatchStatus2 = true;
-        }
-    
-        if (hasMatchSta2(item.list)) {
-          if (!foundMatchStatus2) {
-            foundMatchStatus2 = true;
-            const completedMatches = item.list.filter(match => match.matchStatus === '2');
-            item.list = [completedMatches[completedMatches.length - 1]]; // 只保留最后一个已结束的对象
-            lastStatus2Item = item;
-          }
         } else {
+          item.list = nonCompletedMatches;
           data.unshift(item);
         }
       }
-    
-      if (lastStatus2Item) {
-        data.unshift(lastStatus2Item);
-      }
       return { data, today, header: tplData.data.header };
     } catch (error) {
-      console.log(error);
+      console.error(error.message);
     }
   };
   
@@ -211,7 +202,6 @@ request.timeoutInterval = 5;
     const currentTime = new Date();
     const matchList = data.list;
     
-    let hasTodayMatch = false;
     let nextTime = null;
     let matches = null;
     matchList.forEach((match) => {
@@ -225,27 +215,18 @@ request.timeoutInterval = 5;
         matches = match;
         nextTime = minutesUntilStart;
       } else if (matchStatus === 0) {
-        hasTodayMatch = true;
         // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件
-        if (minutesUntilStart <= 25 && minutesUntilStart > 0 ) {
+        if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
           matches = match;
           nextTime = minutesUntilStart;
         }
       }
     });
-    
-    if (hasTodayMatch && matches) {
-      return {
-        nextTime,
-        hasTodayMatch,
-        matches
-      }
+    console.log(nextTime)
+    if (matches && matches.matchStatus !== '2' || nextTime >= -125) {
+      return { matches };
     }
-    
-    return {
-      hasTodayMatch,
-      matches: null
-    }
+    return { matches: null };
   };
   
   // ====== 设置组件背景 ====== //
@@ -337,7 +318,7 @@ request.timeoutInterval = 5;
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(13);
     rowText.textOpacity = textOpacity === true ? 0.5 : 1;
-    rowText.textColor = matchStatus === '1' && !setting.autoSwitch ? Color.red() : textColor;
+    rowText.textColor = matchStatus === '1' ? Color.red() : textColor;
     if (right) rowStack.addSpacer();
     return rowText;
   };
@@ -353,7 +334,7 @@ request.timeoutInterval = 5;
     let count = 0;
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
-      if (item.dateText.includes('今天') && item.list[0].matchStatus !== '2' || count > 0 && count < 2) {
+      if (item.dateText.includes('今天') && item.list[0].matchStatus !== '1' || count > 0 && count < 2) {
         addDateColumn(widget, item.list.length, item);
       }
       
