@@ -128,7 +128,7 @@ async function main(family) {
     }
   };
   
-  // 获取赛况
+  // 赛事分析
   const getRaceSchedule = async (matchId) => {
     const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
     const request = new Request(url);
@@ -150,7 +150,7 @@ async function main(family) {
     }
   };
   
-  // 实时赛况分析
+  // 赛程
   const getRaceScheduleList = async () => {
     const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
     const request = new Request(url);
@@ -217,19 +217,19 @@ request.timeoutInterval = 5;
     matchList.forEach((match) => {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
-      const nextDiff = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
+      const minutesUntilStart = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
       
       if (matchStatus === 1) {
         matches = match;
       } else if (matchStatus === 2) {
         matches = match;
-        nextTime = nextDiff;
+        nextTime = minutesUntilStart;
       } else if (matchStatus === 0) {
         hasTodayMatch = true;
-        // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
-        if (nextDiff <= 25 && nextDiff > 0 && nextDiff < setting.autoSwitch) {
+        // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件
+        if (minutesUntilStart <= 25 && minutesUntilStart > 0 ) {
           matches = match;
-          nextTime = nextDiff;
+          nextTime = minutesUntilStart;
         }
       }
     });
@@ -610,9 +610,6 @@ request.timeoutInterval = 5;
   const runWidget = async () => {
     let { widget = null, today = {} } = await createWidget();
     const result = processMatches(today);
-    console.log(
-      JSON.stringify(result, null, 2)
-    );
     if (result.matches && setting.autoSwitch) {
       widget = await createLiveWidget(result);
     }
