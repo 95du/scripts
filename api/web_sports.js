@@ -177,10 +177,12 @@ request.timeoutInterval = 5;
         
         if (completedMatches.length > 0) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
+          item.totalMatches = currentList.length;
           data.unshift(item);
           foundMatchStatus2 = true;
         } else {
           item.list = nonCompletedMatches;
+          item.totalMatches = currentList.length;
           data.unshift(item);
         }
       }
@@ -291,7 +293,7 @@ request.timeoutInterval = 5;
   };
   
   // 日期栏
-  const addDateColumn = (widget, length, item) => {
+  const addDateColumn = (widget, totalMatches, item) => {
     const dateStack = widget.addStack();
     dateStack.layoutHorizontally();
     dateStack.centerAlignContent();
@@ -305,7 +307,7 @@ request.timeoutInterval = 5;
     
     createText(dateStack, item.dateText.replace(/\//, '   '), 13, null, 0.8);
     dateStack.addSpacer();
-    createText(dateStack, `${length}场比赛`, 13, null, 0.8);
+    createText(dateStack, `${totalMatches}场比赛`, 13, null, 0.8);
     widget.addSpacer(5);
   };
   
@@ -335,7 +337,7 @@ request.timeoutInterval = 5;
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
       if (item.dateText.includes('今天') && item.list[0].matchStatus !== '1' || count > 0 && count < 2) {
-        addDateColumn(widget, item.list.length, item);
+        addDateColumn(widget, item.totalMatches, item);
       }
       
       for (const match of item.list) {
