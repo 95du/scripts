@@ -78,7 +78,7 @@ async function main(family) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
         if (chooseSports === 'NBA' || chooseSports === 'cba') {
-          return module.notify(liveStageText, liveScore)
+          return module.notify(liveScore, liveStageText)
         }
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
@@ -223,7 +223,7 @@ request.timeoutInterval = 5;
         matches = match;
       } else if (matchStatus === 2) {
         matches = match;
-        nextTime = minutesUntilStart
+        nextTime = minutesUntilStart;
       } else if (matchStatus === 0) {
         hasTodayMatch = true;
         // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
@@ -360,9 +360,14 @@ request.timeoutInterval = 5;
       for (const match of item.list) {
         if (count >= maxMatches) break;
         count++;
-        const { leftLogo, rightLogo, time, matchId } = match;
+        const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText} = match;
         const textOpacity = match.matchStatus === '2';
         const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
+        
+        //===== 🔔 比分通知 🔔 =====//
+        if (!setting.autoSwitch) {
+          scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
+        }
         
         const stack = widget.addStack();
         stack.layoutHorizontally();
@@ -540,9 +545,7 @@ request.timeoutInterval = 5;
       rightGoal,
     } = header;
     
-    const headerLiveStageText = liveStage === '中场' || !liveStage 
-      ? `${matchDesc}  ${dateFormat}` 
-      : liveStageText;
+    const headerLiveStageText = liveStage === '中场' || matchStatus === '0' ? `${matchDesc}  ${dateFormat}` : liveStageText;
     const scoreLength = leftGoal.length >= 2 && rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
