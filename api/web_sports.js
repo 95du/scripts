@@ -82,10 +82,10 @@ async function main(family) {
         }
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
-        const goal = events.left?.goal || events.right?.goal;
+        const [goal] = events.left?.goal || events.right?.goal
         if (events && goal) {
-          const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName}助攻，第 ${events.passedTime} 分钟` : '';
-          module.notify(`${liveScore}`, `${goal.playerName}  ${events.goaltype}❗️${assist}`);
+          const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
+          module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
         }
       }
     } else if (matchStatus === '2') {
@@ -151,7 +151,7 @@ async function main(family) {
   };
   
   // 实时赛况分析
-  const getRaceScheduleList = async (chooseSports) => {
+  const getRaceScheduleList = async () => {
     const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
     const request = new Request(url);
 request.timeoutInterval = 5;
@@ -159,19 +159,30 @@ request.timeoutInterval = 5;
     try {
       const { tplData } = await request.loadJSON();
       const tabsData = tplData.data.tabsList[0].data;
-      const hasMatchStatus2 = (list) => list.some(match => 
-        match.matchStatus === '2');
+    
+      const hasMatchSta1 = (list) => list.some(match => match.matchStatus === '1');
+      const hasMatchSta2 = (list) => list.some(match => match.matchStatus === '2');
     
       let data = [];
+      let today = {};
       let foundMatchStatus2 = false;
       let lastStatus2Item = null;
+    
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
-        if (hasMatchStatus2(item.list)) {
+        if (item.weekday === '今天') {
+          today = item;
+        }
+        if (hasMatchSta1(item.list)) {
+          lastStatus2Item = null;
+          foundMatchStatus2 = true;
+        }
+    
+        if (hasMatchSta2(item.list)) {
           if (!foundMatchStatus2) {
             foundMatchStatus2 = true;
             const completedMatches = item.list.filter(match => match.matchStatus === '2');
-            item.list = [completedMatches[completedMatches.length - 1]];
+            item.list = [completedMatches[completedMatches.length - 1]]; // 只保留最后一个已结束的对象
             lastStatus2Item = item;
           }
         } else {
@@ -180,23 +191,12 @@ request.timeoutInterval = 5;
       }
     
       if (lastStatus2Item) {
-        data.unshift(lastStatus2Item)
+        data.unshift(lastStatus2Item);
       }
-      return { data, header: tplData.data.header };
+      return { data, today, header: tplData.data.header };
     } catch (error) {
       console.log(error);
     }
-  };
-  
-  // 计算剩余多少分钟
-  const getMinutesDiff = (dateStr) => {
-    const targetDate = new Date(`${dateStr.replace(' ', 'T')}:00`)
-    if (isNaN(targetDate.getTime())) {
-      return null;
-    }
-    const diffMilliseconds = targetDate - new Date(); // 计算时间差（毫秒）
-    const diffHours = diffMilliseconds / (1000 * 60);
-    return diffHours.toFixed(2);
   };
   
   /**
@@ -207,55 +207,44 @@ request.timeoutInterval = 5;
    * 2. 如果没有进行中的比赛，返回“已结束”但在 30 分钟以内的比赛。
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
-  const getClosestMatch = (data) => {
-    let nextDiff = Infinity;
-    let nextMatch = null;
-    let lastEndedMatch = null;
+  const processMatches = (data) => {
+    const currentTime = new Date();
+    const matchList = data.list;
+    
     let hasTodayMatch = false;
-    
-    for (const item of data) {
-      const isToday = item.dateText.includes('今天');
-      if (!isToday) continue
-      for (const match of item.list) {
-        const diff = getMinutesDiff(match.startTime);
-        if (match.status === '1') return { matches: match };
-        if (match.status === '2') {
-          if (!lastEndedMatch || diff < getMinutesDiff(lastEndedMatch.time)) {
-            lastEndedMatch = match;
-            nextDiff = Math.ceil(diff);
-            hasTodayMatch = isToday;
-          }
-        }
-        
-        if (match.matchStatus === '0' && diff > 0 && diff < setting.switchTime) {
-          if (diff < nextDiff) {
-            nextMatch = match;
-            nextDiff = Math.ceil(diff);
-            hasTodayMatch = isToday
-          }
+    let nextTime = null;
+    let matches = null;
+    matchList.forEach((match) => {
+      const matchStatus = parseInt(match.matchStatus);
+      const matchStartTime = new Date(match.startTime);
+      const minutesUntilStart = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
+      
+      if (matchStatus === 1) {
+        matches = match;
+      } else if (matchStatus === 2) {
+        matches = match;
+        nextTime = minutesUntilStart
+      } else if (matchStatus === 0) {
+        hasTodayMatch = true;
+        // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
+        if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
+          matches = match;
+          nextTime = minutesUntilStart
         }
       }
-    };
-    // 比赛结束后，保持已结束的界面25分后切换到下一场比赛的内容；如果全天比赛已结束，切换到全天结束组件；若比赛进行时间未超过125分钟，保持已结束的界面，超过后恢复到正常组件。
-    if (nextDiff > 25 && lastEndedMatch && nextMatch && nextDiff >= -125) {
-      return {
-        matches: lastEndedMatch,
-        nextDiff,
-        hasTodayMatch
-      }
-    }
+    });
     
-    if (nextMatch) {
+    if (hasTodayMatch && matches) {
       return {
-        matches: nextMatch,
-        nextDiff,
-        hasTodayMatch
+        nextTime,
+        hasTodayMatch,
+        matches
       }
     }
     
     return {
-      matches: null,
-      hasTodayMatch: false
+      hasTodayMatch,
+      matches: null
     }
   };
   
@@ -339,7 +328,7 @@ request.timeoutInterval = 5;
     widget.addSpacer(5);
   };
   
-  const createTextStack = (stack, text, width, textOpacity, right, left, scoreColor) => {
+  const createTextStack = (stack, text, width, textOpacity, right, left, matchStatus) => {
     const rowStack = stack.addStack();
     rowStack.layoutHorizontally();
     rowStack.centerAlignContent();
@@ -348,19 +337,18 @@ request.timeoutInterval = 5;
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(13);
     rowText.textOpacity = textOpacity === true ? 0.5 : 1;
-    rowText.textColor = scoreColor && /\d/.test(text) && !setting.autoSwitch ? Color.red() : textColor;
+    rowText.textColor = matchStatus === '1' && !setting.autoSwitch ? Color.red() : textColor;
     if (right) rowStack.addSpacer();
     return rowText;
   };
   
   // 创建组件
   const createWidget = async () => {
-    const { data, header} = await getRaceScheduleList(chooseSports);
-    
     const widget = new ListWidget();
-    widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
     widget.setPadding(15, 17, 15, 17);
+    widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
     
+    const { data, today, header} = await getRaceScheduleList();
     const maxMatches = 4
     let count = 0;
     for (const item of data) {
@@ -389,7 +377,7 @@ request.timeoutInterval = 5;
         // 主队名称
         const team1NameText = createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const scoreText = createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', '#FF0000');
+        const scoreText = createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
         // 客队名称
         const team2NameText = createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
@@ -398,7 +386,7 @@ request.timeoutInterval = 5;
         const awayIcon = stack.addImage(awayImg).imageSize = new Size(20, 20);
       }
     };
-    return { widget, data };
+    return { widget, today };
   };
   
   // 三段进度条⚽️🇩🇪🇩🇪
@@ -534,8 +522,7 @@ request.timeoutInterval = 5;
   };
   
   // 创建组件
-  const createLiveWidget = async (result, data) => {
-    const { matches, hasTodayMatch, closestDiff } = result;
+  const createLiveWidget = async ({ matches } = result) => {
     const { header, percentage } = await getRaceSchedule(matches.matchId);
     const { total, homeWin, draw, awayWin } = percentage;
     
@@ -553,14 +540,15 @@ request.timeoutInterval = 5;
       rightGoal,
     } = header;
     
-    const headerLiveStageText = liveStage === '中场' ? `${matchDesc}  ${dateFormat}` : liveStageText;
+    const headerLiveStageText = liveStage === '中场' || !liveStage 
+      ? `${matchDesc}  ${dateFormat}` 
+      : liveStageText;
     const scoreLength = leftGoal.length >= 2 && rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
     const widget = new ListWidget();
-    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId || key}&tab=赛况`;
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
@@ -610,19 +598,20 @@ request.timeoutInterval = 5;
     const imageStack = widget.addStack();
     imageStack.size = new Size(0, 35);
     imageStack.addImage(progressChart);
-  
+    
+    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId || key}&tab=赛况`;
     return widget;
   };
   
   // 
   const runWidget = async () => {
-    let { widget = null, data = {} } = await createWidget();
-    const result = getClosestMatch(data);
+    let { widget = null, today = {} } = await createWidget();
+    const result = processMatches(today);
     console.log(
       JSON.stringify(result, null, 2)
     );
     if (result.matches && setting.autoSwitch) {
-      widget = await createLiveWidget(result, data);
+      widget = await createLiveWidget(result);
     }
     
     if (setting.alwaysDark) {
