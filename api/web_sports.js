@@ -204,19 +204,20 @@ async function main(family) {
       const tabsData = tplData.data.tabsList[0].data || [];
   
       let data = [];
-      let today = null;
+      let isMatches = null;
       let foundMatchStatus2 = false;
   
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
-        if (item.weekday === '今天') {
-          today = item;
-        }
-  
         let currentList = [...item.list];
+        const isMatchesStatus = currentList.filter(match => match.matchStatus === '1');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
-  
+        
+        if (isMatchesStatus.length > 0 || item.weekday === '今天') {
+          isMatches = item;
+        }
+        
         if (!foundMatchStatus2 && completedMatches.length > 0) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
           foundMatchStatus2 = true;
@@ -232,7 +233,7 @@ async function main(family) {
       
       const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
       // 如果总长度大于等于10，删除最后一个data的最后一个日期对象
-      if (totalListLength >= 10) {
+      if (totalListLength >= 20) {
         data.pop();
       } else {
         const lastItem = data[data.length - 1];
@@ -240,7 +241,7 @@ async function main(family) {
         lastItem.list = lastItem.list.concat(newMatches);
       }
       // 输出结果
-      return { data, today, header: tplData.data.header };
+      return { data, isMatches, header: tplData.data.header };
     } catch (e) {
       console.error(`获取赛程数据出错: ${e.message}`);
     }
@@ -279,7 +280,7 @@ async function main(family) {
       }
     });
     
-    if (matches && matches.matchStatus !== '2' || nextTime > -125) {
+    if (matches && nextTime > -125) {
       return { matches };
     }
     return { matches: null };
@@ -354,15 +355,14 @@ async function main(family) {
     widget.setPadding(15, 17, 15, 17);
     widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
     
-    const { data, today, header} = await getRaceScheduleList();
-    const maxMatches = family === 'medium' ? 4 : family === 'large' ? (data.length < 4 ? 11 : 10) : 4;
-    const date = data[0].weekday === '今天' ? '明天' : '今天';
+    const { data, isMatches, header} = await getRaceScheduleList();
+    const maxMatches = family === 'medium' ? 4 : family === 'large' ? (data.length > 4 ? 9 : 10) : 4;
     
     let count = 0;
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
-      const familyCount = family === 'medium' ? (count === 1) : (count >= 0 && count < maxMatches);
-      if (item.weekday === date && item.list[0].matchStatus !== '1' || familyCount) {
+      const familyCount = family === 'medium' ? count === 1 : (count >= 0 && count < maxMatches);
+      if (item.weekday === '今天' && item.list[0].matchStatus !== '1' || familyCount) {
         addDateColumn(widget, item.totalMatches, item);
       };
       
@@ -374,7 +374,7 @@ async function main(family) {
         const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
         
         //===== 🔔 比分通知 🔔 =====//
-        if (!setting.autoSwitch && matchStatus === '1') {
+        if (!setting.autoSwitch || family === ''&& matchStatus === '1') {
           scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
         }
         
@@ -400,7 +400,7 @@ async function main(family) {
         const awayIcon = stack.addImage(awayImg).imageSize = new Size(lay.stackSize, lay.stackSize);
       }
     };
-    return { widget, today };
+    return { widget, isMatches };
   };
   
   // 三段进度条⚽️🇩🇪🇩🇪
@@ -617,9 +617,10 @@ async function main(family) {
   
   // 
   const runWidget = async () => {
-    let { widget = null, today = {} } = await createWidget();
-    if (today && Object.keys(today).length > 0) {
-      const result = processMatches(today);
+    let { widget = null, isMatches = {} } = await createWidget();
+    
+    if (isMatches && Object.keys(isMatches).length > 0) {
+      const result = processMatches(isMatches);
       if (result?.matches && setting.autoSwitch && family === 'medium') {
         widget = await createLiveWidget(result);
       }
