@@ -256,18 +256,15 @@ async function main(family) {
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const processMatches = (data) => {
-    const currentTime = new Date();
-    const matchList = data.list;
-    
     let nextTime = null;
     let matches = null;
-    matchList.forEach((match) => {
+    for (const match of data.list) {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
-      const minutesUntilStart = Math.ceil((matchStartTime - currentTime) / (60 * 1000));
+      const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
       
       if (matchStatus === 1) {
-        matches = match;
+        return { matches: match };
       } else if (matchStatus === 2) {
         matches = match;
         nextTime = minutesUntilStart;
@@ -279,7 +276,7 @@ async function main(family) {
           module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
         }
       }
-    });
+    };
     
     if (matches && nextTime > -125) {
       return { matches };
@@ -364,7 +361,9 @@ async function main(family) {
     } else {
       if (data.length > 4 && totalListLength > 10) {
         maxMatches = 9;
-      } else if (data.length > 3 && totalListLength > 11) {
+      } else if (data.length <= 4 && isMatches.weekday !== '今天') {
+        maxMatches = 11;
+      } else if (data.length === 5 && totalListLength > 10) {
         maxMatches = 11;
       } else {
         maxMatches = 10;
@@ -633,7 +632,7 @@ async function main(family) {
     let { widget = null, isMatches = {} } = await createWidget();
     
     if (isMatches && Object.keys(isMatches).length > 0) {
-      const result = processMatches(isMatches);
+      const result = processMatches(isMatches) || isMatches[1];
       if (result?.matches && setting.autoSwitch && family === 'medium') {
         widget = await createLiveWidget(result);
       }
