@@ -616,7 +616,7 @@ async function main(family) {
     let { widget = null, today = {} } = await createWidget();
     if (today && Object.keys(today).length > 0) {
       const result = processMatches(today);
-      if (result?.matches && setting.autoSwitch) {
+      if (result?.matches && setting.autoSwitch && family === 'medium') {
         widget = await createLiveWidget(result);
       }
     }
