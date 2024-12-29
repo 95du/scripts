@@ -5,11 +5,11 @@
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事排名
  * 组件版本: Version 1.0.0
- * 发布时间: 2024-12-21
+ * 发布时间: 2024-12-28
  */
 
 
-async function main(family = 'large') {
+async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -48,9 +48,6 @@ async function main(family = 'large') {
   };
   
   let chooseSports = setting.selected;
-  if (setting.type) {
-    chooseSports = 'NBA';
-  }
   const param = args.widgetParameter;
   if (param != null) {
     const matchedKey = Object.keys(paramMap).find(key => param.includes(key));
@@ -60,17 +57,19 @@ async function main(family = 'large') {
     } else {
       const trimmedParam = param.trim();
       const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('cba');
+      setting.type = null;
       chooseSports = validParam ? trimmedParam : chooseSports;
     }
+  } else if (setting.type) {
+    chooseSports = 'NBA';
   }
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
   const getMatchRankings = async (name, type = null) => {
-    const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(name)}&tab=${encodeURIComponent('排名')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
-    
     try {
+      const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(name)}&tab=${encodeURIComponent('排名')}&request__node__params=1`;
       const { tplData } = await module.getCacheData(url, 6, `${name}.json`);
       const { tabsList, header } = tplData.data;
       // 提取数据列表
@@ -167,8 +166,8 @@ async function main(family = 'large') {
   };
   
   const createWidget = async () => {
-    const { header, rankList } = await getMatchRankings(chooseSports, setting.type || '西甲');
-    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 150 : 200
+    const { header, rankList } = await getMatchRankings(chooseSports, setting.type);
+    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 150 : 200;
     const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
     
     const widget = new ListWidget();
