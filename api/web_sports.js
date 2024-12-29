@@ -33,7 +33,9 @@ async function main(family) {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
     chooseSports = validParam ? trimmedParam : chooseSports;
-  };
+  } else {
+    chooseSports = setting.selected;
+  }
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
