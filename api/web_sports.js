@@ -185,9 +185,10 @@ async function main(family) {
    * 参数: before today after
    */
   const specifiedDateSports = async (nextTime) => {
+    const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
+    
     try {
-      const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`;
-      const { data } = await module.getCacheData(url, 24, `${chooseSports}.json`);
+      const { data } = await module.httpRequest(url, 'json');
       return data[0].list;
     } catch (e) {
       console.log(e);
@@ -359,7 +360,7 @@ async function main(family) {
     let count = 0;
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
-      const familyCount = family === 'medium' ? count === 1 : (count >= 0 && count < maxMatches);
+      const familyCount = family === 'medium' ? (count === 1) : (count >= 0 && count < maxMatches);
       if (item.weekday === date && item.list[0].matchStatus !== '1' || familyCount) {
         addDateColumn(widget, item.totalMatches, item);
       };
