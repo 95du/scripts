@@ -233,7 +233,7 @@ async function main(family) {
       
       const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
       // 如果总长度大于等于10，删除最后一个data的最后一个日期对象
-      if (totalListLength >= 20) {
+      if (totalListLength > 12) {
         data.pop();
       } else {
         const lastItem = data[data.length - 1];
@@ -356,7 +356,19 @@ async function main(family) {
     widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
     
     const { data, isMatches, header} = await getRaceScheduleList();
-    const maxMatches = family === 'medium' ? 4 : family === 'large' ? (data.length > 4 ? 9 : 10) : 4;
+    const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
+    let maxMatches;
+    if (family === 'medium') {
+      maxMatches = 4;
+    } else {
+      if (data.length > 4 && totalListLength > 10) {
+        maxMatches = 9;
+      } else if (data.length > 3 && totalListLength > 11) {
+        maxMatches = 11;
+      } else {
+        maxMatches = 10;
+      }
+    }
     
     let count = 0;
     for (const item of data) {
