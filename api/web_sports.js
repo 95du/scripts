@@ -29,7 +29,7 @@ async function main(family) {
   
   let chooseSports = setting.selected;
   const param = args.widgetParameter;
-  if (param) {
+  if (param && typeof param === 'string') {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
     chooseSports = validParam ? trimmedParam : chooseSports;
@@ -187,8 +187,10 @@ async function main(family) {
   const specifiedDateSports = async (nextTime) => {
     try {
       const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
-      const { data } = await module.httpRequest(url, 'json');
-      return data[0].list;
+      if (family === 'large') {
+        const { data } = await module.httpRequest(url, 'json');
+        return data[0].list;
+      }
     } catch (e) {
       console.log(e);
     }
@@ -319,7 +321,7 @@ async function main(family) {
     dateStack.layoutHorizontally();
     dateStack.centerAlignContent();
     dateStack.cornerRadius = 2;
-    dateStack.setPadding(2, 0, 2, 0);
+    dateStack.setPadding(1, 0, 1, 0);
     dateStack.backgroundColor = item.dateText.includes('今天') 
       ? new Color('#CCC400', 0.15) 
       : item.dateText.includes('明天') 
