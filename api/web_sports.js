@@ -29,13 +29,11 @@ async function main(family) {
   
   let chooseSports = setting.selected;
   const param = args.widgetParameter;
-  if (param != null) {
+  if (param) {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
     chooseSports = validParam ? trimmedParam : chooseSports;
-  } else {
-    chooseSports = setting.selected;
-  }
+  };
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
@@ -187,9 +185,8 @@ async function main(family) {
    * 参数: before today after
    */
   const specifiedDateSports = async (nextTime) => {
-    const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
-    
     try {
+      const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
       const { data } = await module.httpRequest(url, 'json');
       return data[0].list;
     } catch (e) {
