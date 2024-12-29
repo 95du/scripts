@@ -566,7 +566,7 @@ async function main(family) {
       rightGoal,
     } = header;
     
-    const headerLiveStageText = liveStage === '中场' || matchStatus === '0' ? `${matchDesc}  ${dateFormat}` : liveStageText;
+    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` : liveStageText;
     const scoreLength = leftGoal.length >= 2 && rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
