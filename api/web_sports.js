@@ -364,7 +364,7 @@ async function main(family) {
     } else {
       if (data.length > 4 && totalListLength > 10) {
         maxMatches = 9;
-      } else if (data.length <= 4 && isMatches.weekday !== '今天') {
+      } else if (data.length <= 4 && isMatches?.weekday !== '今天') {
         maxMatches = 11;
       } else if (data.length === 5 && totalListLength > 10) {
         maxMatches = 11;
