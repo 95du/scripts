@@ -276,6 +276,7 @@ async function main(family) {
         if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
           matches = match;
           nextTime = minutesUntilStart;
+          module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
         }
       }
     });
