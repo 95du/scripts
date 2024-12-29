@@ -46,6 +46,7 @@ async function main(family) {
   };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
+  const columnColor = Color.dynamic(new Color(setting.lightColor), new Color('#14BAFF'));
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   
   /**
@@ -285,15 +286,10 @@ async function main(family) {
   };
   
   // 创建文本
-  const createText = (stack, text, textSize, font, opacity, color) => {
+  const createText = (stack, text, textSize) => {
     const rowText = stack.addText(text);
     rowText.textColor = textColor;
-    rowText.font = Font[font 
-      ? 'mediumSystemFont' 
-      : 'systemFont'](textSize);
-    if (opacity) {
-      rowText.textOpacity = opacity;
-    }
+    rowText.font = Font.mediumSystemFont(textSize);
   };
   
   const addLeagueStack = async (widget, header) => {
@@ -308,13 +304,20 @@ async function main(family) {
     };
     leagueStack.addSpacer(12);
     
-    createText(leagueStack, header.name, lay.titleSize, 'medium');
+    createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info, lay.titleSize, 'medium');
+    createText(leagueStack, header.info, lay.titleSize);
     widget.addSpacer();
   };
   
   // 日期栏
+  const createColumnText = (stack, text) => {
+    const rowText = stack.addText(text);
+    rowText.textColor = columnColor;
+    rowText.font = Font.systemFont(lay.textSize);
+    rowText.textOpacity = 0.8;
+  };
+  
   const addDateColumn = (widget, totalMatches, item) => {
     const dateStack = widget.addStack();
     dateStack.layoutHorizontally();
@@ -327,9 +330,9 @@ async function main(family) {
       ? new Color('#8C7CFF', 0.15) 
       : new Color('#999999', 0.2);
     
-    createText(dateStack, item.dateText.replace(/\//, '   '), lay.textSize, null, 0.8);
+    createColumnText(dateStack, item.dateText.replace(/\//, '   '));
     dateStack.addSpacer();
-    createText(dateStack, `${totalMatches}场比赛`, lay.textSize, null, 0.8);
+    createColumnText(dateStack, `${totalMatches}场比赛`);
     widget.addSpacer(5);
   };
   
