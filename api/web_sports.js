@@ -46,7 +46,7 @@ async function main(family) {
   };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
-  const columnColor = Color.dynamic(new Color(setting.lightColor), new Color('#14BAFF'));
+  const columnColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   
   /**
