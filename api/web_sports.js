@@ -368,6 +368,8 @@ async function main(family) {
         maxMatches = 11;
       } else if (data.length === 5 && totalListLength > 10) {
         maxMatches = 11;
+      } else if (data.length <= 3) {
+        maxMatches = 12;
       } else {
         maxMatches = 10;
       }
@@ -570,7 +572,7 @@ async function main(family) {
     } = header;
     
     const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` : liveStageText;
-    const scoreLength = leftGoal.length >= 2 && rightGoal.length >= 2;
+    const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
