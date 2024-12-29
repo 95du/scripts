@@ -185,10 +185,9 @@ async function main(family) {
    * 参数: before today after
    */
   const specifiedDateSports = async (nextTime) => {
-    const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
-    
     try {
-      const { data } = await module.httpRequest(url, 'json');
+      const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`;
+      const { data } = await module.getCacheData(url, 24, `${chooseSports}.json`);
       return data[0].list;
     } catch (e) {
       console.log(e);
@@ -355,12 +354,13 @@ async function main(family) {
     
     const { data, today, header} = await getRaceScheduleList();
     const maxMatches = family === 'medium' ? 4 : family === 'large' ? (data.length < 4 ? 11 : 10) : 4;
-    let count = 0;
+    const date = data[0].weekday === '今天' ? '明天' : '今天';
     
+    let count = 0;
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
-      const mediumCount = family === 'medium' ? (count > 0 && count < 1) : (count >= 0 && count < maxMatches);
-      if (item.weekday === '今天' && item.list[0].matchStatus !== '1' || mediumCount) {
+      const familyCount = family === 'medium' ? count === 1 : (count >= 0 && count < maxMatches);
+      if (item.weekday === date && item.list[0].matchStatus !== '1' || familyCount) {
         addDateColumn(widget, item.totalMatches, item);
       };
       
