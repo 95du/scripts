@@ -375,7 +375,7 @@ async function main(family) {
     for (const item of data) {
       if (count === 0) await addLeagueStack(widget, header);
       const familyCount = family === 'medium' ? count === 1 : (count >= 0 && count < maxMatches);
-      if (item.weekday === '今天' && item.list[0].matchStatus !== '1' || familyCount) {
+      if (item.weekday === '今天' && item.list[0].matchStatus === '1' || familyCount) {
         addDateColumn(widget, item.totalMatches, item);
       };
       
