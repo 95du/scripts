@@ -389,7 +389,7 @@ async function main(family) {
         const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
         
         //===== 🔔 比分通知 🔔 =====//
-        if (!setting.autoSwitch || family === ''&& matchStatus === '1') {
+        if (!setting.autoSwitch || family === 'large') {
           scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
         }
         
