@@ -133,9 +133,8 @@ async function main(family) {
   
   // 进球事件
   const getGoalsAndPenalties = async (matchId) => {
-    const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
-    
     try {
+      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
       const html = await module.httpRequest(url, 'string');
       const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
       const value = JSON.parse(match);
@@ -160,11 +159,12 @@ async function main(family) {
     }
   };
   
-  // 赛事分析
+  /**
+   * 赛事分析 async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1
+   */
   const getRaceSchedule = async (matchId) => {
-    const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
-    
     try {
+      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const value = tplData.data;
       const { victory, draw, lost } = value.tabsList[0].data.result.percentage;
@@ -180,7 +180,10 @@ async function main(family) {
     }
   };
   
-  // 指定日期 before today after
+  /**
+   * 指定日期 
+   * 参数: before today after
+   */
   const specifiedDateSports = async (nextTime) => {
     const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
     
@@ -194,9 +197,8 @@ async function main(family) {
   
   // 赛程
   const getRaceScheduleList = async () => {
-    const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
-    
     try {
+      const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const tabsData = tplData.data.tabsList[0].data || [];
   
