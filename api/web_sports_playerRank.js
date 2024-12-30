@@ -44,6 +44,8 @@ async function main(family) {
     titleSize: isSmall ? 15 : 16,
     textSize: isSmall ? 12 : 13,
   };
+  
+  const fallbackLogo = 'https://raw.githubusercontent.com/95du/scripts/master/img/football/ronaldo.png';
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
@@ -150,7 +152,15 @@ async function main(family) {
       indexText.textColor = new Color(textColor);
       teamStack.addSpacer(8);
       // 球㖥头像
-      const teamLogo = await module.getCacheData(team.logo, 240, `${team.playerName}.png`);
+      let teamLogo;
+      try {
+        teamLogo = await module.getCacheData(team.logo, 240, `${team.playerName}.png`);
+        if (!teamLogo || !(teamLogo instanceof Image)) {
+          throw new Error('图片无效');
+        }
+      } catch (error) {
+        teamLogo = await module.getCacheData(fallbackLogo, 240, `${team.playerName}.png`);
+      }
       const logoImg = teamStack.addImage(teamLogo).imageSize = new Size(lay.iconSize, lay.iconSize);
       teamStack.addSpacer(8);
       const infoStack = teamStack.addStack();
