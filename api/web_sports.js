@@ -48,6 +48,7 @@ async function main(family) {
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   const columnColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
+  const raceScheduleUrl = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
   
   /**
    * 存储当前设置
@@ -352,71 +353,74 @@ async function main(family) {
   
   // 创建组件
   const createWidget = async () => {
+    const { data, isMatches, header } = await getRaceScheduleList();
     const widget = new ListWidget();
+    widget.url = raceScheduleUrl;
     widget.setPadding(15, 17, 15, 17);
-    widget.url = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
-    
-    const { data, isMatches, header} = await getRaceScheduleList();
-    const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
-    let maxMatches;
-    if (family === 'medium') {
-      maxMatches = 4;
-    } else {
-      if (data.length > 4 && totalListLength > 10) {
-        maxMatches = 9;
-      } else if (data.length <= 4 && isMatches?.weekday !== '今天') {
-        maxMatches = 11;
-      } else if (data.length === 5 && totalListLength > 10) {
-        maxMatches = 11;
-      } else if (data.length <= 3) {
-        maxMatches = 12;
-      } else {
-        maxMatches = 10;
-      }
+    const maxRows = family === 'medium' ? 6 : 15;
+    let rowCount = 0;
+    if (rowCount < maxRows) {
+      await addLeagueStack(widget, header);
+      rowCount++;
     }
     
-    let count = 0;
+    let lastDateStack = null;
+    let dateWithoutMatches = false;
     for (const item of data) {
-      if (count === 0) await addLeagueStack(widget, header);
-      const familyCount = family === 'medium' ? count === 1 : (count >= 0 && count < maxMatches);
-      if (item.weekday === '今天' && item.list[0].matchStatus === '1' || familyCount) {
-        addDateColumn(widget, item.totalMatches, item);
-      };
+      if (rowCount >= maxRows) break;
+      
+      if (family === 'medium') {
+        const targetRow = item.weekday === '今天' && item.list[0].matchStatus === '1' ? 1 : 2;
+        if (rowCount === targetRow && rowCount + 1 < maxRows) {
+          lastDateStack = addDateColumn(widget, item.totalMatches, item);
+          rowCount++;
+          dateWithoutMatches = true;
+        }
+      } else {
+        if (rowCount + 1 < maxRows) {
+          lastDateStack = addDateColumn(widget, item.totalMatches, item);
+          rowCount++;
+          dateWithoutMatches = true;
+        } else {
+          break;
+        }
+      }
       
       for (const match of item.list) {
-        if (count >= maxMatches) break;
-        count++;
-        const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText} = match;
+        if (rowCount >= maxRows) break;
+        const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText } = match;
         const textOpacity = match.matchStatus === '2';
-        const stackSize = (chooseSports.includes('NBA') || chooseSports.includes('cba')) ? 80 : 50
-        
-        //===== 🔔 比分通知 🔔 =====//
-        if (!setting.autoSwitch || family === 'large') {
-          scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
-        }
-        
+  
         const stack = widget.addStack();
         stack.layoutHorizontally();
         stack.centerAlignContent();
         widget.addSpacer(3);
         // 比赛时间
-        const timeText = createTextStack(stack, time, 46, textOpacity, 'right');
+        createTextStack(stack, time, 46, textOpacity, 'right');
         // 主队图标
         const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogo.name}.png`);
         const homeImage = stack.addImage(homeImg).imageSize = new Size(lay.stackSize, lay.stackSize);
         stack.addSpacer(8);
         // 主队名称
-        const team1NameText = createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
+        createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const scoreText = createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
+        const stackSize = ['NBA', 'cba'].includes(chooseSports) ? 80 : 50;
+        createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
         // 客队名称
-        const team2NameText = createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
+        createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
         // 客队图标
         const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
         const awayIcon = stack.addImage(awayImg).imageSize = new Size(lay.stackSize, lay.stackSize);
+        rowCount++;
+        dateWithoutMatches = false;
       }
-    };
+    }
+    
+    if (dateWithoutMatches && lastDateStack) {
+      widget.remove(lastDateStack);
+      rowCount--;
+    }
     return { widget, isMatches };
   };
   
