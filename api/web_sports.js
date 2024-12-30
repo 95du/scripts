@@ -204,7 +204,14 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const tabsData = tplData.data.tabsList[0].data || [];
-  
+      // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
+      const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
+      if (totalListLength < 15) {
+        const lastItem = tabsData[tabsData.length - 1];
+        const newMatches = await specifiedDateSports(lastItem.time);
+        if (newMatches) tabsData.push(newMatches);
+      }
+      
       let data = [];
       let isMatches = null;
       let foundMatchStatus2 = false;
@@ -231,14 +238,6 @@ async function main(family) {
           item.totalMatches = currentList.length;
           data.unshift(item);
         }
-      }
-      
-      const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
-      // 如果总长度小于等于12，添加对象到data的最后，否则 data.pop()
-      if (totalListLength < 12) {
-        const lastItem = data[data.length - 1];
-        const newMatches = await specifiedDateSports(lastItem.time);
-        data.push(newMatches);
       }
       // 输出结果
       return { data, isMatches, header: tplData.data.header };
@@ -291,7 +290,7 @@ async function main(family) {
     rowText.font = Font.mediumSystemFont(textSize);
   };
   
-  const addLeagueStack = async (widget, header) => {
+  const addHeaderStack = async (widget, header) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
@@ -306,7 +305,7 @@ async function main(family) {
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
     createText(leagueStack, header.info, lay.titleSize);
-    widget.addSpacer();
+    return leagueStack;
   };
   
   // 日期栏
@@ -358,29 +357,24 @@ async function main(family) {
     const maxRows = family === 'medium' ? 6 : 15;
     let rowCount = 0;
     if (rowCount < maxRows) {
-      await addLeagueStack(widget, header);
+      await addHeaderStack(widget, header);
+      widget.addSpacer();
       rowCount++;
     }
     
-    let lastDateStack = null;
-    let dateWithoutMatches = false;
     for (const item of data) {
       if (rowCount >= maxRows) break;
       
       if (family === 'medium') {
         const targetRow = item.weekday === '今天' && item.list[0].matchStatus === '1' ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
-          lastDateStack = addDateColumn(widget, item.totalMatches, item);
+          addDateColumn(widget, item.totalMatches, item);
           rowCount++;
-          dateWithoutMatches = true;
         }
       } else {
         if (rowCount + 1 < maxRows) {
-          lastDateStack = addDateColumn(widget, item.totalMatches, item);
+          addDateColumn(widget, item.totalMatches, item);
           rowCount++;
-          dateWithoutMatches = true;
-        } else {
-          break;
         }
       }
       
@@ -411,13 +405,7 @@ async function main(family) {
         const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
         const awayIcon = stack.addImage(awayImg).imageSize = new Size(lay.stackSize, lay.stackSize);
         rowCount++;
-        dateWithoutMatches = false;
       }
-    }
-    
-    if (dateWithoutMatches && lastDateStack) {
-      widget.remove(lastDateStack);
-      rowCount--;
     }
     return { widget, isMatches };
   };
