@@ -191,7 +191,7 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
       if (family === 'large') {
         const { data } = await module.httpRequest(url, 'json');
-        return data[0].list;
+        return data[0];
       }
     } catch (e) {
       console.log(e);
@@ -234,13 +234,11 @@ async function main(family) {
       }
       
       const totalListLength = data.reduce((sum, item) => sum + item.list.length, 0);
-      // 如果总长度大于等于10，删除最后一个data的最后一个日期对象
-      if (totalListLength > 12) {
-        data.pop();
-      } else {
+      // 如果总长度小于等于12，添加对象到data的最后，否则 data.pop()
+      if (totalListLength < 12) {
         const lastItem = data[data.length - 1];
         const newMatches = await specifiedDateSports(lastItem.time);
-        lastItem.list = lastItem.list.concat(newMatches);
+        data.push(newMatches);
       }
       // 输出结果
       return { data, isMatches, header: tplData.data.header };
