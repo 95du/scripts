@@ -311,10 +311,10 @@ async function main(family) {
       icon.tintColor = textColor;
     };
     leagueStack.addSpacer(12);
-    
+    console.log(header.info)
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info, lay.titleSize);
+    createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
     return leagueStack;
   };
   
@@ -338,7 +338,7 @@ async function main(family) {
       ? new Color('#8C7CFF', 0.15) 
       : new Color('#999999', 0.2);
     
-    createColumnText(dateStack, item.dateText.replace(/\//, '   '));
+    createColumnText(dateStack, item.dateText.replace('/', '   '));
     dateStack.addSpacer();
     createColumnText(dateStack, `${totalMatches}场比赛`);
     widget.addSpacer(5);
