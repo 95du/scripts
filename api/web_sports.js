@@ -394,7 +394,7 @@ async function main(family) {
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
         const startTimeDiff = (startTime - new Date()) / (60 * 1000);
-        if (startTimeDiff > 0 && startTimeDiff <= 60) {
+        if (startTimeDiff > -200 && startTimeDiff <= 60) {
           console.log(startTimeDiff)
           updateCacheFile();
         }
