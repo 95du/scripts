@@ -97,10 +97,8 @@ async function main(family) {
   const updateCacheFile = () => {
     const filename = `${chooseSports}.json`;
     const filePath = fm.joinPath(cacheStr, filename);
-    if (fm.fileExists(filePath)) {
-      fm.remove(filePath);
-      console.log(`Deleted cache file: ${filename}`);
-    }
+    if (fm.fileExists(filePath)) 
+    fm.remove(filePath);
   };
   
   // 实时比分通知
@@ -374,7 +372,7 @@ async function main(family) {
       if (rowCount >= maxRows) break;
       
       if (family === 'medium') {
-        const targetRow = item.weekday === '今天' && item.list[0].matchStatus === '1' ? 1 : 2;
+        const targetRow = item.weekday === '今天' && item.list[1].matchStatus === '1' ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
           addDateColumn(widget, item.totalMatches, item);
           rowCount++;
@@ -392,13 +390,16 @@ async function main(family) {
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
         const startTimeDiff = (startTime - new Date()) / (60 * 1000);
         if (startTimeDiff > -200 && startTimeDiff <= 60) {
-          console.log(startTimeDiff)
           updateCacheFile();
         }
         
         const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText } = match;
         const textOpacity = match.matchStatus === '2';
-  
+        //===== 🔔 比分通知 🔔 =====//
+        if (!setting.autoSwitch && matchStatus === '1') {
+          scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
+        }
+        
         const stack = widget.addStack();
         stack.layoutHorizontally();
         stack.centerAlignContent();
