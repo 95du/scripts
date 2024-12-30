@@ -311,7 +311,6 @@ async function main(family) {
       icon.tintColor = textColor;
     };
     leagueStack.addSpacer(12);
-    console.log(header.info)
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
     createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
@@ -337,7 +336,6 @@ async function main(family) {
       : item.dateText.includes('明天') 
       ? new Color('#8C7CFF', 0.15) 
       : new Color('#999999', 0.2);
-    
     createColumnText(dateStack, item.dateText.replace('/', '   '));
     dateStack.addSpacer();
     createColumnText(dateStack, `${totalMatches}场比赛`);
@@ -563,7 +561,7 @@ async function main(family) {
   // 创建组件
   const createLiveWidget = async ({ matches } = result) => {
     const { header, percentage } = await getRaceSchedule(matches.matchId);
-    const { total, homeWin, draw, awayWin } = percentage;
+    const { total, homeWin, draw, awayWin } = percentage || {};
     
     const {
       key,
@@ -577,7 +575,7 @@ async function main(family) {
       leftGoal,
       rightLogo,
       rightGoal,
-    } = header;
+    } = header || {};
     
     const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` : liveStageText;
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
