@@ -93,6 +93,16 @@ async function main(family) {
     }
   };
   
+  // 更新缓存文件
+  const updateCacheFile = () => {
+    const filename = `${chooseSports}.json`;
+    const filePath = fm.joinPath(cacheStr, filename);
+    if (fm.fileExists(filePath)) {
+      fm.remove(filePath);
+      console.log(`Deleted cache file: ${filename}`);
+    }
+  };
+  
   // 实时比分通知
   const scoreNotice = async (
     matchId,
@@ -202,7 +212,8 @@ async function main(family) {
   const getRaceScheduleList = async () => {
     try {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
-      const { tplData } = await module.httpRequest(url, 'json');
+      //const { tplData } = await module.httpRequest(url, 'json');
+      const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
       const tabsData = tplData.data.tabsList[0].data || [];
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
       const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
@@ -380,6 +391,14 @@ async function main(family) {
       
       for (const match of item.list) {
         if (rowCount >= maxRows) break;
+        // 检查是否即将开赛小于等于 1 小时
+        const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
+        const startTimeDiff = (startTime - new Date()) / (60 * 1000);
+        if (startTimeDiff > 0 && startTimeDiff <= 60) {
+          console.log(startTimeDiff)
+          updateCacheFile();
+        }
+        
         const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText } = match;
         const textOpacity = match.matchStatus === '2';
   
@@ -396,7 +415,7 @@ async function main(family) {
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const stackSize = ['NBA', 'cba'].includes(chooseSports) ? 80 : 50;
+        const stackSize = ['NBA', 'cba'].includes(chooseSports) ? 80 : 50
         createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
