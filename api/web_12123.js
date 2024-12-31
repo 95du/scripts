@@ -276,23 +276,7 @@ async function main(family) {
       const shadowImg = fm.readImage(bgImage);
       widget.backgroundImage = await module.shadowImage(shadowImg);
     } else {
-      const gradient = new LinearGradient();
-      const color = setting.gradient.length > 0 ? setting.gradient : [setting.rangeColor];
-      const randomColor = getRandomItem(color);
-      // 渐变角度
-      const angle = setting.angle;
-      const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
-      const x = 0.5 + 0.5 * Math.cos(radianAngle);
-      const y = 0.5 + 0.5 * Math.sin(radianAngle);
-      gradient.startPoint = new Point(1 - x, y);
-      gradient.endPoint = new Point(x, 1 - y);
-      
-      gradient.locations = [0, 1];
-      gradient.colors = [
-        new Color(randomColor, Number(setting.transparency)),
-        new Color('#00000000')
-      ];
-      widget.backgroundGradient = gradient;  
+      widget.backgroundGradient = module.createGradient();
       widget.backgroundColor = new Color(setting.solidColor);
     }
   };
