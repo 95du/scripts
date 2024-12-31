@@ -19,7 +19,7 @@ async function main(family) {
   const pathName = '95du_sports';
   const module = new _95du(pathName);
   const setting = module.settings;
-  
+  const { count = 0 } = setting;
   const { 
     rootUrl,
     settingPath, 
@@ -47,6 +47,7 @@ async function main(family) {
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   const columnColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
+  const barBgColor = Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
   
@@ -265,6 +266,16 @@ async function main(family) {
   const processMatches = (data) => {
     let nextTime = null;
     let matches = null;
+    
+    // 循环赛事
+    const isMatchesStatus = data.list.filter(match => match.matchStatus === '1');
+    if (isMatchesStatus.length > 0 && setting.loopEvent) {
+      const optNextIndex = (num, data) => (num + 1) % data.length;
+      setting.count = optNextIndex(count, isMatchesStatus);
+      writeSettings(setting);
+      return { matches: isMatchesStatus[optNextIndex] };
+    }
+    
     for (const match of data.list) {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
@@ -370,7 +381,6 @@ async function main(family) {
     
     for (const item of data) {
       if (rowCount >= maxRows) break;
-      
       if (family === 'medium') {
         const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
         const targetRow = item.weekday === '今天' && hasLiveMatch ? 1 : 2;
@@ -545,6 +555,38 @@ async function main(family) {
     }
   };
   
+  // 比分栏
+  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText) => {
+    const scoreLength = leftGoal.length >= 1 || rightGoal.length >= 1;
+    const mediumStack = mainStack.addStack();
+    if (scoreLength) mediumStack.size = new Size(148, 75);
+    mediumStack.layoutVertically();
+    mediumStack.addSpacer();
+    
+    const scoreStack = mediumStack.addStack();
+    scoreStack.layoutHorizontally();
+    scoreStack.addSpacer();
+    const scoreText = scoreStack.addText(`${leftGoal} - ${rightGoal}`);
+    scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
+    scoreText.textColor = textColor;
+    scoreStack.addSpacer();
+    mediumStack.addSpacer();
+    
+    const statusStack = mediumStack.addStack();
+    statusStack.layoutHorizontally();
+    statusStack.addSpacer();
+    const barStack = statusStack.addStack();
+    barStack.setPadding(2, 15, 2, 15);
+    barStack.cornerRadius = 8;
+    barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF5800');
+    const statusText = barStack.addText(matchStatusText);
+    if (matchStatus === '2') statusText.textOpacity = 0.7;
+    statusText.font = Font.boldSystemFont(12.5);
+    statusText.textColor = matchStatus === '2' ? textColor : Color.white();
+    statusStack.addSpacer();
+    mediumStack.addSpacer();
+  };
+  
   /**
    * 如果header.liveStage === 中场
    * 获取matchDesc ➕ dateFormat 
@@ -579,9 +621,8 @@ async function main(family) {
       rightGoal,
     } = header || {};
     
-    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` : liveStageText;
-    const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     // ===== 🔔 比分通知 🔔 ===== //
+    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? (`${matchDesc}  ${dateFormat}`) : liveStageText;
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
@@ -599,31 +640,8 @@ async function main(family) {
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      const mediumStack = mainStack.addStack();
-      if (scoreLength) mediumStack.size = new Size(148, 0);
-      mediumStack.layoutVertically();
-      mediumStack.addSpacer(10);
-      
-      const scoreStack = mediumStack.addStack();
-      scoreStack.layoutHorizontally();
-      scoreStack.addSpacer();
-      const scoreText = scoreStack.addText(`${leftGoal} - ${rightGoal}`);
-      scoreText.textOpacity = 0.9;
-      scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
-      scoreText.textColor = textColor;
-      scoreStack.addSpacer();
-      mediumStack.addSpacer(4);
-      
-      const statusStack = mediumStack.addStack();
-      statusStack.layoutHorizontally();
-      statusStack.addSpacer();
-      const statusText = statusStack.addText(matchStatusText);
-      statusText.textOpacity = 0.8;
-      statusText.font = Font.mediumSystemFont(13.5);
-      statusText.textColor = matchStatus === '2' ? new Color(textColor.hex, 0.65) : Color.red();
-      statusStack.addSpacer();
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText);
     }
-    
     mainStack.addSpacer();
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
@@ -643,7 +661,6 @@ async function main(family) {
   // 
   const runWidget = async () => {
     let { widget = null, isMatches = {} } = await createWidget();
-    
     if (isMatches && Object.keys(isMatches).length > 0) {
       const result = processMatches(isMatches) || isMatches[1];
       if (result?.matches && setting.autoSwitch && family === 'medium') {
