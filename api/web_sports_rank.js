@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: trophy;
+// icon-color: purple; icon-glyph: trophy;
 /**
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事排名
@@ -64,6 +64,13 @@ async function main(family) {
     chooseSports = 'NBA';
   }
   
+  const isSmall = Device.screenSize().height < 926;
+  const lay = {
+    iconSize: isSmall ? 18 : 20,
+    imgSize: isSmall ? 21 : 23,
+    titleSize: isSmall ? 15 : 16,
+    textSize: isSmall ? 12 : 13,
+  };
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   
   // 获取排名
@@ -143,7 +150,7 @@ async function main(family) {
   
   const createText = (stack, text, textSize) => {
     const columnText = stack.addText(text);
-    columnText.font = Font.mediumSystemFont(textSize || 13);
+    columnText.font = Font.mediumSystemFont(textSize || lay.textSize);
     columnText.textColor = textColor;
   };
   
@@ -153,26 +160,25 @@ async function main(family) {
     leagueStack.centerAlignContent();
     const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
     const icon = leagueStack.addImage(leagueImg)
-    icon.imageSize = new Size(23, 23);
+    icon.imageSize = new Size(lay.imgSize, lay.imgSize);
     if (header.name.includes('法国')) {
       icon.tintColor = textColor;
     };
     leagueStack.addSpacer(12);
     
-    createText(leagueStack, setting.type || header.name, 16);
+    createText(leagueStack, setting.type || header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info, 16);
+    createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
     widget.addSpacer();
   };
   
   const createWidget = async () => {
     const { header, rankList } = await getMatchRankings(chooseSports, setting.type);
-    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 150 : 200;
+    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 160 : 200;
     const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
-    //widget.url = url;
     await setBackground(widget);
     if (family === 'large') await addLeagueStack(widget, header);
     
@@ -181,7 +187,6 @@ async function main(family) {
       const teamStack = widget.addStack();
       teamStack.layoutHorizontally();
       teamStack.centerAlignContent();
-      
       const indexStack = teamStack.addStack();
       indexStack.size = new Size(20, 0);
       const indexText = indexStack.addText(team.rank);
@@ -193,31 +198,26 @@ async function main(family) {
       teamStack.addSpacer(8);
       
       // 队标
-      const teamLogoUrl = team.logo || ''; // 修复潜在错误
-      if (teamLogoUrl) {
-        const teamLogo = await module.getCacheData(teamLogoUrl, 240, `${team.name}.png`);
-        const logoImg = teamStack.addImage(teamLogo);
-        logoImg.imageSize = new Size(20, 20);
-      }
+      const teamLogo = await module.getCacheData(team.logo, 240, `${team.name}.png`);
+      const logoImg = teamStack.addImage(teamLogo).imageSize = new Size(lay.iconSize, lay.iconSize);
       teamStack.addSpacer(12);
       
-      const teamInfoStack = teamStack.addStack();
-      teamInfoStack.centerAlignContent();
-      teamInfoStack.size = new Size(stackSize, 0);
-      createText(teamInfoStack, team.name);
-      teamInfoStack.addSpacer(8);
+      const infoStack = teamStack.addStack();
+      infoStack.centerAlignContent();
+      infoStack.size = new Size(stackSize, 0);
+      createText(infoStack, team.name);
+      infoStack.addSpacer(8);
       if (team.fillsName) {
-        const barStack = teamInfoStack.addStack();
+        const barStack = infoStack.addStack();
         barStack.layoutHorizontally();
         barStack.setPadding(0.5, 5, 0.5, 5)
         barStack.cornerRadius = 5
         barStack.backgroundColor = Color.blue();
         const fillText = barStack.addText(team.fillsName);
         fillText.font = Font.boldSystemFont(11);
-        fillText.textColor = Color.white()
+        fillText.textColor = Color.white();
       }
-      
-      teamInfoStack.addSpacer();
+      infoStack.addSpacer();
       const roundStack = teamStack.addStack();
       createText(roundStack, team.rounds);
       roundStack.addSpacer();
