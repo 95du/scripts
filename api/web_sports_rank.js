@@ -55,7 +55,7 @@ async function main(family) {
       chooseSports = paramMap[matchedKey].sport;
     } else {
       const trimmedParam = param.trim();
-      const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('cba');
+      const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('CBA');
       setting.type = null;
       chooseSports = validParam ? trimmedParam : chooseSports;
     }
@@ -155,7 +155,7 @@ async function main(family) {
   
   const createWidget = async () => {
     const { header, rankList } = await getMatchRankings(chooseSports, setting.type);
-    const stackSize = ['cba', 'NBA'].includes(chooseSports) ? 160 : 200;
+    const stackSize = ['CBA', 'NBA'].includes(chooseSports) ? 160 : 200;
     const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
     
     const widget = new ListWidget();
