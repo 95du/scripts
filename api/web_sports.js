@@ -422,7 +422,7 @@ async function main(family) {
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
-    let interval = 2.5
+    let interval = 2;
     let intervals = 2 * interval;
     
     const ctx = new DrawContext();
