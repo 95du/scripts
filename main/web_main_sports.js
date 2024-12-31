@@ -447,11 +447,11 @@ async function main() {
     const addSport = async ({ label, message, sta } = data) => {
       await module.generateInputAlert({
         title: label,
-        message: '在百度体育网页的列表中选择所需要的赛事，输入拷贝的链接\n例如: https://tiyu.baidu.com/match/西甲',
+        message: '在百度体育网页的列表中选择所需要的赛事，拷贝网页链接',
         options: [{ hint: '输入链接' }]
       }, 
       async ([{ value }]) => {
-        const league = value.split("match/")[1];
+        const league = value.split('match=')[1];
         const subList = settings.values;
         if (value && value.includes('tiyu.baidu') && !subList.some(item => item.value === league)) {
           subList.unshift({
