@@ -272,7 +272,7 @@ async function main() {
     const listItems = [
       `<li>${updateDate}</li>`,
       `<li>新组件发布 🔥</li>`,
-      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"nba" 】将会显示对应的组件 🇩🇪</li>`
+      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"NBA"】将会显示对应的组件 🇩🇪</li>`
     ].join('\n');
     
     const mainMenu = module.mainMenuTop(
