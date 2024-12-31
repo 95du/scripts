@@ -8,9 +8,6 @@
  * 发布时间: 2025-01-01
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
  * 
- * 增加赛事 ( 百度体育官网 )
- * https://tiyu.baidu.com/al/matchlist
- * 
  * 2，如需多个组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、CBA、NBA
  */
 
