@@ -255,7 +255,7 @@ async function main(family) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
       setting.count = optNextIndex(count, isMatchesStatus);
       writeSettings(setting);
-      return { matches: isMatchesStatus[optNextIndex] };
+      return { matches: isMatchesStatus[setting.count] };
     }
     
     for (const match of data.list) {
