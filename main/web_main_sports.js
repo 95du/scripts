@@ -927,7 +927,7 @@ async function main() {
           },
           options: [
             {
-              label: '蓝球联赛',
+              label: '蓝球赛事',
               values: [
                 {
                   label: 'NBA',
@@ -940,7 +940,7 @@ async function main() {
               ]
             },
             {
-              label: '足球联赛',
+              label: '足球赛事',
               values: settings.values
             }
           ]
