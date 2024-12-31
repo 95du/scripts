@@ -272,7 +272,7 @@ async function main() {
     const listItems = [
       `<li>${updateDate}</li>`,
       `<li>新组件发布 🔥</li>`,
-      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"NBA"，"cba" "沙特超"】将会显示对应的组件 🇩🇪</li>`
+      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"NBA"，"CBA" "沙特超"】将会显示对应的组件 🇩🇪</li>`
     ].join('\n');
     
     const mainMenu = module.mainMenuTop(
@@ -290,7 +290,7 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
-    const widgetMessage = '1，支持百度体育官网中大部分赛事<br>2，如需多个赛事组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、cba、NBA<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
+    const widgetMessage = '1，支持百度体育官网中大部分赛事<br>2，如需多个赛事组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、CBA、NBA<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
 
     const popupHtml = module.buttonPopup({
       settings,
@@ -917,7 +917,7 @@ async function main() {
                 },
                 {
                   label: 'CBA',
-                  value: 'cba'
+                  value: 'CBA'
                 }
               ]
             },
