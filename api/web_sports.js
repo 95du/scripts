@@ -205,7 +205,7 @@ async function main(family) {
   
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
-        let currentList = [...item.list];
+        let currentList = item.list.filter(match => match.matchStatus !== '3');
         const isMatchesStatus = currentList.filter(match => match.matchStatus === '1');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
