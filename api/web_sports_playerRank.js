@@ -3,7 +3,7 @@
 // icon-color: deep-brown; icon-glyph: trophy;
 /**
  * 组件作者: 95du茅台
- * 组件名称: 体育赛事排名
+ * 组件名称: 赛事球员将
  * 组件版本: Version 1.0.0
  * 发布时间: 2024-12-28
  */
