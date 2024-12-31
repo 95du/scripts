@@ -406,6 +406,33 @@ class _95du {
   };
   
   /**
+   * 创建线性渐变背景
+   * @returns {LinearGradient} 生成的线性渐变对象
+   * 根据设置的渐变颜色和角度，返回一个配置好的线性渐变对象。
+   */
+  createGradient = () => {
+    const gradient = new LinearGradient();
+    const color = this.settings.gradient.length > 0 
+      ? this.settings.gradient 
+      : [this.settings.rangeColor];
+    const randomColor = this.getRandomItem(color);
+    // 渐变角度
+    const angle = this.settings.angle;
+    const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
+    const x = 0.5 + 0.5 * Math.cos(radianAngle);
+    const y = 0.5 + 0.5 * Math.sin(radianAngle);
+    gradient.startPoint = new Point(1 - x, y);
+    gradient.endPoint = new Point(x, 1 - y);
+    
+    gradient.locations = [0, 1];
+    gradient.colors = [
+      new Color(randomColor, this.settings.transparency),
+      new Color('#00000000')
+    ];
+    return gradient;
+  };
+  
+  /**
    * 获取模块页面路径，如本地不存在或需更新则从远程获取
    * @param {string} scriptName
    * @param {string} url
