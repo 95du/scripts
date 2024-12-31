@@ -51,57 +51,10 @@ async function main() {
    * 读取储存的设置
    * @param {string} file - JSON
    * @returns {object} - JSON
-   */    
-  const values = [
-    {
-      label: "英超",
-      value: "英超"
-    },
-    {
-      label: "西甲",
-      value: "西甲"
-    },
-    {
-      label: "德甲",
-      value: "德甲"
-    },
-    {
-      label: "意甲",
-      value: "意甲"
-    },
-    {
-      label: "法甲",
-      value: "法甲"
-    },
-    {
-      label: "欧冠",
-      value: "欧冠"
-    },
-    {
-      label: "苏超",
-      value: "苏超",
-    },
-    {
-      label: "葡超",
-      value: "葡超"
-    },
-    {
-      label: "澳超",
-      value: "澳超"
-    },
-    {
-      label: "荷甲",
-      value: "荷甲"
-    },
-    {
-      label: "瑞士超",
-      value: "瑞士超"
-    },
-    {
-      label: "沙特超",
-      value: "沙特超"
-    },
-  ];
+   */
+
+  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "瑞士超", "沙特超"];
+  const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
     version,
@@ -122,9 +75,10 @@ async function main() {
     lightColor: '#000000',
     darkColor: '#FFFFFF',
     rangeColor: '#3F8BFF',
+    dateColor: '#14BAFF',
     selected: '西甲',
-    rightIcon: false,
-    autoSwitch: 60,
+    autoSwitch: true,
+    loopEvent: true,
     values
   };
   
@@ -161,9 +115,9 @@ async function main() {
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
   // 预览组件
-  const previewWidget = async () => {
+  const previewWidget = async (family = 'large') => {
     const moduleJs = await module.webModule(scrUrl);
-    if (moduleJs) await importModule(moduleJs).main();
+    if (moduleJs) await importModule(moduleJs).main(family);
     if (settings.update) await updateString();
     shimoFormData(settings.selected);
   };
@@ -226,7 +180,8 @@ async function main() {
    * @param {string} notice 
    */
   const runWidget = async () => {
-    await previewWidget();
+    const family = config.widgetFamily;
+    await previewWidget(family);
     await module.appleOS_update();
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
@@ -301,7 +256,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-6%' : '-2%') : (avatarInfo ? '-5%' : '-2%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-8%' : '-2%') : (avatarInfo ? '-8%' : '-2%')};
     }
     
     ${settings.animation ? `
@@ -335,7 +290,7 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
-    const widgetMessage = '1，支持百度体育官网中所有赛事<br>2，在桌面组件参数输入对应的赛事名称，<br>3，例如: 西甲、英超、nba、cba<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
+    const widgetMessage = '1，支持百度体育官网中所有赛事<br>2，在桌面组件参数输入对应的赛事名称，<br>3，例如: 西甲、英超、NBA、cba<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
 
     const popupHtml = module.buttonPopup({
       settings,
@@ -377,7 +332,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'separ')}</script>
+        <script>${await module.runScripts(formItems, settings, 'range-separ1')}</script>
         ${scriptTags}
       </body>
     </html>`;
@@ -612,7 +567,7 @@ async function main() {
           await removeSport(data);
           break;
         case 'preview':
-          await previewWidget();
+          await previewWidget(data.family);
           break;
         case 'chooseBgImg':
           const image = await Photos.fromLibrary();
@@ -671,7 +626,7 @@ async function main() {
   };
   
   // 用户偏好设置菜单
-  const userMenus = module.userMenus(settings, true);
+  const userMenus = module.userMenus(settings, false);
   
   // 设置菜单页
   const settingMenu = [
@@ -726,15 +681,17 @@ async function main() {
       ]
     },
     {
+      label: '多场比赛时循环显示',
       type: 'group',
       items: [
         {
-          label: '右上图标',
-          name: 'rightIcon',
+          header: true,
+          label: '循环场次',
           type: 'switch',
+          name: 'random',
           icon: {
-            name: 'checkerboard.shield',
-            color: '#FF9500'
+            name: 'hand.draw.fill',
+            color: '#FF7800'
           }
         },
         {
@@ -746,15 +703,26 @@ async function main() {
         },
         {
           name: "autoSwitch",
-          label: "切换组件",
-          type: "cell",
-          input: true,
+          label: "切换界面",
+          type: "switch",
           icon: {
             name: 'rectangle.portrait.and.arrow.forward.fill',
             color: '#00ABF4'
-          },
-          desc: settings.autoSwitch,
-          message: '比赛开始前自动切换组件内容的时间\n（ 单位：分钟 ）'
+          }
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '日期夜间',
+          name: 'dateColor',
+          type: 'color',
+          icon: {
+            name: 'clock',
+            color: '#4AC5AD'
+          }
         },
         {
           name: "lightColor",
@@ -963,7 +931,7 @@ async function main() {
               values: [
                 {
                   label: 'NBA',
-                  value: 'nba'
+                  value: 'NBA'
                 },
                 {
                   label: 'CBA',
@@ -1025,9 +993,17 @@ async function main() {
       type: 'group',
       items: [
         {
-          label: '预览组件',
+          label: '中号组件',
           name: 'preview',
           type: 'cell',
+          family: 'medium',
+          icon: `${rootUrl}/img/symbol/preview.png`
+        },
+        {
+          label: '大号组件',
+          name: 'preview',
+          type: 'cell',
+          family: 'large',
           icon: `${rootUrl}/img/symbol/preview.png`
         }
       ]
