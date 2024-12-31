@@ -5,7 +5,7 @@
 async function main() {
   const scriptName = '体育赛事'
   const version = '1.0.0'
-  const updateDate = '2024年12月23日'
+  const updateDate = '2025年01月01日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
