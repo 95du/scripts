@@ -31,7 +31,7 @@ async function main(family) {
   const param = args.widgetParameter;
   if (param) {
     const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
+    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
     chooseSports = validParam ? trimmedParam : chooseSports;
   };
   
@@ -104,7 +104,7 @@ async function main(family) {
       if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
-        if (chooseSports === 'NBA' || chooseSports === 'cba') {
+        if (chooseSports === 'NBA' || chooseSports === 'CBA') {
           return module.notify(liveScore, liveStageText)
         }
         // 进球事件
@@ -406,7 +406,7 @@ async function main(family) {
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const stackSize = ['NBA', 'cba'].includes(chooseSports) ? 80 : 50
+        const stackSize = ['NBA', 'CBA'].includes(chooseSports) ? 80 : 50
         createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
@@ -604,7 +604,10 @@ async function main(family) {
     } = header || {};
     
     // ===== 🔔 比分通知 🔔 ===== //
-    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? (`${matchDesc}  ${dateFormat}`) : liveStageText;
+    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` 
+    : liveStage.includes('完') 
+      ? `${liveStageText} ${liveStageTime}` 
+      : liveStageText;
     scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
