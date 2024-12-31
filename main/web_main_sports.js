@@ -688,7 +688,7 @@ async function main() {
           header: true,
           label: '循环场次',
           type: 'switch',
-          name: 'random',
+          name: 'loopEvent',
           icon: {
             name: 'hand.draw.fill',
             color: '#FF7800'
@@ -935,7 +935,7 @@ async function main() {
                 },
                 {
                   label: 'CBA',
-                  value: 'cba'
+                  value: 'CBA'
                 }
               ]
             },
