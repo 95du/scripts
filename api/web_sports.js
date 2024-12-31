@@ -177,7 +177,7 @@ async function main(family) {
     try {
       const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
       if (family === 'large') {
-        const { data } = await module.httpRequest(url, 'json');
+        const { data } = await module.getCacheData(url, 24, `${chooseSports}_${nextTime}.json`);
         return data[0];
       }
     } catch (e) {
