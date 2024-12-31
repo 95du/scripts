@@ -196,20 +196,14 @@ class _95du {
     });
     const cacheData = cache.read(name);
     if (cacheData) return cacheData;
-    
+  
     try {
       const data = await this.httpRequest(url, type);
-      if (data.message) {
-        console.log(data.message);
-        return null;
-      };
-      if (data.statusCode !== 404) {
-        cache.write(name, data);
-        console.log(`${name}: Data downloaded and cached`);
-        return data;
-      }
+      cache.write(name, data);
+      console.log(`${name}: 数据已下载并缓存`);
+      return data;
     } catch (error) {
-      console.log(`${name} 请求失败。 \n${error}`);
+      console.log(`${name} 请求失败。\n${error}`);
     }
     return cacheData;
   };
@@ -303,7 +297,7 @@ class _95du {
     const imgData = Data.fromPNG(sfi.image).toBase64String();
     const html = `
       <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
+      <img id="silhouetteImg" src="">
       <canvas id="mainCanvas" />`;
       
     const js = `
@@ -361,7 +355,7 @@ class _95du {
     const imgData = Data.fromPNG(img).toBase64String();
     const html = `
       <img id="sourceImg" src="data:image/png;base64,${imgData}" />
-      <img id="silhouetteImg" src="" />
+      <img id="silhouetteImg" src="">
       <canvas id="mainCanvas" />`;
     const js = `
       const canvas = document.createElement("canvas");
