@@ -426,8 +426,7 @@ async function main() {
         if (menuId === -1) break;
         
         const action = await module.generateAlert(
-          subList[menuId].label,
-          '是否删除该赛事❓',
+          null, `是否删除该赛事 ( ${subList[menuId].label} )❓`,
           options = ['取消', '删除'],
           true
         );
@@ -445,29 +444,40 @@ async function main() {
     
     // 增加赛事
     const addSport = async ({ label, message, sta } = data) => {
-      await module.generateInputAlert({
-        title: label,
-        message: '在百度体育网页的列表中选择所需要的赛事，拷贝网页链接',
-        options: [{ hint: '输入链接' }]
-      }, 
-      async ([{ value }]) => {
-        const league = value.split('match=')[1];
-        const subList = settings.values;
-        if (value && value.includes('tiyu.baidu') && !subList.some(item => item.value === league)) {
-          subList.unshift({
-            label: league,
-            value: league
+      const url = `https://tiyu.baidu.com/al/matchlist`;
+      const html = await module.getCacheData(url, 240, 'matchlist.html');
+      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+      const value = JSON.parse(match);
+      const subList = value.data.tplData;
+      while (subList.length > 0) {
+        const alert = new Alert();
+        subList.forEach((item, index) => {
+          alert.addAction(`${index + 1}，${item.name}`)
+        });
+        alert.addCancelAction('取消');
+        const menuId = await alert.presentSheet();
+        if (menuId === -1) break;
+        const name = subList[menuId].short_name;
+        const action = await module.generateAlert(
+          null, `${subList[menuId].name}( ${name} )`,
+          options = ['取消', '添加']
+        );
+        if (action === 1) {
+          if (name && !settings.values.some(item => item.value === name || ['NBA', 'CBA'].includes(name))) {
+          settings.values.unshift({
+            label: name,
+            value: name
           });
-          settings.values = subList;
-          settings.selected = subList[0]?.value || '西甲';
+          settings.selected = name;
           writeSettings(settings);
           // 更新选取框
           module.updateSelect(webView, selectOpts);
-          innerTextElementById(sta, subList.length);
-        } else {
-          module.notify('添加失败', '只适用于百度体育或已存在。')
+          innerTextElementById(sta, settings.values.length);
+          } else {
+            module.notify('添加失败 🚫', `${subList[menuId].name}已存在。`);
+          }
         }
-      });
+      }
     };
     
     // 注入监听器
