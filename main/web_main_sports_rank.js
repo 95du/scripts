@@ -290,7 +290,7 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
-    const widgetMessage = '1，支持百度体育官网中大部分赛事<br>2，如需多个赛事组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、cba、常规东部、季节西部<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
+    const widgetMessage = '1，支持百度体育官网中大部分赛事<br>2，如需多个赛事组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、CBA、常规东部、季节西部<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
 
     const popupHtml = module.buttonPopup({
       settings,
@@ -448,11 +448,11 @@ async function main() {
     const addSport = async ({ label, message, sta } = data) => {
       await module.generateInputAlert({
         title: label,
-        message: '在百度体育网页的列表中选择所需要的赛事，输入拷贝的链接\n例如: https://tiyu.baidu.com/match/西甲',
+        message: '在百度体育网页的列表中选择所需要的赛事，拷贝网页链接',
         options: [{ hint: '输入链接' }]
       }, 
       async ([{ value }]) => {
-        const league = value.split("match/")[1];
+        const league = value.split('match=')[1];
         const subList = settings.values;
         if (value && value.includes('tiyu.baidu') && !subList.some(item => item.value === league)) {
           subList.unshift({
