@@ -591,6 +591,7 @@ async function main(family) {
       matchStatusText,
       matchDesc,
       dateFormat,
+      liveStageTime,
       liveStage,
       liveStageText,
       leftLogo,
