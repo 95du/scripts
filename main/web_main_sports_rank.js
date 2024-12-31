@@ -3,9 +3,9 @@
 // icon-color: purple; icon-glyph: trophy;
 
 async function main() {
-  const scriptName = '体育赛事'
+  const scriptName = '体育赛事排名'
   const version = '1.0.0'
-  const updateDate = '2024年12月23日'
+  const updateDate = '2025年01月01日'
   const pathName = '95du_sports_rank';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -332,7 +332,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'range-separ1')}</script>
+        <script>${await module.runScripts(formItems, settings, 'separ')}</script>
         ${scriptTags}
       </body>
     </html>`;
