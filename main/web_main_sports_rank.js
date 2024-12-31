@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: trophy;
+// icon-color: purple; icon-glyph: trophy;
 
 async function main() {
   const scriptName = '体育赛事'
@@ -51,57 +51,10 @@ async function main() {
    * 读取储存的设置
    * @param {string} file - JSON
    * @returns {object} - JSON
-   */    
-  const values = [
-    {
-      label: "英超",
-      value: "英超"
-    },
-    {
-      label: "西甲",
-      value: "西甲"
-    },
-    {
-      label: "德甲",
-      value: "德甲"
-    },
-    {
-      label: "意甲",
-      value: "意甲"
-    },
-    {
-      label: "法甲",
-      value: "法甲"
-    },
-    {
-      label: "欧冠",
-      value: "欧冠"
-    },
-    {
-      label: "苏超",
-      value: "苏超",
-    },
-    {
-      label: "葡超",
-      value: "葡超"
-    },
-    {
-      label: "澳超",
-      value: "澳超"
-    },
-    {
-      label: "荷甲",
-      value: "荷甲"
-    },
-    {
-      label: "瑞士超",
-      value: "瑞士超"
-    },
-    {
-      label: "沙特超",
-      value: "沙特超"
-    },
-  ];
+   */
+
+  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "瑞士超", "沙特超"];
+  const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
     version,
@@ -122,8 +75,9 @@ async function main() {
     lightColor: '#000000',
     darkColor: '#FFFFFF',
     rangeColor: '#3F8BFF',
-    lines: 13,
+    lines: 14,
     selected: '西甲',
+    largeBg: true,
     values
   };
   
@@ -228,7 +182,7 @@ async function main() {
   const runWidget = async () => {
     const family = config.widgetFamily;
     await previewWidget(family);
-    //await module.appleOS_update();
+    await module.appleOS_update();
     
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
     if (version !== settings.version && hours >= 12) {
@@ -302,7 +256,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-8%' : '-2%') : (avatarInfo ? '-8%' : '-2%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-7%' : '-2%') : (avatarInfo ? '-7%' : '-2%')};
     }
     
     ${settings.animation ? `
@@ -318,7 +272,7 @@ async function main() {
     const listItems = [
       `<li>${updateDate}</li>`,
       `<li>新组件发布 🔥</li>`,
-      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"nba" 】将会显示对应的组件 🇩🇪</li>`
+      `<li>显示多个不同赛事，编辑桌面组件，在参数中输入 【 "西甲"，"英超"，"常规东部"，"季前西部" 】将会显示对应的组件 🇩🇪</li>`
     ].join('\n');
     
     const mainMenu = module.mainMenuTop(
@@ -336,7 +290,7 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
-    const widgetMessage = '1，支持百度体育官网中所有赛事<br>2，在桌面组件参数输入对应的赛事名称，<br>3，例如: 西甲、英超、nba、cba<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
+    const widgetMessage = '1，支持百度体育官网中大部分赛事<br>2，如需多个赛事组件，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、cba、常规东部、季节西部<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
 
     const popupHtml = module.buttonPopup({
       settings,
@@ -673,7 +627,7 @@ async function main() {
   };
   
   // 用户偏好设置菜单
-  const userMenus = module.userMenus(settings, true);
+  const userMenus = module.userMenus(settings, false);
   
   // 设置菜单页
   const settingMenu = [
@@ -955,20 +909,36 @@ async function main() {
           },
           options: [
             {
-              label: '蓝球联赛',
+              label: '蓝球赛事',
               values: [
                 {
-                  label: 'NBA',
-                  value: 'nba'
+                  label: 'NBA 常规赛东部',
+                  value: 'NBA-REGULAR-EAST', // NBA + REGULAR + EAST
+                  type: '常规赛东部排名'
+                },
+                {
+                  label: 'NBA 常规赛西部',
+                  value: 'NBA-REGULAR-WEST', // NBA + REGULAR + WEST
+                  type: '常规赛西部排名'
+                },
+                {
+                  label: 'NBA 季前赛东部',
+                  value: 'NBA-PRE-EAST', // NBA + PRE (Preseason) + EAST
+                  type: '季前赛东部排名'
+                },
+                {
+                  label: 'NBA 季前赛西部',
+                  value: 'NBA-PRE-WEST', // NBA + PRE (Preseason) + WEST
+                  type: '季前赛西部排名'
                 },
                 {
                   label: 'CBA',
-                  value: 'cba'
+                  value: 'CBA'
                 }
               ]
             },
             {
-              label: '足球联赛',
+              label: '足球赛事',
               values: settings.values
             }
           ]
