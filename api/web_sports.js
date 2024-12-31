@@ -136,12 +136,8 @@ async function main(family) {
       // 如果找到结果，则处理 events
       if (result) {
         const { list } = result.data.events;
-        const events = list.filter(event => [
-          '进球', 
-          '点球', 
-          '点球不进', 
-          '乌龙球'
-        ].includes(event.goaltype || event.type));
+        const goalEvents = ['进球', '点球', '点球不进', '乌龙球'];
+        const events = list.filter(event => goalEvents.includes(event.goaltype || event.type));
         const firstObject = events[0];
         if (firstObject) {
           return firstObject;
