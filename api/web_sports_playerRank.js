@@ -31,7 +31,7 @@ async function main(family) {
   const param = args.widgetParameter;
   if (param != null) {
     const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'cba'].includes(trimmedParam);
+    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
     setting.type = null;
     chooseSports = validParam ? trimmedParam : chooseSports;
   }
