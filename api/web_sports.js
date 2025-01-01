@@ -198,7 +198,7 @@ async function main(family) {
         const newMatches = await specifiedDateSports(lastItem.time);
         if (newMatches) tabsData.push(newMatches);
       }
-      
+  
       let data = [];
       let isMatches = null;
       let foundMatchStatus2 = false;
@@ -209,27 +209,35 @@ async function main(family) {
         const isMatchesStatus = currentList.filter(match => match.matchStatus === '1');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
-        
-        if (isMatchesStatus.length > 0 || item.weekday === '今天') {
-          isMatches = item;
-        }
-        
+        // 保留最近的状态为 2 的比赛
         if (!foundMatchStatus2 && completedMatches.length > 0) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
           foundMatchStatus2 = true;
         } else {
           item.list = nonCompletedMatches;
         }
-  
+        
+        if (isMatchesStatus.length > 0 || item.weekday === '今天') {
+          isMatches = item;
+        }
+        
         if (item.list.length > 0) {
           item.totalMatches = currentList.length;
           data.unshift(item);
         }
+      };
+      // 最后统一处理状态为 1 的比赛过滤逻辑
+      const hasStatusOne = data.some(item => item.list.some(match => match.matchStatus === '1'));
+      if (hasStatusOne) {
+        data = data.map(item => {
+          const filteredList = item.list.filter(match => match.matchStatus !== '2');
+          return { ...item, list: filteredList };
+        }).filter(item => item.list.length > 0);
       }
       // 输出结果
       return { data, isMatches, header: tplData.data.header };
-    } catch (e) {
-      console.error(`获取赛程数据出错: ${e.message}`);
+    } catch (error) {
+      console.error(`获取赛程数据出错: ${error.message}`);
     }
   };
     
@@ -244,7 +252,6 @@ async function main(family) {
   const processMatches = (data) => {
     let nextTime = null;
     let matches = null;
-    
     // 循环赛事
     const isMatchesStatus = data.list.filter(match => match.matchStatus === '1');
     if (isMatchesStatus.length > 0 && setting.loopEvent) {
@@ -360,8 +367,9 @@ async function main(family) {
     for (const item of data) {
       if (rowCount >= maxRows) break;
       if (family === 'medium') {
-        const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
-        const targetRow = (item.weekday === '今天' && hasLiveMatch) || isMatches?.list.length > 1 ? 1 : 2;
+        // 布尔值 const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
+        const liveMatches = item.list.filter(match => match.matchStatus === '1');
+        const targetRow = liveMatches.length > 4 ? '' : liveMatches.length > 0 ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
           addDateColumn(widget, item.totalMatches, item);
           rowCount++;
