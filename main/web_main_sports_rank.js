@@ -414,7 +414,6 @@ async function main() {
     };
     
     // 删减赛事
-    // 删减赛事
     const removeSport = async ({ name } = data) => {
       const subList = settings.values
       while (subList.length) {
