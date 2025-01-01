@@ -284,6 +284,39 @@ async function main() {
       ]
     },
     {
+      label: '体育赛事',
+      type: 'group',
+      items: [
+        {
+          label: '体育赛事',
+          desc: '即时足球、篮球动态',
+          version: '1.0.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_sports.js`,
+          icon: `${rootUrl}/img/icon/sports_0.png`
+        },
+        {
+          label: '球队排名',
+          desc: '全球足球、篮球等',
+          version: '1.0.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_sports_rank.js`,
+          icon: `${rootUrl}/img/icon/sports_1.png`
+        },
+        {
+          label: '赛事球员榜',
+          desc: '全球足球、篮球等',
+          version: '1.0.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_sports_playerRank.js`,
+          icon: `${rootUrl}/img/icon/sports_3.png`
+        },
+      ]
+    },
+    {
       label: '最新发布',
       type: 'group',
       items: [
