@@ -3,7 +3,7 @@
 // icon-color: purple; icon-glyph: trophy;
 /**
  * 组件作者: 95du茅台
- * 组件名称: 体育赛事排名
+ * 组件名称: 球队排名
  * 组件版本: Version 1.0.0
  * 发布时间: 2025-01-01
  * Telegram 交流群 https://t.me/+CpAbO_q_SGo2ZWE1
