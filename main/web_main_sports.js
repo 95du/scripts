@@ -290,7 +290,7 @@ async function main() {
      * 创建底部弹窗的相关交互功能
      * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
      */
-    const widgetMessage = '1，支持百度体育官网中所有赛事<br>2，在桌面组件参数输入对应的赛事名称，<br>3，例如: 西甲、英超、NBA、cba<br>4，可从百度体育官网中查看名称。<br>5，在组件注释头中查看百度体育链接。';
+    const widgetMessage = '1，支持百度体育官网中所有赛事<br>2，在桌面组件参数输入对应的赛事名称，例如: 西甲、英超、NBA、CBA<br>3，可切换比赛时页面，多场比赛时可循环切换<br>4，赛事事件即时通知';
 
     const popupHtml = module.buttonPopup({
       settings,
