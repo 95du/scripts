@@ -444,7 +444,7 @@ async function main() {
     };
     
     // 增加赛事
-    const addSport = async ({ label, message, sta } = data) => {
+    const addSport = async ({ name, sta } = data) => {
       const url = `https://tiyu.baidu.com/al/matchlist`;
       const html = await module.getCacheData(url, 240, 'matchlist.html');
       const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
@@ -463,8 +463,8 @@ async function main() {
           null, `${subList[menuId].name}( ${name} )`,
           options = ['取消', '添加']
         );
-        if (action === 1) {
-          if (name && !settings.values.some(item => item.value === name || ['NBA', 'CBA'].includes(name))) {
+        if (action === 0) break;
+        if (name && !settings.values.some(item => item.value === name || ['NBA', 'CBA'].includes(name))) {
           settings.values.unshift({
             label: name,
             value: name
@@ -474,9 +474,8 @@ async function main() {
           // 更新选取框
           module.updateSelect(webView, selectOpts);
           innerTextElementById(sta, settings.values.length);
-          } else {
-            module.notify('添加失败🚫', `${subList[menuId].name}已存在。`);
-          }
+        } else {
+          module.notify('添加失败 🚫', `${subList[menuId].name}已存在。`);
         }
       }
     };
