@@ -535,7 +535,7 @@ async function main(family) {
   
   // 比分栏
   const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText) => {
-    const scoreLength = leftGoal.length >= 1 || rightGoal.length >= 1;
+    const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     const mediumStack = mainStack.addStack();
     if (scoreLength) mediumStack.size = new Size(148, 75);
     mediumStack.layoutVertically();
