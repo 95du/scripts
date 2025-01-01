@@ -417,7 +417,7 @@ async function main() {
       const subList = settings.values
       while (subList.length) {
         const alert = new Alert();
-        alert.message = '删减赛事❓'
+        alert.message = '\n删减赛事❓'
         subList.forEach((item, index) => {
           alert.addAction(`${index + 1}，${item.label}`)
         });
