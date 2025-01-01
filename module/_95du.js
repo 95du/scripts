@@ -417,7 +417,6 @@ class _95du {
     const y = 0.5 + 0.5 * Math.sin(radianAngle);
     gradient.startPoint = new Point(1 - x, y);
     gradient.endPoint = new Point(x, 1 - y);
-    
     gradient.locations = [0, 1];
     gradient.colors = [
       new Color(randomColor, this.settings.transparency),
@@ -1404,7 +1403,7 @@ class _95du {
           });
           select.appendChild(group);
         });
-        select.style.width = '100px';
+        select.style.width = '130px';
       })();
     `, false).catch(console.error);
   };
