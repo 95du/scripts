@@ -361,7 +361,7 @@ async function main(family) {
       if (rowCount >= maxRows) break;
       if (family === 'medium') {
         const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
-        const targetRow = (item.weekday === '今天' && hasLiveMatch) || isMatches.list.length > 1 ? 1 : 2;
+        const targetRow = (item.weekday === '今天' && hasLiveMatch) || isMatches?.list.length > 1 ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
           addDateColumn(widget, item.totalMatches, item);
           rowCount++;
