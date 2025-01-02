@@ -21,7 +21,7 @@ async function main() {
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
     .catch(() => download95duModule(spareUrl));
-  const isDev = false
+  const isDev = true
   
   /** ------- 导入模块 ------- */
   
@@ -312,7 +312,7 @@ async function main() {
      */
     const previewImgUrl = [
       `${rootUrl}/img/picture/sports_0.png`,
-      `${rootUrl}/img/picture/sports_1.png`
+      `${rootUrl}/img/picture/hotSports_2.png`
     ];
     
     // =======  HTML  =======//
