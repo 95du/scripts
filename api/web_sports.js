@@ -8,7 +8,7 @@
  * 发布时间: 2024-12-28
  */
 
-async function main(family) {
+async function main(family = 'large') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -31,7 +31,7 @@ async function main(family) {
   const param = args.widgetParameter;
   if (param) {
     const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
+    const validParam = setting.values.some(item => item.value === trimmedParam) || trimmedParam.includes('NBA') || trimmedParam.includes('CBA');
     chooseSports = validParam ? trimmedParam : chooseSports;
   };
   
