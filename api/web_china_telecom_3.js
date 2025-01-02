@@ -573,7 +573,6 @@ async function main(family) {
   // 设置小部件
   const setupWidget = async () => {
     const { padding, stackPadding,  balStackSize, widgetSize } = lay;
-    const randomColor = module.getRandomItem(['#00C400', '#0099F0', '#A85EFF']);
     const halfCircleImage = await drawProgressArc();
     
     const widget = new ListWidget();
@@ -588,7 +587,7 @@ async function main(family) {
     // 余额
     const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, stackPadding, randomColor, 1);
+    const balanceStack = inSideStack(mediumStack, 5, stackPadding, '#A85EFF', 1);
     balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
