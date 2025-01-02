@@ -846,7 +846,6 @@ class _95du {
   updatePopup = (version) => {
     const creationDate = this.fm.creationDate(this.settingPath);
     const isInitialized = Date.now() - creationDate.getTime() > 300000;
-  
     if (isInitialized) {
       if (this.settings.version !== version) return '.signin-loader';
       if (this.settings.loader !== undefined && this.settings.loader !== '95du') return '.signup-loader';
@@ -1139,7 +1138,7 @@ class _95du {
   
   buttonPopup = async ({
     settings,
-    widgetMessage = '组件简介',
+    widgetMessage = '',
     formItems,
     avatarInfo,
     appImage,
