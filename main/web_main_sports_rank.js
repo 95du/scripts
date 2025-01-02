@@ -413,19 +413,27 @@ async function main() {
       })
     };
     
+    /**
+     * 展示比赛子列表菜单
+     * @param {Array} subList
+     * @returns {number} 选中的菜单索引
+     */
+    const presentSubListMenu = async (menus, message) => {
+      const alert = new Alert();
+      alert.message = message || null;
+      menus.forEach((item, index) => {
+        alert.addAction(`${index + 1}，${item.label || item.name}`);
+      });
+      alert.addCancelAction('取消');
+      return await alert.presentSheet();
+    };
+    
     // 删减赛事
     const removeSport = async ({ name } = data) => {
       const subList = settings.values
       while (subList.length) {
-        const alert = new Alert();
-        alert.message = '删减赛事❓'
-        subList.forEach((item, index) => {
-          alert.addAction(`${index + 1}，${item.label}`)
-        });
-        alert.addCancelAction('取消');
-        const menuId = await alert.presentSheet();
+        const menuId = await presentSubListMenu(subList, '\n删减赛事❓');
         if (menuId === -1) break;
-        
         const action = await module.generateAlert(
           null, `是否删除该赛事 ( ${subList[menuId].label} )❓`,
           options = ['取消', '删除'],
@@ -443,6 +451,20 @@ async function main() {
       }
     };
     
+    /**
+     * 添加运动项目到设置中
+     * @param {string} shortName
+     * @param {string} fullName
+     */
+    const setSport = (shortName) => {
+      settings.values.unshift({
+        label: shortName,
+        value: shortName,
+      });
+      settings.selected = shortName;
+      writeSettings(settings);
+    };
+    
     // 增加赛事
     const addSport = async ({ name, sta } = data) => {
       const url = `https://tiyu.baidu.com/al/matchlist`;
@@ -451,31 +473,22 @@ async function main() {
       const value = JSON.parse(match);
       const subList = value.data.tplData;
       while (subList.length > 0) {
-        const alert = new Alert();
-        subList.forEach((item, index) => {
-          alert.addAction(`${index + 1}，${item.name}`)
-        });
-        alert.addCancelAction('取消');
-        const menuId = await alert.presentSheet();
+        const menuId = await presentSubListMenu(subList);
         if (menuId === -1) break;
-        const name = subList[menuId].short_name;
+        const { short_name, name: fullName } = subList[menuId];
         const action = await module.generateAlert(
-          null, `${subList[menuId].name}( ${name} )`,
+          null, `${fullName}( ${short_name} )`,
           options = ['取消', '添加']
         );
-        if (action === 0) break;
-        if (name && !settings.values.some(item => item.value === name || ['NBA', 'CBA'].includes(name))) {
-          settings.values.unshift({
-            label: name,
-            value: name
-          });
-          settings.selected = name;
-          writeSettings(settings);
-          // 更新选取框
-          module.updateSelect(webView, selectOpts);
-          innerTextElementById(sta, settings.values.length);
-        } else {
-          module.notify('添加失败 🚫', `${subList[menuId].name}已存在。`);
+        if (action === 1) {
+          const isSportAdded = settings.values.some(item => item.value === short_name || ['NBA', 'CBA'].includes(short_name))
+          if (!isSportAdded) {
+            setSport(short_name);
+            module.updateSelect(webView, selectOpts);
+            innerTextElementById(sta, settings.values.length);
+          } else {
+            module.notify('添加失败🚫', `${fullName}已存在。`);
+          }
         }
       }
     };
