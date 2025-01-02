@@ -1317,7 +1317,6 @@ class _95du {
       .custom-img {
         margin-bottom: 10px;
       }
-      
       .popup-widget {
         clear: both;
         padding: 10px 0;
