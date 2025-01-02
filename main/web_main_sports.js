@@ -119,11 +119,10 @@ async function main() {
     const moduleJs = await module.webModule(scrUrl);
     if (moduleJs) await importModule(moduleJs).main(family);
     if (settings.update) await updateString();
-    shimoFormData(settings.selected);
+    shimoFormData(family);
   };
   
   const shimoFormData = (action) => {
-    const selectedLabel = settings.values.find(item => settings.selected === item.value)?.label || 'random';
     const req = new Request('https://shimo.im/api/newforms/forms/2wAldzZn8NFddzAP/submit');  
     req.method = 'POST';
     req.headers = {
