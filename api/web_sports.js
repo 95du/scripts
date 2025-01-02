@@ -594,7 +594,6 @@ async function main(family) {
     const { total, homeWin, draw, awayWin } = percentage || {};
     
     const {
-      key,
       matchStatus,
       matchStatusText,
       matchDesc,
@@ -613,7 +612,7 @@ async function main(family) {
     : liveStage.includes('完') 
       ? `${liveStageText} ${liveStageTime}` 
       : liveStageText;
-    scoreNotice(matches.matchId || key, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
+    scoreNotice(matches.matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
     const widget = new ListWidget();
