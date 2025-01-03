@@ -5,7 +5,7 @@
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事
  * 组件版本: Version 1.0.0
- * 发布时间: 2024-12-28
+ * 发布时间: 2025-01-01
  */
 
 async function main(family) {
@@ -188,9 +188,9 @@ async function main(family) {
   // 赛程
   const getRaceScheduleList = async () => {
     try {
-      const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
+      const url = `https://tiyu.baidu.com/al/match?match=nba&tab=%E8%B5%9B%E7%A8%8B&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
       const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
-      const tabsData = tplData.data.tabsList[0].data || [];
+      const tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
       const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
       if (totalListLength < 15) {
@@ -647,11 +647,27 @@ async function main(family) {
     return widget;
   };
   
+  const createErrorWidget = () => {
+    const widget = new ListWidget();
+    const text = widget.addText('仅支持中大尺寸');
+    text.font = Font.systemFont(16);
+    text.centerAlignText();
+    return widget;
+  };
+  
   // 
   const runWidget = async () => {
-    let { widget = null, isMatches = {} } = await createWidget();
+    let widget = null;
+    let isMatches = {};
+    
+    if (family === 'small') {
+      widget = createErrorWidget();
+    } else {
+      ({ widget, isMatches } = await createWidget());
+    }
+    
     if (isMatches && Object.keys(isMatches).length > 0) {
-      const result = processMatches(isMatches) || isMatches[1];
+      const result = processMatches(isMatches);
       if (result?.matches && setting.autoSwitch && family === 'medium') {
         widget = await createLiveWidget(result);
       }
