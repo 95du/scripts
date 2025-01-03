@@ -188,7 +188,7 @@ async function main(family) {
   // 赛程
   const getRaceScheduleList = async () => {
     try {
-      const url = `https://tiyu.baidu.com/al/match?match=nba&tab=%E8%B5%9B%E7%A8%8B&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
+      const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
       const tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
