@@ -80,7 +80,6 @@ async function main(family) {
   // 实时比分通知
   const scoreNotice = async (
     matchId,
-    matchName,
     matchStatus, 
     liveStageText, 
     team1Name, 
@@ -88,23 +87,23 @@ async function main(family) {
     team2Name, 
     team2Score
   ) => {
-    const matchNames = `${team1Name}_${team2Name}`;
+    const matchName = `${team1Name}_${team2Name}`;
     const liveScore = `${team1Name}  ${team1Score} - ${team2Score}  ${team2Name}`;
     
     if (matchStatus === '1') {
-      if (!setting[matchNames]) {
-        setting[matchNames] = { team1Score: 0, team2Score: 0 };
+      if (!setting[matchName]) {
+        setting[matchName] = { team1Score: 0, team2Score: 0 };
       }
-      if (team1Score !== setting[matchNames].team1Score || team2Score !== setting[matchNames].team2Score) {
-        setting[matchNames] = { team1Score, team2Score };
+      if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
+        setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
-        if (matchName.includes('NBA') || matchName.includes('CBA')) {
-          return module.notify(liveScore, liveStageText)
-        }
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
+        if (!events) {
+          module.notify(liveScore, liveStageText);
+        }
         const [goal] = events.left?.goal || events.right?.goal
-        if (events && goal) {
+        if (events) {
           const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
           module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
         }
@@ -280,7 +279,7 @@ async function main(family) {
     };
     
     if (matches && nextTime > -125) {
-      //return { matches };
+      return { matches };
     }
     return { matches: null };
   };
@@ -389,7 +388,7 @@ async function main(family) {
         const textOpacity = match.matchStatus === '2';
         //===== 🔔 比分通知 🔔 =====//
         if (!setting.autoSwitch && matchStatus === '1') {
-          scoreNotice(matchId, matchName, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
+          scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
         }
         
         const stack = widget.addStack();
@@ -610,7 +609,7 @@ async function main(family) {
     : liveStage.includes('完') 
       ? `${liveStageText} ${liveStageTime}` 
       : liveStageText;
-    scoreNotice(matches.matchId, matchName, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
+    scoreNotice(matches.matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
     const widget = new ListWidget();
