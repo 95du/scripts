@@ -104,15 +104,18 @@ async function main(family) {
       if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
         setting[matchName] = { team1Score, team2Score };
         writeSettings(setting);
-        if (chooseSports === 'NBA' || chooseSports === 'CBA') {
-          return module.notify(liveScore, liveStageText)
-        }
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
+        if (!events) {
+          module.notify(liveScore, liveStageText);
+        }
+        
         const [goal] = events.left?.goal || events.right?.goal
         if (events && goal) {
           const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
           module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
+        } else {
+          module.notify(liveScore, liveStageText);
         }
       }
     } else if (matchStatus === '2') {
