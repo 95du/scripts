@@ -619,7 +619,7 @@ async function main(family) {
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
-    widget.addSpacer(3);
+    widget.addSpacer(1);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
