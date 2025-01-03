@@ -94,33 +94,30 @@ async function main(family) {
     team2Name, 
     team2Score
   ) => {
-    const matchName = `${team1Name}_${team2Name}`;
+    const matchNames = `${team1Name}_${team2Name}`;
     const liveScore = `${team1Name}  ${team1Score} - ${team2Score}  ${team2Name}`;
     
     if (matchStatus === '1') {
-      if (!setting[matchName]) {
-        setting[matchName] = { team1Score: 0, team2Score: 0 };
+      if (!setting[matchNames]) {
+        setting[matchNames] = { team1Score: 0, team2Score: 0 };
       }
-      if (team1Score !== setting[matchName].team1Score || team2Score !== setting[matchName].team2Score) {
-        setting[matchName] = { team1Score, team2Score };
+      if (team1Score !== setting[matchNames].team1Score || team2Score !== setting[matchNames].team2Score) {
+        setting[matchNames] = { team1Score, team2Score };
         writeSettings(setting);
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
         if (!events) {
           module.notify(liveScore, liveStageText);
         }
-        
         const [goal] = events.left?.goal || events.right?.goal
-        if (events && goal) {
+        if (events) {
           const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
           module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
-        } else {
-          module.notify(liveScore, liveStageText);
         }
       }
     } else if (matchStatus === '2') {
-      if (setting[matchName]) {
-        delete setting[matchName];
+      if (setting[matchNames]) {
+        delete setting[matchNames];
         writeSettings(setting);
         module.notify('比赛结束', liveScore);
       }
@@ -357,7 +354,6 @@ async function main(family) {
   const createWidget = async () => {
     const { data, isMatches, header } = await getRaceScheduleList();
     const widget = new ListWidget();
-    widget.url = raceScheduleUrl;
     widget.setPadding(15, 17, 15, 17);
     const maxRows = family === 'medium' ? 6 : 15;
     let rowCount = 0;
@@ -396,11 +392,12 @@ async function main(family) {
         const { matchStatus, leftLogo, rightLogo, time, matchId, matchName, liveStageText } = match;
         const textOpacity = match.matchStatus === '2';
         //===== 🔔 比分通知 🔔 =====//
-        if (!setting.autoSwitch && matchStatus === '1') {
+        if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && liveStageText) {
           scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
         }
         
         const stack = widget.addStack();
+        stack.url = raceScheduleUrl;
         stack.layoutHorizontally();
         stack.centerAlignContent();
         widget.addSpacer(3);
@@ -611,10 +608,12 @@ async function main(family) {
     } = header || {};
     
     // ===== 🔔 比分通知 🔔 ===== //
-    const headerLiveStageText = liveStage === '中场' || matchStatus !== '1' ? `${matchDesc}  ${dateFormat}` 
-    : liveStage.includes('完') 
-      ? `${liveStageText} ${liveStageTime}` 
-      : liveStageText;
+    const liveStageSuffix = liveStage === '中场' || matchStatus !== '1' 
+      ? dateFormat 
+      : liveStage.includes('完')
+        ? `${liveStageText} ${liveStageTime}`
+        : liveStageText;
+    const headerLiveStageText = `${matchDesc}  ${liveStageSuffix}`;
     scoreNotice(matches.matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
@@ -643,7 +642,7 @@ async function main(family) {
     imageStack.size = new Size(0, 35);
     imageStack.addImage(progressChart);
     
-    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId}&tab=赛况`;
+    mainStack.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId}&tab=赛况`;
     return widget;
   };
   
