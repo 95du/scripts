@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-purple; icon-glyph: volleyball-ball;
+// icon-color: blue; icon-glyph: volleyball-ball;
 
 async function main() {
   const scriptName = '热门赛事'
@@ -250,7 +250,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-3.5%' : '-2%') : (avatarInfo ? '-3.5%' : '-2%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-6.5%' : '-2%') : (avatarInfo ? '-6.5%' : '-2%')};
     }
     
     ${settings.animation ? `
@@ -403,6 +403,18 @@ async function main() {
       })
     };
     
+    // 推荐组件
+    const installScript = async (data) => {
+      const { label, scrUrl } = JSON.parse(data);
+      const fm = FileManager.iCloud()
+      const script = await new Request(scrUrl).loadString();
+      if (script.includes('{')) {
+        const filePath = fm.documentsDirectory() + `/${label}.js`;
+        fm.writeString(filePath, script);
+        Safari.open(`scriptable:///run/${encodeURIComponent(label)}`);
+      }
+    };
+    
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
@@ -481,7 +493,7 @@ async function main() {
           Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false);
           break;
         case 'website':
-          Safari.openInApp('https://tiyu.baidu.com/al/matchlist', false);
+          Safari.openInApp('https://tiyu.baidu.com/al/live', false);
           break;
         case 'changeSettings':
           Object.assign(settings, data);
@@ -842,6 +854,15 @@ async function main() {
     {
       type: 'group',
       items: [
+        {
+          label: '百度体育',
+          name: 'website',
+          type: 'cell',
+          icon: {
+            name: 'pawprint.fill',
+            color: '#1D28DF'
+          }
+        },
         {
           label: '比分通知',
           name: 'notify',
