@@ -29,7 +29,8 @@ async function main(family) {
   
   let chooseSports = '西甲'
   const param = args.widgetParameter;
-  if (param === 0) {
+  const isNumber = param && !isNaN(Number(param));
+  if (isNumber) {
     chooseSports = 'nba'
   };
   
