@@ -7,8 +7,8 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2025-01-01
  */
-
-async function main(family = 'large') {
+await main(config.widgetFamily)
+async function main(family = 'medium') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -188,9 +188,9 @@ async function main(family = 'large') {
   // 赛程
   const getRaceScheduleList = async () => {
     try {
-      const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
+      const url = `https://tiyu.baidu.com/al/match?match=nba&tab=%E8%B5%9B%E7%A8%8B&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
       const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
-      const tabsData = tplData.data.tabsList[0].data || [];
+      const tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
       const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
       if (totalListLength < 15) {
