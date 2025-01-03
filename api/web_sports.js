@@ -570,7 +570,7 @@ async function main(family) {
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
-    mediumStack.addSpacer(3);
+    mediumStack.addSpacer(4);
   };
   
   /**
