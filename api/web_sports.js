@@ -32,6 +32,7 @@ async function main(family) {
   if (param) {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
+    setting.selected = null
     chooseSports = validParam ? trimmedParam : chooseSports;
   };
   
@@ -570,7 +571,7 @@ async function main(family) {
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
-    mediumStack.addSpacer();
+    mediumStack.addSpacer(3);
   };
   
   /**
