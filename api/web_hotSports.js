@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-purple; icon-glyph: volleyball-ball;
+// icon-color: blue; icon-glyph: volleyball-ball;
 /**
  * 组件作者: 95du茅台
  * 组件名称: 热门赛事
@@ -43,6 +43,7 @@ async function main(family) {
   const headerLogo = `${rootUrl}/img/football/hotSports.png`;
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   const raceScheduleUrl = 'https://tiyu.baidu.com/al/live';;
+  
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -566,7 +567,7 @@ async function main(family) {
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
-    mediumStack.addSpacer();
+    mediumStack.addSpacer(3);
   };
   
   /**
@@ -616,7 +617,7 @@ async function main(family) {
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
-    widget.addSpacer(3);
+    widget.addSpacer(1);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
