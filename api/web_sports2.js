@@ -27,7 +27,7 @@ async function main(family) {
     cacheStr,
   } = module;
   
-  let chooseSports
+  let chooseSports = '西甲'
   const param = args.widgetParameter;
   if (param === 0) {
     chooseSports = 'nba'
