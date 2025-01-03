@@ -32,7 +32,6 @@ async function main(family) {
   if (param) {
     const trimmedParam = param.trim();
     const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
-    setting.selected = null
     chooseSports = validParam ? trimmedParam : chooseSports;
   };
   
