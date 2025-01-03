@@ -150,7 +150,7 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const value = tplData.data;
-      const { victory, draw, lost } = value.tabsList[0].data.result.percentage;
+      const { victory = 40, draw = 20, lost = 40 } = value.tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
         total: 100,
         draw: parseInt(draw, 10),
@@ -280,7 +280,7 @@ async function main(family) {
     };
     
     if (matches && nextTime > -125) {
-      return { matches };
+      //return { matches };
     }
     return { matches: null };
   };
@@ -633,10 +633,7 @@ async function main(family) {
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
     
-    let progressChart = createThreeStageBar(total, homeWin, draw, awayWin);
-    if (!homeWin && !awayWin) {
-      progressChart = createThreeStageBar(total, homeWin || 40, draw || 20, awayWin || 40);
-    }
+    const progressChart = createThreeStageBar(total, homeWin, draw, awayWin);
     const imageStack = widget.addStack();
     imageStack.size = new Size(0, 35);
     imageStack.addImage(progressChart);
@@ -649,7 +646,7 @@ async function main(family) {
   const runWidget = async () => {
     let { widget = null, isMatches = {} } = await createWidget();
     if (isMatches && Object.keys(isMatches).length > 0) {
-      const result = processMatches(isMatches) || isMatches[1];
+      const result = processMatches(isMatches);
       if (result?.matches && setting.autoSwitch && family === 'medium') {
         widget = await createLiveWidget(result);
       }
