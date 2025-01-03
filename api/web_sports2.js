@@ -27,12 +27,11 @@ async function main(family = 'medium') {
     cacheStr,
   } = module;
   
-  let chooseSports = setting.selected;
+  let chooseSports = 'nba'
   const param = args.widgetParameter;
-  if (param) {
-    const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
-    chooseSports = validParam ? trimmedParam : chooseSports;
+  if (param != null) {
+    
+    chooseSports = 'nba'
   };
   
   const isSmall = Device.screenSize().height < 926;
