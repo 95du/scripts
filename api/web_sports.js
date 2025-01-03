@@ -640,7 +640,7 @@ async function main(family) {
     imageStack.size = new Size(0, 35);
     imageStack.addImage(progressChart);
     
-    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId || key}&tab=赛况`;
+    widget.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId}&tab=赛况`;
     return widget;
   };
   
