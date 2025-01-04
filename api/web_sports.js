@@ -7,8 +7,8 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2025-01-01
  */
-
-async function main(family) {
+await main(config.widgetFamily)
+async function main(family = 'medium') {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false
@@ -50,6 +50,7 @@ async function main(family) {
   const barBgColor = Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
+  const basketball = ['NBA', 'CBA'].includes(chooseSports);
   
   /**
    * 存储当前设置
@@ -136,7 +137,7 @@ async function main(family) {
       // 如果找到结果，则处理 events
       if (result) {
         const { list } = result.data.events;
-        const goalEvents = ['进球', '点球', '点球不进', '乌龙球'];
+        const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
         const events = list.filter(event => goalEvents.includes(event.goaltype || event.type));
         const firstObject = events[0];
         if (firstObject) {
@@ -156,7 +157,11 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const value = tplData.data;
-      const { victory = 40, draw = 20, lost = 40 } = value.tabsList?.[0]?.data?.result?.percentage || {};
+      const { 
+        victory = 40, 
+        draw = basketball ? 0 : 20, 
+        lost = 40 
+      } = value.tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
         total: 100,
         draw: parseInt(draw, 10),
@@ -191,6 +196,7 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
       const tabsData = tplData.data.tabsList[0].data;
+      
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
       const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
       if (totalListLength < 15) {
@@ -410,8 +416,7 @@ async function main(family) {
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分
-        const stackSize = ['NBA', 'CBA'].includes(chooseSports) ? 80 : 50
-        createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, stackSize, textOpacity, 'right', 'left', match.matchStatus);
+        createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, (basketball ? 80 : 50), textOpacity, 'right', 'left', match.matchStatus);
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
