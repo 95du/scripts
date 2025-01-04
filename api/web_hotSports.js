@@ -118,12 +118,14 @@ async function main(family) {
   };
   
   // 进球事件
-  const getGoalsAndPenalties = async (matchId) => {
+  const getGoalsAndPenalties = async (matchId, live) => {
     try {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
       const html = await module.httpRequest(url, 'string');
       const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
       const value = JSON.parse(match);
+      if (live) return value.data;
+      
       const tabsList = value.data.data.tabsList;
       const result = tabsList.find(tab => tab.data && tab.data.events);
       // 如果找到结果，则处理 events
@@ -643,7 +645,14 @@ async function main(family) {
     imageStack.size = new Size(0, 35);
     imageStack.addImage(progressChart);
     
-    mainStack.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matches.matchId}&tab=赛况`;
+    // 跳转赛事直播页面
+    const { data, pageUrl, liveTabText } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
+    if (liveTabText === '直播' && (data?.pcLiveList.length > 0 || data?.wiseLiveList.length > 0)) {
+      const { pcLiveList, wiseLiveList } = data || {};
+      mainStack.url = pcLiveList[0]?.link || wiseLiveList[0]?.link;
+    } else {
+      mainStack.url = pageUrl;
+    }
     return widget;
   };
   
