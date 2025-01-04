@@ -12,6 +12,7 @@
  * 
  * 如果使用中号和大号是同一个赛事，其中一个需要在桌面参数输入对应的名称。
  */
+
 const scriptName = '95du_sports';
 const filename = config.runsInApp ? 'main/web_main_sports.js' : 'api/web_sports.js';
 const scriptUrl = `https://raw.githubusercontent.com/95du/scripts/master/${filename}`;
