@@ -288,6 +288,15 @@ async function main() {
       type: 'group',
       items: [
         {
+          label: '全球热门赛事',
+          desc: '每日足球、篮球赛事',
+          version: '1.0.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_hotSports.js`,
+          icon: `${rootUrl}/img/icon/hotSports.png`
+        },
+        {
           label: '体育赛事',
           desc: '即时足球、篮球动态',
           version: '1.0.0',
@@ -503,8 +512,6 @@ async function main() {
           desc: '随机显示250部电影',
           version: '1.1.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/widget/douban_top250.js`,
           icon: `${rootUrl}/img/icon/douban.png`
         },
@@ -513,7 +520,6 @@ async function main() {
           desc: '常用国际货币汇率',
           version: '1.1.0',
           type: 'button',
-          recommend: true,
           scrUrl: `${rootUrl}/run/web_module_exchange_rate.js`,
           icon: `${rootUrl}/img/icon/exchange_rate.png`
         },
@@ -532,8 +538,6 @@ async function main() {
           desc: '最新前沿科技资讯',
           version: '1.1.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/widget/elonMusk_info.js`,
           icon: `${rootUrl}/img/icon/AI.jpeg`
         }
@@ -590,8 +594,6 @@ async function main() {
           desc: '循环切换显示小组件',
           version: '1.0.0',
           type: 'button',
-          recommend: true,
-          random: true,
           scrUrl: `${rootUrl}/widget/loopScripts.js`,
           icon: `${rootUrl}/img/icon/loopScript.png`
         },
@@ -1042,7 +1044,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${179 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${198 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
