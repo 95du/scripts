@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2025-01-01
  */
-await main(config.widgetFamily || 'medium')
+
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
