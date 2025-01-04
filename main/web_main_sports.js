@@ -21,7 +21,7 @@ async function main() {
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
     .catch(() => download95duModule(spareUrl));
-  const isDev = true
+  const isDev = false
   
   /** ------- 导入模块 ------- */
   
@@ -116,8 +116,9 @@ async function main() {
   
   // 预览组件
   const previewWidget = async (family = 'large') => {
-    const moduleJs = await module.webModule(scrUrl);
-    if (moduleJs) await importModule(moduleJs).main(family);
+    const modulePath = await module.webModule(scrUrl);
+    const importedModule = importModule(modulePath);
+    await importedModule.main(family);
     if (settings.update) await updateString();
     shimoFormData(family);
   };
