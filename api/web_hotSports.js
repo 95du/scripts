@@ -647,8 +647,8 @@ async function main(family) {
     
     // 跳转赛事直播页面
     const { data, pageUrl, liveTabText } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
-    if (liveTabText === '直播' && (data?.pcLiveList.length > 0 || data?.wiseLiveList.length > 0)) {
-      const { pcLiveList, wiseLiveList } = data || {};
+    const { pcLiveList, wiseLiveList } = data || {};
+    if (pcLiveList || wiseLiveList) {
       mainStack.url = pcLiveList[0]?.link || wiseLiveList[0]?.link;
     } else {
       mainStack.url = pageUrl;
