@@ -129,7 +129,7 @@ async function main(family) {
       // 如果找到结果，则处理 events
       if (result) {
         const { list } = result.data.events;
-        const goalEvents = ['进球', '点球', '点球不进', '乌龙球'];
+        const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
         const events = list.filter(event => goalEvents.includes(event.goaltype || event.type));
         const firstObject = events[0];
         if (firstObject) {
@@ -149,14 +149,19 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
       const value = tplData.data;
-      const { victory = 40, draw = 20, lost = 40 } = value.tabsList?.[0]?.data?.result?.percentage || {};
+      const { header } = value;
+      const { 
+        victory = 40, 
+        draw = header.sports === 'basketball' ? 0 : 20, 
+        lost = 40 
+      } = value.tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
         total: 100,
         draw: parseInt(draw, 10),
         homeWin: parseInt(victory, 10),
         awayWin: parseInt(lost, 10),
       };
-      return { header: value.header, percentage };
+      return { header, percentage };
     } catch (e) {
       console.log(e);
     }
