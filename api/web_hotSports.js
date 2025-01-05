@@ -154,7 +154,7 @@ async function main(family) {
       const { header } = value;
       const { 
         victory = 40, 
-        draw = header.sports === 'basketball' ? 0 : 20, 
+        draw = header.sports === 'basketball' ? null : 20, 
         lost = 40 
       } = value.tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
