@@ -522,7 +522,7 @@ async function main(family) {
     addBodyText(beneStack, ystdayPower, (isArrears === '1' ? Color.blue() : Color.red()), 16, 'bold');
     beneStack.addSpacer();
     
-    addBodyText(beneStack, (isArrears === '1' ? arrears : balance), isArrears === '1' ? new Color('#FF2400') : Color.blue(), 16, 'bold', 0.7);
+    addBodyText(beneStack, (isArrears === '1' ? arrears : balance), isArrears === '1' ? Color.red() : Color.blue(), 16, 'bold');
     topStack.addSpacer(4.5);
     
     const pointStack = module.createStack(topStack);
