@@ -549,7 +549,7 @@ async function main(family) {
   };
   
   // 比分栏
-  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText) => {
+  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList) => {
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     const mediumStack = mainStack.addStack();
     if (scoreLength) mediumStack.size = new Size(148, 75);
@@ -569,10 +569,10 @@ async function main(family) {
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
-    barStack.setPadding(2, 15, 2, 15);
+    barStack.setPadding(2, wiseLiveList ? 12 : 15, 2, wiseLiveList ? 12 : 15);
     barStack.cornerRadius = 8;
-    barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF5800');
-    const statusText = barStack.addText(matchStatusText);
+    barStack.backgroundColor = matchStatus === '2' ? barBgColor : wiseLiveList ? new Color('#8226DC') : new Color('#FF4800');
+    const statusText = barStack.addText(wiseLiveList ? wiseLiveList[0].category : matchStatusText);
     if (matchStatus === '2') statusText.textOpacity = 0.7;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
@@ -599,6 +599,7 @@ async function main(family) {
   const createLiveWidget = async ({ matches } = result) => {
     const { header, percentage } = await getRaceSchedule(matches.matchId);
     const { total, homeWin, draw, awayWin } = percentage || {};
+    const { data: { wiseLiveList }, pageUrl } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
     
     const {
       matchStatus,
@@ -638,7 +639,7 @@ async function main(family) {
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText);
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList);
     }
     mainStack.addSpacer();
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
@@ -650,10 +651,8 @@ async function main(family) {
     imageStack.addImage(progressChart);
     
     // 跳转赛事直播页面
-    const { data, pageUrl } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
-    const { pcLiveList, wiseLiveList } = data || {};
-    if (pcLiveList || wiseLiveList) {
-      mainStack.url = pcLiveList[0]?.link || wiseLiveList[0]?.link;
+    if (wiseLiveList) {
+      mainStack.url = wiseLiveList[0]?.link;
     } else {
       mainStack.url = pageUrl;
     }
