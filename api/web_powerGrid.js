@@ -323,7 +323,7 @@ async function main(family) {
   };
   
   // 判断年月(账单未出来前获取上月)
-  const isStartMonth = (yearMonth) => {
+  const isStartMonth = (yearMonth, isArrears) => {
     const { year, month } = getCurrentYearMonth();
     let adjustYear = year;
     let adjustMonth = month;
@@ -331,7 +331,7 @@ async function main(family) {
     const [startYear, startMonth] = yearMonth.split('-').map(Number);
     if (startYear === year) {
       adjustMonth = (month - startMonth === 1) ? month : month - 1;
-    } else if (startYear !== year) {
+    } else if (startYear !== year && isArrears === '0') {
       adjustYear -= 1;
       adjustMonth = 12;
     };
@@ -367,7 +367,7 @@ async function main(family) {
   const { 
     totalPower = '0.00 °', 
     result = [] 
-  } = await getMonthPower(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth)) || {};
+  } = await getMonthPower(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth, isArrears));
   
   const dateString = result[0]?.date;
   const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
