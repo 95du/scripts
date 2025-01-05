@@ -161,7 +161,7 @@ async function main(family) {
       const value = tplData.data;
       const { 
         victory = 40, 
-        draw = basketball ? 0 : 20, 
+        draw = basketball ? null : 20, 
         lost = 40 
       } = value.tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
@@ -621,7 +621,9 @@ async function main(family) {
       : liveStage.includes('完')
         ? `${liveStageText} ${liveStageTime}`
         : liveStageText;
-    const headerLiveStageText = `${matchDesc}  ${liveStageSuffix}`;
+    
+    const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
+    const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
     scoreNotice(matches.matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     // 创建组件
