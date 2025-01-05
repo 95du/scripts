@@ -1057,8 +1057,8 @@ class _95du {
             label: "始终深色",
             type: "switch",
             icon: {
-              name: 'globe.central.south.asia.fill',
-              color: '#F9A825'
+              name: 'moon.fill',
+              color: '#B07DFF'
             }
           },
           {
