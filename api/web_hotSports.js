@@ -343,7 +343,7 @@ async function main(family) {
     rowStack.centerAlignContent();
     if (width) rowStack.size = new Size(width, lay.stackSize);
     if (left) rowStack.addSpacer();
-    const rowText = rowStack.addText(text);
+    const rowText = rowStack.addText(text.length > 3 && isGame ? text.slice(0, 3) : text);
     rowText.font = Font.mediumSystemFont(lay.textSize);
     rowText.textOpacity = textOpacity === true || isGame ? 0.5 : 1;
     rowText.textColor = matchStatus === '1' ? Color.red() : textColor;
