@@ -476,7 +476,7 @@ async function main() {
         if (menuId === -1) break;
         const { short_name, name: fullName } = subList[menuId];
         const action = await module.generateAlert(
-          null, `${fullName}( ${short_name} )`,
+          null, `${fullName}\n( ${short_name} )`,
           options = ['取消', '添加']
         );
         if (action === 1) {
