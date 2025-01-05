@@ -646,7 +646,7 @@ async function main(family) {
     imageStack.addImage(progressChart);
     
     // 跳转赛事直播页面
-    const { data, pageUrl, liveTabText } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
+    const { data, pageUrl } = await getGoalsAndPenalties(matches.matchId, live = true) || {};
     const { pcLiveList, wiseLiveList } = data || {};
     if (pcLiveList || wiseLiveList) {
       mainStack.url = pcLiveList[0]?.link || wiseLiveList[0]?.link;
