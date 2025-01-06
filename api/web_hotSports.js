@@ -189,7 +189,7 @@ async function main(family) {
   const getRaceScheduleList = async () => {
     try {
       const url = `https://tiyu.baidu.com/al/live`;
-      const html = await module.getCacheData(url, 6, 'hotSports.html');
+      const html = await module.getCacheData(url, 2, 'hotSports.html');
       const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
       const value = JSON.parse(match);
       const liveLists = value.data.data.liveList[0].data;
