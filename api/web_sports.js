@@ -196,7 +196,7 @@ async function main(family) {
   const getRaceScheduleList = async () => {
     try {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
-      const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
+      const { tplData } = await module.getCacheData(url, 2, `${chooseSports}.json`);
       const tabsData = tplData.data.tabsList[0].data;
       
       // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
@@ -371,10 +371,10 @@ async function main(family) {
       rowCount++;
     }
     
+    // 布尔值 const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
     for (const item of data) {
       if (rowCount >= maxRows) break;
       if (family === 'medium') {
-        // 布尔值 const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
         const liveMatches = item.list.filter(match => match.matchStatus === '1');
         const targetRow = liveMatches.length > 4 ? '' : liveMatches.length > 0 ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
