@@ -1,9 +1,21 @@
 {
   "chatIDs": [
-    5635611671,
-    599459228,
-    5562482996
+    5635611671
   ],
-  "pauseIDs": [],
-  "photo": "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports.png"
+  "sports": {
+    "photo": "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_1.png",
+    "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_sports.js"
+  },
+  "player": {
+    "photo": "https://raw.githubusercontent.com/95du/scripts/master/img/bot/player_rank.png",
+    "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_sports_playerRank.js"
+  },
+  "rank": {
+    "photo": "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_rank.png",
+    "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_sports_rank.js"
+  },
+  "hotSports": {
+    "photo": "https://raw.githubusercontent.com/95du/scripts/master/img/bot/hotSports.png",
+    "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_hotSports.js"
+  }
 }
