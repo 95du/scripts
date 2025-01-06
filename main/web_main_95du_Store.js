@@ -326,39 +326,6 @@ async function main() {
       ]
     },
     {
-      label: '最新发布',
-      type: 'group',
-      items: [
-        {
-          label: '黄金时价',
-          desc: '十大珠宝品牌黄金价格',
-          version: '1.0.2',
-          type: 'button',
-          recommend: true,
-          scrUrl: `${rootUrl}/widget/gold_price.js`,
-          icon: `${rootUrl}/img/icon/gold_price.png`
-        },
-        {
-          label: '中国联通',
-          desc: '剩余流量、语音、余额',
-          version: '1.1.0',
-          type: 'button',
-          recommend: true,
-          scrUrl: `${rootUrl}/run/web_module_china_unicom.js`,
-          icon: `${rootUrl}/img/icon/china_unicom.png`
-        },
-        {
-          label: '中国电信_3',
-          desc: '剩余流量、语音、余额',
-          version: '1.1.0',
-          type: 'button',
-          recommend: true,
-          scrUrl: `${rootUrl}/run/web_module_china_telecom_3.js`,
-          icon: `${rootUrl}/img/icon/telecom.png`
-        },
-      ]
-    },
-    {
       label: '交通出行',
       type: 'group',
       items: [
@@ -460,6 +427,33 @@ async function main() {
       label: '新版组件',
       type: 'group',
       items: [
+        {
+          label: '黄金时价',
+          desc: '十大珠宝品牌黄金价格',
+          version: '1.0.2',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/widget/gold_price.js`,
+          icon: `${rootUrl}/img/icon/gold_price.png`
+        },
+        {
+          label: '中国联通',
+          desc: '剩余流量、语音、余额',
+          version: '1.1.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_china_unicom.js`,
+          icon: `${rootUrl}/img/icon/china_unicom.png`
+        },
+        {
+          label: '中国电信_3',
+          desc: '剩余流量、语音、余额',
+          version: '1.1.0',
+          type: 'button',
+          recommend: true,
+          scrUrl: `${rootUrl}/run/web_module_china_telecom_3.js`,
+          icon: `${rootUrl}/img/icon/telecom.png`
+        },
         {
           label: '节日倒计时',
           desc: '节日，西方节日，节气',
