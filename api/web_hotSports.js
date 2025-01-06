@@ -368,8 +368,9 @@ async function main(family) {
       if (rowCount >= maxRows) break;
       if (family === 'medium') {
         // 布尔值 const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
+        const tomorrowIsFirst = data[0]?.dateText?.includes('明天');
         const liveMatches = item.list.filter(match => match.matchStatus === '1');
-        const targetRow = liveMatches.length > 4 ? '' : liveMatches.length > 0 ? 1 : 2;
+        const targetRow = liveMatches.length > 4 ? '' : liveMatches.length > 0 || tomorrowIsFirst ? 1 : 2;
         if (rowCount === targetRow && rowCount + 1 < maxRows) {
           addDateColumn(widget, item.totalMatches, item);
           rowCount++;
