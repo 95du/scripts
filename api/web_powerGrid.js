@@ -206,31 +206,6 @@ async function main(family) {
       return response.data;
     }
   };
-
-  // 月账单
-  const getEleBill = async (areaCode, eleCustId) => {
-    const { currentYear } = getCurrentYearMonth();
-    const response = await getCacheString(  
-      `selectElecBill_${count}.json`,
-      'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill', {
-      electricityBillYear: currentYear,
-      areaCode,
-      eleCustId
-    });
-    
-    if (response.sta == 00) {
-      const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
-      const lsEleBill = totalArray[0];
-      const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      return { 
-        ...lsEleBill, 
-        lastMonth, 
-        totalArray, 
-        totalElectricityYear, 
-        totalPowerYear 
-      };
-    }
-  };
   
   // 余额
   const getUserBalance = async (areaCode, eleCustId) => {
@@ -258,6 +233,54 @@ async function main(family) {
       return isBilling;
     }
     return false; 
+  };
+  
+  // 判断年月(账单未出来前获取上月)
+  const isStartMonth = async (yearMonth) => {
+    const { year, month } = getCurrentYearMonth();
+    let adjustYear = year;
+    let adjustMonth = month;
+    
+    const [startYear, startMonth] = yearMonth.split('-').map(Number);
+    const isBilling = await queryBillOverview(startYear, startMonth);
+    if (!isBilling) {
+      if (startYear === year) {
+        adjustMonth = (month - startMonth === 1) ? month : month - 1;
+      } else if (startYear !== year) {
+        adjustYear -= 1;
+        adjustMonth = 12;
+      }
+    }
+    return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
+  };
+  
+  // 月账单
+  const getEleBill = async (areaCode, eleCustId) => {
+    const { currentYear } = getCurrentYearMonth();
+    const [response, balance] = await Promise.all([
+      getCacheString(
+        `selectElecBill_${count}.json`,
+        'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill',
+        { electricityBillYear: currentYear, areaCode, eleCustId }
+      ),
+      getUserBalance(areaCode, eleCustId) // 余额
+    ]);
+
+    if (response.sta == 00) {
+      const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
+      const lsEleBill = totalArray[0];
+      const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
+      const convertYearMonth = await isStartMonth(lastMonth);
+      return {
+        ...lsEleBill,
+        lastMonth,
+        convertYearMonth,
+        balance, // 余额
+        totalArray,
+        totalElectricityYear,
+        totalPowerYear
+      };
+    }
   };
   
   /**
@@ -341,25 +364,6 @@ async function main(family) {
     };
   };
   
-  // 判断年月(账单未出来前获取上月)
-  const isStartMonth = async (yearMonth) => {
-    const { year, month } = getCurrentYearMonth();
-    let adjustYear = year;
-    let adjustMonth = month;
-    
-    const [startYear, startMonth] = yearMonth.split('-').map(Number);
-    const isBilling = await queryBillOverview(startYear, startMonth);
-    if (!isBilling) {
-      if (startYear === year) {
-        adjustMonth = (month - startMonth === 1) ? month : month - 1;
-      } else if (startYear !== year) {
-        adjustYear -= 1;
-        adjustMonth = 12;
-      }
-    }
-    return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
-  };
-  
   /** -------- 提取数据 -------- **/
   
   const {  
@@ -370,12 +374,12 @@ async function main(family) {
     bindingId: eleCustId
   } =  await getUserInfo() || {};
   
-  const balance = await getUserBalance(areaCode, eleCustId);
-  
   // 提取账单
   const {
     totalArray = [],
     meteringPointId,
+    convertYearMonth,
+    balance = '0.00',  
     lastMonth = '2099-12',
     totalPower: ls_totalPower = '0.00',
     totalElectricity: ls_totalElectricity = '0.00', 
@@ -389,11 +393,10 @@ async function main(family) {
   const { 
     totalPower = '0.00 °', 
     result = [] 
-  } = await getMonthPower(areaCode, eleCustId, meteringPointId, await isStartMonth(lastMonth));
+  } = await getMonthPower(areaCode, eleCustId, meteringPointId, convertYearMonth);
   
   const dateString = result[0]?.date;
   const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
-  
   const ystdayPower = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   const dayBefore = result.length > 0 ? `${result.pop().power} °` : '0.00 °';
   
