@@ -418,7 +418,7 @@ async function main(family) {
     if (hours_duration >= 12 && isArrears == 1) {
       setting.updateTime = Date.now()
       writeSettings(setting);
-      module.notify('用电缴费通知 ‼️', `${name}，第${ls_tier} ( 电价 ${ls_rate} 元/度 )` + `\n上月用电 ${ls_totalPower} 度 ，待缴电费 ${arrears} 元`);
+      module.notify('用电缴费通知❗️', `${userName}，第${ls_tier} ( 电价 ${ls_rate} 元/度 )` + `\n上月用电 ${ls_totalPower} 度 ，待缴电费 ${arrears} 元`);
     }
   };
   
