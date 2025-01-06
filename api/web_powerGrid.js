@@ -149,7 +149,7 @@ async function main(family) {
   const getCacheString = async (jsonName, jsonUrl, requestBody) => {
     const { type } = module.getFileInfo(jsonName);
     const cache = module.useFileManager({ 
-      cacheTime: 12, type 
+      cacheTime: 8, type 
     });
     const json = cache.read(jsonName);
     if (json) return json;
@@ -217,7 +217,7 @@ async function main(family) {
       areaCode,
       eleCustId
     });
-  
+    
     if (response.sta == 00) {
       const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
       const lsEleBill = totalArray[0];
@@ -239,6 +239,25 @@ async function main(family) {
       eleCustId
     });
     return res.sta == 00 ? res.data[0].balance : '0.00';
+  };
+  
+  /**
+   * 判断当月账单是否已生成
+   * @param {number|string} 202501
+   * @returns {Promise<boolean>} 布尔值
+   */
+  const queryBillOverview = async (startYear, startMonth) => {
+    const { sta, data } = await getCacheString('queryBillOverview.json', 'https://95598.csg.cn/ucs/ma/zt/charge/queryBillOverview', {
+      yearMonth : `${startYear}${startMonth}`,
+      pageNum : 1,
+      pageSize : 10
+    });
+    if (sta == 00) {
+      const billOverviewList = data.billOverviewModelList || [];
+      const isBilling = billOverviewList.some((item) => item.totalElectricity && item.totalPower);
+      return isBilling;
+    }
+    return false; 
   };
   
   /**
@@ -323,18 +342,21 @@ async function main(family) {
   };
   
   // 判断年月(账单未出来前获取上月)
-  const isStartMonth = (yearMonth, isArrears) => {
+  const isStartMonth = async (yearMonth) => {
     const { year, month } = getCurrentYearMonth();
     let adjustYear = year;
     let adjustMonth = month;
     
     const [startYear, startMonth] = yearMonth.split('-').map(Number);
-    if (startYear === year) {
-      adjustMonth = (month - startMonth === 1) ? month : month - 1;
-    } else if (startYear !== year && isArrears === '0') {
-      adjustYear -= 1;
-      adjustMonth = 12;
-    };
+    const isBilling = await queryBillOverview(startYear, startMonth);
+    if (!isBilling) {
+      if (startYear === year) {
+        adjustMonth = (month - startMonth === 1) ? month : month - 1;
+      } else if (startYear !== year) {
+        adjustYear -= 1;
+        adjustMonth = 12;
+      }
+    }
     return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
   };
   
@@ -367,7 +389,7 @@ async function main(family) {
   const { 
     totalPower = '0.00 °', 
     result = [] 
-  } = await getMonthPower(areaCode, eleCustId, meteringPointId, isStartMonth(lastMonth, isArrears));
+  } = await getMonthPower(areaCode, eleCustId, meteringPointId, await isStartMonth(lastMonth));
   
   const dateString = result[0]?.date;
   const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
