@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '南方电网'
-  const version = '1.2.1'
-  const updateDate = '2025年01月06日'
+  const version = '1.2.3'
+  const updateDate = '2025年01月07日'
   const pathName = '95du_powerGrid';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
