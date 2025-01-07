@@ -88,7 +88,7 @@ async function main() {
     {
       label: "腾讯 Tencent",
       value: "00700",
-      market: "HK"
+      type: "HK"
     },
     {
       label: "台积电",
@@ -1020,8 +1020,7 @@ async function main() {
           icon: {
             name: 'folder.fill',
             color: '#B07DFF'
-          },
-          desc: 'Honye'
+          }
         },
         {
           label: '刷新时间',
