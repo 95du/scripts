@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-blue; icon-glyph: cog;
+// icon-color: deep-blue; icon-glyph: phone-volume;
 
 async function main() {
   const scriptName = '中国电信_3'
@@ -122,8 +122,7 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const modulePath = await module.webModule(scrUrl);
     if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main(family);
+      const importedModule = importModule(modulePath).main(family);
       if (settings.update) await updateString();
       shimoFormData(family);
     }
@@ -694,8 +693,7 @@ async function main() {
           icon: {
             name: 'folder.fill',
             color: '#B07DFF'
-          },
-          desc: 'Honye'
+          }
         },
         {
           label: '恢复设置',
