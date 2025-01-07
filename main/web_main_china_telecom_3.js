@@ -122,7 +122,7 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const modulePath = await module.webModule(scrUrl);
     if (modulePath != null) {
-      const importedModule = importModule(modulePath).main(family);
+      const importedModule = await importModule(modulePath).main(family);
       if (settings.update) await updateString();
       shimoFormData(family);
     }
