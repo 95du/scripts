@@ -245,7 +245,7 @@ async function main(family) {
     const isBilling = await queryBillOverview(startYear, startMonth);
     if (!isBilling) {
       if (startYear === year) {
-        adjustMonth = (month - startMonth === 1) ? month : month - 1;
+        adjustMonth = month === 1 ? 12 : month - 1;
       } else if (startYear !== year) {
         adjustYear -= 1;
         adjustMonth = 12;
