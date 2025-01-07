@@ -1015,8 +1015,7 @@ class _95du {
           icon: {
             name: 'folder.fill',
             color: '#B07DFF'
-          },
-          desc: 'Honye'
+          }
         },
         {
           label: '刷新时间',
