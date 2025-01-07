@@ -118,8 +118,7 @@ async function main() {
   const previewWidget = async (family = 'medium') => {
     const modulePath = await module.webModule(scrUrl);
     if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main(family);
+      const importedModule = importModule(modulePath).main(family);
       if (settings.update) await updateString();
       shimoFormData(family);
     }
@@ -170,10 +169,8 @@ async function main() {
       const moduleDir = fm.joinPath(mainPath, 'Running');
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
       fm.writeString(modulePath, str)
-      if (!settings.update) {
-        settings.version = version;
-        writeSettings(settings);
-      }
+      settings.version = version;
+      writeSettings(settings);
     }
   };
   
