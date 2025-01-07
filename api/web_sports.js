@@ -184,7 +184,8 @@ async function main(family) {
     try {
       const url = `https://tiyu.baidu.com/al/api/match/schedules?match=${encodeURIComponent(chooseSports)}&date=${nextTime}&direction=after&from=baidu_tiyu`
       if (family === 'large') {
-        const { data } = await module.getCacheData(url, 24, `${chooseSports}_${nextTime}.json`);
+        const filename = `${chooseSports}_${nextTime}.json`;
+        const { data } = await module.getCacheData(url, 24, filename);
         return data[0];
       }
     } catch (e) {
@@ -306,9 +307,9 @@ async function main(family) {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
+    leagueStack.size = new Size(0, lay.iconSize);
     const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
     const icon = leagueStack.addImage(leagueImg)
-    icon.imageSize = new Size(lay.iconSize, lay.iconSize);
     if (header.name.includes('法国')) {
       icon.tintColor = textColor;
     };
