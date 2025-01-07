@@ -618,8 +618,7 @@ async function main() {
           icon: {
             name: 'folder.fill',
             color: '#B07DFF'
-          },
-          desc: 'Honye'
+          }
         },
         {
           label: '刷新时间',
