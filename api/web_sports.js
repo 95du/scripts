@@ -363,7 +363,8 @@ async function main(family) {
     const { data, isMatches, header } = await getRaceScheduleList();
     const widget = new ListWidget();
     widget.setPadding(15, 17, 15, 17);
-    const maxRows = family === 'medium' ? 6 : 15;
+    
+    const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
     let rowCount = 0;
     if (rowCount < maxRows) {
       await addHeaderStack(widget, header);
@@ -374,18 +375,12 @@ async function main(family) {
     // 布尔值 const hasLiveMatch = item.list.some(match => match.matchStatus === '1');
     for (const item of data) {
       if (rowCount >= maxRows) break;
-      if (family === 'medium') {
-        const liveMatches = item.list.filter(match => match.matchStatus === '1');
-        const targetRow = liveMatches.length > 4 ? '' : liveMatches.length > 0 ? 1 : 2;
-        if (rowCount === targetRow && rowCount + 1 < maxRows) {
-          addDateColumn(widget, item.totalMatches, item);
-          rowCount++;
-        }
-      } else {
-        if (rowCount + 1 < maxRows) {
-          addDateColumn(widget, item.totalMatches, item);
-          rowCount++;
-        }
+      const liveMatches = item.list.filter(match => match.matchStatus === '1');
+      const targetRow = liveMatches.length > 4 ? -1 : liveMatches.length > 0 ? 1 : 2;
+      
+      if (rowCount + 1 < maxRows && (rowCount === targetRow || family !== 'medium')) {
+        addDateColumn(widget, item.totalMatches, item);
+        rowCount++;
       }
       
       for (const match of item.list) {
