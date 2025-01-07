@@ -114,8 +114,7 @@ async function main() {
   const previewWidget = async () => {
     const modulePath = await module.webModule(scrUrl);
     if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main();
+      const importedModule = await importModule(modulePath).main();
       if (settings.update) await updateString();
       shimoFormData(settings.province);
     }
