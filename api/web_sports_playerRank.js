@@ -95,9 +95,9 @@ async function main(family) {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
+    leagueStack.size = new Size(0, lay.imgSize);
     const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
-    const icon = leagueStack.addImage(leagueImg)
-    icon.imageSize = new Size(lay.imgSize, lay.imgSize);
+    const icon = leagueStack.addImage(leagueImg);
     if (header.name.includes('法国')) {
       icon.tintColor = textColor;
     };
@@ -110,7 +110,7 @@ async function main(family) {
   
   const createWidget = async () => {
     const { header, rankList } = await getMatchRankings(chooseSports);
-    const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
+    const maxCol = family === 'medium' ? 6 : rankList?.length >= setting.lines ? setting.lines : rankList?.length;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
