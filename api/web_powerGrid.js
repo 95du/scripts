@@ -393,7 +393,7 @@ async function main(family) {
   const { 
     totalPower = '0.00 °', 
     result = [] 
-  } = await getMonthPower(areaCode, eleCustId, meteringPointId, convertYearMonth);
+  } = await getMonthPower(areaCode, eleCustId, meteringPointId, convertYearMonth) || {};
   
   const dateString = result[0]?.date;
   const yearMonth = dateString?.match(/^(\d{4})-(\d{2})/)?.[0] || '2099-12'
