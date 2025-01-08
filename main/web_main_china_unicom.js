@@ -208,17 +208,78 @@ async function main() {
       previewImage
     } = options;
     
+    const [
+      authorAvatar,
+      appleHub_light,
+      appleHub_dark,
+      collectionCode,
+      cssStyle,
+      scriptTags
+    ] = await Promise.all([
+      module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`),
+      module.getCacheData(`${rootUrl}/web/cssStyle.css`),
+      module.scriptTags()
+    ]);
+    
     const avatarPath = fm.joinPath(cacheImg, 'userSetAvatar.png');
-    const authorAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
+    const userAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : authorAvatar;
     
-    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
+    /**
+     * 生成主菜单头像信息和弹窗的HTML内容
+     * @returns {string} 包含主菜单头像信息、弹窗和脚本标签的HTML字符串
+     */
+    const listItems = [
+      `<li>${updateDate}</li>`,
+      `<li>修复已知问题</li>`,
+      `<li>性能优化，改进用户体验</li>`
+    ].join('\n');
     
-    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/china_unicom.png`);
+    const mainMenu = module.mainMenuTop(
+      version, 
+      userAvatar, 
+      appleHub_dark, 
+      appleHub_light, 
+      scriptName, 
+      listItems, 
+      collectionCode
+    );
+
+    /**
+     * 底部弹窗信息
+     * 创建底部弹窗的相关交互功能
+     * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
+     */
+    const popupHtml = module.buttonPopup({
+      settings,
+      formItems,
+      avatarInfo,
+      appleHub_dark,
+      appleHub_light,
+      toggle: true
+    });
     
-    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
+    /**
+     * 组件效果图预览
+     * 图片左右轮播
+     * Preview Component Images
+     * This function displays images with left-right carousel effect.
+     */
+    previewImgHtml = async () => {
+      const pictureArr = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/china_unicom_${index}.png`);
+      const getRandomValues = (arr, num) => [...arr].sort(() => Math.random() - 0.5).slice(0, num);
+      const randomUrl = getRandomValues(pictureArr, 2);
+
+      const imageElements = randomUrl.map(async (imageUrl) => {
+        const cachedImgUrl = await module.getCacheImage(imageUrl);
+        return `<img src="${cachedImgUrl}" class="preview-img">`
+      });
     
-    const scriptTags = await module.scriptTags();
+      const imagesHtml = await Promise.all(imageElements);
+      return `<div class="preview-img-container">${imagesHtml.join('')}</div>`;
+    };
     
     /**
      * @param {string} style
@@ -228,8 +289,6 @@ async function main() {
      * @param {string} js
      * @returns {string} html
      */
-    const cssStyle = await module.getCacheData(`${rootUrl}/web/cssStyle.css`);
-
     const style =`  
     :root {
       --color-primary: #007aff;
@@ -276,64 +335,6 @@ async function main() {
     .preview-img + .preview-img {
       margin-left: 15px; /* 为第二张图片添加左侧间隔 */
     }`;
-    
-    /**
-     * 生成主菜单头像信息和弹窗的HTML内容
-     * @returns {string} 包含主菜单头像信息、弹窗和脚本标签的HTML字符串
-     */
-    const listItems = [
-      `<li>${updateDate}</li>`,
-      `<li>修复已知问题</li>`,
-      `<li>性能优化，改进用户体验</li>`
-    ].join('\n');
-    
-    const mainMenu = module.mainMenuTop(
-      version, 
-      authorAvatar, 
-      appleHub_dark, 
-      appleHub_light, 
-      scriptName, 
-      listItems, 
-      collectionCode
-    );
-
-    /**
-     * 底部弹窗信息
-     * 创建底部弹窗的相关交互功能
-     * 当用户点击底部弹窗时，显示/隐藏弹窗动画，并显示预设消息的打字效果。
-     */
-    const popupHtml = module.buttonPopup({
-      formItems,
-      avatarInfo,
-      appImage,
-      appleHub_dark,
-      appleHub_light,
-      id: 'cookie',
-      buttonColor: 'jb-red',
-      margin: '30px;',
-      text: '中国联通',
-      text2: '获取Cookie'
-    });
-    
-    /**
-     * 组件效果图预览
-     * 图片左右轮播
-     * Preview Component Images
-     * This function displays images with left-right carousel effect.
-     */
-    previewImgHtml = async () => {
-      const pictureArr = Array.from({ length: 3 }, (_, index) => `${rootUrl}/img/picture/china_unicom_${index}.png`);
-      const getRandomValues = (arr, num) => [...arr].sort(() => Math.random() - 0.5).slice(0, num);
-      const randomUrl = getRandomValues(pictureArr, 2);
-
-      const imageElements = randomUrl.map(async (imageUrl) => {
-        const cachedImgUrl = await module.getCacheImage(imageUrl);
-        return `<img src="${cachedImgUrl}" class="preview-img">`
-      });
-    
-      const imagesHtml = await Promise.all(imageElements);
-      return `<div class="preview-img-container">${imagesHtml.join('')}</div>`;
-    };
     
     // =======  HTML  =======//
     const html =`
