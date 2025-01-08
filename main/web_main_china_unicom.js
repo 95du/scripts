@@ -368,10 +368,11 @@ async function main() {
      * @param {WebView} webView
      */  
     const innerTextElementById = (elementId, newText) => {
-      webView.evaluateJavaScript(
-        `var element = document.getElementById("${elementId}-desc");
-        if (element) element.innerHTML = \`${newText}\`;
-        `, false
+      webView.evaluateJavaScript(`
+        (() => {
+          const element = document.getElementById("${elementId}-desc");
+          if (element) element.innerHTML = \`${newText}\`;
+        })()`, false
       ).catch(console.error);
     };
     
