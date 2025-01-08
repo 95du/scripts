@@ -40,7 +40,7 @@ async function main(family) {
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
   const columnColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
   const barBgColor = Color.dynamic(new Color('#dddddd'), new Color('#666666'));
-  const headerLogo = `${rootUrl}/img/football/hotSports.png`;
+  const headerLogo = `${rootUrl}/img/icon/hotSports_header.png`;
   const vsLogo = 'https://search-operate.cdn.bcebos.com/9f667cbc82505f73b7445ecb1640ecb9.png';
   const raceScheduleUrl = 'https://tiyu.baidu.com/al/live';;
   
