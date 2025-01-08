@@ -230,56 +230,26 @@ async function main() {
       previewImage
     } = options;
     
+    const [
+      authorAvatar,
+      appleHub_light,
+      appleHub_dark,
+      appImage,
+      collectionCode,
+      cssStyle,
+      scriptTags
+    ] = await Promise.all([
+      module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`),
+      module.getCacheImage(`${rootUrl}/img/icon/aMap.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`),
+      module.getCacheData(`${rootUrl}/web/cssStyle.css`),
+      module.scriptTags()
+    ]);
+    
     const avatarPath = fm.joinPath(cacheImg, 'userSetAvatar.png');
-    const authorAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
-    
-    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
-    
-    const appImage = await module.getCacheImage(`${rootUrl}/img/icon/aMap.png`);
-    
-    const collectionCode = await module.getCacheImage(`${rootUrl}/img/picture/collectionCode.jpeg`);
-    
-    const scriptTags = await module.scriptTags();
-    
-    /**
-     * @param {string} style
-     * @param {string} themeColor
-     * @param {string} avatar
-     * @param {string} popup
-     * @param {string} js
-     * @returns {string} html
-     */
-    const cssStyle = await module.getCacheData(`${rootUrl}/web/cssStyle.css`);
-
-    const style =`  
-    :root {
-      --color-primary: #007aff;
-      --divider-color: rgba(60,60,67,0.36);  
-      --divider-color-2: rgba(60,60,67,0.18);
-      --card-background: #fff;
-      --card-radius: 10px;
-      --checkbox: #ddd;
-      --list-header-color: rgba(60,60,67,0.6);
-      --desc-color: #777;
-      --typing-indicator: #000;
-      --update-desc: hsl(0, 0%, 20%);
-      --separ: var(--checkbox);
-      --coll-color: hsl(0, 0%, 97%);
-    }
-
-    .modal-dialog {
-      position: relative;
-      width: auto;
-      margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-9%' : '-3%') : (avatarInfo ? '-8%' : '-3%')};
-    }
-
-    ${settings.animation ? `
-    .list {
-      animation: fadeInUp ${settings.fadeInUp}s ease-in-out;
-    }` : ''}
-    ${cssStyle}`
+    const userAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : authorAvatar;
     
     /**
      * 生成主菜单头像信息和弹窗的HTML内容
@@ -293,7 +263,7 @@ async function main() {
     
     const mainMenu = module.mainMenuTop(
       version, 
-      authorAvatar, 
+      userAvatar, 
       appleHub_dark, 
       appleHub_light, 
       scriptName, 
@@ -332,6 +302,43 @@ async function main() {
       `${rootUrl}/img/picture/amap_family_light.png`,
       `${rootUrl}/img/picture/amap_family_dark.png`
     ];
+    
+    /**
+     * @param {string} style
+     * @param {string} themeColor
+     * @param {string} avatar
+     * @param {string} popup
+     * @param {string} js
+     * @returns {string} html
+     */
+    const style =`  
+    :root {
+      --color-primary: #007aff;
+      --divider-color: rgba(60,60,67,0.36);  
+      --divider-color-2: rgba(60,60,67,0.18);
+      --card-background: #fff;
+      --card-radius: 10px;
+      --checkbox: #ddd;
+      --list-header-color: rgba(60,60,67,0.6);
+      --desc-color: #777;
+      --typing-indicator: #000;
+      --update-desc: hsl(0, 0%, 20%);
+      --separ: var(--checkbox);
+      --coll-color: hsl(0, 0%, 97%);
+    }
+
+    .modal-dialog {
+      position: relative;
+      width: auto;
+      margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-9%' : '-3%') : (avatarInfo ? '-8%' : '-3%')};
+    }
+
+    ${settings.animation ? `
+    .list {
+      animation: fadeInUp ${settings.fadeInUp}s ease-in-out;
+    }` : ''}
+    ${cssStyle}`
     
     // =======  HTML  =======//
     const html =`
@@ -645,6 +652,10 @@ async function main() {
           innerTextBgImage();
           await previewWidget();
         }
+      },
+      file: async () => {
+        const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
+        await importModule(fileModule).main();
       },
       background: async () => {
         const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
