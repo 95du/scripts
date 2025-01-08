@@ -386,17 +386,6 @@ async function main() {
       })
     };
     
-    // 查看实时账单
-    const getUserBill = async () => {
-      const request = new Request('https://e.189.cn/user/bill.do');
-      request.headers = {
-        Cookie: settings.cookie
-      }
-      const { items } = await request.loadJSON();
-      const bill = (items[0].sumCharge) / 100;
-      notify('中国电信', `${items[0].acctName}，您当前账单 ${bill} 元。` );
-    };
-    
     // 获取 url，cookie
     const getCookie = async ({ label, message } = data) => {
       const openTelecom = await module.generateAlert(label, message,
@@ -441,167 +430,146 @@ async function main() {
       }
     };
     
+    // Alerts 配置
+    const alerts = {
+      clearCache: {
+        title: '清除缓存',
+        message: '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
+        options: ['取消', '清除'],
+        action: async () => fm.remove(cacheStr),
+      },
+      reset: {
+        title: '清空所有数据',
+        message: '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据',
+        options: ['取消', '重置'],
+        action: async () => fm.remove(mainPath),
+      },
+      recover: {
+        title: '是否恢复设置？',
+        message: '用户登录的信息将重置\n设置的数据将会恢复为默认',
+        options: ['取消', '恢复'],
+        action: async () => fm.remove(settingPath),
+      },
+    };
+    
+    // Actions 配置
+    const actions = {
+      rank: async (data) => await rank(data),
+      getCookie: async (data) => await getCookie(data),
+      boxjs: () => Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false),
+      boxjs_rewrite: () => {
+        const boxjs = module.quantumult('boxjs', 'https://github.com/chavyleung/scripts/raw/master/box/rewrite/boxjs.rewrite.quanx.conf');
+        Safari.open(boxjs);
+      },
+      rewrite: () => {
+        const rewrite123 = module.quantumult('中国电信', 'https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_10000_loginUrl.conf');
+        Safari.open(rewrite123);
+      },
+      1: async (data) => await installScript(data),
+      telegram: () => Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false),
+      updateCode: async () => await updateVersion(),
+      period: async (data) => await period(data),
+      preview: async (data) => await previewWidget(data.family),
+      changeSettings: (data) => {
+        Object.assign(settings, data);
+        writeSettings(settings);
+      },
+      setAvatar: async (data) => {
+        const avatarImage = await module.drawSquare(Image.fromData(Data.fromBase64String(data)));
+        fm.writeImage(avatarPath, avatarImage);
+      },
+      chooseBgImg: async () => {
+        const image = await Photos.fromLibrary().catch((e) => console.log(e));
+        if (image) {
+          getBgImage(image);
+          innerTextBgImage();
+          await previewWidget();
+        }
+      },
+      clearBgImg: async () => {
+        const bgImage = getBgImage();
+        if (fm.fileExists(bgImage)) {
+          fm.remove(bgImage);
+          innerTextBgImage();
+          await previewWidget();
+        }
+      },
+      file: async () => {
+        const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
+        await importModule(fileModule).main();
+      },
+      background: async () => {
+        const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
+        const importedModule = await importModule(modulePath);
+        await importedModule.main(cacheImg);
+        await previewWidget();
+      },
+      store: async () => {
+        const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
+        await importModule(storeModule).main();
+        module.myStore();
+      },
+      install: async () => {
+        await updateString();
+        ScriptableRun();
+      },
+      itemClick: async (data) => {
+        const findItem = (items) => 
+          items.reduce((found, item) => found || (item.name === data.name ? item : (item.type === 'group' && findItem(item.items))), null);
+        const item = data.type === 'page' ? findItem(formItems) : data;
+        data.type === 'page' 
+          ? await renderAppView(item, false, { settings }) 
+          : onItemClick?.(data, { settings });
+      }
+    };
+    
+    // 处理事件
+    const handleEvent = async (code, data) => {
+      if (alerts[code]) {
+        const { title, message, options, action } = alerts[code];
+        const userAction = await module.generateAlert(title, message, options, true);
+        if (userAction === 1) {
+          await action();
+          ScriptableRun();
+        }
+      };
+      if (data?.input) {
+        await input(data);
+      };
+      if (actions[code]) {
+        await actions[code](data);
+      }
+    };
+    
     // 注入监听器
     const injectListener = async () => {
       const event = await webView.evaluateJavaScript(
         `(() => {
-          const controller = new AbortController()
+          const controller = new AbortController();
           const listener = (e) => {
-            completion(e.detail)
-            controller.abort()
-          }
+            completion(e.detail);
+            controller.abort();
+          };
           window.addEventListener(
-            'JBridge',
-            listener,
-            { signal: controller.signal }
-          )
+            'JBridge', listener, { signal: controller.signal }
+          );
         })()`,
         true
       ).catch((err) => {
         console.error(err);
       });
-      
-      const { code, data } = event;
-      if (code === 'clearCache') {
-        const action = await module.generateAlert(  
-          '清除缓存', '是否确定删除所有缓存？\n离线内容及图片均会被清除。',
-          options = ['取消', '清除']
-        );
-        if ( action === 1 ) {
-          fm.remove(cacheStr);
-          //fm.remove(cacheImg);
-          ScriptableRun();
-        }
-      } else if (code === 'reset') {
-        const action = await module.generateAlert(
-          '清空所有数据', 
-          '该操作将把用户储存的所有数据清除，重置后等待5秒组件初始化并缓存数据', 
-          ['取消', '重置'], '重置'
-        );
-        if ( action === 1 ) {
-          fm.remove(mainPath);
-          ScriptableRun();
-        }
-      } else if ( code === 'recover' ) {
-        const action = await module.generateAlert(  
-          '是否恢复设置 ？', 
-          '用户登录的信息将重置\n设置的数据将会恢复为默认',   
-          options = ['取消', '恢复']
-        );
-        if ( action === 1 ) {
-          writeSettings(DEFAULT);
-          ScriptableRun();
-        }
-      } else if (code === 'app') {
-        Timer.schedule(350, false, async () => {
-          await input({
-            label: '捐赠弹窗',
-            name: 'loader',
-            other: true,
-            message: '输入 ( 95du ) 即可关闭捐赠弹窗'
-          })
-        });
-      } else if ( data?.input ) {
-        await input(data);
-      };
-      
-      // switch
-      switch (code) {
-        case 1:
-          await installScript(data);
-          break;
-        case 'setAvatar':
-          fm.writeImage(
-            avatarPath, 
-            await module.drawSquare( Image.fromData(Data.fromBase64String(data)) )
-          );
-          break;
-        case 'telegram':
-          Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false);
-          break;
-        case 'alipay':
-          Timer.schedule(650, false, () => { Safari.open('alipays://platformapi/startapp?appId=2021001164644764', false) });
-          break;
-        case 'changeSettings':
-          Object.assign(settings, data);
-          writeSettings(settings);
-          break;
-        case 'updateCode':
-          await updateVersion();
-          break;
-        case 'period':
-          await period(data);
-          break;
-        case 'preview':
-          await previewWidget(data.family);
-          break;
-        case 'chooseBgImg':
-          const image = await Photos.fromLibrary();
-          getBgImage(image);
-          innerTextBgImage();
-          await previewWidget();
-          break;
-        case 'clearBgImg':
-          const bgImagePath = fm.fileExists(getBgImage());
-          if (bgImagePath) {
-            fm.remove(getBgImage());
-            innerTextBgImage();
-            await previewWidget();
-          }
-          break;
-        case 'file':
-          const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
-          await importModule(await fileModule).main();
-          break;
-        case 'background':
-          const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
-          await importModule(await modulePath).main(cacheImg);
-          await previewWidget();
-          break;
-        case 'store':
-          const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
-          await importModule(await storeModule).main();
-          module.myStore();
-          break;
-        case 'install':
-          await updateString();
-          ScriptableRun();
-          break;
-        case 'cookie':
-          settings.cookie ? await getUserBill() : '';
-          break;
-        case 'getCookie':
-          await getCookie(data);
-          break;
-        case 'rewrite':
-          const rewrite123 = module.quantumult('中国电信', 'https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_10000_loginUrl.conf');
-          Safari.open(rewrite123);
-          break;
-        case 'boxjs_rewrite':
-          const boxjs = module.quantumult('boxjs', 'https://github.com/chavyleung/scripts/raw/master/box/rewrite/boxjs.rewrite.quanx.conf');
-          Safari.open(boxjs);
-          break;
-        case 'boxjs':
-          Safari.openInApp(`http://boxjs.com/#/sub/add/${rootUrl}/boxjs/subscribe.json`, false);
-          break;
-        case 'itemClick':      
-          const findItem = (items) => items.reduce((found, item) => found || (item.name === data.name ? item : (item.type === 'group' && findItem(item.items))), null);
-          
-          const item = data.type === 'page' ? findItem(formItems) : data;
-          
-          data.type === 'page' ? await renderAppView(item, false, { settings }) : onItemClick?.(data, { settings });
-          break;
-      };
-      // Remove Event Listener
-      if ( event ) {
+    
+      if (event) {
+        const { code, data } = event;
+        await handleEvent(code, data);
         webView.evaluateJavaScript(
           `window.dispatchEvent(new CustomEvent('JWeb', { detail: { code: 'finishLoading'} }))`,
           false
         );
-      };
+      }
       await injectListener();
     };
-  
+    // 启动监听器
     injectListener().catch((e) => {
       console.error(e);
     });
