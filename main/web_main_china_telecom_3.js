@@ -365,10 +365,11 @@ async function main() {
      */
     const innerTextElementById = (elementId, newText) => {
       const newHTML = newText ?? module.addColorDesc(settings);
-      webView.evaluateJavaScript(
-        `var element = document.getElementById("${elementId}-desc");
-        if (element) element.innerHTML = \`${newHTML}\`;
-        `, false
+      webView.evaluateJavaScript(`
+        (() => {
+          const element = document.getElementById("${elementId}-desc");
+          if (element) element.innerHTML = \`${newHTML}\`;
+        })()`, false
       ).catch(console.error);
     };
     
