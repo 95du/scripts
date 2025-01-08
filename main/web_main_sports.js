@@ -354,7 +354,7 @@ async function main() {
     const innerTextElementById = (elementId, newText) => {
       webView.evaluateJavaScript(`
         (() => {
-          var element = document.getElementById("${elementId}-desc");
+          const element = document.getElementById("${elementId}-desc");
           if (element) element.innerHTML = \`${newText}\`;
         })()`, false
       ).catch(console.error);
