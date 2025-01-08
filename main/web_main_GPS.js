@@ -361,10 +361,11 @@ async function main() {
      * @param {WebView} webView
      */  
     const innerTextElementById = (elementId, newText) => {
-      webView.evaluateJavaScript(
-        `var element = document.getElementById("${elementId}-desc");
-        if (element) element.innerHTML = \`${newText}\`;
-        `, false
+      webView.evaluateJavaScript(`
+        (() => {
+          const element = document.getElementById("${elementId}-desc");
+          if (element) element.innerHTML = \`${newText}\`;
+        })()`, false
       ).catch(console.error);
     };
     
@@ -428,7 +429,6 @@ async function main() {
         const [imei, password] = inputArr.map(({ value }) => value);
         settings.imei = !imei ? '' : Number(imei);
         settings.password = !password ? '' : Number(password);
-        
         writeSettings(settings);
         innerTextElementById(name, imei && password ? '已登录' : '未登录')
         await previewWidget('medium');
@@ -448,10 +448,9 @@ async function main() {
       }, 
       async (inputArr) => {
         const [tokenUrl, touser, agentid] = inputArr.map(({ value }) => value);
-        settings.tokenUrl = tokenUrl ?? ''
-        settings.touser = touser ? touser : ''
-        settings.agentid = agentid ? Number(agentid) : ''
-          
+        settings.tokenUrl = tokenUrl ?? '';
+        settings.touser = touser ? touser : '';
+        settings.agentid = agentid ? Number(agentid) : '';
         writeSettings(settings);
         innerTextElementById(name, tokenUrl && touser && agentid ? '已添加' : '未添加');
       });
