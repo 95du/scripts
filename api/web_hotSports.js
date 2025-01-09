@@ -311,9 +311,9 @@ async function main(family) {
     const sf = SFSymbol.named('arrow.triangle.2.circlepath');
     const symbol = leagueStack.addImage(sf.image);
     symbol.imageSize = new Size(lay.stackSize, lay.stackSize);
-//     symbol.tintColor = textColor;
     leagueStack.addSpacer(5);
-    createText(leagueStack, module.formatDate(Date.now(), 'hourMin'), lay.titleSize);
+    const format = setting.dateFormat ? 'short' : 'hourMin';
+    createText(leagueStack, module.formatDate(Date.now(), format), lay.titleSize);
     return leagueStack;
   };
   
@@ -334,8 +334,8 @@ async function main(family) {
     dateStack.backgroundColor = item.dateText.includes('今天') 
       ? new Color('#CCC400', 0.15) 
       : item.dateText.includes('明天') 
-      ? new Color('#8C7CFF', 0.15) 
-      : new Color('#999999', 0.2);
+        ? new Color('#8C7CFF', 0.15) 
+        : new Color('#999999', 0.18);
     createColumnText(dateStack, item.dateText.replace('/', '   '));
     dateStack.addSpacer();
     createColumnText(dateStack, `${totalMatches}场比赛`);
@@ -431,7 +431,7 @@ async function main(family) {
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
-    let interval = 2;
+    let interval = awayWin < 10 ? 1 : 2
     let intervals = 2 * interval;
     
     const ctx = new DrawContext();
@@ -522,15 +522,15 @@ async function main(family) {
     const logoStack = verticalStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.addSpacer();
-    const logo = await module.getCacheData(logoUrl, 240, `${teamName}.png`);
+    const logo = await module.getCacheData(logoUrl, 240, `${teamName || 'vsLogo'}.png`);
     const logoImage = logoStack.addImage(logo);
     logoImage.imageSize = new Size(imgSize, imgSize);
-    if (!teamName) {
+    if (size) {
       verticalStack.size = new Size(size, size - 5);
       logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
     }
     logoStack.addSpacer();
-    verticalStack.addSpacer(size ? teamName : 5);
+    verticalStack.addSpacer(size ? teamName : 6);
     
     if (teamName) {
       const titleStack = verticalStack.addStack();
@@ -571,7 +571,6 @@ async function main(family) {
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
-    mediumStack.addSpacer(4);
   };
   
   /**
@@ -623,9 +622,9 @@ async function main(family) {
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
-    widget.addSpacer(1);
     
     const mainStack = widget.addStack();
+    mainStack.setPadding(0, 0, 5, 0);
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
