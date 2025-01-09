@@ -586,6 +586,15 @@ async function main() {
             color: '#00ABF4'
           }
         },
+        {
+          label: '长短日期',
+          name: 'dateFormat',
+          type: 'switch',
+          icon: {
+            name: 'text.line.first.and.arrowtriangle.forward',
+            color: '#FFA500'
+          }
+        },
       ]
     },
     {
