@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '体育赛事'
-  const version = '1.0.1'
-  const updateDate = '2025年01月04日'
+  const version = '1.0.2'
+  const updateDate = '2025年01月09日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -188,7 +188,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，尝试修复NBA未显示问题，需重新安装新的脚本。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -674,6 +674,15 @@ async function main() {
           icon: {
             name: 'video.fill',
             color: '#00C400'
+          }
+        },
+        {
+          label: '更新时间',
+          name: 'dateFormat',
+          type: 'switch',
+          icon: {
+            name: 'text.line.first.and.arrowtriangle.forward',
+            color: '#FFA500'
           }
         },
       ]
