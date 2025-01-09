@@ -308,7 +308,12 @@ async function main(family) {
     leagueStack.addSpacer(5);
     createText(leagueStack, '热门赛事', lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, '篮球足球联赛', lay.titleSize);
+    const sf = SFSymbol.named('arrow.triangle.2.circlepath');
+    const symbol = leagueStack.addImage(sf.image);
+    symbol.imageSize = new Size(lay.stackSize, lay.stackSize);
+//     symbol.tintColor = textColor;
+    leagueStack.addSpacer(5);
+    createText(leagueStack, module.formatDate(Date.now(), 'hourMin'), lay.titleSize);
     return leagueStack;
   };
   
