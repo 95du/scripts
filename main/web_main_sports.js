@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-purple; icon-glyph: volleyball-ball;
+// icon-color: deep-green; icon-glyph: volleyball-ball;
 
 async function main() {
   const scriptName = '体育赛事'
@@ -53,7 +53,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "俄超", "国王杯", "沙特超", "瑞士超"];
+  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "俄超", "沙特超", "瑞士超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
@@ -368,7 +368,6 @@ async function main() {
         'chooseBgImg',
         isSetBackground
       );
-      
       settings.chooseBgImg_status = isSetBackground;
       writeSettings(settings);
     };
@@ -408,8 +407,7 @@ async function main() {
       async (inputArr) => {
         const [startTime, endTime] = inputArr.map(({ value }) => value);
         settings.startTime = startTime ? Number(startTime) : ''
-        settings.endTime = endTime ? Number(endTime) : ''
-        
+        settings.endTime = endTime ? Number(endTime) : '';
         const inputStatus = startTime || endTime ? '已设置' : '默认';
         settings[`${name}_status`] = inputStatus;
         writeSettings(settings);
@@ -654,13 +652,6 @@ async function main() {
           }
         },
         {
-          label: '比分通知',
-          name: 'notify',
-          type: 'switch',
-          icon: `${rootUrl}/img/symbol/notice.png`,
-          default: true
-        },
-        {
           name: "autoSwitch",
           label: "切换界面",
           type: "switch",
@@ -669,11 +660,36 @@ async function main() {
             color: '#00ABF4'
           }
         },
+        {
+          label: '比分通知',
+          name: 'notify',
+          type: 'switch',
+          icon: `${rootUrl}/img/symbol/notice.png`,
+          default: true
+        },
+        {
+          label: '直播状态',
+          name: 'displayLive',
+          type: 'switch',
+          icon: {
+            name: 'video.fill',
+            color: '#00C400'
+          }
+        },
       ]
     },
     {
       type: 'group',
       items: [
+        {
+          label: '视频直播',
+          name: 'videoColor',
+          type: 'color',
+          icon: {
+            name: 'questionmark.video.fill',
+            color: '#FFA200'
+          }
+        },
         {
           label: '日期夜间',
           name: 'dateColor',
