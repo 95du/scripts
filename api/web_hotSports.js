@@ -361,7 +361,7 @@ async function main(family) {
     const { data, isMatches } = await getRaceScheduleList();
     const widget = new ListWidget();
     widget.setPadding(15, 17, 15, 17);
-    const maxRows = family === 'medium' ? 6 : family = 'large' ? 15 : 6;
+    const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
     let rowCount = 0;
     if (rowCount < maxRows) {
       await addHeaderStack(widget);
