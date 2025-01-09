@@ -308,12 +308,12 @@ async function main(family) {
     leagueStack.addSpacer(5);
     createText(leagueStack, '热门赛事', lay.titleSize);
     leagueStack.addSpacer();
+    const format = setting.dateFormat ? 'short' : 'hourMin';
+    createText(leagueStack, module.formatDate(Date.now(), format), lay.titleSize);
+    leagueStack.addSpacer(5);
     const sf = SFSymbol.named('arrow.triangle.2.circlepath');
     const symbol = leagueStack.addImage(sf.image);
     symbol.imageSize = new Size(lay.stackSize, lay.stackSize);
-    leagueStack.addSpacer(5);
-    const format = setting.dateFormat ? 'short' : 'hourMin';
-    createText(leagueStack, module.formatDate(Date.now(), format), lay.titleSize);
     return leagueStack;
   };
   
@@ -384,7 +384,7 @@ async function main(family) {
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
         const startTimeDiff = (startTime - new Date()) / (60 * 1000);
-        if (startTimeDiff > -200 && startTimeDiff <= 60) {
+        if (startTimeDiff > -180 && startTimeDiff <= 60) {
           updateCacheFile();
         }
         
@@ -567,7 +567,7 @@ async function main(family) {
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : wiseLiveList ? new Color('#8226DC') : new Color('#FF4800');
     const statusText = barStack.addText(wiseLiveList ? wiseLiveList[0].category : matchStatusText);
-    if (matchStatus === '2') statusText.textOpacity = 0.7;
+    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
