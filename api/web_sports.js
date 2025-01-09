@@ -316,7 +316,16 @@ async function main(family) {
     leagueStack.addSpacer(12);
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
+    const dateFormat = setting.dateFormat 
+      ? module.formatDate(Date.now(), 'hourMin')
+      : header.info.replace('赛季', '')
+    createText(leagueStack, dateFormat, lay.titleSize);
+    if (setting.dateFormat) {
+      leagueStack.addSpacer(5);
+      const sf = SFSymbol.named('arrow.triangle.2.circlepath');
+      const symbol = leagueStack.addImage(sf.image);
+      symbol.imageSize = new Size(lay.stackSize, lay.stackSize);
+    };
     return leagueStack;
   };
   
@@ -388,11 +397,11 @@ async function main(family) {
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
         const startTimeDiff = (startTime - new Date()) / (60 * 1000);
-        if (startTimeDiff > -200 && startTimeDiff <= 60) {
+        if (startTimeDiff > -180 && startTimeDiff <= 60) {
           updateCacheFile();
         }
         
-        const { matchId, matchName, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
+        const { matchId, matchName, matchType, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
         const textOpacity = match.matchStatus === '2';
         //===== 🔔 比分通知 🔔 =====//
         if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && liveStageText) {
@@ -400,6 +409,7 @@ async function main(family) {
         }
         
         const stack = widget.addStack();
+        stack.size = new Size(0, lay.stackSize);
         stack.url = raceScheduleUrl;
         stack.layoutHorizontally();
         stack.centerAlignContent();
@@ -419,7 +429,8 @@ async function main(family) {
           icon.imageSize = new Size(lay.stackSize, lay.stackSize);
           icon.tintColor = new Color(setting.videoColor || '#00C400');
         } else {
-          createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, (basketball ? 80 : 50), textOpacity, 'right', 'left', matchStatus);
+          const typeSize = matchType === 'basketball' ? 80 : 50;
+          createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, typeSize, textOpacity, 'right', 'left', matchStatus);
         }
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
