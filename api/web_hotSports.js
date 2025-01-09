@@ -652,12 +652,28 @@ async function main(family) {
     return widget;
   };
   
+  const createErrorWidget = () => {
+    const widget = new ListWidget();
+    const text = widget.addText('仅支持中大尺寸');
+    text.font = Font.systemFont(16);
+    text.centerAlignText();
+    return widget;
+  };
+  
   // 
   const runWidget = async () => {
-    let { widget = null, isMatches = {} } = await createWidget();
+    let widget = null;
+    let isMatches = {};
+    
+    if (family === 'small') {
+      widget = createErrorWidget();
+    } else {
+      ({ widget, isMatches } = await createWidget());
+    }
+    
     if (isMatches && Object.keys(isMatches).length > 0) {
       const result = processMatches(isMatches);
-      if (result?.matches && setting.autoSwitch && family === 'medium') {
+      if (result?.matches && family === 'medium' && setting.autoSwitch) {
         widget = await createLiveWidget(result);
       }
     }
