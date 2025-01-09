@@ -323,6 +323,7 @@ async function main(family) {
     if (setting.dateFormat) {
       leagueStack.addSpacer(5);
       const sf = SFSymbol.named('arrow.triangle.2.circlepath');
+      sf.applyMediumWeight();
       const symbol = leagueStack.addImage(sf.image);
       symbol.imageSize = new Size(lay.stackSize, lay.stackSize);
     };
@@ -450,7 +451,7 @@ async function main(family) {
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
-    let interval = awayWin < 10 ? 1 : 2
+    let interval = draw === 0 && awayWin < 10 ? 1 : 2;
     let intervals = 2 * interval;
     
     const ctx = new DrawContext();
