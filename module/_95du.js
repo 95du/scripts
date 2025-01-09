@@ -586,13 +586,15 @@ class _95du {
   
   /**
    * Timestamp Formatter
+   * 21:59 (hourMin)
    * 11-05 21:59 (short) 
    * 2024-11-05 21:59 (long)
    * @param {number} timestamp
    * @param {boolean} short (true)
    */
-  formatDate(timestamp, short) {
-    return new Date(timestamp + 8 * 3600000).toISOString().slice(short ? 5 : 0, 16).replace('T', ' ');  
+  formatDate(timestamp, format) {
+    const index = format === 'hourMin' ? 11 : format === 'short' ? 5 : 0;
+    return new Date(timestamp + 8 * 3600000).toISOString().slice(index, 16).replace('T', ' ');
   };
   
   /**  
