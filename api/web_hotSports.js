@@ -358,7 +358,6 @@ async function main(family) {
   
   // 创建组件
   const createWidget = async () => {
-    const { data, isMatches } = await getRaceScheduleList();
     const widget = new ListWidget();
     widget.setPadding(15, 17, 15, 17);
     const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
@@ -369,6 +368,7 @@ async function main(family) {
       rowCount++;
     }
     
+    const { data, isMatches } = await getRaceScheduleList();
     for (const item of data) {
       if (rowCount >= maxRows) break;
       const liveMatches = item.list.filter(match => match.matchStatus === '1');
