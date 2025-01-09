@@ -384,17 +384,15 @@ async function main(family) {
       { radius: 70, progress: voice, color: voiceColor },
       { radius: 55, progress: flow, color: flowColor }  
     ];
-    const arrangeProgress = progressData.map((item, i) => {
+    const arrangeProgress = progressData.map((items, i) => {
       const { progress, color } = progressData[rank[i].value];
-      return { ...item, progress, color };
+      return { ...items, progress, color };
     });
     
-    const canvas = await drawCircle(arrangeProgress);
-    const circle = canvas.getImage();
     const circleStack = mainStack.addStack();
-    circleStack.size = new Size(0, lay.circle);
-    circleStack.addImage(circle);
-    
+    circleStack.size = new Size(lay.circle, lay.circle);
+    const canvas = await drawCircle(arrangeProgress);
+    circleStack.backgroundImage = canvas.getImage();
     return widget;
   };
   
