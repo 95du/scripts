@@ -37,6 +37,7 @@ async function main(family) {
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
+    scoreSize: isSmall ? 74 : 77,
     imgSize: isSmall ? 50 : 53,
     vsLogoSize: isSmall ? 40 : 43,
     stackSize: isSmall ? 18 : 20,
@@ -561,11 +562,11 @@ async function main(family) {
   
   // 比分栏
   const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList) => {
-    const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     const mediumStack = mainStack.addStack();
-    if (scoreLength) mediumStack.size = new Size(148, 75);
     mediumStack.layoutVertically();
-    mediumStack.addSpacer();
+    const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
+    mediumStack.size = new Size(scoreLength ? 148 : 0, lay.scoreSize);
+    mediumStack.addSpacer(5);
     
     const scoreStack = mediumStack.addStack();
     scoreStack.layoutHorizontally();
@@ -584,10 +585,11 @@ async function main(family) {
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : wiseLiveList ? new Color('#8226DC') : new Color('#FF4800');
     const statusText = barStack.addText(wiseLiveList ? wiseLiveList[0].category : matchStatusText);
-    if (matchStatus === '2') statusText.textOpacity = 0.7;
+    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     statusStack.addSpacer();
+    mediumStack.addSpacer(2);
   };
   
   /**
@@ -639,22 +641,19 @@ async function main(family) {
     
     // 创建组件
     const widget = new ListWidget();
-    widget.setPadding(15, 20, 5, 20);
+    widget.setPadding(15, 18, 5, 18);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
-    widget.addSpacer(3);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
-    mainStack.addSpacer();
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
       createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList);
     }
-    mainStack.addSpacer();
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
     
