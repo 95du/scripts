@@ -7,7 +7,7 @@
  * 组件版本: Version 1.0.0
  * 发布时间: 2025-01-03
  */
-
+await main(config.widgetFamily || 'medium')
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
@@ -623,9 +623,9 @@ async function main(family) {
     widget.setPadding(15, 20, 5, 20);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
+    widget.addSpacer(3);
     
     const mainStack = widget.addStack();
-    mainStack.setPadding(0, 0, 5, 0);
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
