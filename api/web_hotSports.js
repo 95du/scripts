@@ -100,13 +100,14 @@ async function main(family) {
         writeSettings(setting);
         // 进球事件
         const events = await getGoalsAndPenalties(matchId);
-        if (!events) {
-          module.notify(liveScore, liveStageText);
-        }
-        const [goal] = events.left?.goal || events.right?.goal
         if (events) {
-          const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
-          module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
+          const goals = events.left?.goal || events.right?.goal
+          goals.forEach((goal) => {
+            const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
+            module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
+          });
+        } else {
+          module.notify(liveScore, liveStageText);
         }
       }
     } else if (matchStatus === '2') {
@@ -433,7 +434,7 @@ async function main(family) {
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
-    let interval = draw === 0 && awayWin < 10 ? 1 : 2;
+    let interval = Number.isNaN(draw) && awayWin <= 5 ? 1 : 2;
     let intervals = 2 * interval;
     
     const ctx = new DrawContext();
@@ -550,7 +551,7 @@ async function main(family) {
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
     mediumStack.size = new Size(scoreLength ? 148 : 0, lay.scoreSize);
-    mediumStack.addSpacer(5);
+    mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
     scoreStack.layoutHorizontally();
