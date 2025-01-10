@@ -37,7 +37,7 @@ async function main(family) {
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
-    scoreSize: isSmall ? 74 : 77,
+    scoreSize: isSmall ? 73 : 76,
     imgSize: isSmall ? 50 : 53,
     vsLogoSize: isSmall ? 40 : 43,
     stackSize: isSmall ? 18 : 20,
