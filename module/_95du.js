@@ -382,7 +382,7 @@ class _95du {
     const wv = new WebView();
     await wv.loadHTML(html);
     const base64Image = await wv.evaluateJavaScript(js);
-    return await new Request(base64Image).loadImage();  
+    return await new Request(base64Image).loadImage();
   };
   
   /**
@@ -1251,7 +1251,6 @@ class _95du {
       </div>
       <script>
         const popupOpen = () => { $('.signin-loader').click() };
-        
         window.onload = () => {
           setTimeout(() => {
             $('${this.updatePopup(version)}').click()
@@ -1573,7 +1572,7 @@ class _95du {
     
     if (settings.topStyle) {
       const previewImgs = await Promise.all(previewImgUrl.map(async (item) => {
-      const previewImg = await this.getCacheImage(item);
+        const previewImg = await this.getCacheImage(item);
         return previewImg;
       }));
       return `${await this.clockHtml(settings)}
