@@ -1,10 +1,10 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: volleyball-ball;
+// icon-color: cyan; icon-glyph: volleyball-ball;
 /**
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事
- * 组件版本: Version 1.0.0
+ * 组件版本: Version 1.0.3
  * 发布时间: 2025-01-01
  */
 
@@ -37,6 +37,7 @@ async function main(family) {
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
+    sportWidth: isSmall ? 90 : 95,
     scoreSize: isSmall ? 73 : 76,
     imgSize: isSmall ? 50 : 53,
     vsLogoSize: isSmall ? 40 : 43,
@@ -44,6 +45,9 @@ async function main(family) {
     iconSize: isSmall ? 21 : 23,
     titleSize: isSmall ? 15 : 16,
     textSize: isSmall ? 12 : 13,
+    padding: family === 'medium' 
+      ? [14, 18, 13, 18] 
+      : [15, 18, 15, 18],
   };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
@@ -135,11 +139,18 @@ async function main(family) {
       const html = await module.httpRequest(url, 'string');
       const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
       const value = JSON.parse(match);
-      if (live) return value.data;
-      
       const tabsList = value.data.data.tabsList;
-      const result = tabsList.find(tab => tab.data && tab.data.events);
+      
+      if (live) {
+        const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
+        return { 
+          data: value.data.data, 
+          pageUrl: value.data.pageUrl,
+          stat: statistics
+        }
+      }
       // 如果找到结果，则处理 events
+      const result = tabsList.find(tab => tab.data && tab.data.events);
       if (result) {
         const { list } = result.data.events;
         const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
@@ -196,49 +207,55 @@ async function main(family) {
     }
   };
   
+  // 补充数据的逻辑
+  const ensureMinimumMatches = async (tabsData, minCount) => {
+    let totalLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
+    while (totalLength < minCount) {
+      const lastItem = tabsData[tabsData.length - 1];
+      const newMatches = await specifiedDateSports(lastItem.time);
+      if (newMatches && newMatches.list.length > 0) {
+        tabsData.push(newMatches);
+        totalLength += newMatches.list.length;
+      } else { break }
+    }
+    return tabsData;
+  };
+  
   // 赛程
   const getRaceScheduleList = async () => {
     try {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.getCacheData(url, 2, `${chooseSports}.json`);
-      const tabsData = tplData.data.tabsList[0].data;
-      
-      // 如果总长度小于等于15，添加对象到data的最后，否则 data.pop()
-      const totalListLength = tabsData.reduce((sum, item) => sum + item.list.length, 0);
-      if (totalListLength < 15) {
-        const lastItem = tabsData[tabsData.length - 1];
-        const newMatches = await specifiedDateSports(lastItem.time);
-        if (newMatches) tabsData.push(newMatches);
-      }
+      let tabsData = tplData.data.tabsList[0].data;
+      // 如果总长度小于等于15，添加对象到data的最后
+      tabsData = await ensureMinimumMatches(tabsData, 15);
   
       let data = [];
-      let isMatches = null;
+      let isMatches = [];
       let foundMatchStatus2 = false;
   
       for (let i = tabsData.length - 1; i >= 0; i--) {
         const item = tabsData[i];
-        let currentList = item.list.filter(match => match.matchStatus !== '3');
-        const isMatchesStatus = currentList.filter(match => match.matchStatus === '1');
+        const currentList = item.list.filter(match => match.matchStatus !== '3');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
-        // 保留最近的状态为 2 的比赛
+        // 如果存在状态为 '2' 的比赛，优先保留最近的一场
         if (!foundMatchStatus2 && completedMatches.length > 0) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
           foundMatchStatus2 = true;
         } else {
           item.list = nonCompletedMatches;
         }
-        
-        if (isMatchesStatus.length > 0 || item.weekday === '今天') {
-          isMatches = item;
-        }
-        
+        // 收集所有状态为 '1' 的比赛或者开赛事今天的比赛
+        const isStatusOneMatches = item.list.filter(match => match.matchStatus === '1');
+        isMatches.push(...(isStatusOneMatches.length > 0 ? isStatusOneMatches : (item.weekday === '今天' ? item.list : [])));
+        // 如果当前项目还有剩余比赛，则记录
         if (item.list.length > 0) {
-          item.totalMatches = currentList.length;
+          item.totalMatches = currentList.length; // 记录总比赛数量
           data.unshift(item);
         }
-      };
-      // 最后统一处理状态为 1 的比赛过滤逻辑
+      }
+      // 有状态为 1 的比赛时，过滤掉已结束的
       const hasStatusOne = data.some(item => item.list.some(match => match.matchStatus === '1'));
       if (hasStatusOne) {
         data = data.map(item => {
@@ -264,20 +281,19 @@ async function main(family) {
   const processMatches = (data) => {
     let nextTime = null;
     let matches = null;
-    // 循环赛事
-    const isMatchesStatus = data.list.filter(match => match.matchStatus === '1');
+    
+    const isMatchesStatus = data.filter(match => match.matchStatus === '1'); // 收集 1 的对象并循环
     if (isMatchesStatus.length > 0 && setting.loopEvent) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
-      setting.count = optNextIndex(count, isMatchesStatus);
+      setting.count = optNextIndex(setting.count || 0, isMatchesStatus);
       writeSettings(setting);
       return { matches: isMatchesStatus[setting.count] };
     }
     
-    for (const match of data.list) {
+    for (const match of data) {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
       const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      
       if (matchStatus === 1) {
         return { matches: match };
       } else if (matchStatus === 2) {
@@ -371,15 +387,11 @@ async function main(family) {
     return rowText;
   };
   
-  // 创建组件
-  const createWidget = async () => {
+  // 创建赛事列表
+  const createMatches = async (widget, maxRows, showTitle) => {
     const { data, isMatches, header } = await getRaceScheduleList();
-    const widget = new ListWidget();
-    widget.setPadding(15, 17, 15, 17);
-    
-    const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
     let rowCount = 0;
-    if (rowCount < maxRows) {
+    if (rowCount < maxRows && showTitle) {
       await addHeaderStack(widget, header);
       widget.addSpacer();
       rowCount++;
@@ -397,6 +409,20 @@ async function main(family) {
       
       for (const match of item.list) {
         if (rowCount >= maxRows) break;
+        const { matchId, matchName, matchType, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
+        const textOpacity = match.matchStatus === '2';
+        //===== 🔔 比分通知 🔔 =====//
+        if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && liveStageText) {
+          scoreNotice(
+            matchId, 
+            matchStatus, 
+            `${matchName} ${liveStageText}` , 
+            leftLogo.name, 
+            leftLogo.score, 
+            rightLogo.name, 
+            rightLogo.score
+          );
+        }
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
         const startTimeDiff = (startTime - new Date()) / (60 * 1000);
@@ -404,24 +430,20 @@ async function main(family) {
           updateCacheFile();
         }
         
-        const { matchId, matchName, matchType, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
-        const textOpacity = match.matchStatus === '2';
-        //===== 🔔 比分通知 🔔 =====//
-        if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && liveStageText) {
-          scoreNotice(matchId, matchStatus, `${matchName} ${liveStageText}` , leftLogo.name, leftLogo.score, rightLogo.name, rightLogo.score);
-        }
-        
         const stack = widget.addStack();
         stack.size = new Size(0, lay.stackSize);
         stack.url = raceScheduleUrl;
         stack.layoutHorizontally();
         stack.centerAlignContent();
-        widget.addSpacer(3);
+        if (rowCount < maxRows - 1) {
+          widget.addSpacer(3);
+        }
         // 比赛时间
         createTextStack(stack, time, 46, textOpacity, 'right');
         // 主队图标
         const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogo.name}.png`);
-        const homeImage = stack.addImage(homeImg).imageSize = new Size(lay.stackSize, lay.stackSize);
+        const homeIcon = stack.addImage(homeImg);
+        homeIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         stack.addSpacer(8);
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
@@ -440,20 +462,21 @@ async function main(family) {
         stack.addSpacer(6);
         // 客队图标
         const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
-        const awayIcon = stack.addImage(awayImg).imageSize = new Size(lay.stackSize, lay.stackSize);
+        const awayIcon = stack.addImage(awayImg);
+        awayIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         rowCount++;
       }
     }
-    return { widget, isMatches };
+    return { isMatches };
   };
   
-  // 三段进度条⚽️🇩🇪🇩🇪
+  // 三段进度条 🇩🇪🇩🇪
   const createThreeStageBar = (total, homeWin, draw, awayWin) => {
     const width = 200;
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
-    let interval = Number.isNaN(draw) && awayWin <= 5 ? 1 : 2;
+    let interval = Number.isNaN(draw) && awayWin <= 5 ? 1 : 2.5;
     let intervals = 2 * interval;
     
     const ctx = new DrawContext();
@@ -516,7 +539,7 @@ async function main(family) {
     ctx.drawText(homeWinText, new Point(0, height + 2));
     // 绘制右侧文字（靠右对齐）
     const awayWinText = `${awayWin}%`;
-    const awayWinTextWidth = awayWinText.length * textSize * 0.72;
+    const awayWinTextWidth = awayWinText.length * textSize * 0.67;
     ctx.setFont(font);
     ctx.setTextColor(Color.blue());
     ctx.drawText(awayWinText, new Point(width - awayWinTextWidth, height + 2));
@@ -538,6 +561,7 @@ async function main(family) {
     return ctx.getImage();
   };
   
+  // 中间容器
   const createStack = async (mainStack, logoUrl, imgSize, teamName, size) => {
     const verticalStack = mainStack.addStack();
     verticalStack.layoutVertically();
@@ -566,7 +590,7 @@ async function main(family) {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
-    mediumStack.size = new Size(scoreLength ? 148 : 0, lay.scoreSize);
+    mediumStack.size = new Size(scoreLength ? 148 : 96, lay.scoreSize);
     mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
@@ -608,12 +632,10 @@ async function main(family) {
     infoStack.addSpacer();
   };
   
-  // 创建组件
-  const createLiveWidget = async ({ matchId } = matches) => {
-    const [raceSchedule, goalsAndPenalties] = await Promise.all([ getRaceSchedule(matchId), getGoalsEvents(matchId, true) ]);
-    const { header, percentage } = raceSchedule || {};
+  // 顶部组件
+  const createTopStack = async (widget, matchId, data, pageUrl) => {
+    const { header, percentage } = await getRaceSchedule(matchId);
     const { total, homeWin, draw, awayWin } = percentage || {};
-    const { data: { wiseLiveList }, pageUrl } = goalsAndPenalties || {};
     
     const {
       matchStatus,
@@ -640,11 +662,9 @@ async function main(family) {
     const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
     scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
-    // 创建组件
-    const widget = new ListWidget();
-    widget.setPadding(15, 18, 5, 18);
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
+    widget.addSpacer(2);
     
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
@@ -653,23 +673,140 @@ async function main(family) {
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList);
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, data.wiseLiveList);
     }
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
     
     const progressChart = createThreeStageBar(total, homeWin, draw, awayWin);
     const imageStack = widget.addStack();
-    imageStack.size = new Size(0, 35);
+    imageStack.size = new Size(0, 28);
     imageStack.addImage(progressChart);
     
     // 跳转赛事直播页面
-    if (wiseLiveList) {
-      mainStack.url = wiseLiveList[0]?.link;
+    if (data.wiseLiveList) {
+      mainStack.url = data.wiseLiveList[0]?.link;
     } else {
       mainStack.url = pageUrl;
     }
     return widget;
+  };
+  
+  // 创建单独的进度条💥💥
+  const createSingleProgressBar = (value, total, width, height, fillColor, reverse = false) => {
+    const ctx = new DrawContext();
+    ctx.size = new Size(width, height);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    const totalWidth = width;
+    const radius = height / 2;
+    
+    // 绘制背景条
+    const basePath = new Path();
+    basePath.addRoundedRect(new Rect(0, 0, totalWidth, height), radius, radius);
+    ctx.addPath(basePath);
+    ctx.setFillColor(new Color('#cccccc', 0.5));
+    ctx.fillPath();
+    // 绘制前景进度条
+    const progressPath = new Path();
+    const progressWidth = (totalWidth * value) / total;
+    if (reverse) {
+      progressPath.addRoundedRect(new Rect(totalWidth - progressWidth, 0, progressWidth, height), radius, radius);
+    } else {
+      progressPath.addRoundedRect(new Rect(0, 0, progressWidth, height), radius, radius);
+    }
+    ctx.addPath(progressPath);
+    ctx.setFillColor(fillColor);
+    ctx.fillPath();
+    return ctx.getImage();
+  };
+  
+  // 添加技术统计结果
+  const createStatText = (stack, text, width, right, left) => {
+    const rowStack = stack.addStack();
+    rowStack.centerAlignContent();
+    if (width) rowStack.size = new Size(width, 12);
+    if (left) rowStack.addSpacer();
+    const rowText = rowStack.addText(`${text}`);
+    rowText.font = Font.mediumSystemFont(12);
+    rowText.textColor = textColor;
+    if (right) rowStack.addSpacer();
+  };
+
+  // 创建技术统计列表
+  const createStatisticsWidget = (widget, list, matchType) => {
+    const barWidth = lay.sportWidth;
+    const barHeight = 6;
+    
+    const cleanTitle = (title) => title.replace('(%)', '').replace('总暂停数', '暂停').trim();
+    if (matchType === 'basketball') {
+      list.pop();
+    }
+    // 遍历并渲染每个统计项
+    list.forEach((item, index) => {
+      const isPercentage = item.title.includes('%');
+      const total = isPercentage ? 100 : parseFloat(item.left) + parseFloat(item.right) || 1;
+      const leftProgressBar = createSingleProgressBar(
+        parseFloat(item.left),
+        total,
+        barWidth,
+        barHeight,
+        Color.red(),
+        true
+      );
+      const rightProgressBar = createSingleProgressBar(
+        parseFloat(item.right),
+        total,
+        barWidth,
+        barHeight,
+        Color.blue(),
+      );
+  
+      const statStack = widget.addStack();
+      statStack.layoutHorizontally();
+      statStack.centerAlignContent();
+      statStack.size = new Size(0, 12);
+      const leftImage = statStack.addImage(leftProgressBar)
+      leftImage.imageSize = new Size(barWidth, barHeight);
+      statStack.addSpacer();
+      createStatText(statStack, item.left, null, 'right');
+      createStatText(statStack, cleanTitle(item.title),  matchType === 'football' ? 55 : 35);
+      createStatText(statStack, item.right, null, null, 'left');
+      statStack.addSpacer();
+      const rightImage = statStack.addImage(rightProgressBar);
+      rightImage.imageSize = new Size(barWidth, barHeight);
+      if (index !== list.length - 1) {
+        widget.addSpacer(matchType === 'football' ? 7 : 6);
+      }
+    });
+    return widget;
+  };
+  
+  // 创建赛况组件
+  const createLiveWidget = async ({ matchId, matchType } = matches) => {
+    const widget = new ListWidget();
+    widget.setPadding(...lay.padding);
+    
+    const { data, pageUrl, stat } = await getGoalsEvents(matchId, true);
+    await createTopStack(widget, matchId, data, pageUrl);
+    if (family === 'large') {
+      widget.addSpacer();
+      if (stat?.list.length >= 10 && setting.statistics) {
+        createStatisticsWidget(widget, stat.list, matchType);
+      } else {
+        await createMatches(widget, 8);
+      }
+    };
+    return widget;
+  };
+  
+  // 创建赛事列表组件
+  const createWidget = async () => {
+    const widget = new ListWidget();
+    widget.setPadding(15, 17, 15, 17);
+    const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
+    const { isMatches } = await createMatches(widget, maxRows, true);
+    return { widget, isMatches }; 
   };
   
   const createErrorWidget = () => {
@@ -680,7 +817,6 @@ async function main(family) {
     return widget;
   };
   
-  // 
   const runWidget = async () => {
     let widget = null;
     let isMatches = {};
@@ -691,10 +827,13 @@ async function main(family) {
       ({ widget, isMatches } = await createWidget());
     }
     
-    if (isMatches && Object.keys(isMatches).length > 0) {
-      const result = processMatches(isMatches);
-      if (result?.matches && family === 'medium' && setting.autoSwitch) {
-        widget = await createLiveWidget(result.matches);
+    if (isMatches && Object.keys(isMatches).length) {
+      const { matches } = processMatches(isMatches);
+      const isFootballOrBasketball = matches?.matchType === 'football' || matches?.matchType === 'basketball';
+      const isMediumSwitch = family === 'medium' && setting.autoSwitch;
+      const isLargeSwitch = family === 'large' && setting.largeSwitch;
+      if (matches && isFootballOrBasketball && (isMediumSwitch || isLargeSwitch)) {
+        widget = await createLiveWidget(matches);
       }
     }
     
