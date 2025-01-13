@@ -127,7 +127,7 @@ async function main(family) {
       if (setting[matchNames]) {
         delete setting[matchNames];
         writeSettings(setting);
-        module.notify('比赛结束', liveScore);
+        module.notify('比赛结束 ⏰', liveScore);
       }
     }
   };
@@ -375,7 +375,7 @@ async function main(family) {
       : header.info.replace('赛季', '')
     createText(leagueStack, dateFormat, lay.titleSize);
     if (setting.dateFormat) {
-      leagueStack.addSpacer(5);
+      leagueStack.addSpacer(6);
       const sf = SFSymbol.named('arrow.triangle.2.circlepath');
       sf.applyMediumWeight();
       const symbol = leagueStack.addImage(sf.image);
