@@ -96,20 +96,20 @@ async function main(family) {
     matchId,
     matchStatus, 
     liveStageText, 
-    team1Name, 
-    team1Score, 
-    team2Name, 
-    team2Score
+    leftName, 
+    leftScore, 
+    rightName, 
+    rightScore
   ) => {
-    const matchNames = `${team1Name}_${team2Name}`;
-    const liveScore = `${team1Name}  ${team1Score} - ${team2Score}  ${team2Name}`;
+    const matchNames = `${leftName}_${rightName}`;
+    const liveScore = `${leftName}  ${leftScore} - ${rightScore}  ${rightName}`;
     
     if (matchStatus === '1') {
       if (!setting[matchNames]) {
-        setting[matchNames] = { team1Score: 0, team2Score: 0 };
+        setting[matchNames] = { leftScore: 0, rightScore: 0 };
       }
-      if (team1Score !== setting[matchNames].team1Score || team2Score !== setting[matchNames].team2Score) {
-        setting[matchNames] = { team1Score, team2Score };
+      if (leftScore !== setting[matchNames].leftScore || rightScore !== setting[matchNames].rightScore) {
+        setting[matchNames] = { leftScore, rightScore };
         writeSettings(setting);
         // 进球事件
         const events = await getGoalsEvents(matchId);
@@ -127,7 +127,7 @@ async function main(family) {
       if (setting[matchNames]) {
         delete setting[matchNames];
         writeSettings(setting);
-        module.notify('比赛结束 ⏰', liveScore);
+        module.notify('比赛结束 🤡', liveScore);
       }
     }
   };
@@ -267,7 +267,7 @@ async function main(family) {
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
         
-        if (completedMatches.length > 0 && (item.weekday === '今天' || item.weekday === '昨天')) {
+        if (completedMatches.length > 0 && item.weekday === '今天') {
           endMatches = item.list;
         }
         // 如果存在状态为 '2' 的比赛，优先保留最近的一场
