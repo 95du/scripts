@@ -110,14 +110,32 @@ async function main() {
     Safari.open('scriptable:///run/' + encodeURIComponent(Script.name())); 
   };
   
-  // 预览组件
+  // 组件版本通知
+  const updateNotice = () => {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    if (version !== settings.version && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重修复已知问题。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    }
+  };
+  
+  /**
+   * 运行 Widget 脚本，预览组件
+   * iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
   const previewWidget = async () => {
     const modulePath = await module.webModule(scrUrl);
-    if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main();
-      if (settings.update) await updateString();
-    }
+    const importedModule = importModule(modulePath);
+    await Promise.all([
+      importedModule.main(), 
+      updateNotice(),
+      module.appleOS_update()
+    ]);
+    if (settings.update) await updateString();
+    shimoFormData(settings.currency);
   };
   
   const shimoFormData = (action) => {
@@ -167,25 +185,6 @@ async function main() {
       fm.writeString(modulePath, str)
       settings.version = version;
       writeSettings(settings);
-    }
-  };
-  
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  const runWidget = async () => {
-    await previewWidget();
-    await module.appleOS_update();
-    shimoFormData(settings.currency);
-    
-    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    if (version !== settings.version && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，桌面组件布局调整，清除缓存再更新代码。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -1019,7 +1018,7 @@ async function main() {
   
   // render Widget
   if (!config.runsInApp) {
-    await runWidget();
+    await previewWidget();
   } else {
     await renderAppView({ avatarInfo: true, formItems });
   }
