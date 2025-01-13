@@ -378,7 +378,6 @@ async function main(family) {
     const dateStack = widget.addStack();
     dateStack.layoutHorizontally();
     dateStack.centerAlignContent();
-    dateStack.cornerRadius = 2;
     dateStack.setPadding(1, 0, 1, 0);
     dateStack.backgroundColor = item.dateText.includes('今天') 
       ? new Color('#CCC400', 0.15) 
