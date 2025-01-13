@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '热门赛事'
-  const version = '1.0.1'
-  const updateDate = '2025年01月12日'
+  const version = '1.0.2'
+  const updateDate = '2025年01月14日'
   const pathName = '95du_hotSports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -109,11 +109,30 @@ async function main() {
 
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
-  // 预览组件
+  // 组件版本通知
+  const updateNotice = () => {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    if (version !== settings.version && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重新安装脚本。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    }
+  };
+  
+  /**
+   * 运行 Widget 脚本，预览组件
+   * iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
   const previewWidget = async (family = 'large') => {
     const modulePath = await module.webModule(scrUrl);
     const importedModule = importModule(modulePath);
-    await importedModule.main(family);
+    await Promise.all([
+      importedModule.main(family), 
+      updateNotice(),
+      module.appleOS_update()
+    ]);
     if (settings.update) await updateString();
     shimoFormData(family);
   };
@@ -165,25 +184,6 @@ async function main() {
       fm.writeString(modulePath, str)
       settings.version = version;
       writeSettings(settings);
-    }
-  };
-    
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  const runWidget = async () => {
-    const family = config.widgetFamily;
-    await previewWidget(family);
-    await module.appleOS_update();
-    
-    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    if (version !== settings.version && hours >= 12) {
-      settings.updateTime = Date.now();
-      writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加大号组件技术统计`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -753,7 +753,8 @@ async function main() {
   
   // render Widget
   if (!config.runsInApp) {
-    await runWidget();
+    const family = config.widgetFamily;
+    await previewWidget(family);
   } else {
     await renderAppView({ avatarInfo: true, formItems });
   }
