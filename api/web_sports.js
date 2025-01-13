@@ -132,6 +132,32 @@ async function main(family) {
     }
   };
   
+  //===== 🔔 比分通知 🔔 =====//
+  const sendNotice = (match, type = 'live') => {
+    if (type === 'live') {
+      const { matchId, matchName, liveStageText, leftLogo, rightLogo } = match;
+      scoreNotice(
+        matchId, 
+        match.matchStatus, 
+        `${matchName} ${liveStageText}`, 
+        leftLogo.name, 
+        leftLogo.score, 
+        rightLogo.name, 
+        rightLogo.score
+      );
+    } else if (type === 'end') {
+      scoreNotice(
+        null, 
+        match.matchStatus, 
+        null, 
+        match.leftLogo.name, 
+        match.leftLogo.score, 
+        match.rightLogo.name, 
+        match.rightLogo.score
+      );
+    }
+  };
+  
   // 进球事件
   const getGoalsEvents = async (matchId, live) => {
     try {
@@ -232,6 +258,7 @@ async function main(family) {
   
       let data = [];
       let isMatches = [];
+      let endMatches = [];
       let foundMatchStatus2 = false;
   
       for (let i = tabsData.length - 1; i >= 0; i--) {
@@ -239,6 +266,10 @@ async function main(family) {
         const currentList = item.list.filter(match => match.matchStatus !== '3');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
+        
+        if (completedMatches.length > 0 && (item.weekday === '今天' || item.weekday === '昨天')) {
+          endMatches = item.list;
+        }
         // 如果存在状态为 '2' 的比赛，优先保留最近的一场
         if (!foundMatchStatus2 && completedMatches.length > 0) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
@@ -264,7 +295,12 @@ async function main(family) {
         }).filter(item => item.list.length > 0);
       }
       // 输出结果
-      return { data, isMatches, header: tplData.data.header };
+      return { 
+        data, 
+        isMatches, 
+        endMatches, 
+        header: tplData.data.header
+      }
     } catch (error) {
       console.error(`获取赛程数据出错: ${error.message}`);
     }
@@ -389,7 +425,7 @@ async function main(family) {
   
   // 创建赛事列表
   const createMatches = async (widget, maxRows, showTitle) => {
-    const { data, isMatches, header } = await getRaceScheduleList();
+    const { data, isMatches, endMatches, header } = await getRaceScheduleList();
     let rowCount = 0;
     if (rowCount < maxRows && showTitle) {
       await addHeaderStack(widget, header);
@@ -411,17 +447,13 @@ async function main(family) {
         if (rowCount >= maxRows) break;
         const { matchId, matchName, matchType, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
         const textOpacity = match.matchStatus === '2';
-        //===== 🔔 比分通知 🔔 =====//
-        if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && liveStageText) {
-          scoreNotice(
-            matchId, 
-            matchStatus, 
-            `${matchName} ${liveStageText}` , 
-            leftLogo.name, 
-            leftLogo.score, 
-            rightLogo.name, 
-            rightLogo.score
-          );
+        // 通知
+        if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && match.liveStageText) {
+          sendNotice(match, 'live');
+        } else {
+          endMatches.forEach(item => {
+            sendNotice(item, 'end');
+          });
         }
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
