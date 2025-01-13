@@ -118,7 +118,7 @@ async function main(family) {
       if (setting[matchNames]) {
         delete setting[matchNames];
         writeSettings(setting);
-        module.notify('比赛结束', liveScore);
+        module.notify('比赛结束 ⏰', liveScore);
       }
     }
   };
@@ -358,7 +358,7 @@ async function main(family) {
     leagueStack.addSpacer();
     const format = setting.dateFormat ? 'short' : 'hourMin';
     createText(leagueStack, module.formatDate(Date.now(), format), lay.titleSize);
-    leagueStack.addSpacer(5);
+    leagueStack.addSpacer(6);
     const sf = SFSymbol.named('arrow.triangle.2.circlepath');
     sf.applyMediumWeight();
     const symbol = leagueStack.addImage(sf.image);
