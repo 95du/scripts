@@ -440,7 +440,7 @@ async function main() {
         const menuId = await presentSubListMenu(subList, '\n删减赛事❓');
         if (menuId === -1) break;
         const action = await module.generateAlert(
-          null, `是否删除该赛事 ( ${subList[menuId].label} )❓`,
+          null, `是否删除 ( ${subList[menuId].label} )❓`,
           options = ['取消', '删除'],
           true
         );
