@@ -138,15 +138,32 @@ async function main() {
   
   const ScriptableRun = () => Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
   
-  // 预览组件
+  // 组件版本通知
+  const updateNotice = () => {
+    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
+    if (version !== settings.version && hours >= 12) {
+      settings.updateTime = Date.now();
+      writeSettings(settings);
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重修复已知问题。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+    }
+  };
+  
+  /**
+   * 运行 Widget 脚本，预览组件
+   * iOS系统更新提示
+   * @param {object} config - Scriptable 配置对象
+   * @param {string} notice 
+   */
   const previewWidget = async (family = 'medium') => {
     const modulePath = await module.webModule(scrUrl);
-    if (modulePath != null) {
-      const importedModule = importModule(modulePath);
-      await importedModule.main(family);
-      if (settings.update) await updateString();
-      shimoFormData(`Count: ${settings.count} - ${family}`);
-    }
+    const importedModule = importModule(modulePath);
+    await Promise.all([
+      importedModule.main(family), 
+      updateNotice(),
+      module.appleOS_update()
+    ]);
+    if (settings.update) await updateString();
+    shimoFormData(`Count: ${settings.count} - ${family}`);
   };
   
   const shimoFormData = (action) => {
@@ -189,25 +206,6 @@ async function main() {
       if (fm.fileExists(moduleDir)) fm.remove(moduleDir);
       fm.writeString(modulePath, str)
       settings.version = version;
-      writeSettings(settings);
-    }
-  };
-  
-  /**
-   * 运行 Widget 脚本
-   * 组件版本、iOS系统更新提示
-   * @param {object} config - Scriptable 配置对象
-   * @param {string} notice 
-   */
-  const runWidget = async () => {
-    const family = config.widgetFamily;
-    await previewWidget(family);
-    await module.appleOS_update();
-    
-    const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    if (version !== settings.version && hours >= 0.0012) {
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，调整小号组件布局`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
-      settings.updateTime = Date.now();
       writeSettings(settings);
     }
   };
@@ -383,7 +381,6 @@ async function main() {
         'chooseBgImg',
         isSetBackground
       );
-      
       settings.chooseBgImg_status = isSetBackground;
       writeSettings(settings);
     };
@@ -445,7 +442,6 @@ async function main() {
     
       const inputs = await module.collectInputs(label, message, fields);
       if (!inputs.length) return;
-    
       const keys = ['lrfeStackWidth', 'carStackWidth', 'carTop', 'carBot', 'carLead', 'carTra', 'bottomSize'];
       keys.forEach((key, i) => {
         const value = settings[key];
@@ -1041,7 +1037,8 @@ async function main() {
   
   // render Widget
   if (!config.runsInApp) {
-    await runWidget();
+    const family = config.widgetFamily;
+    await previewWidget(family);
   } else {
     await renderAppView({ avatarInfo: true, formItems });
   }
