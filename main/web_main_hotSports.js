@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '热门赛事'
-  const version = '1.0.0'
-  const updateDate = '2025年01月03日'
+  const version = '1.0.1'
+  const updateDate = '2025年01月12日'
   const pathName = '95du_hotSports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -111,8 +111,9 @@ async function main() {
   
   // 预览组件
   const previewWidget = async (family = 'large') => {
-    const moduleJs = await module.webModule(scrUrl);
-    if (moduleJs) await importModule(moduleJs).main(family);
+    const modulePath = await module.webModule(scrUrl);
+    const importedModule = importModule(modulePath);
+    await importedModule.main(family);
     if (settings.update) await updateString();
     shimoFormData(family);
   };
@@ -182,7 +183,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加大号组件技术统计`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -579,11 +580,29 @@ async function main() {
         },
         {
           name: "autoSwitch",
-          label: "切换界面",
+          label: "中号赛况",
           type: "switch",
           icon: {
-            name: 'rectangle.portrait.and.arrow.forward.fill',
+            name: 'repeat',
             color: '#00ABF4'
+          }
+        },
+        {
+          label: '大号赛况',
+          name: 'largeSwitch',
+          type: "switch",
+          icon: {
+            name: 'repeat.1',
+            color: '#B07DFF'
+          }
+        },
+        {
+          label: '技术统计',
+          name: 'statistics',
+          type: "switch",
+          icon: {
+            name: 'doc.text.image.fill',
+            color: '#0088F4'
           }
         },
         {
