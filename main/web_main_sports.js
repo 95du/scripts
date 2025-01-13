@@ -1,11 +1,11 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: deep-green; icon-glyph: volleyball-ball;
+// icon-color: cyan; icon-glyph: volleyball-ball;
 
 async function main() {
   const scriptName = '体育赛事'
-  const version = '1.0.2'
-  const updateDate = '2025年01月09日'
+  const version = '1.0.3'
+  const updateDate = '2025年01月12日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -188,7 +188,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}‼️`, `新版本更新 Version ${version}，增加大号组件技术统计`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -653,11 +653,29 @@ async function main() {
         },
         {
           name: "autoSwitch",
-          label: "切换界面",
+          label: "中号赛况",
           type: "switch",
           icon: {
-            name: 'rectangle.portrait.and.arrow.forward.fill',
+            name: 'repeat',
             color: '#00ABF4'
+          }
+        },
+        {
+          label: '大号赛况',
+          name: 'largeSwitch',
+          type: "switch",
+          icon: {
+            name: 'repeat.1',
+            color: '#B07DFF'
+          }
+        },
+        {
+          label: '技术统计',
+          name: 'statistics',
+          type: "switch",
+          icon: {
+            name: 'doc.text.image.fill',
+            color: '#0088F4'
           }
         },
         {
