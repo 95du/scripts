@@ -572,9 +572,10 @@ async function main(family) {
     ctx.drawText(homeWinText, new Point(0, height + 2));
     // 绘制右侧文字（靠右对齐）
     const awayWinText = `${awayWin}%`;
-    const awayWinTextWidth = awayWinText.length * textSize * 0.67;
     ctx.setFont(font);
     ctx.setTextColor(Color.blue());
+    const textWidth = awayWinText.includes('1') ? 0.67 : 0.73
+    const awayWinTextWidth = awayWinText.length * textSize * textWidth;
     ctx.drawText(awayWinText, new Point(width - awayWinTextWidth, height + 2));
     // 绘制中间文字，确保居中显示在平局阶段
     if (drawWidth > 0) {
