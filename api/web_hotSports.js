@@ -159,9 +159,11 @@ async function main(family) {
       const tabsList = value.data.data.tabsList;
       
       if (live) {
+        const getFreeLive = (data) => data.wiseLiveList?.find(match => match.free) || null;
+        const freeLive = getFreeLive(value.data.data);
         const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
         return { 
-          data: value.data.data, 
+          live: freeLive, 
           pageUrl: value.data.pageUrl,
           stat: statistics
         }
@@ -596,7 +598,7 @@ async function main(family) {
   };
   
   // 比分栏
-  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, wiseLiveList) => {
+  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, live) => {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
@@ -616,10 +618,10 @@ async function main(family) {
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
-    barStack.setPadding(2, wiseLiveList ? 12 : 15, 2, wiseLiveList ? 12 : 15);
+    barStack.setPadding(2, live ? 12 : 15, 2, live ? 12 : 15);
     barStack.cornerRadius = 8;
-    barStack.backgroundColor = matchStatus === '2' ? barBgColor : wiseLiveList ? new Color('#8226DC') : new Color('#FF4800');
-    const statusText = barStack.addText(wiseLiveList ? wiseLiveList[0].category : matchStatusText);
+    barStack.backgroundColor = matchStatus === '2' ? barBgColor : live ? new Color('#8226DC') : new Color('#FF4800');
+    const statusText = barStack.addText(live?.category || matchStatusText);
     if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
@@ -643,7 +645,7 @@ async function main(family) {
   };
   
   // 顶部组件
-  const createTopStack = async (widget, matchId, data, pageUrl) => {
+  const createTopStack = async (widget, matchId, live, pageUrl) => {
     const { header, percentage } = await getRaceSchedule(matchId);
     const { total, homeWin, draw, awayWin } = percentage || {};
     
@@ -677,13 +679,14 @@ async function main(family) {
     widget.addSpacer(2);
     
     const mainStack = widget.addStack();
+    mainStack.url = live?.link || pageUrl;
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, data.wiseLiveList);
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, live);
     }
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
@@ -692,13 +695,6 @@ async function main(family) {
     const imageStack = widget.addStack();
     imageStack.size = new Size(0, 28);
     imageStack.addImage(progressChart);
-    
-    // 跳转赛事直播页面
-    if (data.wiseLiveList) {
-      mainStack.url = data.wiseLiveList[0]?.link;
-    } else {
-      mainStack.url = pageUrl;
-    }
     return widget;
   };
   
@@ -797,9 +793,8 @@ async function main(family) {
   const createLiveWidget = async ({ matchId, matchType } = matches) => {
     const widget = new ListWidget();
     widget.setPadding(...lay.padding);
-    
-    const { data, pageUrl, stat } = await getGoalsEvents(matchId, true);
-    await createTopStack(widget, matchId, data, pageUrl);
+    const { live, pageUrl, stat } = await getGoalsEvents(matchId, true);
+    await createTopStack(widget, matchId, live, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
       if (stat?.list.length >= 10 && setting.statistics) {
