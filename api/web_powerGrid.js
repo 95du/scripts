@@ -391,7 +391,7 @@ async function main(family) {
   
   // 月用电信息
   const { 
-    totalPower = '0.00 °', 
+    totalPower = '0.00', 
     result = [] 
   } = await getMonthPower(areaCode, eleCustId, meteringPointId, convertYearMonth) || {};
   
