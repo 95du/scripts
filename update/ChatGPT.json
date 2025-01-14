@@ -4,14 +4,17 @@
     {
       "isGameCenterEnabled": false,
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/01/fc/dd/01fcdd38-b708-ff9b-5f16-dec2b3c6cd99/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/01/fc/dd/01fcdd38-b708-ff9b-5f16-dec2b3c6cd99/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/7d/16/1a7d1606-955e-9d43-547a-ccb915711ce1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/7d/16/1a7d1606-955e-9d43-547a-ccb915711ce1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
       "advisories": [
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Horror/Fear Themes",
         "Infrequent/Mild Medical/Treatment Information",
         "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Mature/Suggestive Themes",
         "Infrequent/Mild Profanity or Crude Humor"
+      ],
+      "features": [
+        "iosUniversal"
       ],
       "supportedDevices": [
         "iPhone5s-iPhone5s",
@@ -122,9 +125,6 @@
         "iPadMiniA17Pro-iPadMiniA17Pro",
         "iPadMiniA17ProCellular-iPadMiniA17ProCellular"
       ],
-      "features": [
-        "iosUniversal"
-      ],
       "kind": "software",
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/03/60/5d/03605d13-cf76-3131-f563-e84d63d8fbd9/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
@@ -136,31 +136,38 @@
       ],
       "ipadScreenshotUrls": [],
       "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/01/fc/dd/01fcdd38-b708-ff9b-5f16-dec2b3c6cd99/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
-      "contentAdvisoryRating": "12+",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/7d/16/1a7d1606-955e-9d43-547a-ccb915711ce1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "averageUserRating": 4.87291,
+      "contentAdvisoryRating": "12+",
+      "minimumOsVersion": "17.0",
+      "averageUserRating": 4.87293,
+      "artistId": 1684349733,
+      "artistName": "OpenAI",
+      "genres": [
+        "Productivity",
+        "Utilities"
+      ],
       "price": 0,
-      "trackId": 6448311069,
-      "trackName": "ChatGPT",
       "bundleId": "com.openai.chat",
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "sellerName": "OpenAI, L.L.C.",
       "genreIds": [
         "6007",
         "6002"
       ],
+      "trackId": 6448311069,
+      "trackName": "ChatGPT",
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "isVppDeviceBasedLicensingEnabled": true,
+      "sellerName": "OpenAI, L.L.C.",
+      "currentVersionReleaseDate": "2025-01-13T18:13:57Z",
       "primaryGenreName": "Productivity",
       "primaryGenreId": 6007,
-      "isVppDeviceBasedLicensingEnabled": true,
-      "currentVersionReleaseDate": "2025-01-07T22:06:35Z",
       "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2024.348",
+      "version": "1.2025.007",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAKßuÁ‚ùÁYs latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, yo{ßuÁ‚ùÁYll find:\n\n∑ Advanced Voice Mode∫w^~)ﬁwtap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n∑ Creative inspiratiokßuÁ‚ùÁTbirthday gift ideas or help creating a personalized greeting card. \n∑ Tailored advickßuÁ‚ùÁThelp crafting a personalized response or talking through a tough situation.\n∑ Learning opportunitie{ßuÁ‚ùÁThelp explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n∑ Professional inpu{ßuÁ‚ùÁTa brainstorm partner for marketing copy or a business plan.\n∑ Instant answers∫w^~)ﬁtclarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "userRatingCountForCurrentVersion": 1477517,
+      "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -223,19 +230,12 @@
         "UR",
         "VI"
       ],
-      "fileSizeBytes": "77038592",
+      "fileSizeBytes": "77179904",
       "formattedPrice": "Free",
       "trackContentRating": "12+",
-      "minimumOsVersion": "16.4",
-      "sellerUrl": "https://openai.com/chatgpt",
-      "averageUserRatingForCurrentVersion": 4.87291,
-      "artistId": 1684349733,
-      "artistName": "OpenAI",
-      "genres": [
-        "Productivity",
-        "Utilities"
-      ],
-      "userRatingCount": 1477517
+      "averageUserRatingForCurrentVersion": 4.87293,
+      "userRatingCountForCurrentVersion": 1480232,
+      "userRatingCount": 1480232
     }
   ]
 }
