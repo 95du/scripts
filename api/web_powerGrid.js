@@ -186,7 +186,7 @@ async function main(family) {
       writeSettings(setting);
       return data[setting.count];
     } else {
-      module.notify('南网在线', 'Token已过期，请重新获取。⚠️');
+      return module.notify('南网在线 ⚠️', 'Token已过期，请重新获取。');
     }
   };
   
