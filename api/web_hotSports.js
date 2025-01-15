@@ -105,10 +105,10 @@ async function main(family) {
         // 进球事件
         const events = await getGoalsEvents(matchId);
         if (events) {
-          const goals = events.left?.goal || events.right?.goal
-          goals.forEach((goal) => {
+          const team = events.left || events.right || {};
+          team.goal.forEach((goal) => {
             const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
-            module.notify(`${liveScore}`, `${goal.playerName} (${events.passedTime} 分钟) ${events.goaltype}❗️${assist}`);
+            module.notify(`${liveScore}`, `${goal.playerName || team.teamName}  ( ${events.passedTime} 分钟 ) ${events.goaltype}❗️${assist}`);
           });
         } else {
           module.notify(liveScore, liveStageText);
