@@ -214,8 +214,8 @@ const createWidget = async () => {
   const { data, cross, webUrl } = await getCrosslist();  
   const { avgSpeed, congestLength, congestIndex, crossName } = data[0] || {};
   
-  const baidu_map = await getCacheImage('baidu_map.png', 'https://gitcode.net/4qiao/framework/raw/master/img/background/baidu_map.png');
-  const imageDark = await getCacheImage('glass.png', 'https://gitcode.net/4qiao/framework/raw/master/img/background/glass.png');
+  const baidu_map = await getCacheImage('baidu_map.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/background/baidu_map.png');
+  const imageDark = await getCacheImage('glass.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png');
   
   const updateTime = updatetime.slice(-4).replace(/(\d{2})(\d{2})/, "$1:$2");
   const congestIdx = Math.floor(_index * 100) / 100;
