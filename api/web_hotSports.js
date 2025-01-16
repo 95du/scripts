@@ -174,9 +174,8 @@ async function main(family) {
         const { list } = result.data.events;
         const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
         const events = list.filter(event => goalEvents.includes(event.goaltype));
-        const firstObject = events[0];
-        if (firstObject) {
-          return firstObject;
+        if (events) {
+          return events[0] || null;
         }
       }
     } catch (e) {
@@ -590,6 +589,7 @@ async function main(family) {
     
     if (teamName) {
       const titleStack = verticalStack.addStack();
+      titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
       titleText.font = Font.mediumSystemFont(14);
