@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '体育赛事'
-  const version = '1.0.3'
-  const updateDate = '2025年01月12日'
+  const version = '1.0.4'
+  const updateDate = '2025年01月17日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -53,7 +53,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "俄超", "沙特超", "瑞士超"];
+  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "俄超", "沙特超", "瑞士超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
@@ -76,7 +76,7 @@ async function main() {
     darkColor: '#FFFFFF',
     rangeColor: '#3F8BFF',
     dateColor: '#14BAFF',
-    selected: '西甲',
+    selected: 'randomSports',
     autoSwitch: true,
     loopEvent: true,
     values
@@ -120,7 +120,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重修复已知问题。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加随机赛事，更新后恢复设置以保证选项框完整`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -443,7 +443,7 @@ async function main() {
         );
         if (action === 1) {
           subList.splice(menuId, 1);
-          settings.selected = subList[0]?.value || '西甲';
+          settings.selected = subList[0]?.value || 'randomSports';
           settings.values = subList;
           writeSettings(settings);
           // 更新选取框
@@ -483,7 +483,7 @@ async function main() {
           options = ['取消', '添加']
         );
         if (action === 1) {
-          const isSportAdded = settings.values.some(item => item.value === short_name || ['NBA', 'CBA'].includes(short_name))
+          const isSportAdded = settings.values.some(item => item.value === short_name)
           if (!isSportAdded) {
             setSport(short_name);
             module.updateSelect(webView, selectOpts);
@@ -779,20 +779,16 @@ async function main() {
           },
           options: [
             {
-              label: '蓝球赛事',
+              label: '随机已添加的赛事',
               values: [
                 {
-                  label: 'NBA',
-                  value: 'NBA'
-                },
-                {
-                  label: 'CBA',
-                  value: 'CBA'
+                  label: '随机赛事',
+                  value: 'randomSports'
                 }
               ]
             },
             {
-              label: '足球赛事',
+              label: '足球篮球等赛事',
               values: settings.values
             }
           ]
