@@ -200,7 +200,7 @@ class _95du {
     try {
       const data = await this.httpRequest(url, type);
       cache.write(name, data);
-      console.log(`${name}: download and cache`);
+      console.log(name);
       return data;
     } catch (error) {
       console.log(`${name} 请求失败。\n${error}`);
