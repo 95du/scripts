@@ -5,7 +5,7 @@
   "sports": {
     "photo": [
       "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_1.png",
-      "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_2.png",
+      "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_2.png"
     ],
     "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_sports.js"
   },
@@ -20,7 +20,7 @@
   "hotSports": {
     "photo": [
       "https://raw.githubusercontent.com/95du/scripts/master/img/bot/hotSports.png",
-      "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_3.png",
+      "https://raw.githubusercontent.com/95du/scripts/master/img/bot/sports_3.png"
     ],
     "scriptUrl": "https://raw.githubusercontent.com/95du/scripts/master/run/web_module_hotSports.js"
   }
