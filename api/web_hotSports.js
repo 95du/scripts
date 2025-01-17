@@ -623,11 +623,11 @@ async function main(family) {
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : live ? new Color('#8226DC') : new Color('#FF4800');
     const statusText = barStack.addText(live?.category || matchStatusText);
-    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
+    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusStack.addSpacer();
-    mediumStack.addSpacer(2);
+    mediumStack.addSpacer(1.6);
   };
   
   /**
