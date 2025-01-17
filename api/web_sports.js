@@ -4,7 +4,7 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 体育赛事
- * 组件版本: Version 1.0.3
+ * 组件版本: Version 1.0.4
  * 发布时间: 2025-01-01
  */
 
@@ -28,12 +28,13 @@ async function main(family) {
   } = module;
   
   let chooseSports = setting.selected;
-  const param = args.widgetParameter;
+  const param = args.widgetParameter?.trim();
   if (param) {
-    const trimmedParam = param.trim();
-    const validParam = setting.values.some(item => item.value === trimmedParam) || ['NBA', 'CBA'].includes(trimmedParam);
-    chooseSports = validParam ? `${trimmedParam}` : chooseSports;
-  };
+    chooseSports = setting.values.some(item => item.value === param) ? param : chooseSports;
+  } else if (chooseSports === 'randomSports') {
+    const values = setting.values.map(item => item.value);
+    chooseSports = module.getRandomItem(values);
+  }
   
   const isSmall = Device.screenSize().height < 926;
   const lay = {
@@ -56,7 +57,6 @@ async function main(family) {
   const videoColor = Color.dynamic(Color.green(), Color.white());
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
-  const basketball = ['NBA', 'CBA'].includes(chooseSports);
   
   /**
    * 存储当前设置
@@ -183,9 +183,8 @@ async function main(family) {
         const { list } = result.data.events;
         const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
         const events = list.filter(event => goalEvents.includes(event.goaltype));
-        const firstObject = events[0];
-        if (firstObject) {
-          return firstObject;
+        if (events) {
+          return events[0] || null;
         }
       }
     } catch (e) {
@@ -200,19 +199,19 @@ async function main(family) {
     try {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('分析')}&request__node__params=1`;
       const { tplData } = await module.httpRequest(url, 'json');
-      const value = tplData.data;
+      const { header, tabsList } = tplData.data;
       const { 
         victory = 40, 
-        draw = basketball ? null : 20, 
+        draw = header.sports === 'basketball' ? null : 20, 
         lost = 40 
-      } = value.tabsList?.[0]?.data?.result?.percentage || {};
+      } = tabsList?.[0]?.data?.result?.percentage || {};
       const percentage = {
         total: 100,
         draw: parseInt(draw, 10),
         homeWin: parseInt(victory, 10),
         awayWin: parseInt(lost, 10),
       };
-      return { header: value.header, percentage };
+      return { header, percentage };
     } catch (e) {
       console.log(e);
     }
@@ -446,7 +445,7 @@ async function main(family) {
       
       for (const match of item.list) {
         if (rowCount >= maxRows) break;
-        const { matchId, matchName, matchType, matchStatus, liveStageText, hasLiveOrFlash, leftLogo, rightLogo, time } = match;
+        const { time, matchType, matchStatus, hasLiveOrFlash, leftLogo, rightLogo } = match;
         const textOpacity = match.matchStatus === '2';
         // 通知
         if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && match.liveStageText) {
@@ -611,6 +610,7 @@ async function main(family) {
     
     if (teamName) {
       const titleStack = verticalStack.addStack();
+      titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
       titleText.font = Font.mediumSystemFont(14);
@@ -644,11 +644,11 @@ async function main(family) {
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : live ? new Color('#8226DC') : new Color('#FF4800');
     const statusText = barStack.addText(live?.category || matchStatusText);
-    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
+    if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusStack.addSpacer();
-    mediumStack.addSpacer(2);
+    mediumStack.addSpacer(1.6);
   };
   
   /**
