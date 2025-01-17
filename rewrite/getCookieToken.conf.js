@@ -1,0 +1,17 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: cyan; icon-glyph: magic;
+# 获取石墨文档 Cookie
+^https:\/\/shimo\.im\/lizard-api\/files url script-request-header https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_shimo_cookie.js
+
+# 南网在线 Token
+^https:\/\/95598\.csg\.cn\/ucs\/ma\/zt\/user url script-request-header https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_95598_token.js
+
+#! 进入GitHub仓库(Repositories)页面抓取
+^https:\/\/github\.com url script-request-header https://raw.githubusercontent.com/95du/scripts/master/rewrite/get_gitHub_cookie.js
+
+#! GitCode_Cookie
+^https:\/\/gitcode\.com\/setting\/repo url script-request-header https://raw.githubusercontent.com/95du/scripts/master/rewrite/get_gitcode_cookie.js
+
+# > Hostname主机名
+hostname = shimo.im, 95598.csg.cn, github.com, gitcode.com
