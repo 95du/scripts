@@ -117,7 +117,7 @@ async function main(family) {
           const team = events.left || events.right || {};
           team.goal.forEach((goal) => {
             const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
-            module.notify(`${liveScore}`, `${goal.playerName || team.teamName}  ( ${events.passedTime} 分钟 ) ${events.goaltype}❗️${assist}`);
+            module.notify(liveScore, `${goal.playerName || team.teamName}  ( ${events.passedTime} 分钟 ) ${events.goaltype}❗️${assist}`);
           });
         } else {
           module.notify(liveScore, liveStageText);
@@ -135,7 +135,13 @@ async function main(family) {
   //===== 🔔 比分通知 🔔 =====//
   const sendNotice = (match, type = 'live') => {
     if (type === 'live') {
-      const { matchId, matchName, liveStageText, leftLogo, rightLogo } = match;
+      const { 
+        matchId, 
+        matchName, 
+        liveStageText, 
+        leftLogo, 
+        rightLogo 
+      } = match;
       scoreNotice(
         matchId, 
         match.matchStatus, 
@@ -691,7 +697,6 @@ async function main(family) {
       : liveStage.includes('完')
         ? `${liveStageText} ${liveStageTime}`
         : liveStageText;
-    
     const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
     const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
     scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
@@ -762,7 +767,7 @@ async function main(family) {
   };
 
   // 创建技术统计列表
-  const createStatisticsWidget = (widget, list, matchType) => {
+  const createStatisticsWidget = (widget, list, matchType, matchId) => {
     const barWidth = lay.sportWidth;
     const barHeight = 6;
     
@@ -789,8 +794,9 @@ async function main(family) {
         barHeight,
         Color.blue(),
       );
-  
+      
       const statStack = widget.addStack();
+      statStack.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=赛况`;
       statStack.layoutHorizontally();
       statStack.centerAlignContent();
       statStack.size = new Size(0, 12);
@@ -819,7 +825,7 @@ async function main(family) {
     if (family === 'large') {
       widget.addSpacer();
       if (stat?.list.length >= 10 && setting.statistics) {
-        createStatisticsWidget(widget, stat.list, matchType);
+        createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
         await createMatches(widget, 8);
       }
