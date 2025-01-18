@@ -807,16 +807,27 @@ async function main() {
       head,
       avatarInfo
     } = options;
+
+    const [
+      appleHub_light,
+      appleHub_dark,
+      authorAvatar,
+      gifImage,
+      scriptTags,
+      audioSource
+    ] = await Promise.all([
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`),
+      module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`),
+      module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`),
+      getCacheGif(),
+      module.scriptTags(),
+      module.playAudio()
+    ]);
+    
+    const avatarPath = getAvatarImg();
+    const userAvatar = fm.fileExists(avatarPath) ? await module.toBase64(fm.readImage(avatarPath)) : authorAvatar;
     
     const themeColor = Device.isUsingDarkAppearance() ? 'dark' : 'white';
-
-    const appleHub_light = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_white.png`);
-    const appleHub_dark = await module.getCacheImage(`${rootUrl}/img/picture/appleHub_black.png`);
-    
-    const authorAvatar = fm.fileExists(getAvatarImg()) ? await module.toBase64(fm.readImage(getAvatarImg()) ) : await module.getCacheImage(`${rootUrl}/img/icon/4qiao.png`);
-    const gifImage = await getCacheGif();
-    const scriptTags = await module.scriptTags();
-    const audioSource = await module.playAudio();
     
     /**
      * 批量加载和缓存：使用Promise.all()来并行加载所有图片，并缓存结果，避免重复请求  
@@ -2026,9 +2037,7 @@ async function main() {
             controller.abort()
           }
           window.addEventListener(
-            'JBridge',
-            listener,
-            { signal: controller.signal }
+            'JBridge', listener, { signal: controller.signal }
           )
         })()`,
         true
