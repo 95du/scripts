@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '中国电信_3'
-  const version = '1.1.1'
-  const updateDate = '2024年10月23日'
+  const version = '1.1.2'
+  const updateDate = '2025年01月19日'
   const pathName = '95du_china_telecom_3';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -124,7 +124,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重修复已知问题。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加第二个小号样式，在桌面组件参数中输入任意数字`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
