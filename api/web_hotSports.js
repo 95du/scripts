@@ -391,7 +391,13 @@ async function main(family) {
       : item.dateText.includes('明天') 
         ? new Color('#8C7CFF', 0.15) 
         : new Color('#999999', 0.18);
-    createColumnText(dateStack, item.dateText.replace('/', '   '));
+    const dateTexts = item.dateText.split('/');
+    const timeStack = dateStack.addStack();
+    timeStack.centerAlignContent();
+    timeStack.size = new Size(46, lay.stackSize);
+    createColumnText(timeStack, dateTexts[0]);
+    timeStack.addSpacer();
+    createColumnText(dateStack, dateTexts[1]);
     dateStack.addSpacer();
     createColumnText(dateStack, `${totalMatches}场比赛`);
     widget.addSpacer(5);
