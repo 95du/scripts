@@ -394,7 +394,7 @@ async function main(family) {
     const dateTexts = item.dateText.split('/');
     const timeStack = dateStack.addStack();
     timeStack.centerAlignContent();
-    timeStack.size = new Size(46, lay.stackSize);
+    timeStack.size = new Size(46, 0);
     createColumnText(timeStack, dateTexts[0]);
     timeStack.addSpacer();
     createColumnText(dateStack, dateTexts[1]);
