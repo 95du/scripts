@@ -585,7 +585,7 @@ async function main(family) {
     // 余额
     const mediumStack = generateStack(bodyStack);
     mediumStack.addSpacer();
-    const balanceStack = inSideStack(mediumStack, 5, stackPadding, '#A85EFF', 1);
+    const balanceStack = inSideStack(mediumStack, 5, stackPadding, '#00C400', 1);
     balanceStack.size = new Size(balStackSize, 0);
     addHorizontalText(balanceStack, feeBalance, '#FFFFFF');
     mediumStack.addSpacer();
