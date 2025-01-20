@@ -261,7 +261,7 @@ async function main(family) {
       const { tplData } = await module.getCacheData(url, 2, `${chooseSports}.json`);
       let tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后
-      tabsData = await ensureMinimumMatches(tabsData, 15);
+      tabsData = await ensureMinimumMatches(tabsData, 16);
   
       let data = [];
       let isMatches = [];
