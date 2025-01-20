@@ -255,7 +255,7 @@ async function main(family) {
       const liveLists = value.data.data.liveList[0].data;
       let tabsData = liveLists.filter(item => !item.hide || new Date(item.time) >= new Date());
       // 如果总长度小于等于15，添加对象到data的最后
-      tabsData = await ensureMinimumMatches(tabsData, 15);
+      tabsData = await ensureMinimumMatches(tabsData, 20);
   
       let data = [];
       let isMatches = [];
