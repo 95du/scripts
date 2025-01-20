@@ -126,7 +126,6 @@
         "Infrequent/Mild Profanity or Crude Humor"
       ],
       "kind": "software",
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/7d/16/1a7d1606-955e-9d43-547a-ccb915711ce1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/03/60/5d/03605d13-cf76-3131-f563-e84d63d8fbd9/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/d5/c2/42/d5c24245-7ef5-41bd-3359-21c53bc10727/50b86672-f027-420a-a10c-abf996a931ab_5.5_1242_x_2208_2.png/392x696bb.png",
@@ -135,12 +134,13 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/4c/53/96/4c539620-663b-c8a6-49b3-d91029fdb831/126e0ae5-759b-4ca3-af7d-4f5c68028f45_5.5_1242_x_2208_5.png/392x696bb.png",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/ef/20/8f/ef208f65-02ae-d6e0-4787-ce92e972f7ea/8797f21c-c0c5-40fc-b6e2-8a0408d85538_5.5_1242_x_2208_6.png/392x696bb.png"
       ],
-      "appletvScreenshotUrls": [],
       "ipadScreenshotUrls": [],
+      "appletvScreenshotUrls": [],
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/1a/7d/16/1a7d1606-955e-9d43-547a-ccb915711ce1/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
+      "contentAdvisoryRating": "12+",
+      "averageUserRating": 4.87299,
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "contentAdvisoryRating": "12+",
-      "averageUserRating": 4.87303,
       "artistId": 1684349733,
       "artistName": "OpenAI",
       "genres": [
@@ -151,23 +151,24 @@
       "bundleId": "com.openai.chat",
       "trackId": 6448311069,
       "trackName": "ChatGPT",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
       "releaseDate": "2023-05-18T07:00:00Z",
+      "currentVersionReleaseDate": "2025-01-13T18:13:57Z",
       "genreIds": [
         "6007",
         "6002"
       ],
-      "currentVersionReleaseDate": "2025-01-13T18:13:57Z",
       "isVppDeviceBasedLicensingEnabled": true,
       "sellerName": "OpenAI, L.L.C.",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
       "releaseNotes": "Bug fixes and small improvements.",
       "version": "1.2025.007",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "sellerUrl": "https://openai.com/chatgpt",
       "minimumOsVersion": "17.0",
+      "averageUserRatingForCurrentVersion": 4.87299,
+      "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -232,10 +233,9 @@
       ],
       "fileSizeBytes": "77179904",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 1502749,
+      "userRatingCountForCurrentVersion": 1506991,
       "trackContentRating": "12+",
-      "averageUserRatingForCurrentVersion": 4.87303,
-      "userRatingCount": 1502749
+      "userRatingCount": 1506991
     }
   ]
 }
