@@ -1595,7 +1595,7 @@ class _95du {
    * @param {WebView} webView
    */
   updateSelect = (webView, items) => {
-     webView.evaluateJavaScript(`
+    webView.evaluateJavaScript(`
       (() => {
         const valuesArr = ${JSON.stringify(items)};
         const select = document.querySelector('[name="selected"]');
@@ -1613,8 +1613,8 @@ class _95du {
           select.appendChild(group);
         });
         select.style.width = '130px';
-      })();
-    `, false).catch(console.error);
+      })();`, false)
+    .catch(console.error);
   };
   
   // 增加右侧 desc 颜色(中国电信_3)
@@ -1898,9 +1898,8 @@ input.addEventListener("change", async (e) => {
       const fadeTime = 0.4
       element.style.transition = \`opacity \${fadeTime}s\`;
       element.style.opacity = fadeIn ? 1 : 0;
-      element.style.display = 'block'          
+      element.style.display = 'block';
       await new Promise(resolve => setTimeout(resolve, fadeTime * 700));
-          
       if (!fadeIn) element.style.display = 'none';
       element.style.transition = '';
     };
