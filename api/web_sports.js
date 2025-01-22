@@ -660,7 +660,7 @@ async function main(family) {
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusStack.addSpacer();
-    mediumStack.addSpacer(1.5);
+    mediumStack.addSpacer(0.8);
   };
   
   /**
