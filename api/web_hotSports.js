@@ -74,12 +74,32 @@ async function main(family) {
     }
   };
   
+  // 清理过期的文件
+  const cleanExpiredFiles = (path) => {
+    if (!fm.fileExists(path) || !fm.isDirectory(path)) return;
+    const regex = /\d{4}-\d{2}-\d{2}/;
+    const today = new Date().setHours(0, 0, 0, 0);
+  
+    fm.listContents(path)
+      .filter(file => file.endsWith('.json') && regex.test(file))
+      .forEach(file => {
+        const fileDate = new Date(file.match(regex)[0]);
+        fileDate.setHours(0, 0, 0, 0);
+        if (fileDate < today) {
+          const filePath = fm.joinPath(path, file);
+          fm.remove(filePath);
+          console.log(`Deleted expired file: ${file}`);
+        }
+      });
+  };
+  
   // 更新缓存文件
   const updateCacheFile = () => {
     const filename = 'hotSports.html';
     const filePath = fm.joinPath(cacheStr, filename);
     if (fm.fileExists(filePath)) 
     fm.remove(filePath);
+    cleanExpiredFiles(cacheStr);
   };
   
   // 实时比分通知
@@ -240,7 +260,7 @@ async function main(family) {
       if (newMatches && newMatches.list.length > 0) {
         tabsData.push(newMatches);
         totalLength += newMatches.list.length;
-      } else { break }
+      } else { break };
     }
     return tabsData;
   };
@@ -586,21 +606,20 @@ async function main(family) {
   const createStack = async (mainStack, logoUrl, imgSize, teamName, size) => {
     const verticalStack = mainStack.addStack();
     verticalStack.layoutVertically();
+    verticalStack.size = new Size(size || 0, size ? size - 5 : lay.scoreSize);
     const logoStack = verticalStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.addSpacer();
     const logo = await module.getCacheData(logoUrl, 240, `${teamName || 'vsLogo'}.png`);
     const logoImage = logoStack.addImage(logo);
     logoImage.imageSize = new Size(imgSize, imgSize);
-    if (size) {
-      verticalStack.size = new Size(size, size - 5);
-      logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
-    }
+    if (size) logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
     logoStack.addSpacer();
-    verticalStack.addSpacer(size ? teamName : 6);
+    verticalStack.addSpacer();
     
     if (teamName) {
       const titleStack = verticalStack.addStack();
+      titleStack.centerAlignContent();
       titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
@@ -639,7 +658,7 @@ async function main(family) {
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusStack.addSpacer();
-    mediumStack.addSpacer(0.8);
+    mediumStack.addSpacer(1.2);
   };
   
   /**
