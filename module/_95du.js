@@ -147,7 +147,7 @@ class _95du {
       if (this.fm.fileExists(path)) {
         if (!isExpired(path)) return readFile(path);
         this.fm.remove(path);
-        console.log(`更新${name}`)
+        console.log(`更新: ${name}`);
       }
       return null;
     };
