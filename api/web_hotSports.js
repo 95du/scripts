@@ -27,6 +27,11 @@ async function main(family) {
     cacheStr,
   } = module;
   
+  let chooseSports = setting.selected;
+  if (chooseSports === 'random') {
+    chooseSports = module.getRandomItem(['hot', 'all']);
+  }
+  
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     sportWidth: isSmall ? 90 : 95,
@@ -95,7 +100,7 @@ async function main(family) {
   
   // 更新缓存文件
   const updateCacheFile = () => {
-    const filename = 'hotSports.html';
+    const filename = chooseSports === 'hot' ? 'hotSports.html' : 'all_sports.json';
     const filePath = fm.joinPath(cacheStr, filename);
     if (fm.fileExists(filePath)) 
     fm.remove(filePath);
@@ -266,24 +271,34 @@ async function main(family) {
   };
   
   // 赛程
+  const fetchScheduleData = async (url, cacheName) => {
+    const response = await module.getCacheData(url, 2, cacheName);
+    if (chooseSports === 'hot') {
+      return JSON.parse(response.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1]).data.data.liveList[0].data;
+    } else {
+      return response.data.liveList.find(item => item.title === '全部' && item.data)?.data;
+    }
+  };
+
   const getRaceScheduleList = async () => {
     try {
-      const url = `https://tiyu.baidu.com/al/live`;
-      const html = await module.getCacheData(url, 2, 'hotSports.html');
-      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
-      const value = JSON.parse(match);
-      const liveLists = value.data.data.liveList[0].data;
-      let tabsData = liveLists.filter(item => !item.hide || new Date(item.time) >= new Date());
-      // 如果总长度小于等于15，添加对象到data的最后
-      tabsData = await ensureMinimumMatches(tabsData, 20);
+      const url = chooseSports === 'hot' ? 'https://tiyu.baidu.com/al/live' : 'https://tiyu.baidu.com/al/api/home?type=all';
+      const cacheName = chooseSports === 'hot' ? 'hotSports.html' : 'all_sports.json';
+      let tabsData = await fetchScheduleData(url, cacheName);
+      if (chooseSports === 'hot') {
+        tabsData = await ensureMinimumMatches(tabsData, 20);
+      }
   
-      let data = [];
+      let data = []; 
       let isMatches = [];
       let endMatches = [];
       let foundMatchStatus2 = false;
-  
-      for (let i = tabsData.length - 1; i >= 0; i--) {
-        const item = tabsData[i];
+      const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+      
+      tabsData.reverse().forEach(item => { // 过滤掉已经过期 3 小时未开赛的比赛
+        item.list = item.list.filter(
+          match => !(match.matchStatus === '0' && new Date(match.startTime) < threeHoursAgo)
+        );
         const currentList = item.list.filter(match => match.matchStatus !== '3');
         const completedMatches = currentList.filter(match => match.matchStatus === '2');
         const nonCompletedMatches = currentList.filter(match => match.matchStatus !== '2');
@@ -306,7 +321,7 @@ async function main(family) {
           item.totalMatches = currentList.length; // 记录总比赛数量
           data.unshift(item);
         }
-      }
+      });
       // 有状态为 1 的比赛时，过滤掉已结束的
       const hasStatusOne = data.some(item => item.list.some(match => match.matchStatus === '1'));
       if (hasStatusOne) {
@@ -381,7 +396,7 @@ async function main(family) {
     const icon = leagueStack.addImage(leagueImg)
     icon.imageSize = new Size(42, lay.iconSize);
     leagueStack.addSpacer(5);
-    createText(leagueStack, '热门赛事', lay.titleSize);
+    createText(leagueStack, chooseSports === 'hot' ? '热门赛事' : '全部赛事', lay.titleSize);
     leagueStack.addSpacer();
     const format = setting.dateFormat ? 'short' : 'hourMin';
     createText(leagueStack, module.formatDate(Date.now(), format), lay.titleSize);
@@ -459,7 +474,18 @@ async function main(family) {
       
       for (const match of item.list) {
         if (rowCount >= maxRows) break;
-        const { matchStatus, leftLogo, rightLogo, time, matchId, game, matchName, liveStageText } = match;
+        const { 
+          matchType, 
+          matchStatus, 
+          leftLogo, 
+          rightLogo, 
+          time, 
+          matchId, 
+          game, 
+          matchName, 
+          liveStageText
+        } = match;
+        
         const textOpacity = match.matchStatus === '2';
         // 通知
         if (matchStatus === '1' && (!setting.autoSwitch || family === 'large') && match.liveStageText) {
@@ -471,7 +497,7 @@ async function main(family) {
         }
         // 检查是否即将开赛小于等于 1 小时
         const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
-        const startTimeDiff = (startTime - new Date()) / (60 * 1000);
+        const startTimeDiff = (new Date(startTime || match.startTimeStamp * 1000) - new Date()) / (60 * 1000);
         if (startTimeDiff > -180 && startTimeDiff <= 60) {
           updateCacheFile();
         }
@@ -496,7 +522,7 @@ async function main(family) {
         // 比分
         const isNumber = (string) => !isNaN(string);
         const isTeamScore = !isNumber(leftLogo.score) ? game : `${leftLogo.score} - ${rightLogo.score}`;
-        const stackSize = matchName.includes('CBA') ? 80 : isTeamScore === game ? 65 : 50;
+        const stackSize = matchType === 'basketball' ? 80 : isTeamScore === game ? 65 : 50;
         createTextStack(stack, isTeamScore, stackSize, textOpacity, 'right', 'left', match.matchStatus, !isNumber(leftLogo.score));
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
