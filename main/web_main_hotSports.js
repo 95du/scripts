@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '热门赛事'
-  const version = '1.0.2'
-  const updateDate = '2025年01月14日'
+  const version = '1.0.3'
+  const updateDate = '2025年01月24日'
   const pathName = '95du_hotSports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -115,7 +115,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重新安装脚本。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加修正，自行体验。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -523,11 +523,12 @@ async function main() {
     
     // 注入监听器
     const injectListener = async () => {
-      const event = await webView.evaluateJavaScript(
-        `(() => {
+      const event = await webView.evaluateJavaScript(`
+        (() => {
           const controller = new AbortController();
           const listener = (e) => {
-            completion(e.detail);
+            const detail = JSON.stringify(e.detail);
+            completion(detail);
             controller.abort();
           };
           window.addEventListener(
@@ -540,7 +541,7 @@ async function main() {
       });
     
       if (event) {
-        const { code, data } = event;
+        const { code, data } = JSON.parse(event);
         await handleEvent(code, data);
         webView.evaluateJavaScript(
           `window.dispatchEvent(new CustomEvent('JWeb', { detail: { code: 'finishLoading'} }))`,
@@ -671,13 +672,37 @@ async function main() {
       type: 'group',
       items: [
         {
-          label: '百度体育',
-          name: 'website',
-          type: 'cell',
+          label: '体育赛事',
+          name: 'selected',
+          type: 'select',
+          multiple: false,
           icon: {
-            name: 'pawprint.fill',
-            color: '#1D28DF'
-          }
+            name: 'trophy.fill',
+            color: '#00C4B6'
+          },
+          options: [
+            {
+              label: '热门、全部',
+              values: [
+                {
+                  label: '随机赛事',
+                  value: 'random'
+                }
+              ]
+            },
+            {
+              values: [
+                {
+                  label: '热门赛事',
+                  value: 'hot'
+                },
+                {
+                  label: '全部赛事',
+                  value: 'all'
+                }
+              ]
+            }
+          ]
         },
         {
           label: '比分通知',
