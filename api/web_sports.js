@@ -389,7 +389,7 @@ async function main(family) {
     leagueStack.layoutHorizontally();
     leagueStack.centerAlignContent();
     leagueStack.size = new Size(0, lay.iconSize);
-    const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
+    const leagueImg = await module.loadAndProcessLogos(header.logoimg, header.name);
     const icon = leagueStack.addImage(leagueImg)
     if (header.name.includes('法国')) {
       icon.tintColor = textColor;
