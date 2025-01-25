@@ -485,6 +485,10 @@ class _95du {
     } else {
       console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
       const { processedImage } = await this.processImage(cachedImage);
+      // 重置时间
+      const setting = this.settings;
+      setting.updateTime = Date.now();
+      this.writeSettings(setting);
       // 重新覆盖缓存文件
       const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
       cache.write(cacheName, processedImage);
@@ -501,17 +505,12 @@ class _95du {
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
     const setting = this.settings;
     const hours = (Date.now() - setting.updateTime) / (3600 * 1000);
-    const needsUpdate = hours >= 1;
-    if (needsUpdate) {
-      setting.updateTime = Date.now();
-      this.writeSettings(setting);
-    }
-  
+    
     const processLogo = async (url, name) => {
       const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-      return needsUpdate ? this.processImageIfNeeded(cachedImage, `${name}.png`) : cachedImage;
+        return hours >= 1 ? this.processImageIfNeeded(cachedImage, `${name}.png`) : cachedImage;
     };
-  
+    
     return Array.isArray(logos) 
       ? Promise.all(logos.map(team => processLogo(team.url, team.name)))
       : processLogo(logos, imgName);
