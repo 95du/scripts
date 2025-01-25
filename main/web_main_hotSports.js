@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '热门赛事'
-  const version = '1.0.3'
-  const updateDate = '2025年01月24日'
+  const version = '1.0.5'
+  const updateDate = '2025年01月25日'
   const pathName = '95du_hotSports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -115,7 +115,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加修正，自行体验。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加处理白底图标为透明背景。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
