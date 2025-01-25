@@ -501,7 +501,7 @@ class _95du {
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
     const setting = this.settings;
     const hours = (Date.now() - setting.updateTime) / (3600 * 1000);
-    const needsUpdate = hours >= 2;
+    const needsUpdate = hours >= 1;
     if (needsUpdate) {
       setting.updateTime = Date.now();
       this.writeSettings(setting);
