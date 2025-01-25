@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '体育赛事'
-  const version = '1.0.4'
-  const updateDate = '2025年01月17日'
+  const version = '1.0.5'
+  const updateDate = '2025年01月25日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -120,7 +120,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加随机赛事，更新后恢复设置以保证选项框完整`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加处理白底图标为透明背景`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -596,8 +596,8 @@ async function main() {
     
     // 注入监听器
     const injectListener = async () => {
-      const event = await webView.evaluateJavaScript(
-        `(() => {
+      const event = await webView.evaluateJavaScript(`
+        (() => {
           const controller = new AbortController();
           const listener = (e) => {
             completion(e.detail);
