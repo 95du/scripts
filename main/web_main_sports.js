@@ -337,7 +337,7 @@ async function main() {
         ${await popupHtml}
         <section id="settings">
         </section>
-        <script>${await module.runScripts(formItems, settings, 'range-separ1')}</script>
+        <script>${await module.runScripts(formItems, settings, 'separ')}</script>
         ${scriptTags}
       </body>
     </html>`;
