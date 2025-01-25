@@ -336,7 +336,7 @@ async function main(family) {
       console.error(`获取赛程数据出错: ${error.message}`);
     }
   };
-    
+  
   /**
    * 获取距离当前时间最近的比赛信息
    *
@@ -486,7 +486,11 @@ async function main(family) {
           liveStageText
         } = match;
         
-        const textOpacity = match.matchStatus === '2';
+        const [homeImg, awayImg] = await module.loadAndProcessLogos([
+          { url: leftLogo.logo, name: leftLogo.name },
+          { url: rightLogo.logo, name: rightLogo.name }
+        ]);
+        
         // 通知
         if (matchStatus === '1' && (!setting.autoSwitch || family === 'large') && match.liveStageText) {
           sendNotice(match, 'live');
@@ -502,6 +506,7 @@ async function main(family) {
           updateCacheFile();
         }
         
+        const textOpacity = match.matchStatus === '2';
         const stack = widget.addStack();
         stack.size = new Size(0, lay.stackSize);
         stack.url = raceScheduleUrl;
@@ -513,7 +518,6 @@ async function main(family) {
         // 比赛时间
         createTextStack(stack, time, 46, textOpacity, 'right');
         // 主队图标
-        const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogo.name}.png`);
         const homeIcon = stack.addImage(homeImg);
         homeIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         stack.addSpacer(8);
@@ -528,7 +532,6 @@ async function main(family) {
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
         // 客队图标
-        const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
         const awayIcon = stack.addImage(awayImg);
         awayIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         rowCount++;
@@ -636,8 +639,8 @@ async function main(family) {
     const logoStack = verticalStack.addStack();
     logoStack.layoutHorizontally();
     logoStack.addSpacer();
-    const logo = await module.getCacheData(logoUrl, 240, `${teamName || 'vsLogo'}.png`);
-    const logoImage = logoStack.addImage(logo);
+    const processedLogo = await module.loadAndProcessLogos(logoUrl, teamName || 'vsLogo');
+    const logoImage = logoStack.addImage(processedLogo);
     logoImage.imageSize = new Size(imgSize, imgSize);
     if (size) logoImage.tintColor = Color.dynamic(Color.red(), Color.white());
     logoStack.addSpacer();
