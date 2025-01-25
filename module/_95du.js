@@ -493,6 +493,31 @@ class _95du {
   };
   
   /**
+   * 通用加载和处理图片的函数
+   * @param {string | Array} logos - 图片 URL 或包含 { url, name } 的数组
+   * @param {boolean} options.checkUpdate - 是否检查更新间隔
+   * @returns {Promise<Object | Array>} - 处理后的图片或图片数组
+   */
+  loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
+    const setting = this.settings;
+    const hours = (Date.now() - setting.updateTime) / (3600 * 1000);
+    const needsUpdate = hours >= 2;
+    if (needsUpdate) {
+      setting.updateTime = Date.now();
+      this.writeSettings(setting);
+    }
+  
+    const processLogo = async (url, name) => {
+      const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
+      return needsUpdate ? this.processImageIfNeeded(cachedImage, `${name}.png`) : cachedImage;
+    };
+  
+    return Array.isArray(logos) 
+      ? Promise.all(logos.map(team => processLogo(team.url, team.name)))
+      : processLogo(logos, imgName);
+  };
+  
+  /**
    * 为图片添加遮罩效果
    * @param {Image} img
    * @returns {Promise<Image>}
