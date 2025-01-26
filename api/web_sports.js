@@ -522,6 +522,13 @@ async function main(family) {
           });
         }
         
+        // 检查是否即将开赛小于等于 1 小时
+        const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
+        const startTimeDiff = (startTime - new Date()) / (60 * 1000);
+        if (startTimeDiff > -180 && startTimeDiff <= 60 && !showTitle) {
+          updateCacheFile();
+        }
+        
         const stack = widget.addStack();
         stack.size = new Size(0, lay.stackSize);
         stack.url = raceScheduleUrl;
@@ -917,12 +924,6 @@ async function main(family) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
       if (matches && isFootballOrBasketball && (isMediumSwitch || isLargeSwitch)) {
-        // 检查是否即将开赛小于等于 1 小时
-        const startTime = new Date(matches.startTime || matches.startTimeStamp * 1000);
-        const startTimeDiff = (startTime - new Date()) / (60 * 1000);
-        if (startTimeDiff > -180 && startTimeDiff <= 60) {
-          updateCacheFile();
-        }
         widget = await createLiveWidget(matches);
       }
     }
