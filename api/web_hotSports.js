@@ -282,7 +282,7 @@ async function main(family) {
       const cacheName = chooseSports === 'hot' ? 'hotSports.html' : 'all_sports.json';
       let tabsData = await fetchScheduleData(url, cacheName);
       if (chooseSports === 'hot') {
-        tabsData = await ensureMinimumMatches(tabsData, 20);
+        tabsData = await ensureMinimumMatches(tabsData, 30);
       }
   
       let data = []; 
