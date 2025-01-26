@@ -696,7 +696,7 @@ async function main(family) {
     barStack.setPadding(2, liveUrl ? 12 : 15, 2, liveUrl ? 12 : 15);
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : liveUrl ? new Color('#8226DC') : new Color('#FF4800');
-    const statusText = barStack.addText(liveUrl ? '免费直播' : matchStatusText);
+    const statusText = barStack.addText(liveUrl && matchStatus === '1' ? '免费直播' : matchStatusText);
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
