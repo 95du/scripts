@@ -199,7 +199,7 @@ async function main(family) {
     const result = await getCategoryList() || {};
     const currentDate = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
     const url = `https://sqb3.com/prod-api/match/list/new?isfanye=1&type=${result.type}&cid=${result.id}&ishot=-1&pn=1&ps=20&level=&name=&langtype=zh&starttime=${currentDate}&pid=5&zoneId=Asia%2FShanghai&zhuboType=0`;
-    const { data } = await module.getCacheData(url, 0.5, 'liveData.json');
+    const { data } = await module.httpRequest(url, 'json');
     const match = data.dataList.find(item =>
       item.name === result.name &&
       item.status === 0 &&
