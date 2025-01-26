@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '体育赛事'
-  const version = '1.0.5'
-  const updateDate = '2025年01月25日'
+  const version = '1.0.6'
+  const updateDate = '2025年01月26日'
   const pathName = '95du_sports';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -120,7 +120,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加处理白底图标为透明背景`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，更换为 m3u8 直播源，点击组件上的赛况，一键看直播。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -686,15 +686,6 @@ async function main() {
           default: true
         },
         {
-          label: '直播状态',
-          name: 'displayLive',
-          type: 'switch',
-          icon: {
-            name: 'video.fill',
-            color: '#00C400'
-          }
-        },
-        {
           label: '更新时间',
           name: 'dateFormat',
           type: 'switch',
@@ -708,15 +699,6 @@ async function main() {
     {
       type: 'group',
       items: [
-        {
-          label: '视频直播',
-          name: 'videoColor',
-          type: 'color',
-          icon: {
-            name: 'questionmark.video.fill',
-            color: '#FFA200'
-          }
-        },
         {
           label: '日期夜间',
           name: 'dateColor',
