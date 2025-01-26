@@ -481,6 +481,8 @@ class _95du {
     const hasTransparent = await wv.evaluateJavaScript("window.hasTransparent");
     
     if (hasTransparent) {
+      // 更新时间戳
+      this.fm.writeString(timePath, Date.now().toString());
       return cachedImage;
     } else {
       console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
@@ -489,8 +491,6 @@ class _95du {
       cache.write(cacheName, processedImage);
       return processedImage;
     }
-    // 更新时间戳
-    this.fm.writeString(timePath, Date.now().toString());
   };
   
   /**
@@ -510,8 +510,8 @@ class _95du {
     };
   
     return Array.isArray(logos) 
-      ? await Promise.all(logos.map(team => processLogo(team.url, team.name)))
-      : await processLogo(logos, imgName);
+      ? Promise.all(logos.map(team => processLogo(team.url, team.name)))
+      : processLogo(logos, imgName);
   };
   
   /**
