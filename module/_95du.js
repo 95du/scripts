@@ -446,7 +446,7 @@ class _95du {
   };
   
   // 检测图片是否是透明
-  detectTransparent = async (cachedImage, cacheName) => {
+  async detectTransparent (cachedImage, cacheName, timePath) {
     const base64Image = this.toBase64(cachedImage);
     const html = `
       <html>
@@ -456,18 +456,18 @@ class _95du {
           (async () => {
             const img = new Image();
             img.src = "${base64Image}";
-    
+  
             await new Promise((resolve, reject) => {
               img.onload = resolve;
               img.onerror = reject;
             });
-    
+  
             const canvas = document.getElementById("canvas");
             const ctx = canvas.getContext("2d");
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
-    
+  
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
             const hasTransparent = Array.from(imgData).some((_, i) => i % 4 === 3 && imgData[i] < 255);
             window.hasTransparent = hasTransparent;
@@ -485,11 +485,12 @@ class _95du {
     } else {
       console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
       const { processedImage } = await this.processImage(cachedImage);
-      // 重新覆盖缓存文件
       const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
       cache.write(cacheName, processedImage);
       return processedImage;
     }
+    // 更新时间戳
+    this.fm.writeString(timePath, Date.now().toString());
   };
   
   /**
@@ -499,22 +500,18 @@ class _95du {
    * @returns {Promise<Object | Array>} - 处理后的图片或图片数组
    */
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
-    const setting = this.settings;
-    const hours = (Date.now() - setting.updateTime) / (3600 * 1000);
-    
+    const timePath = this.fm.joinPath(this.cacheStr, 'lastUpdated.txt');
+    const lastUpdated = parseInt(this.fm.fileExists(timePath) ? this.fm.readString(timePath) : 0);
+    const shouldUpdate = Date.now() - lastUpdated >= 1 * 60 * 1000;
+  
     const processLogo = async (url, name) => {
       const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-      if (hours >= 1) {
-        setting.updateTime = Date.now();
-        this.writeSettings(setting);
-        return this.detectTransparent (cachedImage, `${name}.png`);
-      }
-      return cachedImage;
+      return shouldUpdate ? this.detectTransparent(cachedImage, `${name}.png`, timePath) : cachedImage;
     };
-    
+  
     return Array.isArray(logos) 
-      ? Promise.all(logos.map(team => processLogo(team.url, team.name)))
-      : processLogo(logos, imgName);
+      ? await Promise.all(logos.map(team => processLogo(team.url, team.name)))
+      : await processLogo(logos, imgName);
   };
   
   /**
