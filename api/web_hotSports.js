@@ -60,9 +60,6 @@ async function main(family) {
    */
   const writeSettings = (setting) => {
     fm.writeString(settingPath, JSON.stringify(setting, null, 2));
-    console.log(JSON.stringify(
-      setting, null, 2
-    ));
   };
   
   // ====== 设置组件背景 ====== //
@@ -84,7 +81,6 @@ async function main(family) {
     if (!fm.fileExists(path) || !fm.isDirectory(path)) return;
     const regex = /\d{4}-\d{2}-\d{2}/;
     const today = new Date().setHours(0, 0, 0, 0);
-  
     fm.listContents(path)
       .filter(file => file.endsWith('.json') && regex.test(file))
       .forEach(file => {
@@ -499,12 +495,6 @@ async function main(family) {
             sendNotice(item, 'end');
           });
         }
-        // 检查是否即将开赛小于等于 1 小时
-        const startTime = new Date(match.startTime || match.startTimeStamp * 1000);
-        const startTimeDiff = (new Date(startTime || match.startTimeStamp * 1000) - new Date()) / (60 * 1000);
-        if (startTimeDiff > -180 && startTimeDiff <= 60) {
-          updateCacheFile();
-        }
         
         const textOpacity = match.matchStatus === '2';
         const stack = widget.addStack();
@@ -900,6 +890,12 @@ async function main(family) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
       if (matches && isFootballOrBasketball && (isMediumSwitch || isLargeSwitch)) {
+        // 检查是否即将开赛小于等于 1 小时
+        const startTime = new Date(matches.startTime || matches.startTimeStamp * 1000);
+        const startTimeDiff = (startTime - new Date()) / (60 * 1000);
+        if (startTimeDiff > -180 && startTimeDiff <= 60) {
+          updateCacheFile();
+        }
         widget = await createLiveWidget(matches);
       }
     }
