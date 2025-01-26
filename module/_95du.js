@@ -446,7 +446,7 @@ class _95du {
   };
   
   // 检测图片是否是透明
-  processImageIfNeeded = async (cachedImage, cacheName) => {
+  detectTransparent = async (cachedImage, cacheName) => {
     const base64Image = this.toBase64(cachedImage);
     const html = `
       <html>
@@ -485,10 +485,6 @@ class _95du {
     } else {
       console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
       const { processedImage } = await this.processImage(cachedImage);
-      // 重置时间
-      const setting = this.settings;
-      setting.updateTime = Date.now();
-      this.writeSettings(setting);
       // 重新覆盖缓存文件
       const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
       cache.write(cacheName, processedImage);
@@ -508,7 +504,12 @@ class _95du {
     
     const processLogo = async (url, name) => {
       const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-        return hours >= 1 ? this.processImageIfNeeded(cachedImage, `${name}.png`) : cachedImage;
+      if (hours >= 1) {
+        setting.updateTime = Date.now();
+        this.writeSettings(setting);
+        return this.detectTransparent (cachedImage, `${name}.png`);
+      }
+      return cachedImage;
     };
     
     return Array.isArray(logos) 
