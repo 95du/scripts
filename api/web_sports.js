@@ -200,10 +200,11 @@ async function main(family) {
     const currentDate = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
     const url = `https://sqb3.com/prod-api/match/list/new?isfanye=1&type=${result.type}&cid=${result.id}&ishot=-1&pn=1&ps=20&level=&name=&langtype=zh&starttime=${currentDate}&pid=5&zoneId=Asia%2FShanghai&zhuboType=0`;
     const { data } = await module.httpRequest(url, 'json');
-    const match = data.dataList.find(item =>
+    if (!data) return null;
+    const match = data?.dataList.find(item =>
       item.name === result.name &&
       item.status === 0 &&
-      (item.ateam_name.includes(ateam) || item.hteam_name.includes(hteam) || ateam.includes(item.ateam_name) || hteam.includes(item.hteam_name))
+      (item.ateam_name.includes(ateam) || item.hteam_name.includes(hteam) || ateam.includes(item.ateam_name) || hteam.includes(item.hteam_name) || item.ateam_name.includes(hteam))
     );
     
     if (match && status === '1') {
