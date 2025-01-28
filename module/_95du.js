@@ -446,7 +446,7 @@ class _95du {
   };
   
   // 检测图片是否是透明
-  async detectTransparent (cachedImage, cacheName, timePath) {
+  async detectTransparent (cachedImage) {
     const base64Image = this.toBase64(cachedImage);
     const html = `
       <html>
@@ -479,18 +479,7 @@ class _95du {
     const wv = new WebView();
     await wv.loadHTML(html);
     const hasTransparent = await wv.evaluateJavaScript("window.hasTransparent");
-    
-    if (hasTransparent) {
-      // 更新时间戳
-      this.fm.writeString(timePath, Date.now().toString());
-      return cachedImage;
-    } else {
-      console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
-      const { processedImage } = await this.processImage(cachedImage);
-      const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
-      cache.write(cacheName, processedImage);
-      return processedImage;
-    }
+    return hasTransparent;
   };
   
   /**
@@ -506,7 +495,17 @@ class _95du {
   
     const processLogo = async (url, name) => {
       const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-      return shouldUpdate ? this.detectTransparent(cachedImage, `${name}.png`, timePath) : cachedImage;
+      const hasTransparent = await this.detectTransparent(cachedImage);
+      if (shouldUpdate && !hasTransparent) {
+        console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
+        const { processedImage } = await this.processImage(cachedImage);
+        const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
+        cache.write(cacheName, processedImage);
+        // 更新时间戳
+        this.fm.writeString(timePath, Date.now().toString());
+        return processedImage;
+      }
+      return cachedImage;
     };
   
     return Array.isArray(logos) 
