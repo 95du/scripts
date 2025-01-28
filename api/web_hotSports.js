@@ -284,7 +284,15 @@ async function main(family) {
       if (chooseSports === 'hot') {
         tabsData = await ensureMinimumMatches(tabsData, 30);
       }
-  
+      
+      // 仅保留 matchType 为 "football" 或 "basketball" 的数据
+      if (setting.sportsSwitch) {
+        tabsData = tabsData.map(item => ({
+          ...item,
+          list: item.list.filter(match => match.matchType === 'football' || match.matchType === 'basketball'),
+        })).filter(item => item.list.length > 0);
+      }
+      
       let data = []; 
       let isMatches = [];
       let endMatches = [];
