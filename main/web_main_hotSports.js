@@ -566,7 +566,7 @@ async function main() {
   const settingMenu = [
     filesMenus,
     {
-      label: '多场比赛时循环显示',
+      label: '多场比赛时循环显示，只获取足球篮球',
       type: 'group',
       items: [
         {
@@ -577,6 +577,15 @@ async function main() {
           icon: {
             name: 'hand.draw.fill',
             color: '#FF7800'
+          }
+        },
+        {
+          label: '足球篮球',
+          name: 'sportsSwitch',
+          type: "switch",
+          icon: {
+            name: 'basketball.fill',
+            color: '#00C400'
           }
         },
         {
