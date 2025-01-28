@@ -498,23 +498,26 @@ class _95du {
       if (shouldUpdate) {
         const hasTransparent = await this.detectTransparent(cachedImage);
         if (!hasTransparent) {
-          console.log(`图片 ${name} 没有透明背景，开始处理...`);
+          console.log(`${name} 没有透明背景，开始处理...`);
           const { processedImage } = await this.processImage(cachedImage);
           const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
           cache.write(`${name}.png`, processedImage);
-          // 更新时间戳
-          this.fm.writeString(timePath, Date.now().toString());
           return processedImage;
         }
       }
       return cachedImage;
     };
+    
+    const results = Array.isArray(logos)
+      ? await Promise.all(logos.map(team => processLogo(team.url, team.name)))
+      : await processLogo(logos, imgName);
   
-    return Array.isArray(logos) 
-      ? Promise.all(logos.map(team => processLogo(team.url, team.name)))
-      : processLogo(logos, imgName);
+    if (shouldUpdate) {
+      this.fm.writeString(timePath, Date.now().toString());
+    }
+    return results;
   };
-  
+    
   /**
    * 为图片添加遮罩效果
    * @param {Image} img
