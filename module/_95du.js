@@ -492,22 +492,31 @@ class _95du {
    * @returns {Promise<Image | Array<Image>>} 处理后的图片或图片数组
    */
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
+    const timePath = this.fm.joinPath(this.cacheStr, 'lastUpdated.txt');
+    const lastUpdated = parseInt(this.fm.fileExists(timePath) ? this.fm.readString(timePath) : 0);
+    const shouldUpdate = Date.now() - lastUpdated >= 3 * 60 * 1000;
+  
     const processLogo = async (url, name) => {
       let cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-      const hasTransparent = await this.detectTransparent(cachedImage);
-      if (!hasTransparent) {
-        console.log(`${name} 没有透明背景，开始处理...`);
-        const { processedImage } = await this.processImage(cachedImage);
-        const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
-        cache.write(`${name}.png`, processedImage);
-        cachedImage = processedImage;
+      if (shouldUpdate) {
+        const hasTransparent = await this.detectTransparent(cachedImage);
+        if (!hasTransparent) {
+          console.log(`${name} 没有透明背景，开始处理...`);
+          const processed = await this.processImage(cachedImage);
+          cachedImage = processed.processedImage;
+          const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
+          cache.write(`${name}.png`, processedImage);
+        }
       }
       return cachedImage;
     };
     
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
-    const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
-    return Array.isArray(logos) ? results : results[0];
+    const images = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
+    if (shouldUpdate) {
+      this.fm.writeString(timePath, Date.now().toString());
+    }
+    return Array.isArray(logos) ? images : images[0];
   };
       
   /**
