@@ -508,14 +508,13 @@ class _95du {
       return cachedImage;
     };
     
-    const results = Array.isArray(logos)
-      ? await Promise.all(logos.map(team => processLogo(team.url, team.name)))
-      : await processLogo(logos, imgName);
-  
+    const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
+    const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
+    // 更新时间戳
     if (shouldUpdate) {
       this.fm.writeString(timePath, Date.now().toString());
     }
-    return results;
+    return Array.isArray(logos) ? results : results[0];
   };
     
   /**
