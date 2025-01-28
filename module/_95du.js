@@ -502,19 +502,22 @@ class _95du {
           const { processedImage } = await this.processImage(cachedImage);
           const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
           cache.write(`${name}.png`, processedImage);
-          return processedImage;
+          return { image: processedImage, updated: true };
         }
       }
-      return cachedImage;
+      return { image: cachedImage, updated: false };
     };
     
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
     const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
-    // 更新时间戳
-    if (shouldUpdate) {
+    // 检查是否有图片被更新
+    const hasUpdates = results.some(result => result.updated);
+    if (hasUpdates) {
       this.fm.writeString(timePath, Date.now().toString());
     }
-    return Array.isArray(logos) ? results : results[0];
+    
+    const images = results.map(result => result.image);
+    return Array.isArray(logos) ? images : images[0];
   };
     
   /**
