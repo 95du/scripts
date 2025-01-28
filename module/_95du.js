@@ -497,7 +497,7 @@ class _95du {
       const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
       const hasTransparent = await this.detectTransparent(cachedImage);
       if (shouldUpdate && !hasTransparent) {
-        console.log(`图片 ${cacheName} 没有透明背景，开始处理...`);
+        console.log(`图片 ${name} 没有透明背景，开始处理...`);
         const { processedImage } = await this.processImage(cachedImage);
         const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
         cache.write(cacheName, processedImage);
