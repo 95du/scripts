@@ -498,6 +498,8 @@ class _95du {
   
     const processLogo = async (url, name) => {
       let cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
+      let imageUpdated = false;
+  
       if (shouldUpdate) {
         const hasTransparent = await this.detectTransparent(cachedImage);
         if (!hasTransparent) {
@@ -506,16 +508,20 @@ class _95du {
           cachedImage = processed.processedImage;
           const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
           cache.write(`${name}.png`, cachedImage);
+          imageUpdated = true;
         }
       }
-      return cachedImage;
+      return { cachedImage, imageUpdated };
     };
-    
+  
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
-    const images = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
-    if (shouldUpdate) {
+    const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
+    const hasUpdatedImages = results.some(result => result.imageUpdated);
+    if (hasUpdatedImages) {
       this.fm.writeString(timePath, Date.now().toString());
     }
+  
+    const images = results.map(result => result.cachedImage);
     return Array.isArray(logos) ? images : images[0];
   };
       
