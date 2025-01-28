@@ -149,7 +149,7 @@ async function main(family) {
   const getCacheString = async (jsonName, jsonUrl, requestBody) => {
     const { type } = module.getFileInfo(jsonName);
     const cache = module.useFileManager({ 
-      cacheTime: 8, type 
+      cacheTime: 4, type 
     });
     const json = cache.read(jsonName);
     if (json) return json;
