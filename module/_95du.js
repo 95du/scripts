@@ -500,7 +500,7 @@ class _95du {
         console.log(`图片 ${name} 没有透明背景，开始处理...`);
         const { processedImage } = await this.processImage(cachedImage);
         const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
-        cache.write(cacheName, processedImage);
+        cache.write(`${name}.png`, processedImage);
         // 更新时间戳
         this.fm.writeString(timePath, Date.now().toString());
         return processedImage;
