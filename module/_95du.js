@@ -505,7 +505,7 @@ class _95du {
           const processed = await this.processImage(cachedImage);
           cachedImage = processed.processedImage;
           const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
-          cache.write(`${name}.png`, processedImage);
+          cache.write(`${name}.png`, cachedImage);
         }
       }
       return cachedImage;
