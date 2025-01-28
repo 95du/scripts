@@ -386,67 +386,50 @@ class _95du {
   };
   
   /**
-   * 检查缓存图片是否有透明背景，如果没有则使用给定的图片进行处理。
-   * @param {Image} cachedImage - 缓存的图片，若无缓存则为null。
-   * @returns {Image} - 处理后的图片或缓存图片。
+   * 检测图片是否包含透明区域
+   * @param {Image} cachedImage - 要检测的图片
+   * @returns {Promise<boolean>} 是否包含透明区域
    */
-  async processImage(cachedImage) {
+  detectTransparent = async (cachedImage) => {
     const base64Image = this.toBase64(cachedImage);
     const html = `
-    <html>
-    <body>
-      <canvas id="canvas"></canvas>
-      <script>
-        (async () => {
-          const img = new Image();
-          img.src = "${base64Image}";
+      <html>
+      <body>
+        <canvas id="canvas"></canvas>
+        <script>
+          (async () => {
+            const img = new Image();
+            img.src = "${base64Image}";
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+            });
   
-          await new Promise((resolve, reject) => {
-            img.onload = resolve;
-            img.onerror = reject;
-          });
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
   
-          const canvas = document.getElementById("canvas");
-          const ctx = canvas.getContext("2d");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-  
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imgData.data;
-          const tolerance = 60;
-          let hasTransparent = false;
-  
-          for (let i = 0; i < data.length; i += 4) {
-            const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
-            if (Math.abs(r - 255) < tolerance && Math.abs(g - 255) < tolerance && Math.abs(b - 255) < tolerance && a === 255) {
-              data[i + 3] = 0;
-            } else if (a < 255) {
-              hasTransparent = true;
-            }
-          }
-  
-          ctx.putImageData(imgData, 0, 0);
-          ctx.globalAlpha = 0.9;
-          ctx.filter = "blur(2px)";
-          ctx.drawImage(canvas, 0, 0);
-  
-          const pngBase64 = canvas.toDataURL("image/png").replace("data:image/png;base64,", "");
-          window.result = { hasTransparent, pngBase64 };
-        })();
-      </script>
-    </body>
-    </html>`;
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const hasTransparent = Array.from(imgData).some((_, i) => i % 4 === 3 && imgData[i] < 255);
+            window.hasTransparent = hasTransparent;
+          })();
+        </script>
+      </body>
+      </html>`;
   
     const wv = new WebView();
     await wv.loadHTML(html);
-    const { hasTransparent, pngBase64 } = await wv.evaluateJavaScript("window.result")
-    const processedImage = Image.fromData(Data.fromBase64String(pngBase64));
-    return { hasTransparent, processedImage };
+    return await wv.evaluateJavaScript("window.hasTransparent");
   };
   
-  // 检测图片是否是透明
-  async detectTransparent (cachedImage) {
+  /**
+   * 处理图片：去除白色背景并模糊边缘
+   * @param {Image} cachedImage - 要处理的图片
+   * @returns {Promise<Object>} 包含处理后的图片和透明检测结果
+   */
+  async processImage(cachedImage) {
     const base64Image = this.toBase64(cachedImage);
     const html = `
       <html>
@@ -468,58 +451,65 @@ class _95du {
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0);
   
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-            const hasTransparent = Array.from(imgData).some((_, i) => i % 4 === 3 && imgData[i] < 255);
-            window.hasTransparent = hasTransparent;
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            const tolerance = 60;
+            let hasTransparent = false;
+  
+            for (let i = 0; i < data.length; i += 4) {
+              const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
+              if (Math.abs(r - 255) < tolerance && Math.abs(g - 255) < tolerance && Math.abs(b - 255) < tolerance && a === 255) {
+                data[i + 3] = 0;
+              } else if (a < 255) {
+                hasTransparent = true;
+              }
+            }
+  
+            ctx.putImageData(imgData, 0, 0);
+            ctx.globalAlpha = 0.9;
+            ctx.filter = "blur(2px)";
+            ctx.drawImage(canvas, 0, 0);
+  
+            const pngBase64 = canvas.toDataURL("image/png").replace("data:image/png;base64,", "");
+            window.result = { hasTransparent, pngBase64 };
           })();
         </script>
       </body>
       </html>`;
-    
+  
     const wv = new WebView();
     await wv.loadHTML(html);
-    const hasTransparent = await wv.evaluateJavaScript("window.hasTransparent");
-    return hasTransparent;
+    const { hasTransparent, pngBase64 } = await wv.evaluateJavaScript("window.result")
+    const processedImage = Image.fromData(Data.fromBase64String(pngBase64));
+    return { hasTransparent, processedImage };
   };
   
   /**
-   * 通用加载和处理图片的函数
+   * 加载和处理图片：支持单张和多张图片
    * @param {string | Array} logos - 图片 URL 或包含 { url, name } 的数组
-   * @param {boolean} options.checkUpdate - 是否检查更新间隔
-   * @returns {Promise<Object | Array>} - 处理后的图片或图片数组
+   * @param {string} imgName - 单张图片时的名字
+   * @param {number} cacheTime - 缓存时间（秒）
+   * @returns {Promise<Image | Array<Image>>} 处理后的图片或图片数组
    */
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
-    const timePath = this.fm.joinPath(this.cacheStr, 'lastUpdated.txt');
-    const lastUpdated = parseInt(this.fm.fileExists(timePath) ? this.fm.readString(timePath) : 0);
-    const shouldUpdate = Date.now() - lastUpdated >= 15 * 60 * 1000;
-  
     const processLogo = async (url, name) => {
-      const cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
-      if (shouldUpdate) {
-        const hasTransparent = await this.detectTransparent(cachedImage);
-        if (!hasTransparent) {
-          console.log(`${name} 没有透明背景，开始处理...`);
-          const { processedImage } = await this.processImage(cachedImage);
-          const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
-          cache.write(`${name}.png`, processedImage);
-          return { image: processedImage, updated: true };
-        }
+      let cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
+      const hasTransparent = await this.detectTransparent(cachedImage);
+      if (!hasTransparent) {
+        console.log(`${name} 没有透明背景，开始处理...`);
+        const { processedImage } = await this.processImage(cachedImage);
+        const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
+        cache.write(`${name}.png`, processedImage);
+        cachedImage = processedImage;
       }
-      return { image: cachedImage, updated: false };
+      return cachedImage;
     };
     
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
     const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
-    // 检查是否有图片被更新
-    const hasUpdates = results.some(result => result.updated);
-    if (hasUpdates) {
-      this.fm.writeString(timePath, Date.now().toString());
-    }
-    
-    const images = results.map(result => result.image);
-    return Array.isArray(logos) ? images : images[0];
+    return Array.isArray(logos) ? results : results[0];
   };
-    
+      
   /**
    * 为图片添加遮罩效果
    * @param {Image} img
