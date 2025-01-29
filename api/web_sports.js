@@ -196,12 +196,22 @@ async function main(family) {
    * @returns {Promise<string>} - 返回直播链接，如果未找到比赛则返回默认链接。
    */
   const fetchMatchAndUrl = async (hteam, ateam, status) => {
-    const result = await getCategoryList() || {};
+    let result;
+    if (chooseSports === '欧冠') {
+      result = {
+        name: '欧冠',
+        id: 0,
+        type: 1
+      }
+    } else {
+      result = await getCategoryList();
+    }
     const currentDate = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
     const url = `https://sqb3.com/prod-api/match/list/new?isfanye=1&type=${result.type}&cid=${result.id}&ishot=-1&pn=1&ps=20&level=&name=&langtype=zh&starttime=${currentDate}&pid=5&zoneId=Asia%2FShanghai&zhuboType=0`;
     const { data } = await module.httpRequest(url, 'json');
     if (!data) return null;
-    const match = data?.dataList.find(item =>
+    const dataList = chooseSports === '欧冠' ? data.topList : data.dataList;
+    const match = dataList.find(item =>
       item.name === result.name &&
       item.status === 0 &&
       (item.ateam_name.includes(ateam) || item.hteam_name.includes(hteam) || ateam.includes(item.ateam_name) || hteam.includes(item.hteam_name) || item.ateam_name.includes(hteam))
@@ -216,7 +226,7 @@ async function main(family) {
       ];
   
       const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清'].includes(item.name));
-      return target?.url || match.video_url;
+      return target?.url;
     } else {
       return data.dataList[0].video_url || 'https://sqb3.com';
     };
