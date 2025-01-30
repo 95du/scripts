@@ -302,7 +302,7 @@ async function main(family) {
     const agriculturalInfo = agriculturalRatesByCode[areaCode];
     const agriculturalRate = agriculturalInfo ? agriculturalInfo.rate : 0.514;
   
-    // 返回农业用电数据
+    // 农业用电计算
     if (eleType === '800') {
       return {
         tier: '农用',
@@ -344,22 +344,38 @@ async function main(family) {
       ]
     };
   
+    // 取对应省份的阶梯电价，若无匹配则默认海南
     const provinceRates = resRatesProv[areaCode] || resRatesProv['070000'];
-    // 根据用电量判断所属档次
-    const tierIndex = provinceRates.findIndex((t, i) => totalPower <= (t.limit || Infinity) || i === provinceRates.length - 1);
-    const tier = provinceRates[tierIndex];
+  
+    let remainingPower = totalPower;
+    let totalCost = 0;
+    let lastTierName = "一档";
+    let tierIndex = 0;
+    
+    for (let i = 0; i < provinceRates.length; i++) {
+      const { limit, rate, name } = provinceRates[i];
+      lastTierName = name;
+      tierIndex = i + 1;
+      
+      let prevLimit = provinceRates[i - 1]?.limit || 0; // 计算上一档的限额
+      let powerThisTier = limit ? Math.min(remainingPower, limit - prevLimit) : remainingPower;
+      totalCost += powerThisTier * rate
+      remainingPower -= powerThisTier;
+      if (remainingPower <= 0) break; 
+    }
+    
     // 计算占第三档比例
-    const thirdTierLimit = provinceRates[1]?.limit;
+    const thirdTierLimit = provinceRates[1]?.limit || 1;
     const percentageOfThird = totalPower / thirdTierLimit;
     const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0
-    
+  
     return {
-      tier: tier.name,
-      rate: tier.rate,
-      cost: (totalPower * tier.rate).toFixed(2),
+      tier: lastTierName,
+      rate: provinceRates[tierIndex - 1].rate,
+      cost: totalCost.toFixed(2),
       percent: percentageOfThird,
       isPercent: `${isPercent}%`,
-      tierIndex: tierIndex + 1,
+      tierIndex,
       type: eleType === '500' ? '居民' : '企业'
     };
   };
