@@ -502,6 +502,7 @@ class _95du {
   
       if (shouldUpdate) {
         const hasTransparent = await this.detectTransparent(cachedImage);
+        console.log(hasTransparent)
         if (!hasTransparent) {
           console.log(`${name} 没有透明背景，开始处理...`);
           const processed = await this.processImage(cachedImage);
@@ -517,7 +518,7 @@ class _95du {
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
     const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
     const hasUpdatedImages = results.some(result => result.imageUpdated);
-    if (hasUpdatedImages) {
+    if (shouldUpdate || hasUpdatedImages) {
       this.fm.writeString(timePath, Date.now().toString());
     }
   
