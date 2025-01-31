@@ -503,7 +503,7 @@ class _95du {
       if (shouldUpdate) {
         const hasTransparent = await this.detectTransparent(cachedImage);
         if (!hasTransparent) {
-          console.log(`${name} 没有透明背景，开始处理...`);
+          console.log(`${name}.png，正在处理图片...`);
           const processed = await this.processImage(cachedImage);
           cachedImage = processed.processedImage;
           const cache = this.useFileManager({ cacheTime: 240, type: 'image' });
