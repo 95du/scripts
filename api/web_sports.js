@@ -226,7 +226,7 @@ async function main(family) {
         ...match.mirror_live_urls
       ];
   
-      const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清'].includes(item.name));
+      const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清', '标清'].includes(item.name));
       return target?.url;
     } else {
       return data.dataList[0].video_url || 'https://sqb3.com';
