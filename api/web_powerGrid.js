@@ -221,42 +221,45 @@ async function main(family) {
    * @param {number|string} 202501
    * @returns {Promise<boolean>} 布尔值
    */
-  const queryBillOverview = async (startYear, startMonth) => {
-    const { sta, data } = await getCacheString('queryBillOverview.json', 'https://95598.csg.cn/ucs/ma/zt/charge/queryBillOverview', {
-      yearMonth : `${startYear}${startMonth}`,
-      pageNum : 1,
-      pageSize : 10
+  const queryCharges = async (areaCode, eleCustId) => {
+    const { sta, data } = await getCacheString('queryCharges.json', 'https://95598.csg.cn/ucs/ma/zt/charge/queryCharges', {
+      type : 0,
+      areaCode,
+      eleModels : [{ areaCode, eleCustId }]
     });
     if (sta == 00) {
-      const billOverviewList = data.billOverviewModelList || [];
-      const isBilling = billOverviewList.some((item) => item.totalElectricity && item.totalPower);
-      return isBilling;
+      const points = data[0].points;
+      return points.some(point => point.electricityBillYearMonthStart && point.electricityBillYearMonthEnd && point.billingElectricity
+      );
     }
     return false; 
   };
   
   // 判断年月(账单未出来前获取上月)
-  const isStartMonth = async (yearMonth) => {
+  const getPreviousMonth = async (yearMonth) => {
     const { year, month } = getCurrentYearMonth();
     let adjustYear = year;
     let adjustMonth = month;
     
     const [startYear, startMonth] = yearMonth.split('-').map(Number);
-    const isBilling = await queryBillOverview(startYear, startMonth);
-    if (!isBilling) {
-      if (startYear === year) {
-        adjustMonth = month === 1 ? 12 : month - 1;
-      } else if (startYear !== year) {
-        adjustYear -= 1;
-        adjustMonth = 12;
-      }
+    if (startYear === year) {
+      adjustMonth = month === 1 ? 12 : month - 1;
+    } else if (startYear !== year) {
+      adjustYear -= 1;
+      adjustMonth = 12;
     }
     return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
   };
   
   // 月账单
   const getEleBill = async (areaCode, eleCustId) => {
-    const { currentYear } = getCurrentYearMonth();
+    let { year, currentYear, month } = getCurrentYearMonth();
+    const isBilling = await queryCharges(areaCode, eleCustId);
+    if (!isBilling) {
+      currentYear = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
+      month = month === 1 ? 12 : month - 1; // 切换到上一月
+    }
+    
     const [response, balance] = await Promise.all([
       getCacheString(
         `selectElecBill_${count}.json`,
@@ -270,7 +273,8 @@ async function main(family) {
       const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
       const lsEleBill = totalArray[0];
       const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      const convertYearMonth = await isStartMonth(lastMonth);
+      const convertYearMonth = await getPreviousMonth(isBilling ? lastMonth : `${year}-${month}`);
+      console.log(convertYearMonth)
       return {
         ...lsEleBill,
         lastMonth,
@@ -368,7 +372,7 @@ async function main(family) {
     const thirdTierLimit = provinceRates[1]?.limit || 1;
     const percentageOfThird = totalPower / thirdTierLimit;
     const isPercent = totalPower > 0 ? Math.floor(percentageOfThird * 100) : 0
-  
+    
     return {
       tier: lastTierName,
       rate: provinceRates[tierIndex - 1].rate,
