@@ -656,7 +656,7 @@ async function main(family) {
       titleStack.centerAlignContent();
       titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
-      const titleText = titleStack.addText(teamName.slice(0, 5));
+      const titleText = titleStack.addText(teamName);
       titleText.font = Font.mediumSystemFont(14);
       titleText.textColor = textColor;
       titleStack.addSpacer();
