@@ -221,43 +221,31 @@ async function main(family) {
    * @param {number|string} 202501
    * @returns {Promise<boolean>} 布尔值
    */
-  const queryCharges = async (areaCode, eleCustId) => {
-    const { sta, data } = await getCacheString(`queryCharges_${count}.json`,  'https://95598.csg.cn/ucs/ma/zt/charge/queryCharges', {
-      type : 0,
-      areaCode,
-      eleModels : [{ 
-        areaCode, 
-        eleCustId
-      }]
+  const queryBillOverview = async (year, month) => {
+    const { sta, data } = await getCacheString('queryBillOverview.json', 'https://95598.csg.cn/ucs/ma/zt/charge/queryBillOverview', {
+      yearMonth: `${year}${String(month).padStart(2, '0')}`,
+      pageNum: 1, 
+      pageSize: 10
     });
     if (sta == 00) {
-      const points = data[0].points;
-      return points.some(point => point.electricityBillYearMonthStart && point.electricityBillYearMonthEnd && point.billingElectricity
-      );
+      const isBilling = data.billOverviewModelList.some(bill => bill.electricityBillYearMonth && bill.readingDate);
+      return isBilling;
     }
     return false; 
   };
   
-  // 判断年月(账单未出来前获取上月)
-  const getPreviousMonth = async (yearMonth) => {
-    const { year, month } = getCurrentYearMonth();
-    let adjustYear = year;
-    let adjustMonth = month;
-    
-    const [startYear, startMonth] = yearMonth.split('-').map(Number);
-    if (startYear === year) {
-      adjustMonth = month === 1 ? 12 : month - 1;
-    } else if (startYear !== year) {
-      adjustYear -= 1;
-      adjustMonth = 12;
-    }
-    return `${adjustYear}${String(adjustMonth).padStart(2, '0')}`;
+  // 获取年和月（如果账单未出，则获取上个月）
+  const getCheckYearMonth = () => {
+    let { year, month } = getCurrentYearMonth();
+    const checkYear = month === 1 ? year - 1 : year;
+    const checkMonth = month === 1 ? 12 : month - 1;
+    return { year, month, checkYear, checkMonth };
   };
   
   // 月账单
   const getEleBill = async (areaCode, eleCustId) => {
-    let { year, month } = getCurrentYearMonth();
-    const isBilling = await queryCharges(areaCode, eleCustId);
+    let { year, month, checkYear, checkMonth } = getCheckYearMonth();
+    const isBilling = await queryBillOverview(checkYear, checkMonth);
     if (!isBilling) {
       year = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
     }
@@ -276,7 +264,7 @@ async function main(family) {
       const lsEleBill = totalArray[0];
       const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2'); 
       const _lastMonth = lsEleBill.readingDate.replace(/^(\d{4})\/(\d{2})\/\d{2}$/, '$1-$2');
-      const convertYearMonth = await getPreviousMonth(isBilling ? lastMonth : _lastMonth);
+      const convertYearMonth = (isBilling ? lastMonth : _lastMonth).replace('-', '');
       return {
         ...lsEleBill,
         lastMonth,
