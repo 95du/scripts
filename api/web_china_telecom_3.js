@@ -342,7 +342,7 @@ async function main(family) {
         stack: horStack,
         title: bill ? '账单' : '话费',
         balance: feeBalance,
-        newUnit: ' ￥',
+        newUnit: feeBalance >= 0 ? ' ￥' : '',
         percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
         symbol: '',
         color: feeColor
