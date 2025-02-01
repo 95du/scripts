@@ -257,7 +257,6 @@ async function main(family) {
     const isBilling = await queryCharges(areaCode, eleCustId);
     if (!isBilling) {
       currentYear = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
-      month = month === 1 ? 12 : month - 1; // 切换到上一月
     }
     
     const [response, balance] = await Promise.all([
@@ -272,9 +271,9 @@ async function main(family) {
     if (response.sta == 00) {
       const { totalElectricityYear, totalPowerYear, billUserAndYear: totalArray } = response.data;
       const lsEleBill = totalArray[0];
-      const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2');
-      const convertYearMonth = await getPreviousMonth(isBilling ? lastMonth : `${year}-${month}`);
-      console.log(convertYearMonth)
+      const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2'); 
+      const _lastMonth = lsEleBill.readingDate.replace(/^(\d{4})\/(\d{2})\/\d{2}$/, '$1-$2');
+      const convertYearMonth = await getPreviousMonth(isBilling ? lastMonth : _lastMonth);
       return {
         ...lsEleBill,
         lastMonth,
