@@ -494,7 +494,7 @@ class _95du {
   loadAndProcessLogos = async (logos, imgName, cacheTime = 240) => {
     const timePath = this.fm.joinPath(this.cacheStr, 'lastUpdated.txt');
     const lastUpdated = parseInt(this.fm.fileExists(timePath) ? this.fm.readString(timePath) : 0);
-    const shouldUpdate = Date.now() - lastUpdated >= 3 * 60 * 1000;
+    const shouldUpdate = Date.now() - lastUpdated >= 1 * 60 * 1000;
   
     const processLogo = async (url, name) => {
       let cachedImage = await this.getCacheData(url, cacheTime, `${name}.png`);
