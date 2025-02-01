@@ -222,10 +222,13 @@ async function main(family) {
    * @returns {Promise<boolean>} 布尔值
    */
   const queryCharges = async (areaCode, eleCustId) => {
-    const { sta, data } = await getCacheString('queryCharges.json', 'https://95598.csg.cn/ucs/ma/zt/charge/queryCharges', {
+    const { sta, data } = await getCacheString(`queryCharges_${count}.json`,  'https://95598.csg.cn/ucs/ma/zt/charge/queryCharges', {
       type : 0,
       areaCode,
-      eleModels : [{ areaCode, eleCustId }]
+      eleModels : [{ 
+        areaCode, 
+        eleCustId
+      }]
     });
     if (sta == 00) {
       const points = data[0].points;
@@ -253,17 +256,17 @@ async function main(family) {
   
   // 月账单
   const getEleBill = async (areaCode, eleCustId) => {
-    let { year, currentYear, month } = getCurrentYearMonth();
+    let { year, month } = getCurrentYearMonth();
     const isBilling = await queryCharges(areaCode, eleCustId);
     if (!isBilling) {
-      currentYear = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
+      year = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
     }
     
     const [response, balance] = await Promise.all([
       getCacheString(
         `selectElecBill_${count}.json`,
         'https://95598.csg.cn/ucs/ma/zt/charge/selectElecBill',
-        { electricityBillYear: currentYear, areaCode, eleCustId }
+        { electricityBillYear: year, areaCode, eleCustId }
       ),
       getUserBalance(areaCode, eleCustId) // 余额
     ]);
