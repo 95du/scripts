@@ -228,6 +228,7 @@ const createWidget = async () => {
   const widget = new ListWidget();
   widget.setPadding(padding, padding, padding, padding);
   widget.backgroundImage = Device.isUsingDarkAppearance() ? imageDark : baidu_map;
+  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
 
