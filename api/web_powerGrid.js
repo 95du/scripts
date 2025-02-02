@@ -40,17 +40,6 @@ async function main(family) {
     ))
   };
   
-  /**
-   * 该函数获取当前的年份和月份
-   * @returns {Promise}
-   */
-  const getCurrentYearMonth = () => {
-    const currentDate = new Date();
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    return { year, month }
-  };
-  
   // 配置尺寸
   const isSmall = Device.screenSize().height < 926;
   const lay = {
@@ -235,7 +224,9 @@ async function main(family) {
   
   // 获取年和月（如果账单未出，则获取上个月）
   const getCheckYearMonth = () => {
-    let { year, month } = getCurrentYearMonth();
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
     const checkYear = month === 1 ? year - 1 : year;
     const checkMonth = month === 1 ? 12 : month - 1;
     return { year, month, checkYear, checkMonth };
