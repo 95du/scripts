@@ -502,8 +502,8 @@ async function main() {
           icon: `${rootUrl}/img/icon/marketCap.png`
         },
         {
-          label: '豆瓣电影_Top250',
-          desc: '随机显示250部电影',
+          label: '豆瓣电影',
+          desc: '随机显示 Top250 电影',
           version: '1.1.0',
           type: 'button',
           scrUrl: `${rootUrl}/widget/douban_top250.js`,
@@ -518,14 +518,14 @@ async function main() {
           icon: `${rootUrl}/img/icon/exchange_rate.png`
         },
         {
-          label: '马溜狗',
-          desc: '显示未来两小时天气',
+          label: '墨迹天气',
+          desc: '未来两小时天气',
           version: '1.5.0',
           type: 'button',
           recommend: true,
           random: true,
           scrUrl: `${rootUrl}/widget/bottomBar.js`,
-          icon: `${rootUrl}/img/icon/bottomBars.png`
+          icon: `${rootUrl}/img/icon/weather.png`
         },
         {
           label: '埃隆·马斯克',
@@ -783,6 +783,8 @@ async function main() {
     widget.setPadding(15, 18, 15, 18)
     if (settings.alwaysDark) {
       widget.backgroundColor = Color.black();  
+    } else {
+      widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
     const stackItems = widget.addStack();
     const { add } = await getRank(stackItems, { column: 2 });
