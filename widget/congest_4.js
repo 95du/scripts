@@ -188,6 +188,7 @@ const createWidget = async () => {
 
   const widget = new ListWidget();
   widget.setPadding(15, 15, 15, 15);
+  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.addSpacer(5);
