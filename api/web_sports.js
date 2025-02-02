@@ -328,7 +328,7 @@ async function main(family) {
       let tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后
       tabsData = await ensureMinimumMatches(tabsData, 16);
-  
+      
       let data = [];
       let isMatches = [];
       let endMatches = [];
@@ -343,12 +343,18 @@ async function main(family) {
         if (completedMatches.length > 0 && item.weekday === '今天') {
           endMatches = item.list;
         }
+        // 检查是否 tabsData 只有 1 个元素，并且所有比赛都是已结束状态
+        const isOnlyCompletedMatches = tabsData.length === 1 && currentList.length > 0 && nonCompletedMatches.length === 0;
         // 如果存在状态为 '2' 的比赛，优先保留最近的一场
-        if (!foundMatchStatus2 && completedMatches.length > 0) {
+        if (!foundMatchStatus2 && completedMatches.length > 0 && !isOnlyCompletedMatches) {
           item.list = [completedMatches[completedMatches.length - 1], ...nonCompletedMatches];
           foundMatchStatus2 = true;
         } else {
           item.list = nonCompletedMatches;
+        }
+        // 如果 tabsData 只有 1 条数据，并且所有比赛都是已结束的，保留所有数据
+        if (isOnlyCompletedMatches) {
+          item.list = currentList;  
         }
         // 收集所有状态为 '1' 的比赛或者开赛事今天的比赛
         const isStatusOneMatches = item.list.filter(match => match.matchStatus === '1');
