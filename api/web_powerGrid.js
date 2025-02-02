@@ -48,8 +48,7 @@ async function main(family) {
     const currentDate = new Date();
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
-    const currentYear = month === 1 ? year - 1 : year;
-    return { year, currentYear, month }
+    return { year, month }
   };
   
   // 配置尺寸
@@ -267,6 +266,7 @@ async function main(family) {
       const convertYearMonth = (isBilling ? lastMonth : _lastMonth).replace('-', '');
       return {
         ...lsEleBill,
+        year,
         lastMonth,
         convertYearMonth,
         balance, // 余额
@@ -389,14 +389,15 @@ async function main(family) {
     totalArray = [],
     meteringPointId,
     convertYearMonth,
-    balance = '0.00',  
+    balance = '0.00', 
+    year = '2099',
     lastMonth = '2099-12',
     totalPower: ls_totalPower = '0.00',
     totalElectricity: ls_totalElectricity = '0.00', 
     arrears = '0.00', 
     isArrears = '0',
     totalElectricityYear = '0.00', 
-    totalPowerYear = '0.00 °'
+    totalPowerYear = '0.00'
   } = await getEleBill(areaCode, eleCustId) || {};
   
   // 月用电信息
@@ -603,8 +604,7 @@ async function main(family) {
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(127, setting.chartHeight || 60);
     } else {
-      const { currentYear } = getCurrentYearMonth();
-      createStack(middleStack, 1, `${currentYear} 年`, totalPowerYear, totalElectricityYear);
+      createStack(middleStack, 1, `${year} 年`, totalPowerYear, totalElectricityYear);
     };
     
     createStack(middleStack, true, lastMonth, ls_totalPower, ls_totalElectricity);
