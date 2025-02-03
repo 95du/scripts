@@ -2,10 +2,6 @@
   "resultCount": 1,
   "results": [
     {
-      "isGameCenterEnabled": false,
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/ef/ae/57efae02-424c-d8fc-edc4-c531aae269fa/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/ef/ae/57efae02-424c-d8fc-edc4-c531aae269fa/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/100x100bb.jpg",
       "features": [
         "iosUniversal"
       ],
@@ -119,29 +115,29 @@
         "iPadMiniA17ProCellular-iPadMiniA17ProCellular"
       ],
       "advisories": [
-        "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Mature/Suggestive Themes",
         "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
         "Infrequent/Mild Profanity or Crude Humor",
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Medical/Treatment Information",
         "Infrequent/Mild Horror/Fear Themes"
       ],
+      "isGameCenterEnabled": false,
       "kind": "software",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b0/a2/01/b0a20166-127b-76ae-f08c-eec5f8308295/AppIcon-0-0-1x_U007epad-0-1-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b0/a2/01/b0a20166-127b-76ae-f08c-eec5f8308295/AppIcon-0-0-1x_U007epad-0-1-85-220.png/100x100bb.jpg",
       "screenshotUrls": [
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/03/60/5d/03605d13-cf76-3131-f563-e84d63d8fbd9/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/d5/c2/42/d5c24245-7ef5-41bd-3359-21c53bc10727/50b86672-f027-420a-a10c-abf996a931ab_5.5_1242_x_2208_2.png/392x696bb.png",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/d1/aa/5d/d1aa5df0-a5bc-6c5e-8bf0-9e1480246706/a41cf838-99b3-43fa-8034-b9b95835a8c5_5.5_1242_x_2208_3.png/392x696bb.png",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/84/0e/93/840e93ec-5156-5c48-b307-d4e4dbb2c1a2/5eb7ea7a-caae-4796-8534-fd329aec6824_5.5_1242_x_2208_4.png/392x696bb.png",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/4c/53/96/4c539620-663b-c8a6-49b3-d91029fdb831/126e0ae5-759b-4ca3-af7d-4f5c68028f45_5.5_1242_x_2208_5.png/392x696bb.png",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/ef/20/8f/ef208f65-02ae-d6e0-4787-ce92e972f7ea/8797f21c-c0c5-40fc-b6e2-8a0408d85538_5.5_1242_x_2208_6.png/392x696bb.png"
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/38/63/d7/3863d7b5-2b79-9664-7ae8-c36a51b772ae/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/59/f4/22/59f422ff-2880-05b3-66b0-a2765f625d64/50b86672-f027-420a-a10c-abf996a931ab_5.5_1242_x_2208_2.png/392x696bb.png",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/8a/eb/cf/8aebcf11-ab71-f619-beb7-e08d2098d6f9/a41cf838-99b3-43fa-8034-b9b95835a8c5_5.5_1242_x_2208_3.png/392x696bb.png",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/2d/1e/ee/2d1eee60-884e-4e98-98a0-ccee282b96c0/5eb7ea7a-caae-4796-8534-fd329aec6824_5.5_1242_x_2208_4.png/392x696bb.png",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/d2/4a/cd/d24acd84-1945-31aa-938c-2201d973e2dd/126e0ae5-759b-4ca3-af7d-4f5c68028f45_5.5_1242_x_2208_5.png/392x696bb.png",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/f1/6a/c0/f16ac08c-e0e8-6c14-e727-697e71a3dbf6/8797f21c-c0c5-40fc-b6e2-8a0408d85538_5.5_1242_x_2208_6.png/392x696bb.png"
       ],
       "ipadScreenshotUrls": [],
       "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/57/ef/ae/57efae02-424c-d8fc-edc4-c531aae269fa/AppIcon-0-0-1x_U007emarketing-0-8-0-85-220.png/512x512bb.jpg",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b0/a2/01/b0a20166-127b-76ae-f08c-eec5f8308295/AppIcon-0-0-1x_U007epad-0-1-85-220.png/512x512bb.jpg",
       "minimumOsVersion": "17.0",
-      "trackCensoredName": "ChatGPT",
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "averageUserRating": 4.87275,
-      "contentAdvisoryRating": "12+",
       "artistId": 1684349733,
       "artistName": "OpenAI",
       "genres": [
@@ -149,24 +145,28 @@
         "Utilities"
       ],
       "price": 0,
+      "trackId": 6448311069,
+      "trackName": "ChatGPT",
       "bundleId": "com.openai.chat",
       "genreIds": [
         "6007",
         "6002"
       ],
-      "isVppDeviceBasedLicensingEnabled": true,
-      "sellerName": "OpenAI, L.L.C.",
       "releaseDate": "2023-05-18T07:00:00Z",
       "primaryGenreName": "Productivity",
       "primaryGenreId": 6007,
-      "currentVersionReleaseDate": "2025-01-27T17:05:40Z",
+      "isVppDeviceBasedLicensingEnabled": true,
+      "sellerName": "OpenAI, L.L.C.",
       "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2025.021",
+      "currentVersionReleaseDate": "2025-02-02T15:41:49Z",
+      "version": "1.2025.029",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "averageUserRatingForCurrentVersion": 4.87275,
-      "sellerUrl": "https://openai.com/chatgpt",
+      "trackCensoredName": "ChatGPT",
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "contentAdvisoryRating": "12+",
+      "averageUserRatingForCurrentVersion": 4.87265,
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -229,13 +229,13 @@
         "UR",
         "VI"
       ],
-      "fileSizeBytes": "78285824",
+      "fileSizeBytes": "79379456",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 1557605,
+      "userRatingCountForCurrentVersion": 1572187,
       "trackContentRating": "12+",
-      "trackId": 6448311069,
-      "trackName": "ChatGPT",
-      "userRatingCount": 1557605
+      "sellerUrl": "https://openai.com/chatgpt",
+      "averageUserRating": 4.87265,
+      "userRatingCount": 1572187
     }
   ]
 }
