@@ -517,8 +517,9 @@ class _95du {
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
     const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
     const hasUpdatedImages = results.some(result => result.imageUpdated);
-    if (shouldUpdate || hasUpdatedImages) {
+    if (shouldUpdate && hasUpdatedImages) {
       this.fm.writeString(timePath, Date.now().toString());
+      console.log(shouldUpdate)
     }
   
     const images = results.map(result => result.cachedImage);
@@ -1418,7 +1419,7 @@ class _95du {
       '4Qs8h89CPV2',
       '9tGRt0cCTV2',
       '548vR21CUV2',
-      'aqaNd6aCUV2'
+      'aqaNd6aCUV2',
     ];
     const randomId = this.getRandomItem(songId);
     return `
