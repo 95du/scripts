@@ -850,15 +850,15 @@ async function main() {
               values: [
                 {
                   label: '双色球',
-                  value: '0'
+                  value: 1
                 },
                 {
                   label: '大乐透',
-                  value: '1'
+                  value: 1
                 },
                 {
                   label: '排列三',
-                  value: '2'
+                  value: 2
                 }
               ]
             },
@@ -866,19 +866,19 @@ async function main() {
               values: [
                 {
                   label: '福彩3D',
-                  value: '3'
+                  value: 3
                 },
                 {
                   label: '七星彩',
-                  value: '4'
+                  value: 4
                 },
                 {
                   label: '七乐彩',
-                  value: '5'
+                  value: 5
                 },
                 {
                   label: '排列五',
-                  value: '6'
+                  value: 6
                 }
               ]
             }
