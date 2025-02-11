@@ -151,14 +151,8 @@ const drawCircle = async (daysUntil, sta, cnDay) => {
   return canvas.getImage();
 };
 
-const setBackground = async (widget, daysUntil, term) => {
-  if (daysUntil > 0) {
-    widget.backgroundImage = await getCacheData('background.png', 'https://sweixinfile.hisense.com/media/M00/8C/2B/Ch4FyWdJ-dKAQ8zNAA1BuzEeeSc937.png');
-  } else {
-    const solarTerms = ['立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑', '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至', '小寒', '大寒'];
-    const termColor = [new Color('#7B417B'), new Color('#E796B7')];  
-    const festivalColors = [new Color('#FF0000'), new Color('#FF9500')];
-
+const setBackground = async (widget, daysUntil) => {
+    const festivalColors = daysUntil > 0 ? [new Color('#7B417B'), new Color('#E796B7')] : [new Color('#FF0000'), new Color('#FF9500')];
     const gradient = new LinearGradient();
     const angle = 90;
     const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
@@ -166,11 +160,9 @@ const setBackground = async (widget, daysUntil, term) => {
     const y = 0.5 + 0.5 * Math.sin(radianAngle);
     gradient.startPoint = new Point(1 - x, y);
     gradient.endPoint = new Point(x, 1 - y);
-    console.log(solarTerms)
     gradient.locations = [0, 1];
-    gradient.colors = solarTerms.includes(term) ? termColor : festivalColors;
+    gradient.colors = festivalColors;
     widget.backgroundGradient = gradient;
-  }
 };
 
 const setupWidget = async () => {
@@ -182,7 +174,7 @@ const setupWidget = async () => {
   const sta = status === '1' ? '休' : status === '2' ? '班' : '';
   
   const widget = new ListWidget();
-  await setBackground(widget, daysUntil, term);
+  await setBackground(widget, daysUntil);
   widget.url = yjJumpUrl;
   widget.setPadding(0, 0, 0, 0);
   const mainStack = widget.addStack();
