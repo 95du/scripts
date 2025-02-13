@@ -151,18 +151,17 @@ const drawCircle = async (daysUntil, sta, cnDay) => {
   return canvas.getImage();
 };
 
-const setBackground = async (widget, daysUntil) => {
-    const festivalColors = daysUntil > 0 ? [new Color('#7B417B'), new Color('#E796B7')] : [new Color('#FF0000'), new Color('#FF9500')];
-    const gradient = new LinearGradient();
-    const angle = 90;
-    const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
-    const x = 0.5 + 0.5 * Math.cos(radianAngle);
-    const y = 0.5 + 0.5 * Math.sin(radianAngle);
-    gradient.startPoint = new Point(1 - x, y);
-    gradient.endPoint = new Point(x, 1 - y);
-    gradient.locations = [0, 1];
-    gradient.colors = festivalColors;
-    widget.backgroundGradient = gradient;
+const setBackground = async (widget, festivalColors) => {
+  const gradient = new LinearGradient();
+  const angle = 90;
+  const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
+  const x = 0.5 + 0.5 * Math.cos(radianAngle);
+  const y = 0.5 + 0.5 * Math.sin(radianAngle);
+  gradient.startPoint = new Point(1 - x, y);
+  gradient.endPoint = new Point(x, 1 - y);
+  gradient.locations = [0, 1];
+  gradient.colors = festivalColors;
+  widget.backgroundGradient = gradient;
 };
 
 const setupWidget = async () => {
@@ -172,9 +171,12 @@ const setupWidget = async () => {
   const daysUntil = daysRemaining(oDate);
   const moreDays = daysUntil < 1 ? '今天是 ✨' : `还有 ${daysUntil} 天`;
   const sta = status === '1' ? '休' : status === '2' ? '班' : '';
+  const festivalColors = daysUntil > 0 
+    ? [new Color('#7B417B'), new Color('#E796B7')] 
+    : [new Color('#FF0000'), new Color('#FF9500')];
   
   const widget = new ListWidget();
-  await setBackground(widget, daysUntil);
+  await setBackground(widget, festivalColors);
   widget.url = yjJumpUrl;
   widget.setPadding(0, 0, 0, 0);
   const mainStack = widget.addStack();
