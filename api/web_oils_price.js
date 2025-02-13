@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: orange; icon-glyph: gas-pump;
+// icon-color: orange; icon-glyph: charging-station;
 /**
  * 组件作者: 95度茅台
  * 组件名称: 全国油价_2
@@ -120,14 +120,12 @@ async function main() {
     try {
       const url = 'https://20121212.cn/ci/index.php/tips/get';  
       const [data] = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
-      const tips = data.tips.match(/(\d{1,2}月\d{1,2}日，|预测).*/);
-      const match = data.tips.match(/^\d{1,2}月\d{1,2}日/);
-      const cleanText = (text) => text.replace(/\s+/g, ' ') || tips;
-      
+      const tips = data.tips.match(/([\s\S]*?油价调整时间为：\d{1,2}月\d{1,2}日(?:24时)?)/);
+      const cleanText = (text) => text.replace(/\s+/g, ' ');
       return {
         date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
-        oilsTips: cleanText(!match || tips ? tips?.[0] : data?.tips)
-      }
+        oilsTips: cleanText(tips ? tips[1] : data.tips)
+      };
     } catch (e) {
       console.error('⚠️ 无法更新数据，可能节点冲突，请关闭 VPN 后重试。');
     }
@@ -195,7 +193,7 @@ async function main() {
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
     
-    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 90 || date < 1 ? '' : ` 【 剩余 ${date || 0} 天 】`));
+    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 95 || date < 1 ? '' : ` 【 剩余 ${date || 0} 天 】`));
     oilTipsText.textColor = textColor
     oilTipsText.font = Font.mediumSystemFont(tipsGap ? font : 14);
     oilTipsText.leftAlignText();
