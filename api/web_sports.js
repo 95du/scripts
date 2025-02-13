@@ -11,7 +11,7 @@
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = false
+  const isDev = true
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
@@ -327,7 +327,7 @@ async function main(family) {
       const { tplData } = await module.getCacheData(url, 2, `${chooseSports}.json`);
       let tabsData = tplData.data.tabsList[0].data;
       // 如果总长度小于等于15，添加对象到data的最后
-      tabsData = await ensureMinimumMatches(tabsData, 16);
+      tabsData = await ensureMinimumMatches(tabsData, 30);
       
       let data = [];
       let isMatches = [];
