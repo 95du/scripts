@@ -11,7 +11,7 @@
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = true
+  const isDev = false
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
@@ -493,7 +493,7 @@ async function main(family) {
     widget.addSpacer(5);
   };
   
-  const createTextStack = (stack, text, width, textOpacity, right, left, matchStatus) => {
+  const createTextStack = (stack, text, width, textOpacity = 1, right, left, matchStatus) => {
     const rowStack = stack.addStack();
     rowStack.layoutHorizontally();
     rowStack.centerAlignContent();
@@ -501,7 +501,7 @@ async function main(family) {
     if (left) rowStack.addSpacer();
     const rowText = rowStack.addText(text);
     rowText.font = Font.mediumSystemFont(lay.textSize);
-    rowText.textOpacity = textOpacity === true ? 0.5 : 1;
+    rowText.textOpacity = textOpacity === true || text === '全明星' ? 0.5 : 1;
     rowText.textColor = matchStatus === '1' ? Color.red() : textColor;
     if (right) rowStack.addSpacer();
     return rowText;
@@ -529,7 +529,7 @@ async function main(family) {
       
       for (const match of item.list) {
         if (rowCount >= maxRows) break;
-        const { time, matchType, matchStatus, hasLiveOrFlash, leftLogo, rightLogo } = match;
+        const { time, matchType, matchStatus, hasLiveOrFlash, leftLogo, rightLogo, matchStage } = match;
         const textOpacity = match.matchStatus === '2';
         // 赛程、事件通知
         if ((!setting.autoSwitch || family === 'large') && matchStatus === '1' && match.liveStageText) {
@@ -564,9 +564,10 @@ async function main(family) {
         stack.addSpacer(8);
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
-        // 比分
+        // 比分栏
         const typeSize = matchType === 'basketball' ? 80 : 50;
-        createTextStack(stack, `${leftLogo.score} - ${rightLogo.score}`, typeSize, textOpacity, 'right', 'left', matchStatus);
+        const scoreColumn = matchStage === '全明星' ? matchStage : `${leftLogo.score} - ${rightLogo.score}`;
+        createTextStack(stack, scoreColumn, typeSize, textOpacity, 'right', 'left', matchStatus);
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
