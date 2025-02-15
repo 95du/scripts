@@ -454,7 +454,7 @@ class _95du {
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
             const tolerance = 60;
-            let hasTransparent = false;
+            let hasTransparent = false
   
             for (let i = 0; i < data.length; i += 4) {
               const [r, g, b, a] = [data[i], data[i + 1], data[i + 2], data[i + 3]];
@@ -516,10 +516,11 @@ class _95du {
   
     const logosArray = Array.isArray(logos) ? logos : [{ url: logos, name: imgName }];
     const results = await Promise.all(logosArray.map(team => processLogo(team.url, team.name)));
-    const hasUpdatedImages = results.some(result => result.imageUpdated);
-    if (shouldUpdate && hasUpdatedImages) {
-      this.fm.writeString(timePath, Date.now().toString());
-      console.log(shouldUpdate)
+    // 当所有图片都处理完后才更新时间戳
+    if (results.some(result => result.imageUpdated)) {
+      const newTimestamp = Date.now();
+      this.fm.writeString(timePath, newTimestamp.toString());
+      console.log(`更新时间戳: ${newTimestamp}`);
     }
   
     const images = results.map(result => result.cachedImage);
