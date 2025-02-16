@@ -241,7 +241,7 @@ async function main(family) {
     new Color('#CFCFCF'), 
     new Color('#7A7A7A')
   );
-
+  
   const getColor = (value, isOpaque = false) => {
     const colorMap = new Map([
       [ 10, isOpaque ? new Color("#F7B50075") : new Color("#FF0000") ],
@@ -255,7 +255,7 @@ async function main(family) {
     for (let [thresholdBetween, color] of colorMap) {
       if (value <= thresholdBetween) return color;
     }
-    return isOpaque ? new Color("#FFA50075") : new Color("#00C400");
+    return isOpaque ? new Color("#FFA50075") : new Color("#00B400");
   };
   
   //=========> config <=========//
@@ -514,7 +514,7 @@ async function main(family) {
     }
 
     const width = 128
-    const height = 8
+    const height = 7
     const radius = height / 2
     
     if (setting.logoSwitch) {
@@ -555,7 +555,7 @@ async function main(family) {
       ctx.size = new Size(width, height);
       ctx.opaque = false;
       ctx.respectScreenScale = true;
-      ctx.setFillColor(barColor);
+      ctx.setFillColor(new Color(progressColor.hex, 0.3));
       
       const path = new Path();
       path.addRoundedRect(new Rect(0, 0, width, height), radius, radius);
