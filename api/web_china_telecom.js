@@ -244,18 +244,18 @@ async function main(family) {
   
   const getColor = (value, isOpaque = false) => {
     const colorMap = new Map([
-      [ 10, isOpaque ? new Color("#F7B50075") : new Color("#FF0000") ],
-      [ 20, isOpaque ? new Color("#BE62F375") : new Color("#F7B500") ],
-      [ 40, isOpaque ? new Color("#0099FF75") : new Color("#FFA500") ],
-      [ 50, isOpaque ? new Color("#FFA50075") : new Color("#BE62F3") ],
-      [ 65, isOpaque ? new Color("#FFA50075") : new Color("#0099FF") ],
-      [ 75, isOpaque ? new Color("#FFA50075") : new Color("#44CB9C") ]
+      [ 10, isOpaque ? new Color("#F7B50095") : new Color("#FF0000") ],
+      [ 20, isOpaque ? new Color("#BE62F395") : new Color("#F7B500") ],
+      [ 40, isOpaque ? new Color("#0099FF95") : new Color("#FFA500") ],
+      [ 50, isOpaque ? new Color("#FFA50095") : new Color("#BE62F3") ],
+      [ 65, isOpaque ? new Color("#FFA50095") : new Color("#0099FF") ],
+      [ 75, isOpaque ? new Color("#FFA50095") : new Color("#44CB9C") ]
     ]);
   
     for (let [thresholdBetween, color] of colorMap) {
       if (value <= thresholdBetween) return color;
     }
-    return isOpaque ? new Color("#FFA50075") : new Color("#00B400");
+    return isOpaque ? new Color("#FFA50095") : new Color("#00B400");
   };
   
   //=========> config <=========//
@@ -501,6 +501,39 @@ async function main(family) {
     return context.getImage();
   };
 
+  // 横向进度条
+  const createProgress2 = (stock, total, haveGone, progressColor, width, height) => {
+    const ctx = new DrawContext();
+    ctx.size = new Size(width, height);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    ctx.setFillColor(new Color(progressColor.hex, 0.3));
+    
+    const radius = height / 2
+    const path = new Path();
+    path.addRoundedRect(new Rect(0, 0, width, height), radius, radius);
+    ctx.addPath(path);
+    ctx.fillPath();
+    
+    if (total > 0 && stock && setting.used) {  
+      const stockColor = getColor(stock, true);
+      const path2 = new Path();
+      ctx.setFillColor(stockColor);
+      path2.addRoundedRect(new Rect(0, 0, width * stock / 100, height), radius, radius);
+      ctx.addPath(path2);
+      ctx.fillPath();
+    }
+    
+    const path1 = new Path();
+    ctx.setFillColor(haveGone < 0.3 ? widgetColor : progressColor);
+    if (total > 0) {
+      path1.addRoundedRect(new Rect(0, 0, width * haveGone / total, height), radius, radius);  
+    }
+    ctx.addPath(path1);
+    ctx.fillPath();
+    return ctx.getImage();
+  };
+  
   /**
    * Create Small Widget
    * @param { string } string
@@ -512,10 +545,6 @@ async function main(family) {
     if (balanceAvailable < 0) {
       widget.url = payment;
     }
-
-    const width = 128
-    const height = 7
-    const radius = height / 2
     
     if (setting.logoSwitch) {
       const logoImage = widget.addImage(image1);
@@ -528,7 +557,7 @@ async function main(family) {
       logoImage.tintColor = new Color('#2B83F1');
     }
     const balText = widget.addText(balanceAvailable);  
-    balText.textColor = Color.orange();
+    balText.textColor = Color.red();
     balText.font = new Font("Georgia-Bold", 22);
     balText.centerAlignText();
     widget.addSpacer(6);
@@ -536,50 +565,22 @@ async function main(family) {
     getWidget(voice2nd, voiceTotal, voiceBalance, `${voiceBalance} 分钟 - ${voice}%`, getColor(voice));
     getWidget(flow1st, totalFlow, balanceFlow, `${flowBalFormat} - ${flow}%`, getColor(flow));
     
-    function getWidget(stock, total, haveGone, str, progressColor) {
-      const title = widget.addText(str);
+    function getWidget(stock, total, haveGone, text, progressColor) {
+      const width = 128
+      const height = 7
+      
+      const title = widget.addText(text);
       title.centerAlignText();
       title.textColor = textColor;
       title.font = Font.mediumSystemFont(14);
       widget.addSpacer(3);
       
-      const progress = creatProgress(stock, total, haveGone, progressColor);
+      const progress = createProgress2(stock, total, haveGone, progressColor, width, height);
       const drawImage = widget.addImage(progress);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(width, height);
       widget.addSpacer(6);
-    };
-    
-    function creatProgress(stock, total, haveGone, progressColor) {
-      const ctx = new DrawContext();
-      ctx.size = new Size(width, height);
-      ctx.opaque = false;
-      ctx.respectScreenScale = true;
-      ctx.setFillColor(new Color(progressColor.hex, 0.3));
-      
-      const path = new Path();
-      path.addRoundedRect(new Rect(0, 0, width, height), radius, radius);
-      ctx.addPath(path);
-      ctx.fillPath();
-      
-      const stockColor = getColor(stock, true);
-      const path2 = new Path();
-      ctx.setFillColor(stockColor);
-      if (total > 0 && stock) {  
-        path2.addRoundedRect(new Rect(0, 0, width * stock / 100, height), radius, radius);  
-      }
-      ctx.addPath(path2);
-      ctx.fillPath();
-      
-      const path1 = new Path();
-      ctx.setFillColor(haveGone < 0.3 ? widgetColor : progressColor);
-      if (total > 0) {
-        path1.addRoundedRect(new Rect(0, 0, width * haveGone / total, height), radius, radius);  
-      }
-      ctx.addPath(path1);
-      ctx.fillPath();
-      return ctx.getImage();
-    };
+    }
     return widget;
   };
   
