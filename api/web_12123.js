@@ -55,7 +55,7 @@ async function main(family) {
    * 依赖：Quantumult-X / Surge
    */
   const getBoxjsData = async () => {
-    const { verifyToken, sign } = await module.boxjsData('body_12123') || {} || null;
+    const { verifyToken, sign } = await module.boxjsData('body_12123') || {};
     if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
     return { verifyToken, sign };
   };
@@ -566,7 +566,7 @@ async function main(family) {
   
   // 渲染组件
   const runWidget = async () => {
-    const widget = await (family === 'medium' ? createWidget() : smallWidget());
+    const widget = await (family === 'medium' || family === 'large' ? createWidget() : smallWidget());
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
