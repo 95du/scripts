@@ -584,56 +584,14 @@ async function main() {
   
   // 用户偏好设置菜单
   const userMenus = module.userMenus(settings, true);
+  const filesMenus = module.filesMenus(settings);
   
   // 设置菜单页
   const settingMenu = [
+    filesMenus,
     {
-      label: '设置',
       type: 'group',
       items: [
-        {
-          label: '重置所有',
-          name: 'reset',
-          type: 'cell',
-          icon: `${rootUrl}/img/symbol/reset.png`
-        },
-        {
-          label: '清除缓存',
-          name: 'clearCache',
-          type: 'cell',
-          icon: {
-            name: 'arrow.triangle.2.circlepath',
-            color: '#FF9500'
-          }
-        },
-        {
-          label: '文件管理',
-          name: 'file',
-          type: 'cell',
-          isDesc: true,
-          icon: {
-            name: 'folder.fill',
-            color: '#B07DFF'
-          }
-        },
-        {
-          label: '恢复设置',
-          name: 'recover',
-          type: 'cell',
-          icon: {
-            name: 'gearshape.fill',
-            color: '#FF4D3D'
-          }
-        },
-        {
-          label: '刷新时间',
-          name: 'refresh',
-          type: 'cell',
-          input: true,
-          icon: `${rootUrl}/img/symbol/refresh.png`,
-          message: '设置桌面组件的时长\n( 单位: 分钟 )',
-          desc: settings.refresh
-        },
         {
           label: '缓存时长',
           name: 'cacheTime',
@@ -646,11 +604,16 @@ async function main() {
           message: `缓存余额、流量、语音的数据\n( 每 ${settings.cacheTime ?? '几'} 小时更新一次 )`,
           desc: settings.cacheTime
         },
-      ]
-    },
-    {
-      type: 'group',
-      items: [
+        {
+          label: '已用进度',
+          name: 'used',
+          type: 'switch',
+          input: true,
+          icon: {
+            name: 'checklist',
+            color: '#FF9500'
+          }
+        },
         {
           label: 'Tel Logo',
           name: 'logoSwitch',
