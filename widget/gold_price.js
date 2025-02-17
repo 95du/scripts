@@ -185,7 +185,7 @@ const createWidget = async () => {
   columnStack.size = new Size(7, 23);
   columnStack.cornerRadius = 50;
   columnStack.backgroundColor = new Color('#8B5FF4');
-  topStack.addSpacer(12);
+  topStack.addSpacer(10);
   
   const nameText = topStack.addText(name).font = Font.boldSystemFont(17);
   topStack.addSpacer(15);
