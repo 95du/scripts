@@ -220,10 +220,13 @@ async function main(family) {
     
     if (match && status === '1') {
       console.log(`${match.hteam_name} ${match.score} ${match.ateam_name}`)
+      const sportUrl = `https://e761dszb.com/prod-api/match/detail?mid=${match.id}&type=1&pid=5`;
+      const { data } = await module.httpRequest(sportUrl, 'json');
+      const team = data.matchinfo;
       const liveUrls = [
-        ...match.live_urls,
-        ...match.global_live_urls,
-        ...match.mirror_live_urls
+        ...team.live_urls,
+        ...team.global_live_urls,
+        ...team.mirror_live_urls
       ];
       
       const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清', '标清'].includes(item.name));
