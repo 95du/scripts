@@ -225,7 +225,7 @@ async function main(family) {
         ...match.global_live_urls,
         ...match.mirror_live_urls
       ];
-  
+      
       const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清', '标清'].includes(item.name));
       return target?.url;
     } else {
