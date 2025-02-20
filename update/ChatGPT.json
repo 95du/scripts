@@ -6,13 +6,6 @@
       "features": [
         "iosUniversal"
       ],
-      "advisories": [
-        "Infrequent/Mild Profanity or Crude Humor",
-        "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Mature/Suggestive Themes",
-        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References"
-      ],
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -122,6 +115,13 @@
         "iPadMiniA17Pro-iPadMiniA17Pro",
         "iPadMiniA17ProCellular-iPadMiniA17ProCellular"
       ],
+      "advisories": [
+        "Infrequent/Mild Horror/Fear Themes",
+        "Infrequent/Mild Medical/Treatment Information",
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Profanity or Crude Humor",
+        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References"
+      ],
       "kind": "software",
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/38/63/d7/3863d7b5-2b79-9664-7ae8-c36a51b772ae/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
@@ -133,10 +133,10 @@
       ],
       "ipadScreenshotUrls": [],
       "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b2/1c/ec/b21cece6-e0d4-0569-30fe-70934d6b71b3/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/88/8c/8c/888c8c47-2cbd-af27-bc67-53f317e14a2d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b2/1c/ec/b21cece6-e0d4-0569-30fe-70934d6b71b3/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/b2/1c/ec/b21cece6-e0d4-0569-30fe-70934d6b71b3/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/88/8c/8c/888c8c47-2cbd-af27-bc67-53f317e14a2d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/88/8c/8c/888c8c47-2cbd-af27-bc67-53f317e14a2d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
       "minimumOsVersion": "17.0",
       "artistId": 1684349733,
       "artistName": "OpenAI",
@@ -145,21 +145,21 @@
         "Utilities"
       ],
       "price": 0,
-      "bundleId": "com.openai.chat",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
       "trackId": 6448311069,
       "trackName": "ChatGPT",
-      "sellerName": "OpenAI, L.L.C.",
+      "bundleId": "com.openai.chat",
       "releaseDate": "2023-05-18T07:00:00Z",
+      "currentVersionReleaseDate": "2025-02-20T01:03:14Z",
       "genreIds": [
         "6007",
         "6002"
       ],
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
       "isVppDeviceBasedLicensingEnabled": true,
-      "currentVersionReleaseDate": "2025-02-18T18:21:48Z",
+      "sellerName": "OpenAI, L.L.C.",
       "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2025.042",
+      "version": "1.2025.043",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
@@ -228,14 +228,14 @@
       ],
       "fileSizeBytes": "81585152",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 1658716,
+      "userRatingCountForCurrentVersion": 1663500,
       "trackContentRating": "12+",
-      "averageUserRatingForCurrentVersion": 4.8723,
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "contentAdvisoryRating": "12+",
       "averageUserRating": 4.8723,
-      "userRatingCount": 1658716
+      "averageUserRatingForCurrentVersion": 4.8723,
+      "userRatingCount": 1663500
     }
   ]
 }
