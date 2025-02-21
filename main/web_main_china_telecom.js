@@ -9,7 +9,6 @@ async function main() {
   const pathName = '95du_telecom';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const spareUrl = 'https://raw.gitcode.com/4qiao/scriptable/raw/master';
   const scrUrl = `${rootUrl}/api/web_china_telecom.js`;
 
   /**
@@ -20,7 +19,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
-    .catch(() => download95duModule(spareUrl));
+    .catch(err => console.log(err));
   const isDev = false
   
   /** ------- 导入模块 ------- */
