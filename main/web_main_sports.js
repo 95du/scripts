@@ -20,7 +20,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
-    .catch(() => download95duModule(spareUrl));
+    .catch(err => console.log(err));
   const isDev = false
   
   /** ------- 导入模块 ------- */
@@ -53,7 +53,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "俄超", "沙特超", "瑞士超"];
+  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "英冠", "美职业", "沙特超", "瑞士超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
@@ -483,7 +483,7 @@ async function main() {
           options = ['取消', '添加']
         );
         if (action === 1) {
-          const isSportAdded = settings.values.some(item => item.value === short_name)
+          const isSportAdded = settings.values.some(item => item.value === short_name);
           if (!isSportAdded) {
             setSport(short_name);
             module.updateSelect(webView, selectOpts);
@@ -770,7 +770,7 @@ async function main() {
               ]
             },
             {
-              label: '足球篮球等赛事',
+              label: '足球篮球',
               values: settings.values
             }
           ]
