@@ -9,7 +9,6 @@ async function main() {
   const pathName = '95du_12123';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
-  const spareUrl = 'https://raw.gitcode.com/4qiao/scriptable/raw/master';
   const scrUrl = `${rootUrl}/api/web_12123.js`;
   
   /**
@@ -20,7 +19,7 @@ async function main() {
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   if (!fm.fileExists(depPath)) fm.createDirectory(depPath);
   await download95duModule(rootUrl)
-    .catch(() => download95duModule(spareUrl));
+    .catch(err => console.log(err));
   const isDev = false
   
   /** ------- 导入模块 ------- **/
@@ -459,7 +458,6 @@ async function main() {
         { hint: '开始时间 4', value: String(settings.startTime) },
         { hint: '结束时间 6', value: String(settings.endTime) }
       ];
-      
       const inputs = await module.collectInputs(label, message, fields);
       if (!inputs.length) return;
       const [startTime, endTime] = inputs;
