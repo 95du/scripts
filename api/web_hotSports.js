@@ -11,7 +11,7 @@
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = true
+  const isDev = false
   
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
@@ -282,7 +282,7 @@ async function main(family) {
       const cacheName = chooseSports === 'hot' ? 'hotSports.html' : 'all_sports.json';
       let tabsData = await fetchScheduleData(url, cacheName);
       if (chooseSports === 'hot') {
-        tabsData = await ensureMinimumMatches(tabsData, 30);
+        tabsData = await ensureMinimumMatches(tabsData, 35);
       }
       
       // 仅保留 matchType 为 "football" 或 "basketball" 的数据
