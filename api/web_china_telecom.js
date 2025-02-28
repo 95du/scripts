@@ -562,10 +562,10 @@ async function main(family) {
     balText.centerAlignText();
     widget.addSpacer(6);
     
-    getWidget(voice2nd, voiceTotal, voiceBalance, `${voiceBalance} 分钟 - ${voice}%`, getColor(voice));
-    getWidget(flow1st, totalFlow, balanceFlow, `${flowBalFormat} - ${flow}%`, getColor(flow));
+    getWidget(voice2nd, voiceTotal, voiceBalance, `${voiceBalance} 分钟 - ${voice}%`, voice);
+    getWidget(flow1st, totalFlow, balanceFlow, `${flowBalFormat} - ${flow}%`, flow);
     
-    function getWidget(stock, total, haveGone, text, progressColor) {
+    function getWidget(stock, total, haveGone, text, setColor) {
       const width = 128
       const height = 7
       
@@ -575,23 +575,13 @@ async function main(family) {
       title.font = Font.mediumSystemFont(14);
       widget.addSpacer(3);
       
-      const progress = createProgress2(stock, total, haveGone, progressColor, width, height);
+      const progress = createProgress2(stock, total, haveGone, getColor(setColor), width, height);
       const drawImage = widget.addImage(progress);
       drawImage.centerAlignImage();
       drawImage.imageSize = new Size(width, height);
       widget.addSpacer(6);
     }
     return widget;
-  };
-  
-  // 图片遮罩
-  async function shadowImage(img) {
-    let ctx = new DrawContext();
-    ctx.size = img.size
-    ctx.drawImageInRect(img, new Rect(0, 0, img.size['width'], img.size['height']));
-    ctx.setFillColor(new Color("#000000", Number(setting.masking)));
-    ctx.fillRect(new Rect(0, 0, img.size['width'], img.size['height']));
-    return await ctx.getImage();
   };
   
   /*
