@@ -39,9 +39,9 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     sportWidth: isSmall ? 90 : 95,
-    scoreSize: isSmall ? 73 : 76,
-    imgSize: isSmall ? 50 : 53,
-    vsLogoSize: isSmall ? 40 : 43,
+    scoreSize: isSmall ? 72 : 75,
+    imgSize: isSmall ? 45 : 48,
+    vsLogoSize: isSmall ? 35 : 38,
     stackSize: isSmall ? 18 : 20,
     iconSize: isSmall ? 21 : 23,
     titleSize: isSmall ? 15 : 16,
@@ -236,7 +236,7 @@ async function main(family) {
     };
   };
   
-  // 进球事件
+  // 进球事件/技术统计
   const getGoalsEvents = async (matchId, live) => {
     try {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
@@ -695,7 +695,7 @@ async function main(family) {
       titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
       const titleText = titleStack.addText(teamName);
-      titleText.font = Font.mediumSystemFont(14);
+      titleText.font = Font.mediumSystemFont(13.5);
       titleText.textColor = textColor;
       titleStack.addSpacer();
     }
@@ -706,14 +706,14 @@ async function main(family) {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
-    mediumStack.size = new Size(scoreLength ? 148 : 96, lay.scoreSize);
+    mediumStack.size = new Size(scoreLength ? 160 : 125, lay.scoreSize);
     mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
     scoreStack.layoutHorizontally();
     scoreStack.addSpacer();
-    const scoreText = scoreStack.addText(`${leftGoal} - ${rightGoal}`);
-    scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
+    const scoreText = scoreStack.addText(`${leftGoal}  -  ${rightGoal}`);
+    scoreText.font = Font.mediumSystemFont(scoreLength ? 28 : 30);
     scoreText.textColor = textColor;
     scoreStack.addSpacer();
     mediumStack.addSpacer();
@@ -743,7 +743,7 @@ async function main(family) {
     infoStack.size = new Size(0, 25);
     infoStack.addSpacer();
     const infoText = infoStack.addText( headerLiveStageText);
-    infoText.font = Font.systemFont(15);
+    infoText.font = Font.systemFont(14);
     infoText.textColor = textColor; 
     infoStack.addSpacer();
   };
