@@ -706,7 +706,7 @@ async function main(family) {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
-    mediumStack.size = new Size(scoreLength ? 160 : 125, lay.scoreSize);
+    mediumStack.size = new Size(scoreLength ? 165 : 125, lay.scoreSize);
     mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
