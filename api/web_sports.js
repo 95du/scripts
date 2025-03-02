@@ -713,7 +713,7 @@ async function main(family) {
     scoreStack.layoutHorizontally();
     scoreStack.addSpacer();
     const scoreText = scoreStack.addText(`${leftGoal}  -  ${rightGoal}`);
-    scoreText.font = Font.mediumSystemFont(scoreLength ? 28 : 30);
+    scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 33);
     scoreText.textColor = textColor;
     scoreStack.addSpacer();
     mediumStack.addSpacer();
