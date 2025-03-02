@@ -35,8 +35,8 @@ async function main(family) {
   const isSmall = Device.screenSize().height < 926;
   const lay = {
     sportWidth: isSmall ? 90 : 95,
-    scoreSize: isSmall ? 73 : 76,
-    imgSize: isSmall ? 50 : 53,
+    scoreSize: isSmall ? 72 : 75,
+    imgSize: isSmall ? 45 : 48,
     vsLogoSize: isSmall ? 40 : 43,
     stackSize: isSmall ? 18 : 20,
     iconSize: isSmall ? 21 : 23,
@@ -433,7 +433,7 @@ async function main(family) {
     const dateTexts = item.dateText.split('/');
     const timeStack = dateStack.addStack();
     timeStack.centerAlignContent();
-    timeStack.size = new Size(item.dateText.length > 8 ? 85 : 46.4, 0);
+    timeStack.size = new Size(item.dateText.length > 8 ? 85 : 46.7, 0);
     createColumnText(timeStack, dateTexts[0]);
     timeStack.addSpacer();
     createColumnText(dateStack, dateTexts[1]);
@@ -668,14 +668,14 @@ async function main(family) {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
-    mediumStack.size = new Size(scoreLength ? 148 : 96, lay.scoreSize);
+    mediumStack.size = new Size(scoreLength ? 160 : 125, lay.scoreSize);
     mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
     scoreStack.layoutHorizontally();
     scoreStack.addSpacer();
-    const scoreText = scoreStack.addText(`${leftGoal} - ${rightGoal}`);
-    scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 35);
+    const scoreText = scoreStack.addText(`${leftGoal}  -  ${rightGoal}`);
+    scoreText.font = Font.mediumSystemFont(scoreLength ? 28 : 32);
     scoreText.textColor = textColor;
     scoreStack.addSpacer();
     mediumStack.addSpacer();
