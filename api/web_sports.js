@@ -41,7 +41,7 @@ async function main(family) {
     sportWidth: isSmall ? 90 : 95,
     scoreSize: isSmall ? 72 : 75,
     imgSize: isSmall ? 45 : 48,
-    vsLogoSize: isSmall ? 35 : 38,
+    vsLogoSize: isSmall ? 37 : 40,
     stackSize: isSmall ? 18 : 20,
     iconSize: isSmall ? 21 : 23,
     titleSize: isSmall ? 15 : 16,
