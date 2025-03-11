@@ -2,7 +2,6 @@
   "resultCount": 1,
   "results": [
     {
-      "isGameCenterEnabled": false,
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -117,19 +116,18 @@
         "iosUniversal"
       ],
       "advisories": [
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Mature/Suggestive Themes",
-        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Profanity or Crude Humor",
         "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Profanity or Crude Humor"
+        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Horror/Fear Themes"
       ],
+      "isGameCenterEnabled": false,
       "kind": "software",
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/04/10/e5/0410e5ff-41cd-88cd-fc10-71d57eeca090/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/5a/05/ef/5a05ef20-0a21-9a80-e0e8-a6c022306431/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/5a/05/ef/5a05ef20-0a21-9a80-e0e8-a6c022306431/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
-      "ipadScreenshotUrls": [],
-      "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/5a/05/ef/5a05ef20-0a21-9a80-e0e8-a6c022306431/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/04/10/e5/0410e5ff-41cd-88cd-fc10-71d57eeca090/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/04/10/e5/0410e5ff-41cd-88cd-fc10-71d57eeca090/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/38/63/d7/3863d7b5-2b79-9664-7ae8-c36a51b772ae/508eb92a-3bc9-41ac-b171-6b9e10fee4ab_5.5_1242_x_2208_1.png/392x696bb.png",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/59/f4/22/59f422ff-2880-05b3-66b0-a2765f625d64/50b86672-f027-420a-a10c-abf996a931ab_5.5_1242_x_2208_2.png/392x696bb.png",
@@ -138,6 +136,9 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/d2/4a/cd/d24acd84-1945-31aa-938c-2201d973e2dd/126e0ae5-759b-4ca3-af7d-4f5c68028f45_5.5_1242_x_2208_5.png/392x696bb.png",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/f1/6a/c0/f16ac08c-e0e8-6c14-e727-697e71a3dbf6/8797f21c-c0c5-40fc-b6e2-8a0408d85538_5.5_1242_x_2208_6.png/392x696bb.png"
       ],
+      "ipadScreenshotUrls": [],
+      "appletvScreenshotUrls": [],
+      "minimumOsVersion": "17.0",
       "artistId": 1684349733,
       "artistName": "OpenAI",
       "genres": [
@@ -145,30 +146,24 @@
         "Utilities"
       ],
       "price": 0,
-      "bundleId": "com.openai.chat",
       "trackId": 6448311069,
       "trackName": "ChatGPT",
       "releaseDate": "2023-05-18T07:00:00Z",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
+      "bundleId": "com.openai.chat",
+      "currentVersionReleaseDate": "2025-03-10T16:35:03Z",
+      "releaseNotes": "Bug fixes and small improvements.",
       "isVppDeviceBasedLicensingEnabled": true,
+      "sellerName": "OpenAI, L.L.C.",
       "genreIds": [
         "6007",
         "6002"
       ],
-      "sellerName": "OpenAI, L.L.C.",
-      "currentVersionReleaseDate": "2025-03-05T00:56:31Z",
-      "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2025.057",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
+      "version": "1.2025.063",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the newest model improvements from OpenAI.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Advanced Voice Mode–tap the soundwave icon to have a real-time convo on the go, request a bedtime story for your family, or settle a dinner table debate.\n· Creative inspiration—birthday gift ideas or help creating a personalized greeting card. \n· Tailored advice—help crafting a personalized response or talking through a tough situation.\n· Learning opportunities—help explaining electricity to a dinosaur loving kid or the ability to easily refamiliarize yourself with a historic event. \n· Professional input—a brainstorm partner for marketing copy or a business plan.\n· Instant answers—clarification whether the napkin goes on the right or the left of the plate or a recipe when you only have a few ingredients.\n\n\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "trackCensoredName": "ChatGPT",
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "contentAdvisoryRating": "12+",
-      "averageUserRating": 4.87227,
-      "minimumOsVersion": "17.0",
-      "averageUserRatingForCurrentVersion": 4.87227,
       "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
         "SQ",
@@ -232,11 +227,16 @@
         "UR",
         "VI"
       ],
-      "fileSizeBytes": "83105792",
+      "fileSizeBytes": "84852736",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 1757815,
+      "userRatingCountForCurrentVersion": 1761384,
       "trackContentRating": "12+",
-      "userRatingCount": 1757815
+      "averageUserRating": 4.87225,
+      "trackCensoredName": "ChatGPT",
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "contentAdvisoryRating": "12+",
+      "averageUserRatingForCurrentVersion": 4.87225,
+      "userRatingCount": 1761384
     }
   ]
 }
