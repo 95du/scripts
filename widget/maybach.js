@@ -32,7 +32,7 @@ const getSettings = (file) => {
   }
 };
 
-const setting = getSettings(cacheFile) || {};
+const setting = getSettings(cacheFile);
 
 /**
  * 弹出通知  
@@ -259,7 +259,7 @@ const pushMessage = async (
   const shouldNotifyStop = moment >= 240 && updateTime === setting.updateTime;
 
   const breakVariable = (a, b) => {
-    return driveAway ? `${a}已离开📍${setting.address}，相距 ${distance} 米` : `${b}${steps[0].instruction}`;
+    return driveAway ? `${a}已离开📍${setting.address}，相距 ${distance} 米` : `${b}${steps[0]?.instruction}`;
   };
   
   const isStatusMesg = breakVariable('\n', '\n ');
@@ -369,7 +369,7 @@ const setBackground = (widget) => {
     new Color(color, 0.5),
     new Color('#00000000')
   ];
-  widget.backgroundGradient = gradient;  
+  widget.backgroundGradient = gradient;
   widget.backgroundColor = Color.white();
 };
 
@@ -829,14 +829,14 @@ const inputCookie = async () => {
  */
 const presentMenu = async () => {
   const alert = new Alert();
-  alert.message = '显示车辆实时位置、车速、停车时间\n模拟电子围栏、模拟停红绿灯\n设置间隔时间推送车辆状态信息';
+  alert.message = '车辆实时位置、车速、停车时间，模拟电子围栏';
   const actions = ['更新代码', '重置所有', '输入凭证', '中号组件', '小号组件'];
   actions.forEach((action,index) => {
     alert[index === 0 || index === 1 
       ? 'addDestructiveAction'
       : 'addAction'](action);
   });
-  alert.addCancelAction('取消');
+  alert.addCancelAction('Cancel');
   
   const response = await alert.presentSheet();
   switch (response) {
@@ -870,7 +870,7 @@ const runWidget = async () => {
     const isNumber = param && !isNaN(Number(param));
     let widget;
 
-    if (family === 'medium') {
+    if (family === 'medium' || family === 'large') {
       widget = await createWidget();
     } else if (isNumber) {
       widget = await smallWidget();
