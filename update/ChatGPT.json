@@ -3,6 +3,9 @@
   "results": [
     {
       "isGameCenterEnabled": false,
+      "features": [
+        "iosUniversal"
+      ],
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -119,9 +122,6 @@
         "iPadAir13M3-iPadAir13M3",
         "iPadAir13M3Cellular-iPadAir13M3Cellular"
       ],
-      "features": [
-        "iosUniversal"
-      ],
       "advisories": [
         "Infrequent/Mild Mature/Suggestive Themes",
         "Infrequent/Mild Horror/Fear Themes",
@@ -130,6 +130,9 @@
         "Infrequent/Mild Medical/Treatment Information"
       ],
       "kind": "software",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5f/52/69/5f526935-3556-6b91-06c6-acb6f937f3d5/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5f/52/69/5f526935-3556-6b91-06c6-acb6f937f3d5/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/fa/7b/c5/fa7bc514-6357-cc92-1fd3-80ee2f2891f8/1_en-US_iPhone5.5_1242_x_2208_ImageGen.png/392x696bb.png",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/e8/cf/65/e8cf65e0-118f-dd3a-82f6-c789c805fdcc/50b86672-f027-420a-a10c-abf996a931ab_5.5_1242_x_2208_2.png/392x696bb.png",
@@ -141,25 +144,21 @@
       "ipadScreenshotUrls": [],
       "appletvScreenshotUrls": [],
       "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5f/52/69/5f526935-3556-6b91-06c6-acb6f937f3d5/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5f/52/69/5f526935-3556-6b91-06c6-acb6f937f3d5/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/5f/52/69/5f526935-3556-6b91-06c6-acb6f937f3d5/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
-      "artistId": 1684349733,
-      "artistName": "OpenAI",
-      "price": 0,
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "sellerName": "OpenAI, L.L.C.",
+      "minimumOsVersion": "17.0",
+      "currentVersionReleaseDate": "2025-05-18T14:17:04Z",
+      "bundleId": "com.openai.chat",
       "trackId": 6448311069,
       "trackName": "ChatGPT",
-      "bundleId": "com.openai.chat",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
       "genreIds": [
         "6007",
         "6002"
       ],
-      "currentVersionReleaseDate": "2025-05-18T14:17:04Z",
       "releaseNotes": "Bug fixes and small improvements.",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "sellerName": "OpenAI, L.L.C.",
+      "isVppDeviceBasedLicensingEnabled": true,
       "version": "1.2025.133",
       "wrapperType": "software",
       "currency": "USD",
@@ -230,18 +229,19 @@
       "formattedPrice": "Free",
       "userRatingCountForCurrentVersion": 2497091,
       "trackContentRating": "12+",
-      "averageUserRatingForCurrentVersion": 4.8691,
-      "sellerUrl": "https://openai.com/chatgpt",
       "averageUserRating": 4.8691,
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "contentAdvisoryRating": "12+",
-      "minimumOsVersion": "17.0",
-      "isVppDeviceBasedLicensingEnabled": true,
+      "sellerUrl": "https://openai.com/chatgpt",
+      "averageUserRatingForCurrentVersion": 4.8691,
       "genres": [
         "Productivity",
         "Utilities"
       ],
+      "artistId": 1684349733,
+      "artistName": "OpenAI",
+      "price": 0,
       "userRatingCount": 2497091
     }
   ]
