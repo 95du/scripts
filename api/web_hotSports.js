@@ -433,7 +433,7 @@ async function main(family) {
     const dateTexts = item.dateText.split('/');
     const timeStack = dateStack.addStack();
     timeStack.centerAlignContent();
-    timeStack.size = new Size(item.dateText.length > 8 ? 85 : 46.7, 0);
+    timeStack.size = new Size(item.dateText.length > 8 ? 85 : 46.8, 0);
     createColumnText(timeStack, dateTexts[0]);
     timeStack.addSpacer();
     createColumnText(dateStack, dateTexts[1]);
@@ -668,13 +668,14 @@ async function main(family) {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
-    mediumStack.size = new Size(scoreLength ? 160 : 125, lay.scoreSize);
+    mediumStack.size = new Size(scoreLength ? 150 : 125, lay.scoreSize);
     mediumStack.addSpacer(scoreLength ? 9 : 5);
     
     const scoreStack = mediumStack.addStack();
     scoreStack.layoutHorizontally();
     scoreStack.addSpacer();
-    const scoreText = scoreStack.addText(`${leftGoal}  -  ${rightGoal}`);
+    const space = scoreLength ? ' ' : '  '; // 根据 scoreLength 决定空格数量
+    const scoreText = scoreStack.addText(`${leftGoal}${space}-${space}${rightGoal}`);
     scoreText.font = Font.mediumSystemFont(scoreLength ? 30 : 33);
     scoreText.textColor = textColor;
     scoreStack.addSpacer();
