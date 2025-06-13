@@ -152,10 +152,10 @@
         "Utilities"
       ],
       "price": 0,
+      "bundleId": "com.openai.chat",
       "trackId": 6448311069,
       "trackName": "ChatGPT",
       "releaseDate": "2023-05-18T07:00:00Z",
-      "bundleId": "com.openai.chat",
       "genreIds": [
         "6007",
         "6002"
@@ -170,6 +170,7 @@
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
+      "sellerUrl": "https://openai.com/chatgpt",
       "averageUserRatingForCurrentVersion": 4.86986,
       "averageUserRating": 4.86986,
       "trackCensoredName": "ChatGPT",
@@ -241,7 +242,6 @@
       "userRatingCountForCurrentVersion": 2727040,
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "trackContentRating": "12+",
-      "sellerUrl": "https://openai.com/chatgpt",
       "userRatingCount": 2727040
     }
   ]
