@@ -568,7 +568,7 @@ async function main(family) {
         // 主队名称
         createTextStack(stack, leftLogo.name, null, textOpacity, 'right');
         // 比分栏
-        const typeSize = matchType === 'basketball' ? 80 : 50;
+        const typeSize = matchType === 'basketball' ? 80 : 52;
         const scoreColumn = matchStage === '全明星' && matchStatus === '0' ? matchStage : `${leftLogo.score} - ${rightLogo.score}`;
         createTextStack(stack, scoreColumn, typeSize, textOpacity, 'right', 'left', matchStatus);
         // 客队名称
