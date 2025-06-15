@@ -531,7 +531,7 @@ async function main(family) {
         // 比分
         const isNumber = (string) => !isNaN(string);
         const isTeamScore = !isNumber(leftLogo.score) ? game : `${leftLogo.score} - ${rightLogo.score}`;
-        const stackSize = matchType === 'basketball' ? 80 : isTeamScore === game ? 65 : 50;
+        const stackSize = matchType === 'basketball' ? 80 : isTeamScore === game ? 65 : 52;
         createTextStack(stack, isTeamScore, stackSize, textOpacity, 'right', 'left', match.matchStatus, !isNumber(leftLogo.score));
         // 客队名称
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
