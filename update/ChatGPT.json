@@ -2,15 +2,19 @@
   "resultCount": 1,
   "results": [
     {
+      "isGameCenterEnabled": false,
       "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
       "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b3/fd/3d/b3fd3d71-5cc3-6663-1654-63934e3bc692/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
       "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b3/fd/3d/b3fd3d71-5cc3-6663-1654-63934e3bc692/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
-      "screenshotUrls": [],
-      "ipadScreenshotUrls": [],
-      "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b3/fd/3d/b3fd3d71-5cc3-6663-1654-63934e3bc692/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
       "features": [
         "iosUniversal"
+      ],
+      "advisories": [
+        "Infrequent/Mild Medical/Treatment Information",
+        "Infrequent/Mild Horror/Fear Themes",
+        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Mature/Suggestive Themes",
+        "Infrequent/Mild Profanity or Crude Humor"
       ],
       "supportedDevices": [
         "iPhone5s-iPhone5s",
@@ -128,22 +132,41 @@
         "iPadAir13M3-iPadAir13M3",
         "iPadAir13M3Cellular-iPadAir13M3Cellular"
       ],
-      "isGameCenterEnabled": false,
-      "advisories": [
-        "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
-        "Infrequent/Mild Mature/Suggestive Themes",
-        "Infrequent/Mild Profanity or Crude Humor"
-      ],
       "kind": "software",
+      "screenshotUrls": [],
+      "ipadScreenshotUrls": [],
+      "appletvScreenshotUrls": [],
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/b3/fd/3d/b3fd3d71-5cc3-6663-1654-63934e3bc692/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
+      "minimumOsVersion": "17.0",
+      "userRatingCountForCurrentVersion": 2942040,
       "averageUserRating": 4.8693,
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "contentAdvisoryRating": "12+",
+      "artistId": 1684349733,
+      "artistName": "OpenAI",
+      "genres": [
+        "Productivity",
+        "Utilities"
+      ],
+      "price": 0,
+      "trackId": 6448311069,
+      "trackName": "ChatGPT",
+      "genreIds": [
+        "6007",
+        "6002"
+      ],
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "bundleId": "com.openai.chat",
+      "sellerName": "OpenAI, L.L.C.",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
+      "currentVersionReleaseDate": "2025-06-23T18:31:53Z",
       "releaseNotes": "Bug fixes and small improvements.",
-      "minimumOsVersion": "17.0",
-      "userRatingCountForCurrentVersion": 2942040,
+      "version": "1.2025.168",
+      "wrapperType": "software",
+      "currency": "USD",
+      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
       "averageUserRatingForCurrentVersion": 4.8693,
       "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
@@ -211,30 +234,7 @@
       "fileSizeBytes": "94514176",
       "formattedPrice": "Free",
       "trackContentRating": "12+",
-      "artistId": 1684349733,
-      "artistName": "OpenAI",
-      "genres": [
-        "Productivity",
-        "Utilities"
-      ],
-      "price": 0,
-      "bundleId": "com.openai.chat",
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "trackId": 6448311069,
-      "trackName": "ChatGPT",
-      "genreIds": [
-        "6007",
-        "6002"
-      ],
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
-      "sellerName": "OpenAI, L.L.C.",
       "isVppDeviceBasedLicensingEnabled": true,
-      "currentVersionReleaseDate": "2025-06-23T18:31:53Z",
-      "version": "1.2025.168",
-      "wrapperType": "software",
-      "currency": "USD",
-      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
       "userRatingCount": 2942040
     }
   ]
