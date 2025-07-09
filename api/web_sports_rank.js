@@ -173,7 +173,7 @@ async function main(family) {
       const indexText = indexStack.addText(team.rank);
       indexText.font = Font.boldSystemFont(15);
       const textColor = i <= 2 
-        ? '#FF0000' : i <= 3
+        ? '#FF0000' : (family === 'medium' ? i <= 3 : i <= 5)
         ? '#FCA100' : '#00C400';
       indexText.textColor = new Color(textColor);
       teamStack.addSpacer(8);
