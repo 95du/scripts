@@ -2,6 +2,13 @@
   "resultCount": 1,
   "results": [
     {
+      "screenshotUrls": [],
+      "ipadScreenshotUrls": [],
+      "appletvScreenshotUrls": [],
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
       "isGameCenterEnabled": false,
       "features": [
         "iosUniversal"
@@ -130,44 +137,7 @@
         "Infrequent/Mild Medical/Treatment Information"
       ],
       "kind": "software",
-      "screenshotUrls": [],
-      "ipadScreenshotUrls": [],
-      "appletvScreenshotUrls": [],
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/60/29/8b/60298b37-c475-0eac-71cb-208214fe7a9d/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai/id1684349733?uo=4",
-      "minimumOsVersion": "17.0",
-      "artistId": 1684349733,
-      "artistName": "OpenAI",
-      "genres": [
-        "Productivity",
-        "Utilities"
-      ],
-      "price": 0,
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "bundleId": "com.openai.chat",
-      "genreIds": [
-        "6007",
-        "6002"
-      ],
-      "trackId": 6448311069,
-      "trackName": "ChatGPT",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
-      "isVppDeviceBasedLicensingEnabled": true,
-      "sellerName": "OpenAI, L.L.C.",
-      "currentVersionReleaseDate": "2025-07-12T12:04:51Z",
-      "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2025.189",
-      "wrapperType": "software",
-      "currency": "USD",
-      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "userRatingCountForCurrentVersion": 3069471,
       "sellerUrl": "https://openai.com/chatgpt",
-      "averageUserRatingForCurrentVersion": 4.8693,
-      "averageUserRating": 4.8693,
-      "trackCensoredName": "ChatGPT",
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -232,10 +202,40 @@
       ],
       "fileSizeBytes": "98806784",
       "formattedPrice": "Free",
-      "contentAdvisoryRating": "12+",
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "trackContentRating": "12+",
-      "userRatingCount": 3069471
+      "averageUserRatingForCurrentVersion": 4.8693,
+      "averageUserRating": 4.8693,
+      "trackCensoredName": "ChatGPT",
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "contentAdvisoryRating": "12+",
+      "userRatingCountForCurrentVersion": 3082368,
+      "minimumOsVersion": "17.0",
+      "artistId": 1684349733,
+      "artistName": "OpenAI",
+      "genres": [
+        "Productivity",
+        "Utilities"
+      ],
+      "price": 0,
+      "currentVersionReleaseDate": "2025-07-12T12:04:51Z",
+      "bundleId": "com.openai.chat",
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "releaseNotes": "Bug fixes and small improvements.",
+      "genreIds": [
+        "6007",
+        "6002"
+      ],
+      "trackName": "ChatGPT",
+      "trackId": 6448311069,
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
+      "isVppDeviceBasedLicensingEnabled": true,
+      "sellerName": "OpenAI, L.L.C.",
+      "version": "1.2025.189",
+      "wrapperType": "software",
+      "currency": "USD",
+      "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
+      "userRatingCount": 3082368
     }
   ]
 }
