@@ -12,7 +12,7 @@ $.is_debug = $.getdata('is_debug');
   }
 
   function GetCookie() {
-    if ($request && $request.url.includes('https://m5-x.amap.com') || $request.url.includes('https://awaken.amap.com') || $request.url.includes('https://ai.amap.com') && $request.headers) {
+    if ($request && $request.url.includes('https://ai.amap.com') && $request.headers) {
       debug($request.headers);
       const newCookie = $request['headers']['Cookie'];
       const sessionid = $request['headers']['sessionid']
