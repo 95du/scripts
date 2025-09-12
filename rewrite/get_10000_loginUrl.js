@@ -1,7 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-gray; icon-glyph: magic;
-// 中国电信 update Cookie
 const $ = new Env('中国电信');
 $.login_key = 'china_telecom_loginUrl';
 $.boxjs_loginUrl = $.getdata($.login_key);
@@ -35,7 +34,7 @@ const notifyParam = {
           notifyParam
         );
       }
-      
+      /**
       if (request.url && request.url !== $.boxjs_loginUrl) {
         $.login_url = request.url.match(/(http.+)&sign/)[1]
         $.setdata($.login_url, $.login_key);
@@ -47,6 +46,7 @@ const notifyParam = {
         );
         console.log(`${$.name}‼️\n${request.url}`);
       }
+      */
     }
   }
 })()
