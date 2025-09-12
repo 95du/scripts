@@ -2,26 +2,48 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-gray; icon-glyph: magic;
 // 中国电信 update Cookie
-const $ = new Env('中国电信 loginUrl');
+const $ = new Env('中国电信');
 $.login_key = 'china_telecom_loginUrl';
 $.boxjs_loginUrl = $.getdata($.login_key);
+$.cookie_key = 'china_telecom_cookie';
+$.cookie = $.getdata($.cookie_key);
+
+const notifyParam = {
+  'open-url': 'scriptable:///run/' + encodeURIComponent('中国电信_3'),
+  'media-url': 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/telecom.png'
+}
+
 !(async () => {
   if (isGetCookie = typeof $request !== `undefined`) {
     GetCookie($request);
   }
+  
   function GetCookie(request) {
-    if (request && request.url.includes("https://e.dlife.cn/user/loginMiddle")) {
+    if (
+      request && 
+      request.headers &&
+      (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
+      request.url.includes("https://e.dlife.cn/user/package_detail.do"))
+    ) {
+      $.newCookie = $request.headers["Cookie"];
+      if ($.newCookie && $.newCookie !== $.cookie) {
+        $.setdata($.newCookie, $.cookie_key);
+        $.msg(
+          `中国电信_Cookie 获取成功`, 
+          ``, 
+          newCookie,
+          notifyParam
+        );
+      }
+      
       if (request.url && request.url !== $.boxjs_loginUrl) {
         $.login_url = request.url.match(/(http.+)&sign/)[1]
         $.setdata($.login_url, $.login_key);
         $.msg(
-          `${$.name} 获取成功`, 
+          `${$.name}_loginUrl 获取成功`, 
           ``, 
           $.login_url,
-          {
-            'open-url': 'scriptable:///run/' + encodeURIComponent('中国电信_3'),
-            'media-url': 'https://raw.githubusercontent.com/95du/scripts/refs/heads/master/img/icon/telecom.png'
-          }
+          notifyParam
         );
         console.log(`${$.name}‼️\n${request.url}`);
       }
