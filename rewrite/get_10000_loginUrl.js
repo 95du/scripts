@@ -36,7 +36,7 @@ const notifyParam = {
       } else {
         $.msg(
           `中国电信_Cookie 获取成功`, 
-          `Cookie 未过期，跳过更新`, 
+          `Cookie 未过期，跳过更新‼️`, 
           newCookie,
           notifyParam
         );
