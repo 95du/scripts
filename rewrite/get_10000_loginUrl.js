@@ -22,40 +22,27 @@ const notifyParam = {
       request && 
       request.headers &&
       (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
-      request.url.includes("https://e.dlife.cn/user/package_detail.do"))
+       request.url.includes("https://e.dlife.cn/user/package_detail.do"))
     ) {
       const newCookie = request.headers["Cookie"];
-      const ssonMatch = newCookie.match(/SSON=([^;]*)/);
-      
-      if (newCookie && ssonMatch[1] && newCookie !== $.cookie) {
+      const ssonMatch = newCookie ? newCookie.match(/SSON=([^;]*)/) : null;
+  
+      if (ssonMatch && ssonMatch[1] && newCookie && newCookie !== $.cookie) {
         $.setdata(newCookie, $.cookie_key);
-        $.msg(
-          `中国电信_Cookie 获取成功`, 
-          ``, 
-          newCookie,
-          notifyParam
-        );
+        $.msg(`中国电信_Cookie 获取成功`, ``, newCookie, notifyParam);
       } else if (ssonMatch && ssonMatch[1]) {
-        $.msg(
-          `中国电信_Cookie 获取成功`, 
-          `Cookie 未过期，跳过更新‼️`, 
-          newCookie,
-          notifyParam
-        );
+        $.msg(`中国电信_Cookie 获取成功`, `Cookie 未过期，跳过更新‼️`, newCookie, notifyParam);
       } else {
         console.log('中国电信_Cookie 获取失败或无效值 ⚠️');
       }
-      
-      if (request.url && request.url !== $.boxjs_loginUrl) {
-        const login_url = request.url.match(/(http.+)&sign/)[1]
+  
+      // 提取 login_url
+      const loginMatch = request.url.match(/(http.+)&sign/);
+      if (loginMatch && loginMatch[1] && request.url !== $.boxjs_loginUrl) {
+        const login_url = loginMatch[1];
         $.setdata(login_url, $.login_key);
-        $.msg(
-          `${$.name}_loginUrl 获取成功`, 
-          ``, 
-          login_url,
-          notifyParam
-        );
-        console.log(`${$.name}‼️\n${request.url}`);
+        $.msg(`${$.name || '中国电信'}_loginUrl 获取成功`, ``, login_url, notifyParam);
+        console.log(`${$.name || '中国电信'}‼️\n${request.url}`);
       }
     }
   }
