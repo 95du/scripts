@@ -31,9 +31,9 @@ const notifyParam = {
         $.setdata(newCookie, $.cookie_key);
         $.msg(`中国电信_Cookie 获取成功`, ``, newCookie, notifyParam);
       } else if (ssonMatch && ssonMatch[1]) {
-        $.msg(`中国电信_Cookie 获取成功`, `Cookie 未过期，跳过更新‼️`, newCookie, notifyParam);
+        console.log(`\n中国电信_Cookie 未过期，跳过更新‼️ ${newCookie}`);
       } else {
-        console.log('中国电信_Cookie 获取失败或无效值 ⚠️');
+        console.log('\n中国电信_Cookie 获取失败或无效值 ⚠️');
       }
   
       // 提取 login_url
