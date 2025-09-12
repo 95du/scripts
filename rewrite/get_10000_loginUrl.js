@@ -25,7 +25,9 @@ const notifyParam = {
       request.url.includes("https://e.dlife.cn/user/package_detail.do"))
     ) {
       const newCookie = request.headers["Cookie"];
-      if (newCookie && newCookie !== $.cookie) {
+      const ssonMatch = cookie.match(/SSON=([^;]*)/);
+      
+      if (newCookie && ssonMatch[1] && newCookie !== $.cookie) {
         $.setdata(newCookie, $.cookie_key);
         $.msg(
           `中国电信_Cookie 获取成功`, 
@@ -33,13 +35,15 @@ const notifyParam = {
           newCookie,
           notifyParam
         );
-      } else {
+      } else if (ssonMatch && ssonMatch[1]) {
         $.msg(
           `中国电信_Cookie 获取成功`, 
           `Cookie 未过期，跳过更新‼️`, 
           newCookie,
           notifyParam
         );
+      } else {
+        console.log('中国电信_Cookie 获取失败或无效值 ⚠️');
       }
       
       if (request.url && request.url !== $.boxjs_loginUrl) {
