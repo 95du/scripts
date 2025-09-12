@@ -21,31 +21,38 @@ const notifyParam = {
     if (
       request && 
       request.headers &&
-      request.url.includes("https://e.dlife.cn/user")
+      (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
+      request.url.includes("https://e.dlife.cn/user/package_detail.do"))
     ) {
-      $.newCookie = $request.headers["Cookie"];
-      if ($.newCookie && $.newCookie !== $.cookie) {
-        $.setdata($.newCookie, $.cookie_key);
+      const newCookie = request.headers["Cookie"];
+      if (newCookie && newCookie !== $.cookie) {
+        $.setdata(newCookie, $.cookie_key);
         $.msg(
           `中国电信_Cookie 获取成功`, 
           ``, 
-          $.newCookie,
+          newCookie,
+          notifyParam
+        );
+      } else {
+        $.msg(
+          `中国电信_Cookie 获取成功`, 
+          `Cookie 未过期，跳过更新`, 
+          newCookie,
           notifyParam
         );
       }
-      /**
+      
       if (request.url && request.url !== $.boxjs_loginUrl) {
-        $.login_url = request.url.match(/(http.+)&sign/)[1]
-        $.setdata($.login_url, $.login_key);
+        const login_url = request.url.match(/(http.+)&sign/)[1]
+        $.setdata(login_url, $.login_key);
         $.msg(
           `${$.name}_loginUrl 获取成功`, 
           ``, 
-          $.login_url,
+          login_url,
           notifyParam
         );
         console.log(`${$.name}‼️\n${request.url}`);
       }
-      */
     }
   }
 })()
