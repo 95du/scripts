@@ -41,8 +41,9 @@ const notifyParam = {
       if (loginMatch && loginMatch[1] && request.url !== $.boxjs_loginUrl) {
         const login_url = loginMatch[1];
         $.setdata(login_url, $.login_key);
-        $.msg(`${$.name || '中国电信'}_loginUrl 获取成功`, ``, login_url, notifyParam);
-        console.log(`${$.name || '中国电信'}‼️\n${request.url}`);
+        $.msg(`${$.name}_loginUrl 获取成功`, ``, login_url, notifyParam);
+      } else {
+        console.log(`\n❌${$.name}_loginUrl获取失败`);
       }
     }
   }
