@@ -35,7 +35,7 @@ const notifyParam = {
           notifyParam
         );
       }
-      
+      /**
       if (request.url && request.url !== $.boxjs_loginUrl) {
         $.login_url = request.url.match(/(http.+)&sign/)[1]
         $.setdata($.login_url, $.login_key);
@@ -47,6 +47,7 @@ const notifyParam = {
         );
         console.log(`${$.name}‼️\n${request.url}`);
       }
+      */
     }
   }
 })()
