@@ -25,7 +25,7 @@ const notifyParam = {
       request.url.includes("https://e.dlife.cn/user/package_detail.do"))
     ) {
       const newCookie = request.headers["Cookie"];
-      const ssonMatch = cookie.match(/SSON=([^;]*)/);
+      const ssonMatch = newCookie.match(/SSON=([^;]*)/);
       
       if (newCookie && ssonMatch[1] && newCookie !== $.cookie) {
         $.setdata(newCookie, $.cookie_key);
