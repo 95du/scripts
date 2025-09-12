@@ -21,8 +21,7 @@ const notifyParam = {
     if (
       request && 
       request.headers &&
-      (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
-      request.url.includes("https://e.dlife.cn/user/package_detail.do"))
+      request.url.includes("https://e.dlife.cn/user")
     ) {
       $.newCookie = $request.headers["Cookie"];
       if ($.newCookie && $.newCookie !== $.cookie) {
