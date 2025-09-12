@@ -194,12 +194,21 @@
         "https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom.png"
       ],
       "keys": [
-        "china_telecom_loginUrl"
+        "china_telecom_loginUrl",
+        "china_telecom_cookie"
       ],
       "settings": [
         {
           "id": "china_telecom_loginUrl",
           "name": "loginUrl",
+          "val": "",
+          "type": "textarea",
+          "rows": 1,
+          "desc": ""
+        },
+        {
+          "id": "china_telecom_cookie",
+          "name": "Cookie",
           "val": "",
           "type": "textarea",
           "rows": 1,
