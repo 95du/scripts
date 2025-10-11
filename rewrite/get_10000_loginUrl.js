@@ -2,8 +2,6 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-gray; icon-glyph: magic;
 const $ = new Env('中国电信');
-$.login_key = 'china_telecom_loginUrl';
-$.boxjs_loginUrl = $.getdata($.login_key);
 $.cookie_key = 'china_telecom_cookie';
 $.cookie = $.getdata($.cookie_key);
 
@@ -21,8 +19,7 @@ const notifyParam = {
     if (
       request && 
       request.headers &&
-      (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
-       request.url.includes("https://e.dlife.cn/user/package_detail.do") ||
+      (request.url.includes("https://e.dlife.cn/user/package_detail.do") ||
       request.url.includes("https://e.dlife.cn/gw/user/package_detail.do"))
     ) {
       const newCookie = request.headers["Cookie"];
@@ -35,16 +32,6 @@ const notifyParam = {
         console.log(`\n中国电信_Cookie 未过期，跳过更新‼️ ${newCookie}`);
       } else {
         console.log('\n中国电信_Cookie 获取失败或无效值 ⚠️');
-      }
-  
-      // 提取 login_url
-      const loginMatch = request.url.match(/(http.+)&sign/);
-      if (loginMatch && loginMatch[1] && request.url !== $.boxjs_loginUrl) {
-        const login_url = loginMatch[1];
-        $.setdata(login_url, $.login_key);
-        $.msg(`${$.name}_loginUrl 获取成功`, ``, login_url, notifyParam);
-      } else {
-        console.log(`\n❌${$.name}_loginUrl获取失败`);
       }
     }
   }
