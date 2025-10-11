@@ -22,7 +22,7 @@ const notifyParam = {
       request && 
       request.headers &&
       (request.url.includes("https://e.dlife.cn/user/loginMiddle") ||
-       request.url.includes("https://e.dlife.cn/user/package_detail.do")) ||
+       request.url.includes("https://e.dlife.cn/user/package_detail.do") ||
       request.url.includes("https://e.dlife.cn/gw/user/package_detail.do"))
     ) {
       const newCookie = request.headers["Cookie"];
