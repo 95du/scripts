@@ -35,7 +35,7 @@ async function main(family) {
     detail: 'https://e.dlife.cn/user/package_detail.do',
     balance: 'https://e.dlife.cn/user/balance.do',  
     bill: 'https://e.189.cn/user/bill.do',
-    boxjs: 'http://boxjs.com/query/data/china_telecom_loginUrl',
+    boxjs: 'http://boxjs.com/query/data/china_telecom_cookie',
     logo: 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/telecom_4.png',
     alipay: 'alipays://platformapi/startapp?appId=2021001107610820&page=pages%2Ftop-up%2Fhome%2Findex'
   };
@@ -71,9 +71,9 @@ async function main(family) {
     let response = await makeReq(jsonUrl);
     if (response?.serviceResultCode == 0 && setting.cookie) {
       cache.write(jsonName, response)
-    } else {
-      const cookie = await updateCookie(setting.loginUrl);
-      if (cookie) response = await makeReq(jsonUrl);
+    } else if (!response.success) {
+      delete setting.cookie;
+      module.writeSettings(setting);
     }
     return response;
   };
@@ -85,11 +85,11 @@ async function main(family) {
   const getBoxjsData = async () => {
     try {
       const response = await new Request(fetchUrl.boxjs).loadJSON();
-      const loginUrl = response?.val;
-      if (loginUrl) {
-        setting.loginUrl = loginUrl;
+      const cookie = response?.val;
+      if (cookie) {
+        setting.cookie = cookie;
         module.writeSettings(setting)
-        return await updateCookie(loginUrl);
+        return cookie;
       }
     } catch (e) {
       module.notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
@@ -97,27 +97,9 @@ async function main(family) {
     }
   };
   
-  const updateCookie = async (loginUrl) => {
-    const url = loginUrl.match(/(http.+)&sign/)?.[1] || loginUrl;
-    const req = new Request(url);
-    await req.load();
-    const cookie = req.response.headers['Set-Cookie'];
-    if (cookie) {
-      setting.cookie = cookie;
-      module.writeSettings(setting);
-      module.notify('中国电信_3', '天翼账号中心 Cookie 更新成功');
-      return cookie;
-    }
-  };
-  
   const makeReq = async (url) => {
     let cookie = setting.cookie;
-    if (!cookie) {
-      cookie = setting.loginUrl 
-      ? await updateCookie(setting.loginUrl) 
-      : await getBoxjsData();
-    }
-    
+    if (!cookie) cookie = await getBoxjsData();
     return await module.apiRequest(url, { Cookie: cookie });
   };
   
@@ -194,7 +176,6 @@ async function main(family) {
     const bill = data?.serviceResultCode == 0 ? data.items[0].sumCharge / 100 : 0;
     return bill;
   };
-  const sumCharge = await getUserBill();
   
   // 用量通知
   const formatFlow = (isFlowBalance, isFlow) => {
@@ -299,7 +280,7 @@ async function main(family) {
     titleText.font = Font.mediumSystemFont(setting.textSize || lay.titleSize);
     titleText.textColor = color;
     
-    const newUnitText = verticalStack.addText(title + percent);
+    const newUnitText = verticalStack.addText(`${title}  ${percent}`);
     newUnitText.font = Font.mediumSystemFont(12.5);
     newUnitText.textColor = subTitleColor;
     newUnitText.textOpacity = 0.88
@@ -343,7 +324,7 @@ async function main(family) {
         title: bill ? '账单' : '话费',
         balance: feeBalance,
         newUnit: feeBalance >= 0 ? ' ￥' : '',
-        percent: bill ? `  ${sumCharge}` : `  ${fee}%`,
+        percent: bill ? await getUserBill() : `${fee}%`,
         symbol: '',
         color: feeColor
       },
@@ -352,7 +333,7 @@ async function main(family) {
         title: '语音',
         balance: voiceBalance,
         newUnit: ' Min',
-        percent: `  ${voice}%`,
+        percent: `${voice}%`,
         symbol: 'phone.fill',
         color: voiceColor,
       },
@@ -361,7 +342,7 @@ async function main(family) {
         title: setting.used ? '已用' : '流量',
         balance: setting.used ? flowUsedFormat : flowBalFormat,
         newUnit: '',
-        percent: `  ${setting.used ? used : flow}%`,
+        percent: `${setting.used ? used : flow}%`,
         symbol: 'antenna.radiowaves.left.and.right',
         color: flowColor,
       }
