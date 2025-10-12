@@ -56,9 +56,9 @@ async function main(family) {
     let response = await makeReq(jsonUrl);
     if (response?.serviceResultCode == 0 && setting.cookie) {
       cache.write(jsonName, response)
-    } else {
-      const cookie = await updateCookie(setting.loginUrl);
-      if (cookie) response = await makeReq(jsonUrl);
+    } else if (!response.success) {
+      delete setting.cookie;
+      module.writeSettings(setting);
     }
     return response;
   };
@@ -69,12 +69,13 @@ async function main(family) {
    */
   const getBoxjsData = async () => {
     try {
-      const response = await new Request('http://boxjs.com/query/data/china_telecom_loginUrl').loadJSON();
-      const loginUrl = response?.val;
-      if (loginUrl) {
-        setting.loginUrl = loginUrl;
-        writeSettings(setting);
-        return await updateCookie(loginUrl);
+      const response = await new Request('http://boxjs.com/query/data/china_telecom_cookie').loadJSON();
+      const cookie = response?.val;
+      console.log(cookie)
+      if (cookie) {
+        setting.cookie = cookie;
+        module.writeSettings(setting);
+        return cookie;
       }
     } catch (e) {
       module.notify('获取 Boxjs 数据失败⚠️', '需打开 Quantumult-X 或其他辅助工具', 'quantumult-x://');
@@ -82,36 +83,10 @@ async function main(family) {
     }
   };
   
-  /**
-   * 从用户套餐页面获取数据，并进行处理
-   * @returns {Promise<Object>} - 包含处理后的语音、流量和余额信息的对象
-   */
-  const updateCookie = async (loginUrl) => {
-    if (loginUrl) {
-      const url = loginUrl.match(/(http.+)&sign/)?.[1] || loginUrl;
-      const req = await new Request(url);
-      await req.load();  
-      const cookie = req.response.headers['Set-Cookie'];
-      if (cookie) {
-        setting.cookie = cookie;
-        writeSettings(setting);
-        module.notify('中国电信_2', '天翼账号中心 Cookie 更新成功');
-        return cookie;
-      }
-    }
-  };
-  
   const makeReq = async (url) => {
     let cookie = setting.cookie;
-    if (!cookie) {
-      cookie = setting.loginUrl 
-      ? await updateCookie(setting.loginUrl) 
-      : await getBoxjsData();
-    }
-    
-    const headers = { 
-      Cookie: cookie 
-    };
+    if (!cookie) cookie = await getBoxjsData();
+    const headers = { Cookie: cookie };
     return await module.apiRequest(url, headers);
   };
   
@@ -165,7 +140,7 @@ async function main(family) {
   };
   
   const bal = await fetchBalance();
-  const balanceAvailable = (bal?.totalBalanceAvailable / 100).toFixed(2) || '0';
+  const balanceAvailable = (bal?.totalBalanceAvailable / 100).toFixed(2) || '0.00';
   
   // 用量通知
   const formatFlow = (isFlowBalance, isFlow) => {
