@@ -382,7 +382,7 @@ async function main() {
           recommend: true,
           random: true,
           scrUrl: `${rootUrl}/widget/congest_3.js`,
-          icon: `${rootUrl}/img/icon/gateway.jpeg`
+          icon: `${rootUrl}/img/icon/baidu_map.png`
         },
         {
           label: '城市通行实况',
@@ -391,7 +391,7 @@ async function main() {
           type: 'button',
           recommend: true,
           scrUrl: `${rootUrl}/widget/congest_2.js`,
-          icon: `${rootUrl}/img/icon/baidu_map.png`
+          icon: `${rootUrl}/img/icon/logo_2.png`
         },
         {
           label: '景区通行实况',
@@ -1051,7 +1051,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${Device.screenSize().height < 926 ? '62px' : '78px'};
-      bottom: ${195 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
+      bottom: ${194 + (settings.urls.length * 4.3 )}%; /* 弹窗位置: 每加一个组件 + 4 */
     }
     
     .modal-backdrop {
