@@ -7,6 +7,7 @@
  * 组件版本: Version 1.1.1
  * 发布时间: 2024-11-19
  */
+const family = config.widgetFamily || 'medium';
 
 async function main(family) {
   const fm = FileManager.local();  
@@ -175,6 +176,9 @@ async function main(family) {
       return data[setting.count];
     } else {
       return module.notify('南网在线 ⚠️', 'Token已过期，请重新获取。');
+      const boxjs = await new Request('http://boxjs.com/query/data/token_95598').loadJSON();
+      setting.token = boxjs.val;
+      writeSettings(setting);
     }
   };
   
@@ -301,7 +305,21 @@ async function main(family) {
         type: '农用'
       };
     }
-  
+    
+    // 企事业电价
+    if (eleType === '300') {
+      const enterpriseRate = 0.8696;
+      return {
+        tier: '企业',
+        rate: enterpriseRate,
+        cost: (totalPower * enterpriseRate).toFixed(2),
+        percent: 0,
+        isPercent: '0%',
+        tierIndex: 0,
+        type: '企业'
+      };
+    }
+    
     // 居民电价档次表（按省份划分）
     const resRatesProv = {
       '070000': [ // 海南
@@ -443,13 +461,9 @@ async function main(family) {
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
     
-    if (count % 2 === 0) {
-      levelColor = '#00B400'
-      barColor = new Color(levelColor, 0.6);
-    } else {
-      levelColor = '#0094FF'
-      barColor = new Color(levelColor, 0.6);
-    }
+    const colors = ['#00B400', '#00C798', '#0094FF', '#1CA188'];
+    levelColor = colors[count % colors.length];
+    barColor = new Color(levelColor, 0.6);
   };
   
   /** 
@@ -591,7 +605,8 @@ async function main(family) {
     const n = totalItems?.length;
     
     if (setting.chart && n > 0) {
-      const chartColor = count % 2 === 0 ? '#8C7CFF' : '#00C400'
+      const colors = ['#8C7CFF', '#0094FF', '#00C400'];
+      const chartColor = colors[count % colors.length];
       const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
       drawImage.centerAlignImage();
