@@ -7,7 +7,7 @@
  * 组件版本: Version 1.1.1
  * 发布时间: 2024-11-19
  */
-const family = config.widgetFamily || 'medium';
+
 
 async function main(family) {
   const fm = FileManager.local();  
