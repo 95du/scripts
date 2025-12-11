@@ -2,29 +2,11 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: superscript;
 class CodeMaker {
-  constructor(account, curStatus) {
+  constructor(codeMaker, account, curStatus) {
     this.account = account.member_account;
     this.curStatus = curStatus;
-    this.All = null;
+    this.codeMaker = codeMaker;
   }
-
-  getCacheData = async () => {
-    const fm = FileManager.local();
-    const basePath = fm.joinPath(fm.documentsDirectory(), 'CodeMaker');
-    if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
-    const url = 'https://raw.githubusercontent.com/95du/scripts/master/module/All.js';
-    const path = fm.joinPath(basePath, 'CodeMaker.js');
-    if (fm.fileExists(path)) return fm.readString(path);
-    const response = await new Request(url).loadString();
-    if (response) fm.writeString(path, response);
-    return response;
-  };
-  
-  // 初始化缓存 All.js
-  async init() {
-    this.All = await this.getCacheData();
-    return this;
-  };
   
   // 注入拦截 js
   intercept = () => {
@@ -1197,9 +1179,7 @@ class CodeMaker {
           </table>
         </script>
         <script>
-          ${this.All}
-        </script>
-        <script>
+          ${this.codeMaker}
           ${this.intercept()}
         </script>
       <script type="text/html" id="tpl_number">
