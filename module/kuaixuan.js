@@ -12,17 +12,17 @@ class CodeMaker {
   intercept = () => {
     return `
       document.addEventListener('DOMContentLoaded', () => {
-      const showTip = (msg, time = 1500) => {
-        let tip = document.getElementById('tip');
-        if (!tip) {
-          tip = document.createElement('div');
-          tip.id = 'tip';
-          document.body.appendChild(tip);
-        }
-        tip.textContent = msg;
-        tip.style.display = 'block';
-        clearTimeout(tip.ht);
-        tip.ht = setTimeout(() => tip.style.display = 'none', time);
+      const showTip = (msg, duration = 1500) => {
+        const tip = document.getElementById("tip");
+        const text = tip.querySelector("span");
+        text.textContent = msg;
+        tip.classList.remove("hide");
+        tip.classList.add("show");
+        clearTimeout(tip.timer);
+        tip.timer = setTimeout(() => {
+          tip.classList.remove("show")
+          tip.classList.add("hide");
+        }, duration);
       };
     
       if ($.validator) {
@@ -30,7 +30,7 @@ class CodeMaker {
           focusInvalid: false,
           onfocusout: false,
           onkeyup: false,
-          showErrors: (_, list) => list.length && showTip(list[0].message, 1500)
+          showErrors: (_, list) => list.length && showTip(list[0].message)
         });
       }
     
@@ -154,17 +154,24 @@ class CodeMaker {
           transform: translate(-50%, -50%);
           background: rgba(0,0,0,0.6);
           color: #fff;
-          padding: 18px;
-          border-radius: 10px;
+          padding: 15px 20px;
+          border-radius: 15px;
           z-index: 9999;
-          display: none;
+          max-width: 80%;
+          width: auto;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity .25s ease-in-out;
         }
+        #tip.show { opacity: 1; }
+        #tip.hide { opacity: 0; }
       </style>
     </head>
     <body>
       <div id="header" class="header hide">账号 ${this.account} 自定义规则 ( 离线 )</div>
       <div class="tc systime time" id="systime">${this.curStatus ?? '下注后规则保存在账号配置中使用 ( 模拟投注 )'}
       </div>
+      <div id="tip"><span></span></div>
       <div style="margin-top: 100px;" class="module">
         <div name="module" id="kuaixuan" class="kuaixuan">
           <div class="right mt10">
