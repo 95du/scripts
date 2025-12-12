@@ -51,7 +51,7 @@ class CodeMaker {
       if (typeof Header !== 'undefined') {
         const header = new Header($('#header'));
         G.instance.header = header;
-        const mockData = ${JSON.stringify(curStatus)} || {};
+        const mockData = ${JSON.stringify(this.curStatus)} || {};
         const originalDoCountDown = header.doCountDown;
         header.doCountDown = function(t, e, i, n) {
           const o = n && n === 'current_period' ? \`距离\${t.period_no}期封盘还有\` : \`距离\${t.next_period_no}期开盘还有\`;
@@ -112,8 +112,7 @@ class CodeMaker {
             if (audio) audio.play();
             $c.addClass("red");
             setTimeout(() => {
-              $s.hide();
-              $n.show();
+              $s.hide(); $n.show();
             }, 500);
           }
         };
