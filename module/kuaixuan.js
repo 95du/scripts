@@ -12,7 +12,7 @@ class CodeMaker {
   intercept = () => {
     return `
       document.addEventListener('DOMContentLoaded', () => {
-      const showTip = (msg, duration = 1500) => {
+      const showTips = (msg, duration = 1500) => {
         const tip = document.getElementById("tip");
         const text = tip.querySelector("span");
         text.textContent = msg;
@@ -30,15 +30,22 @@ class CodeMaker {
           focusInvalid: false,
           onfocusout: false,
           onkeyup: false,
-          showErrors: (_, list) => list.length && showTip(list[0].message)
+          showErrors: (_, list) => list.length && showTips(list[0].message)
         });
       }
     
       if ($.alert) {
-        $.alert = (msg, cb) => { showTip(msg || ''); cb && cb(); };
+        $.alert = (msg, cb) => { showTips(msg); cb && cb(); };
       }
-      window.alert = msg => showTip(msg);
-    
+      
+      if ($.confirm) {
+        $.confirm = function(msg, okCb, cancelCb) {
+          showTips(msg);
+          // if (typeof okCb === 'function') okCb(); // 直接执行
+        };
+      }
+      
+      // 初始化
       window.G = window.G || {};
       G.modules = G.modules || {};
       G.instance = G.instance || {};
@@ -76,7 +83,7 @@ class CodeMaker {
       // 拦截下注，返回请求体
       kx.doSave = function () {
         const f = this.codeMaker;
-        if (!f?.numberList?.length) return showTip("请至少选择一个号码");
+        if (!f?.numberList?.length) return showTips("请至少选择一个号码");
       
         const body = Object.entries({
           bet_number: f.numberList.join(','),
