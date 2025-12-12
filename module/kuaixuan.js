@@ -51,7 +51,14 @@ class CodeMaker {
       if (typeof Header !== 'undefined') {
         const header = new Header($('#header'));
         G.instance.header = header;
-        const mockData = ${JSON.stringify(this.curStatus)} || {};
+        const mockData = ${JSON.stringify(curStatus)} || {};
+        const originalDoCountDown = header.doCountDown;
+        header.doCountDown = function(t, e, i, n) {
+          const o = n && n === 'current_period' ? \`距离\${t.period_no}期封盘还有\` : \`距离\${t.next_period_no}期开盘还有\`;
+          i(o, e);
+          if (this.timer_status) clearInterval(this.timer_status);
+          const self = this; this.timer_status = setInterval(() => (e--, i(o, e)), 1e3);
+        };
         header.showSystemInfo(mockData);
       }
       
