@@ -216,7 +216,7 @@ class CodeMaker {
                       <td class="no-padding">
                         <div style="overflow-y:auto;min-height:100px; max-height:300px;">
                           <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
-                          <div class="betStatus"><br /><span>0</span>个注单正在投注，已完成<i id="multi_count"></i>个
+                          <div class="betStatus"><img src="/Images/loading.gif" /><br /><br /><span>0</span>个注单正在投注，已完成<i id="multi_count"></i>个
                           </div>
                         </div>
                       </td>
