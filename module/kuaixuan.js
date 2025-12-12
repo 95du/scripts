@@ -66,12 +66,12 @@ class CodeMaker {
         catch (e) {}
       }, true);
       
-      // 拦截下注，返回请求体并触发 JBridge
+      // 拦截下注，返回请求体
       kx.doSave = function () {
         const f = this.codeMaker;
-        if (!f || !f.numberList.length) return showTip("请至少选择一个号码");
-    
-        const req = {
+        if (!f?.numberList?.length) return showTip("请至少选择一个号码");
+      
+        const body = Object.entries({
           bet_number: f.numberList.join(','),
           bet_money: $('#bet_money').val(),
           bet_way: 102,
@@ -81,16 +81,36 @@ class CodeMaker {
           guid: this.guid,
           period_no: ${this.curStatus?.period_no} || '2025',
           operation_condition: f.operation_condition || f.options
-        };
-    
-        const body = Object.entries(req)
-          .map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
+        }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
           .join('&');
-        completion && completion(body);
-        const audio = document.getElementById('audio');
-        if (body) audio.play();
-        showTip("投注规则保存成功", 2000);
+        completion?.(body);
         window.dispatchEvent(new CustomEvent('JBridge', { detail: body }));
+        
+        // 显示动画
+        const $n = $("#numberList"), $s = $(".betStatus"), $c = $("#multi_count");
+        $n.hide(); $s.show(); $s.find('span').text(f.numberList.length); $c.html("0").removeClass("red");
+        
+        const total = f.numberList.length;
+        const start = Date.now();
+        const duration = total <= 100 ? 300 : total <= 500 ? 500 : total <= 800 ? 600 : 1000;
+      
+        const step = () => {
+          const progress = Math.min((Date.now() - start) / duration, 1);
+          const current = Math.floor(total * progress);
+          $c.html(current);
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            const audio = document.getElementById('audio');
+            if (audio) audio.play();
+            $c.addClass("red");
+            setTimeout(() => {
+              $s.hide();
+              $n.show();
+            }, 500);
+          }
+        };
+        requestAnimationFrame(step);
       }
     })`;
   };
