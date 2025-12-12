@@ -169,8 +169,7 @@ class CodeMaker {
     </head>
     <body>
       <div id="header" class="header hide">账号 ${this.account} 自定义规则 ( 离线 )</div>
-      <div class="tc systime time" id="systime">${this.curStatus ?? '下注后规则保存在账号配置中使用 ( 模拟投注 )'}
-      </div>
+      <div class="tc systime time" id="systime">${this.curStatus}</div>
       <div id="tip"><span></span></div>
       <div style="margin-top: 100px;" class="module">
         <div name="module" id="kuaixuan" class="kuaixuan">
