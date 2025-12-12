@@ -97,12 +97,19 @@ class CodeMaker {
           operation_condition: f.operation_condition || f.options
         }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
           .join('&');
+          
         completion?.(body);
         window.dispatchEvent(new CustomEvent('JBridge', { detail: body }));
         
         // 显示动画
-        const $n = $("#numberList"), $s = $(".betStatus"), $c = $("#multi_count");
-        $n.hide(); $s.show(); $s.find('span').text(f.numberList.length); $c.html("0").removeClass("red");
+        const $n = $("#numberList")
+        const $s = $(".betStatus")
+        const $c = $("#multi_count");
+        $n.hide(); $s.show(); 
+        $s.find('span').text(
+          f.numberList.length
+        ); 
+        $c.html("0").removeClass("red");
         
         const total = f.numberList.length;
         const start = Date.now();
@@ -120,7 +127,7 @@ class CodeMaker {
             $c.addClass("red");
             setTimeout(() => {
               $s.hide(); $n.show();
-            }, 500);
+            }, 800);
           }
         };
         requestAnimationFrame(step);
