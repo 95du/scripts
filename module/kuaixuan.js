@@ -3,10 +3,209 @@
 // icon-color: blue; icon-glyph: superscript;
 class CodeMaker {
   constructor(codeMaker, account, curStatus) {
-    this.account = account.member_account;
+    this.account = account?.member_account || null;
     this.curStatus = curStatus;
     this.codeMaker = codeMaker;
   }
+  
+  css = () => {
+    return `
+    html { 
+      font-size: 62.5%; 
+      height: 100% 
+    } 
+    @media screen and (min-width:360px) and (max-width:374px) and (orientation:portrait) {
+      html { font-size: 70.3%; } 
+    }
+    @media screen and (min-width:375px) and (max-width:383px) and (orientation:portrait) {
+      html { font-size: 73.24%; } 
+    }
+    @media screen and (min-width:384px) and (max-width:399px) and (orientation:portrait) {
+      html { font-size: 75%; } 
+    }
+    @media screen and (min-width:400px) and (max-width:413px) and (orientation:portrait) {
+      html { font-size: 78.125%; } 
+    }
+    @media screen and (min-width:414px) and (max-width:431px) and (orientation:portrait){
+      html { font-size: 80.86%; }
+    }
+    @media screen and (min-width:432px) and (max-width:479px) and (orientation:portrait){
+      html { font-size: 84.375%; }
+    }
+    body {
+      margin:0; 
+      padding:0; 
+      font-size:1.2rem; 
+      height:100%;
+      overflow:hidden;
+    }
+    div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,blockquote,p{padding:0; margin:0;}
+    table {border-spacing:0; border-collapse:collapse; _border-collapse:inherit;  border:0; padding:0; margin:0;}
+    ol,ul {list-style:none;}
+    li{list-style-type:none;}
+    img{vertical-align:top;border:0;}
+    .tl {text-align: left;}
+    .tc {text-align: center;}
+    .tr {text-align: right;}
+    .fl {float: left;}
+    .fr {float: right;}
+    .m10 {margin:0 10px;}
+    .m5 {margin:0 5px;}
+    .mr10 {margin-right: 10px;}
+    .mr20 {margin-right: 20px;}
+    .mt10 {margin-top:10px;}
+    .mb10 {margin-bottom: 10px;}
+    .mt5 {margin-top: 5px;}
+    .pb5 {padding-bottom:5px;}
+    .pt5 {padding-top: 5px;}
+    .pt10 {padding-top:10px;}
+    .pb10 {padding-bottom: 10px;}
+    .wrap {word-break: break-all; word-wrap: break-word;}
+    .nowrap {white-space:nowrap;}
+    .vt {vertical-align: top;}
+    .vm {vertical-align: middle;}
+    i, em{font-style:normal;}
+    .hide {display:none;}
+    .vhide {visibility:hidden;}
+    .ime-dis {ime-mode:disabled;}
+    .inlineblock {display:inline-block;}
+    .inlineblock {*display:inline;}
+    .hx a,.hx em{font-weight:bold;}
+    .clearfix{*zoom:1;}
+    .clearfix:after{display:block; overflow:hidden; clear:both; height:0; visibility:hidden; content:".";}
+    a {color:darkblue; text-decoration:none;}
+    a:hover {text-decoration: underline;}
+    .fb {font-weight:bold;}
+    .f12 {font-size: 1.3rem;}
+    .f14 {font-size: 0.87rem;}
+    .f15{font-size:1.5rem;}
+    .f16 {font-size: 1.2rem;}
+    .f2r {font-size:1.7rem;}
+    .white {color:white;}
+    .red { color: red; }
+    .red2 {color:#990033;}
+    .green {color:green;}
+    .blue {color: blue;}
+    .yellow {color:yellow;}
+    .bg-white {background: #fff;}
+    .pink {color:#FF00CC;}
+    .guide {border: 1px solid #58c654; height: 16px; padding: 5px 10px; background: #FBFFE1;}
+    .bg-ball {width:20px; height:20px; background-repeat: no-repeat; text-align: center; color:#fff; font-weight:bold; line-height:20px; font-size:16px; display:inline-block; border-radius:50%; font-family:Arial;}
+    .ball2 {background:red;}
+    .ball1 {background:purple;}
+    .ball0 {background:gray;}
+    .btn {border-radius:5px; background:#0894ec; border:0; color:#fff; height:2.5rem; padding:0 1rem; cursor:pointer; font-size:1.2rem; display:inline-block; line-height:2.5rem;-webkit-appearance: none; vertical-align:middle;}
+    .btn-gray {background:#ccccd4; color:#fff;}
+    input[type=text] {height:1.5rem;}
+    input.text-large {height:2.8rem; font-size:2rem; vertical-align:middle;}
+    .btn-large {height:2.5rem; vertical-align:middle;}
+    
+    .header {position:absolute; width:100%;}
+    .header .hd {background:#fb5924; font-weight:bold; height:4rem; line-height:1.8rem; text-align:center; font-size:1.2rem; padding-top:0.8rem;}
+    .header .bd {height: 2.5rem; line-height:2.5rem; box-shadow:0 3px 5px rgba(0,0,0,.3);}
+    .header .lotteryType-nav{width:130px;height:22px;border:1px #fff solid;border-radius:5px;display:inline-block;overflow:hidden;z-index:20;background-color:#599d3a;color:#f5f90a;position:absolute;margin: auto;left: 0;right: 0;font-size:16px;}
+    .header .lotteryType-nav-now-down{position:absolute;right:5px;font-size:12px;}
+    .header .lotteryType-nav a{color:#f5f90a;}
+    .header .lotteryType-nav.on{height:auto;}
+    .header .lotteryType-nav-now{display:inline-block;width:130px;}
+    .header .lotteryType-nav-item{width:130px;height:24px;display:inline-block;margin-top:2px;}
+    .header .lotteryType-nav-item.on{background-color:#437830}
+    .header .topinfo{position:relative;z-index:10;bottom:-25px;}
+    .header .nav {text-align:center; font-size:1.5rem;height:2.5rem;}
+    .header .nav li {display:inline-block; font-weight:bold; margin:0 0.3rem;height:2.5rem;}
+    .header .nav li a {color:#106eb4;}
+    .header .nav li.on a {color:red;}
+    .header .nav .more{position:relative;}
+    .header .nav .more div{position:absolute;top:2.5rem;left:-2.6rem;width:7rem;height:auto;z-index:999;background:#fb5924;box-shadow:0rem 0.1rem 0.1rem rgba(0,0,0,.5); border:1px solid #fff;border-bottom:none;margin-top:-1px;}
+    .header .nav .more div a{height:2.5rem;line-height:2.5rem;color:white;border-bottom:1px solid #fff;font-size:1.2rem;display:block;}
+    .main {position:absolute; top:5.2rem; bottom:0; overflow:auto; width:100%; padding:0 0 10px;}
+    .html-android, .html-android body {height:auto; overflow:auto;}
+    .html-android .main {top:0; position:static; padding-top: 2.4rem; }
+    
+    .t-1 {width:100%;}
+    .t-1 td {border:1px solid #f6d3bc; height:22px; padding:2px 4px;}
+    .t-1 .bg1 td {background:#e3f5fd; border-bottom:1px solid #640000;border:1px solid #f6d3bc; height:22px; border-width:0 1px 1px 0; padding:2px 4px;}
+    .t-1 .bg3 td {background:#F1F5F8;}
+    .t-1 .bg4 td {background:#DEDEBC; color:red}
+    .t-1 .bg5 td {background: #FFFF00;}
+    .t-1 td.no-padding {padding:0;}
+    .t-2 {width:100%;}
+    .t-2 td {border:1px solid #000;}
+    
+    .w30 {width:30px;}
+    .w60 {width:60px;}
+    .w80 {width:80px;}
+    .w90 {width:90px;}
+    
+    .pager {text-align:center; padding:0.5rem 0;}
+    .pager .input {width:2em; height:1.2rem; padding:0; vertical-align:middle;}
+    .pager .btn {padding:0; height:auto; line-height:1.7rem; vertical-align:middle;}
+    
+    /* dialog */
+    .mask{position:absolute;margin-top:0;top:0;left:0;z-index:1000;width:100%;height:100%;background:#000;opacity:0.3;}
+    .mask .ifr-fix-ie6 {display:none; _display:block; width:100%; height: 100%; z-index: -1; _filter:alpha(opacity=0)}
+    .g-dialog {position: absolute; left: 0; top: 0; background: #fff; z-index: 1001; 
+    -moz-box-shadow:1px 1px 50px rgba(0,0,0,.3);
+    -webkit-box-shadow:1px 1px 50px rgba(0,0,0,.3);
+    box-shadow: 1px 1px 50px rgba(0,0,0,.3);
+    border-radius: 3px;
+    top:10%;
+    }
+    .g-dialog .dialog-hd {height:40px; cursor: move; border-bottom:1px solid #d8dce5; background: #f8f8f8; border-radius: 3px 3px 0 0;}
+    .g-dialog .dialog-hd .title {font-size:16px; line-height:40px; padding:0 0 0 10px;}
+    .g-dialog .dialog-hd .btn-close {width:34px; height:34px; line-height:34px; text-align:center; color:#c7ced8; font-size:34px; display:block; margin:2px 2px 0 0; text-decoration:none;}
+    .g-dialog .dialog-hd .btn-close:hover {color:#333;}
+    .g-dialog .dialog-bd {min-height:100px; _height:100px; padding:10px 10px 0;}
+    .g-dialog .dialog-ft {text-align: center; padding: 10px 0;}
+    .g-dialog .dialog-ft .btn {margin:0 10px;}
+    .g-dialog .dialog-ft :focus:not(.focus-visible) {outline: none;}
+    .g-alert .dialog-bd {word-break:break-all; word-wrap:break-word;}
+    .html-android .mask, .html-android .g-dialog {position:fixed;}
+    /* module */
+    .kuaixuan td.on {background:#ff9900;}
+    .kuaixuan .tb-kuaixuan td{border:1px solid #f6d3bc; padding:5px 0;}
+    .kuaixuan .kx-btn{width: 100%;border: none;background: none;outline: none;}
+    .kuaixuan td.on .kx-btn {color: #fff;font-weight:bold;}
+    
+    .keyboard-betno {background:red; vertical-align:top;}
+    .keyboard-betno td {border:none; padding:1px 1px 2px; height:auto; width:16%;}
+    .keyboard-betno tr td:last-child {width:20%;}
+    .keyboard-betno input[type=button] {border:1px solid yellow; color:yellow; background:red; box-sizing:border-box; width:100%; height:3.2rem; -webkit-appearance:none; font-size:2rem}
+    .keyboard-money, .keyboard-money input[type=button]{background:blue;}
+    
+    /* rule */
+    .rule .bd { padding:0 0.5rem;}
+    .rule .rule-ball {width:50%; margin:0 0 1em;}
+    .rule .rule-ball td {border:2px solid #f37999;}
+    .rule h1 {text-align:center; font-size:1.4rem; margin:1rem 0;}
+    .rule h2, .rule h3, .rule p {margin:0 0 1em;font-size:14px; line-height:21px;}
+    .rule p {text-indent:2em;}
+    .rule h2 {color:#FF00CC;}
+    
+    /* kuaida */
+    .bd_print_list {height:109px; overflow:auto}
+    .bd_print_list_max {height:600px;}
+    
+    .betStatus {
+      text-align:center;
+      vertical-align:central;
+      margin-top:15%;
+      margin-bottom:15%;
+      font-size:18px;
+      display:none;
+    }
+    /*倒计时*/
+    .systime{
+      position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
+    }
+    
+    .ssc_table_bg{background:#fff repeat-y center;background-size:100%;*background:#fff;}
+    
+    /* testline */
+    .testline .status {display:none; color:red; margin:0 0 0 10px;}
+    .testline .best .status {display:inline-block;}
+    `
+  };
   
   // 注入拦截 js
   intercept = () => {
@@ -113,7 +312,7 @@ class CodeMaker {
         
         const total = f.numberList.length;
         const start = Date.now();
-        const duration = total <= 100 ? 300 : total <= 500 ? 500 : total <= 800 ? 600 : 1000;
+        const duration = Math.min(1000, 300 + total * 0.7);
       
         const step = () => {
           const progress = Math.min((Date.now() - start) / duration, 1);
@@ -145,21 +344,35 @@ class CodeMaker {
       <link href="/Styles/style-FiveMinutes.css?v=20250912115700000'" type="text/css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
-        body{font-family: -apple-system,Arial;margin:0;padding:2px;min-height: 130vh;overflow-y: auto;}
-        .t-1 .bg3 td {background:#e3f5fd;}
-        .time {text-align:center;margin-top: -30px; color:#111}
-        .systime {left: 0;right: 0;}
+        ${this.css()}
+        body {
+          font-family: -apple-system,Arial;
+          margin: 0;
+          padding: 2px;
+          min-height: 130vh;
+          overflow-y: auto;
+        }
+        .t-1 .bg3 td {
+          background: #e3f5fd;
+        }
+        .time {
+          text-align: center;
+          margin-top: -30px; 
+          color: #111;
+        }
+        .systime { 
+          left: 0; 
+          right: 0:
+        }
         .header {
-          left: 0; right: 0;
+          margin: 0 -2px;
           background:#fb5924;
           font-weight:bold;
           height:4rem;
           text-align:center;
           font-size:1.4rem;
-          padding-top:0.8rem;
           color: #fff;
           line-height: 4rem;
-          padding-top: 0;
         }
         #tip {
           position: fixed;
@@ -182,7 +395,7 @@ class CodeMaker {
       </style>
     </head>
     <body>
-      <div id="header" class="header hide">账号 ${this.account} 自定义规则 ( 离线 )</div>
+      <div id="header" class="header hide">账号 ${this.account} 快选规则 ( 离线 )</div>
       <div class="tc systime time" id="systime">${this.curStatus}</div>
       <div id="tip"><span></span></div>
       <div style="margin-top: 100px;" class="module">
@@ -242,7 +455,7 @@ class CodeMaker {
                       <td class="no-padding">
                         <div style="overflow-y:auto;min-height:100px; max-height:300px;">
                           <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
-                          <div class="betStatus"><img src="/Images/loading.gif" /><br /><br /><span>0</span>个注单正在投注，已完成<i id="multi_count"></i>个
+                          <div class="betStatus"><img src="https://raw.githubusercontent.com/95du/scripts/master/img/ticket/loading.gif" /><br /><br /><span>0</span>个注单正在投注，已完成<i id="multi_count"></i>个
                           </div>
                         </div>
                       </td>
