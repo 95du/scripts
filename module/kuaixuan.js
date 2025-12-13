@@ -305,28 +305,23 @@ class CodeMaker {
         const $s = $(".betStatus")
         const $c = $("#multi_count");
         $n.hide(); $s.show(); 
-        $s.find('span').text(
-          f.numberList.length
-        ); 
         $c.html("0").removeClass("red");
-        
         const total = f.numberList.length;
+        $s.find('span').text(total); 
         const start = Date.now();
         const duration = Math.min(1000, 300 + total * 0.7);
       
         const step = () => {
-          const progress = Math.min((Date.now() - start) / duration, 1);
-          const current = Math.floor(total * progress);
-          $c.html(current);
-          if (progress < 1) {
+          $c.addClass("red");
+          const p = Math.min((Date.now() - start) / duration, 1);
+          $c.html(Math.floor(total * p));
+          if (p < 1) {
             requestAnimationFrame(step);
           } else {
             const audio = document.getElementById('audio');
             if (audio) audio.play();
-            $c.addClass("red");
-            setTimeout(() => {
-              $s.hide(); $n.show();
-            }, 800);
+            setTimeout(() => { $s.hide(); $n.show(); }, 500);
+            // setTimeout(() => { kx.codeMaker.reset(); }, 5000);
           }
         };
         requestAnimationFrame(step);
@@ -341,7 +336,7 @@ class CodeMaker {
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <link href="/Styles/style-FiveMinutes.css?v=20250912115700000'" type="text/css" rel="stylesheet" />
+      <link href="/Styles/style-FiveMinutes.css?v=20250912115700000" type="text/css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
         ${this.css()}
