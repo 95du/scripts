@@ -374,6 +374,7 @@ class CodeMaker {
           color: #fff;
           line-height: 4rem;
         }
+        .module { margin-top: 100px; }
         #tip {
           position: fixed;
           top: 40%;
@@ -398,7 +399,7 @@ class CodeMaker {
       <div id="header" class="header hide">账号 ${this.account} 快选规则 ( 离线 )</div>
       <div class="tc systime time" id="systime">${this.curStatus}</div>
       <div id="tip"><span></span></div>
-      <div style="margin-top: 100px;" class="module">
+      <div class="module">
         <div name="module" id="kuaixuan" class="kuaixuan">
           <div class="right mt10">
             <div class="bd m5">
