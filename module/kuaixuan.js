@@ -290,10 +290,10 @@ class CodeMaker {
           bet_way: 102,
           is_xian: f.options.isXian,
           number_type: f.options.numberType,
-          bet_log: f.logs ? f.logs.join('，') : '',
+          bet_log: f.logs.join('，'),
           guid: this.guid,
           period_no: ${this.curStatus?.period_no} || '2025',
-          operation_condition: f.operation_condition || f.options
+          operation_condition: f.operation_condition
         }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
           .join('&');
           
@@ -309,7 +309,7 @@ class CodeMaker {
         const total = f.numberList.length;
         $s.find('span').text(total); 
         const start = Date.now();
-        const duration = Math.min(1000, 300 + total * 0.7);
+        const duration = Math.min(1000, 500 + total * 0.7);
       
         const step = () => {
           $c.addClass("red");
@@ -343,33 +343,29 @@ class CodeMaker {
         body {
           font-family: -apple-system,Arial;
           margin: 0;
-          padding: 2px;
           min-height: 130vh;
           overflow-y: auto;
         }
         .t-1 .bg3 td {
-          background: #e3f5fd;
-        }
-        .time {
-          text-align: center;
-          margin-top: -30px; 
-          color: #111;
-        }
-        .systime { 
-          left: 0; 
-          right: 0:
+          background:#e3f5fd;
         }
         .header {
-          margin: 0 -2px;
-          background:#fb5924;
-          font-weight:bold;
-          height:4rem;
-          text-align:center;
-          font-size:1.4rem;
-          color: #fff;
+          /* position: fixed; */
+          top: 0;
+          background: #fb5924;
+          font-weight: bold;
+          height: 4rem;
           line-height: 4rem;
+          text-align: center;
+          font-size: 1.4rem;
+          color: #fff;
+          z-index: 1000;
         }
-        .module { margin-top: 100px; }
+        .systime { 
+          text-align: center;
+          margin-top: -2.2rem; 
+        }
+        .module { margin-top: 8rem; }
         #tip {
           position: fixed;
           top: 40%;
@@ -392,7 +388,7 @@ class CodeMaker {
     </head>
     <body>
       <div id="header" class="header hide">账号 ${this.account} 快选规则 ( 离线 )</div>
-      <div class="tc systime time" id="systime">${this.curStatus}</div>
+      <div class="tc systime" id="systime">${this.curStatus}</div>
       <div id="tip"><span></span></div>
       <div class="module">
         <div name="module" id="kuaixuan" class="kuaixuan">
