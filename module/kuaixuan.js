@@ -144,12 +144,12 @@ class CodeMaker {
     /* dialog */
     .mask{position:absolute;margin-top:0;top:0;left:0;z-index:1000;width:100%;height:100%;background:#000;opacity:0.3;}
     .mask .ifr-fix-ie6 {display:none; _display:block; width:100%; height: 100%; z-index: -1; _filter:alpha(opacity=0)}
-    .g-dialog {position: absolute; left: 0; top: 0; background: #fff; z-index: 1001; 
-    -moz-box-shadow:1px 1px 50px rgba(0,0,0,.3);
-    -webkit-box-shadow:1px 1px 50px rgba(0,0,0,.3);
-    box-shadow: 1px 1px 50px rgba(0,0,0,.3);
-    border-radius: 3px;
-    top:10%;
+      .g-dialog {position: absolute; left: 0; top: 0; background: #fff; z-index: 1001; 
+      -moz-box-shadow:1px 1px 50px rgba(0,0,0,.3);
+      -webkit-box-shadow:1px 1px 50px rgba(0,0,0,.3);
+      box-shadow: 1px 1px 50px rgba(0,0,0,.3);
+      border-radius: 3px;
+      top:10%;
     }
     .g-dialog .dialog-hd {height:40px; cursor: move; border-bottom:1px solid #d8dce5; background: #f8f8f8; border-radius: 3px 3px 0 0;}
     .g-dialog .dialog-hd .title {font-size:16px; line-height:40px; padding:0 0 0 10px;}
@@ -340,18 +340,12 @@ class CodeMaker {
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
         ${this.css()}
-        body {
-          font-family: -apple-system,Arial;
-          margin: 0;
-          min-height: 130vh;
-          overflow-y: auto;
-        }
+        body { font-family: -apple-system,Arial; }
         .t-1 .bg3 td {
           background:#e3f5fd;
         }
         .header {
-          /* position: fixed; */
-          top: 0;
+          position: fixed;
           background: #fb5924;
           font-weight: bold;
           height: 4rem;
@@ -359,13 +353,18 @@ class CodeMaker {
           text-align: center;
           font-size: 1.4rem;
           color: #fff;
-          z-index: 1000;
         }
         .systime { 
-          text-align: center;
-          margin-top: -2.2rem; 
+          margin-top: -2.75rem; 
         }
-        .module { margin-top: 8rem; }
+        .module {
+          position: absolute;
+          top: calc(4rem + 3rem);
+          bottom: 0;
+          left: 0; 
+          right: 0;
+          overflow-y: auto;
+        }
         #tip {
           position: fixed;
           top: 40%;
