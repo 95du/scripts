@@ -370,7 +370,7 @@ class CodeMaker {
           top: 40%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: rgba(0,0,0,0.6);
+          background: rgba(0,0,0,0.7);
           color: #fff;
           padding: 15px 20px;
           border-radius: 15px;
