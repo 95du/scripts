@@ -279,6 +279,12 @@ class CodeMaker {
         catch (e) {}
       }, true);
       
+      const resetAll = () => {
+        const btn = document.getElementById('btn_reset');
+        if (btn) btn.click(); 
+        else kx.codeMaker.reset();
+      };
+      
       // 拦截下注，返回请求体
       kx.doSave = function () {
         const f = this.codeMaker;
@@ -321,7 +327,7 @@ class CodeMaker {
             const audio = document.getElementById('audio');
             if (audio) audio.play();
             setTimeout(() => { $s.hide(); $n.show(); }, 500);
-            // setTimeout(() => { kx.codeMaker.reset(); }, 5000);
+            setTimeout(() => { resetAll(); }, 1000);
           }
         };
         requestAnimationFrame(step);
