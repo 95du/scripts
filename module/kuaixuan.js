@@ -2,8 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: blue; icon-glyph: superscript;
 class CodeMaker {
-  constructor(codeMaker, account, curStatus) {
-    this.account = account?.member_account || null;
+  constructor(codeMaker, curStatus) {
     this.curStatus = curStatus;
     this.codeMaker = codeMaker;
   }
@@ -336,7 +335,9 @@ class CodeMaker {
   };
   
   // 返回完整 HTML
-  html = async () => {
+  html = async (account) => {
+    const { member_account, previous_draw_no, period_no, credit_balance } = account.Data;
+    const previous_no = previous_draw_no.replace(/,/g, " ");
     return `
     <html>
     <head>
@@ -352,20 +353,33 @@ class CodeMaker {
         }
         .header {
           position: fixed;
+          top: 0; left: 0; right: 0;
+          height: 5rem;
           background: #fb5924;
           font-weight: bold;
-          height: 4rem;
-          line-height: 4rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
           text-align: center;
-          font-size: 1.4rem;
+          font-size: 1.5rem;
+          color: yellow;
+        }
+        .header-line1 {
+          line-height: 2rem;
+        }
+        .header-line2 {
+          margin-top: 0.3rem;
+          font-size: 1.2rem;
+          line-height: 1.4rem;
           color: #fff;
         }
         .systime { 
-          margin-top: -2.75rem; 
+          margin-top: -1.8rem; 
         }
         .module {
           position: absolute;
-          top: calc(4rem + 3rem);
+          top: calc(5rem + 2.8rem);
           bottom: 0;
           left: 0; 
           right: 0;
@@ -392,7 +406,11 @@ class CodeMaker {
       </style>
     </head>
     <body>
-      <div id="header" class="header hide">账号 ${this.account} 快选规则 ( 离线 )</div>
+      <div id="header" class="header">
+        <div class="header-line1">快选规则 ( 离线 )</div>
+        <div class="header-line2">开奖结果 ${previous_no} &nbsp;&nbsp;账号 ${member_account}&nbsp;&nbsp;可用 ${credit_balance}
+        </div>
+      </div>
       <div class="tc systime" id="systime">${this.curStatus}</div>
       <div id="tip"><span></span></div>
       <div class="module">
