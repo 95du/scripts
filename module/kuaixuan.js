@@ -43,8 +43,8 @@ class CodeMaker {
     div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,blockquote,p{padding:0; margin:0;}
     table {border-spacing:0; border-collapse:collapse; _border-collapse:inherit;  border:0; padding:0; margin:0;}
     ol,ul {list-style:none;}
-    li{list-style-type:none;}
-    img{vertical-align:top;border:0;}
+    li {list-style-type:none;}
+    img {vertical-align:top;border:0;}
     .tl {text-align: left;}
     .tc {text-align: center;}
     .tr {text-align: right;}
@@ -65,15 +65,15 @@ class CodeMaker {
     .nowrap {white-space:nowrap;}
     .vt {vertical-align: top;}
     .vm {vertical-align: middle;}
-    i, em{font-style:normal;}
+    i, em {font-style:normal;}
     .hide {display:none;}
     .vhide {visibility:hidden;}
     .ime-dis {ime-mode:disabled;}
     .inlineblock {display:inline-block;}
     .inlineblock {*display:inline;}
-    .hx a,.hx em{font-weight:bold;}
-    .clearfix{*zoom:1;}
-    .clearfix:after{display:block; overflow:hidden; clear:both; height:0; visibility:hidden; content:".";}
+    .hx a,.hx em {font-weight:bold;}
+    .clearfix {*zoom:1;}
+    .clearfix:after {display:block; overflow:hidden; clear:both; height:0; visibility:hidden; content:".";}
     a {color:darkblue; text-decoration:none;}
     a:hover {text-decoration: underline;}
     .fb {font-weight:bold;}
@@ -104,24 +104,24 @@ class CodeMaker {
     .header {position:absolute; width:100%;}
     .header .hd {background:#fb5924; font-weight:bold; height:4rem; line-height:1.8rem; text-align:center; font-size:1.2rem; padding-top:0.8rem;}
     .header .bd {height: 2.5rem; line-height:2.5rem; box-shadow:0 3px 5px rgba(0,0,0,.3);}
-    .header .lotteryType-nav{width:130px;height:22px;border:1px #fff solid;border-radius:5px;display:inline-block;overflow:hidden;z-index:20;background-color:#599d3a;color:#f5f90a;position:absolute;margin: auto;left: 0;right: 0;font-size:16px;}
-    .header .lotteryType-nav-now-down{position:absolute;right:5px;font-size:12px;}
-    .header .lotteryType-nav a{color:#f5f90a;}
-    .header .lotteryType-nav.on{height:auto;}
-    .header .lotteryType-nav-now{display:inline-block;width:130px;}
-    .header .lotteryType-nav-item{width:130px;height:24px;display:inline-block;margin-top:2px;}
-    .header .lotteryType-nav-item.on{background-color:#437830}
-    .header .topinfo{position:relative;z-index:10;bottom:-25px;}
+    .header .lotteryType-nav {width:130px;height:22px;border:1px #fff solid;border-radius:5px;display:inline-block;overflow:hidden;z-index:20;background-color:#599d3a;color:#f5f90a;position:absolute;margin: auto;left: 0;right: 0;font-size:16px;}
+    .header .lotteryType-nav-now-down {position:absolute;right:5px;font-size:12px;}
+    .header .lotteryType-nav a {color:#f5f90a;}
+    .header .lotteryType-nav.on {height:auto;}
+    .header .lotteryType-nav-now {display:inline-block;width:130px;}
+    .header .lotteryType-nav-item {width:130px;height:24px;display:inline-block;margin-top:2px;}
+    .header .lotteryType-nav-item.on {background-color:#437830}
+    .header .topinfo {position:relative;z-index:10;bottom:-25px;}
     .header .nav {text-align:center; font-size:1.5rem;height:2.5rem;}
     .header .nav li {display:inline-block; font-weight:bold; margin:0 0.3rem;height:2.5rem;}
     .header .nav li a {color:#106eb4;}
     .header .nav li.on a {color:red;}
-    .header .nav .more{position:relative;}
-    .header .nav .more div{position:absolute;top:2.5rem;left:-2.6rem;width:7rem;height:auto;z-index:999;background:#fb5924;box-shadow:0rem 0.1rem 0.1rem rgba(0,0,0,.5); border:1px solid #fff;border-bottom:none;margin-top:-1px;}
-    .header .nav .more div a{height:2.5rem;line-height:2.5rem;color:white;border-bottom:1px solid #fff;font-size:1.2rem;display:block;}
+    .header .nav .more {position:relative;}
+    .header .nav .more div {position:absolute;top:2.5rem;left:-2.6rem;width:7rem;height:auto;z-index:999;background:#fb5924;box-shadow:0rem 0.1rem 0.1rem rgba(0,0,0,.5); border:1px solid #fff;border-bottom:none;margin-top:-1px;}
+    .header .nav .more div a {height:2.5rem;line-height:2.5rem;color:white;border-bottom:1px solid #fff;font-size:1.2rem;display:block;}
     .main {position:absolute; top:5.2rem; bottom:0; overflow:auto; width:100%; padding:0 0 10px;}
     .html-android, .html-android body {height:auto; overflow:auto;}
-    .html-android .main {top:0; position:static; padding-top: 2.4rem; }
+    .html-android .main {top:0; position:static; padding-top: 2.4rem;}
     
     .t-1 {width:100%;}
     .t-1 td {border:1px solid #f6d3bc; height:22px; padding:2px 4px;}
@@ -143,7 +143,7 @@ class CodeMaker {
     .pager .btn {padding:0; height:auto; line-height:1.7rem; vertical-align:middle;}
     
     /* dialog */
-    .mask{position:absolute;margin-top:0;top:0;left:0;z-index:1000;width:100%;height:100%;background:#000;opacity:0.3;}
+    .mask {position:absolute;margin-top:0;top:0;left:0;z-index:1000;width:100%;height:100%;background:#000;opacity:0.3;}
     .mask .ifr-fix-ie6 {display:none; _display:block; width:100%; height: 100%; z-index: -1; _filter:alpha(opacity=0)}
       .g-dialog {position: absolute; left: 0; top: 0; background: #fff; z-index: 1001; 
       -moz-box-shadow:1px 1px 50px rgba(0,0,0,.3);
@@ -164,15 +164,15 @@ class CodeMaker {
     .html-android .mask, .html-android .g-dialog {position:fixed;}
     /* module */
     .kuaixuan td.on {background:#ff9900;}
-    .kuaixuan .tb-kuaixuan td{border:1px solid #f6d3bc; padding:5px 0;}
-    .kuaixuan .kx-btn{width: 100%;border: none;background: none;outline: none;}
+    .kuaixuan .tb-kuaixuan td {border:1px solid #f6d3bc; padding:5px 0;}
+    .kuaixuan .kx-btn {width: 100%;border: none;background: none;outline: none;}
     .kuaixuan td.on .kx-btn {color: #fff;font-weight:bold;}
     
     .keyboard-betno {background:red; vertical-align:top;}
     .keyboard-betno td {border:none; padding:1px 1px 2px; height:auto; width:16%;}
     .keyboard-betno tr td:last-child {width:20%;}
     .keyboard-betno input[type=button] {border:1px solid yellow; color:yellow; background:red; box-sizing:border-box; width:100%; height:3.2rem; -webkit-appearance:none; font-size:2rem}
-    .keyboard-money, .keyboard-money input[type=button]{background:blue;}
+    .keyboard-money, .keyboard-money input[type=button] {background:blue;}
     
     /* rule */
     .rule .bd { padding:0 0.5rem;}
@@ -200,7 +200,7 @@ class CodeMaker {
       position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
     }
     
-    .ssc_table_bg{background:#fff repeat-y center;background-size:100%;*background:#fff;}
+    .ssc_table_bg {background:#fff repeat-y center;background-size:100%;*background:#fff;}
     
     /* testline */
     .testline .status {display:none; color:red; margin:0 0 0 10px;}
