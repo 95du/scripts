@@ -5,6 +5,8 @@ class CodeMaker {
   constructor(codeMaker, Data) {
     this.codeMaker = codeMaker;
     this.Data = Data;
+    this.css = this.css();
+    this.intercept = this.intercept();
   }
   
   css = () => {
@@ -357,7 +359,7 @@ class CodeMaker {
       <link href="/Styles/style-FiveMinutes.css?v=20250912115700000" type="text/css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
-        ${this.css()}
+        ${this.css}
         body { font-family: -apple-system,Arial; }
         .t-1 .bg3 td {
           background:#e3f5fd;
@@ -1465,7 +1467,7 @@ class CodeMaker {
         </script>
         <script>
           ${this.codeMaker}
-          ${this.intercept()}
+          ${this.intercept}
         </script>
       <script type="text/html" id="tpl_number">
       {{if Data && Data.length >0}}
