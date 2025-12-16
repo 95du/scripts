@@ -61,7 +61,7 @@ a:hover {text-decoration: underline;}
 .f16 {font-size: 1.2rem;}
 .f2r {font-size:1.7rem;}
 .white {color:white;}
-.red { color: red; }
+.red {color: red;}
 .red2 {color:#990033;}
 .green {color:green;}
 .blue {color: blue;}
@@ -156,7 +156,7 @@ top:10%;
 .keyboard-money, .keyboard-money input[type=button]{background:blue;}
 
 /* rule */
-.rule .bd { padding:0 0.5rem;}
+.rule .bd {padding:0 0.5rem;}
 .rule .rule-ball {width:50%; margin:0 0 1em;}
 .rule .rule-ball td {border:2px solid #f37999;}
 .rule h1 {text-align:center; font-size:1.4rem; margin:1rem 0;}
