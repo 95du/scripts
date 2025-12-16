@@ -1,21 +1,21 @@
 html{ font-size: 62.5%; height:100%} 
 @media screen and (min-width:360px) and (max-width:374px) and (orientation:portrait) {
-    html { font-size: 70.3%; } 
+  html { font-size: 70.3%; } 
 }
 @media screen and (min-width:375px) and (max-width:383px) and (orientation:portrait) {
-    html { font-size: 73.24%; } 
+  html { font-size: 73.24%; } 
 }
 @media screen and (min-width:384px) and (max-width:399px) and (orientation:portrait) {
-    html { font-size: 75%; } 
+  html { font-size: 75%; } 
 }
 @media screen and (min-width:400px) and (max-width:413px) and (orientation:portrait) {
-    html { font-size: 78.125%; } 
+  html { font-size: 78.125%; } 
 }
 @media screen and (min-width:414px) and (max-width:431px) and (orientation:portrait){
-    html { font-size: 80.86%; }
+  html { font-size: 80.86%; }
 }
 @media screen and (min-width:432px) and (max-width:479px) and (orientation:portrait){
-    html { font-size: 84.375%; }
+  html { font-size: 84.375%; }
 }
 body {margin:0; padding:0; font-size:1.2rem; height:100%;overflow:hidden;}
 div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,blockquote,p{padding:0; margin:0;}
@@ -155,7 +155,6 @@ top:10%;
 .keyboard-betno input[type=button] {border:1px solid yellow; color:yellow; background:red; box-sizing:border-box; width:100%; height:3.2rem; -webkit-appearance:none; font-size:2rem}
 .keyboard-money, .keyboard-money input[type=button]{background:blue;}
 
-
 /* rule */
 .rule .bd { padding:0 0.5rem;}
 .rule .rule-ball {width:50%; margin:0 0 1em;}
@@ -170,16 +169,16 @@ top:10%;
 .bd_print_list_max {height:600px;}
 
 .betStatus {
-    text-align:center;
-    vertical-align:central;
-    margin-top:15%;
-    margin-bottom:15%;
-    font-size:18px;
-    display:none;
+  text-align:center;
+  vertical-align:central;
+  margin-top:15%;
+  margin-bottom:15%;
+  font-size:18px;
+  display:none;
 }
 /*倒计时*/
 .systime{
-    position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
+  position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
 }
 
 .ssc_table_bg{background:#fff repeat-y center;background-size:100%;*background:#fff;}
