@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: blue; icon-glyph: superscript;
+// icon-color: deep-green; icon-glyph: superscript;
 class CodeMaker {
   constructor(codeMaker, Data) {
     this.codeMaker = codeMaker;
@@ -367,7 +367,7 @@ class CodeMaker {
         .header {
           position: fixed;
           top: 0; left: 0; right: 0;
-          height: 5rem;
+          height: 4.8rem;
           background: #fb5924;
           font-weight: bold;
           display: flex;
@@ -388,11 +388,11 @@ class CodeMaker {
           color: #fff;
         }
         .systime { 
-          margin-top: -1.8rem; 
+          margin-top: -2rem; 
         }
         .module {
           position: absolute;
-          top: calc(5rem + 2.8rem);
+          top: calc(5rem + 2.6rem);
           bottom: 0;
           left: 0; 
           right: 0;
