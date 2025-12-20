@@ -461,7 +461,7 @@ async function main(family) {
       widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     }
     
-    const colors = ['#00B400', '#00C798', '#0094FF', '#1CA188'];
+    const colors = ['#00B400', '#00C798', '#0094FF'];
     levelColor = colors[count % colors.length];
     barColor = new Color(levelColor, 0.6);
   };
@@ -605,7 +605,7 @@ async function main(family) {
     const n = totalItems?.length;
     
     if (setting.chart && n > 0) {
-      const colors = ['#8C7CFF', '#0094FF', '#00C400'];
+      const colors = ['#8C7CFF', '#00C798', '#00C400'];
       const chartColor = colors[count % colors.length];
       const chartImage = createChart(totalItems.slice(-n), n, chartColor);
       const drawImage = middleStack.addImage(chartImage);
