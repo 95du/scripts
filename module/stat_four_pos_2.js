@@ -255,7 +255,7 @@ const runReplay = async (drawRows, date, lastRow) => {
     
     const output = `🅰️ ${picked.title}\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
 \n${r.lines.join('\n')}`;
-    const simulate = `🅱️ ${picked.title}\n💜 指定规则  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
+    const simulate = `🅱️ ${picked.title}\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
 \n${sim.lines.join('\n')}`;
     await QuickLook.present(output);
     await QuickLook.present(simulate);
