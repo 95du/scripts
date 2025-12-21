@@ -16,7 +16,7 @@ const getBoxjsData = async (key = 'bet_data') => {
 };
 
 const autoUpdate = async () => {
-  const script = await new Request('22').loadString();
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/stat_four_pos_1.js').loadString();
   fm.writeString(module.filename, script);
 };
 
