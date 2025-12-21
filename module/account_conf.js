@@ -716,9 +716,9 @@ const configMenu = async (betData, selected, conf) => {
     { name: '删除账号', id: 'delAccount', specify: true },
     { name: '重置规则', id: 'reset', specify: true },
     { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask' },
+    { name: '时间区间', id: 'time' },
     { name: '设置倍数', id: 'multiplierMenu' },
     { name: '强制投注', id: 'missLimit' },
-    { name: '时间区间', id: 'time' },
     { name: '盈亏统计', id: 'stat' },
     { name: '投注规则', id: 'rule' },
   ];
