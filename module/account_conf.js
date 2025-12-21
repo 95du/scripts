@@ -547,111 +547,72 @@ const kuaixuan = async (betData, selected) => {
 
 /** =======💙 三级菜单 💙======= */
 
-// 🆎 删除规则
-const removeRule = async (betData, selected, conf) => {
-  const list = conf.custom?.fastPick;
+// 🆎 规则操作（删除 / 暂停 / 恢复）
+const handleRuleAction = async (betData, selected, conf, { from, to, confirmText }) => {
+  const list = conf.custom?.[from];
   if (!list?.length) return;
   const message = list
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
     .join('\n');
-    
+
   const idx = await presentSheetMenu(message, list.map((_, i) => `规则 ${i + 1}`));
   if (idx === -1) return;
-  const { bet_log } = parseBetBody(list[idx]);
-  const confirm = await generateAlert(`确定删除以下规则❓\n${bet_log}`, ['取消', '确定'], true);
+  const rule = list[idx];
+  const { bet_log } = parseBetBody(rule);
+  const confirm = await generateAlert(
+    `${confirmText}\n${bet_log}`,
+    ['取消', '确定'], true
+  );
   if (confirm !== 1) return;
   await updateConfig(betData, selected, c => {
-    c.custom.fastPick.splice(idx, 1)
-    if (!c.custom.fastPick.length) {
-      c.custom.hasRule = false;
+    c.custom[from].splice(idx, 1);
+    if (to) {
+      c.custom[to] = c.custom[to] || []
+      c.custom[to].push(rule);
     }
-  });
-  await saveBoxJsData(betData);
-  await refreshReopen(betData, selected, conf, removeRule);
-};
-
-// 🆎 暂停规则
-const cutRuleAction = async (betData, selected, conf) => {
-  const list = conf.custom?.fastPick;
-  if (!list?.length) return;
-  const message = list
-    .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
-    .join('\n');
-
-  const idx = await presentSheetMenu(message, list.map((_, i) => `规则 ${i + 1}`));
-  if (idx === -1) return;
-  const rule = list[idx];
-  const { bet_log } = parseBetBody(rule);
-  const confirm = await generateAlert(`确定暂停以下规则❓\n${bet_log}`, ['取消', '确定'], true);
-  if (confirm !== 1) return;
-  await updateConfig(betData, selected, c => {
-    c.custom.cutRule = c.custom.cutRule || [];
-    c.custom.cutRule.push(rule);
-    c.custom.fastPick.splice(idx, 1);
-    if (!c.custom.fastPick.length) c.custom.hasRule = false;
+    c.custom.hasRule = !!c.custom.fastPick?.length;
   });
   await saveBoxJsData(betData);
 };
 
-// 🆎 恢复规则
-const restoreRule = async (betData, selected, conf) => {
-  const list = conf.custom?.cutRule;
-  if (!list?.length) return;
-  const message = list
-    .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
-    .join('\n');
-
-  const idx = await presentSheetMenu(message, list.map((_, i) => `规则 ${i + 1}`));
-  if (idx === -1) return;
-  const rule = list[idx];
-  const { bet_log } = parseBetBody(rule);
-  const confirm = await generateAlert(`确定恢复以下规则❓\n${bet_log}`, ['取消', '确定'], true);
-  if (confirm !== 1) return;
-  await updateConfig(betData, selected, c => {
-    c.custom.fastPick = c.custom.fastPick || [];
-    c.custom.fastPick.push(rule);
-    c.custom.cutRule.splice(idx, 1);
-    c.custom.hasRule = true;
+const removeRule = (betData, selected, conf) =>
+  handleRuleAction(betData, selected, conf, {
+    from: 'fastPick',
+    to: null,
+    confirmText: '确定删除以下规则❓'
   });
-  await saveBoxJsData(betData);
-};
+
+const cutRuleAction = (betData, selected, conf) =>
+  handleRuleAction(betData, selected, conf, {
+    from: 'fastPick',
+    to: 'cutRule',
+    confirmText: '确定暂停以下规则❓'
+  });
+
+const restoreRule = (betData, selected, conf) =>
+  handleRuleAction(betData, selected, conf, {
+    from: 'cutRule',
+    to: 'fastPick',
+    confirmText: '确定恢复以下规则❓'
+  });
 
 // 🆎 管理规则
 const manageRule = async (betData, selected, conf) => {
-  const fastPick = conf.custom?.fastPick || [];
-  const cutRule = conf.custom?.cutRule || [];
-
+  const { fastPick = [], cutRule = [] } = conf.custom || {};
   const opts = [];
   if (fastPick.length) {
-    opts.push(
-      { name: '删除规则', id: 'removeRule' },
-      { name: '暂停规则', id: 'cutRule' }
-    );
+    opts.push({ name: '删除规则', action: removeRule }, { name: '暂停规则', action: cutRuleAction });
   }
   if (cutRule.length) {
-    opts.push({ name: '恢复规则', id: 'restoreRule' });
+    opts.push({ name: '恢复规则', action: restoreRule });
   }
-
   if (!opts.length) {
     await generateAlert('当前没有可管理的规则 ⚠️', ['完成']);
     return;
   }
-
-  const idx = await presentSheetMenu('规则管理', opts.map(o => o.name));
+  const idx = await presentSheetMenu(buildMessage(selected, conf), opts.map(o => o.name));
   if (idx === -1) return;
-  const choice = opts[idx];
-  if (!choice) return;
-  switch (choice.id) {
-    case 'removeRule':
-      await removeRule(betData, selected, conf);
-      break;
-    case 'cutRule':
-      await cutRuleAction(betData, selected, conf);
-      break;
-    case 'restoreRule':
-      await restoreRule(betData, selected, conf);
-      break;
-  }
+  await opts[idx].action(betData, selected, conf);
   await refreshReopen(betData, selected, conf, manageRule);
 };
 
