@@ -204,7 +204,7 @@ const processDataText = (data, selected) => {
   return (accounts || []).map(acc => {
     const bets = acc.settings?.custom?.fastPick;
     if (!bets || !bets.length) {
-      return { title: `账号: ${acc.member_account}`, content: `暂无投注规则，请点击写入规则` };
+      return { title: `账号: ${acc.member_account}`, content: `暂无投注规则，请点击写入规则或已被暂停` };
     }
     const title = `账号: ${acc.member_account} ( ${bets.length} )`;
     let text = '';
@@ -404,7 +404,7 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
   if (!bodies?.length) {
     return await viewRule({
       title: `账号: ${selected.member_account}`,
-      content: '暂无投注规则，请点击写入规则'
+      content: '暂无投注规则，请点击写入规则或已被暂停'
     })
   }
   
