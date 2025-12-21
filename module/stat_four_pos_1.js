@@ -111,11 +111,11 @@ const replayNormal = (rows, bodies) => {
     if (hit) {
       win++; score++;
       totalProfit += prize;
-      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】    总分 ${totalProfit}`);
+      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
     } else {
       lose++; score--;
       totalProfit -= cost;
-      lines.push(` 🚫 ${time} - ${period}期   【 ${num} 】    总分 ${totalProfit}`);
+      lines.push(` 🚫 ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
     }
   });
 
