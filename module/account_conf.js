@@ -418,9 +418,9 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
     const iconsDesc2 = '图标说明:  ✅ 命中，🚫 未中, ⚠️ 强制投注';
     const ruleDesc = section.missLimit > 0 ? `不中即停，中则继续，${section.missLimit} 期未中强制投` : '不中即停，中则继续';
     
-    const output = `🅰️ ${picked.title}\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
+    const output = `🅰️ ${picked.title}\n\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
 \n${r.lines.join('\n')}`;
-    const simulate = `🅱️ ${picked.title}\n💜 指定规则  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
+    const simulate = `🅱️ ${picked.title}\n\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
 \n${sim.lines.join('\n')}`;
     await QuickLook.present(output);
     await QuickLook.present(simulate);
