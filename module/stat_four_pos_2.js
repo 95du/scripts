@@ -8,7 +8,7 @@
  * 设置为 1：不论中或不中，每期都投
  * 设置为 3：连续未中 3 期后自动投注
  */
-const missLimit = 0
+const missLimit = 4
 
 
 /** =======💜 统计盈亏 💜======= */
@@ -19,16 +19,16 @@ if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 const imageUrl = `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png`;
 const boxjsApi = 'http://boxjs.com/query/data';
 
+const autoUpdate = async () => {
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/stat_four_pos_2.js').loadString();
+  fm.writeString(module.filename, script);
+};
+
 const getBoxjsData = async (key = 'bet_data') => {
   try {
     const data = await new Request(`${boxjsApi}/${key}`).loadJSON();
     return JSON.parse(data.val);
   } catch {}
-};
-
-const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/stat_four_pos_2.js').loadString();
-  fm.writeString(module.filename, script);
 };
 
 // ✅ 缓存文件
@@ -76,9 +76,11 @@ const parseBetBody = (body) => {
   try { decoded = decodeURIComponent(body); } catch { decoded = body || ''; }
   const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1] || '';
   const bet_number = decoded.match(/bet_number=([^&]*)/)?.[1] || '';
+  const numCount = bet_number.split(",").length || '';
   const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
   return { 
     bet_number, 
+    numCount,
     bet_log, 
     number_type 
   };
@@ -150,7 +152,7 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
   const tempLines = [];
   const todayList = [];
   let missCount = 0;
-  let forceBet = false;
+  let forceBet = false; 
 
   ordered.forEach(r => {
     const num = drawNumber(r);
@@ -158,7 +160,7 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
     const period = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
 
-    /** 未投注状态 */
+    /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
       if (!isToday) {
         tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期 【 ${num} 】 ${hit ? '投 →' : '停'}`);
@@ -177,17 +179,17 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
         missCount = 0;
       } else {
         missCount++;
-        if (missLimit > 0 && missCount === missLimit) {
-          forceBet = true;
-        }
+        // 达到missLimit触发强制投
+        if (missLimit > 0 && missCount >= missLimit) forceBet = true;
       }
       return;
     }
 
-    /** 正常 / 强制 */
-    const isForce = forceBet && !canBet;
-    forceBet = false;
-    canBet = true;
+    /** 投注状态（正常投或强制投） */
+    // 只要当前处于强制投状态，就显示 ⚠️
+    const isForce = forceBet; 
+    // 强制投状态一直投，直到命中
+    if (forceBet) canBet = true;
 
     if (hit) {
       win++;
@@ -195,14 +197,18 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
       totalProfit += prize;
       missCount = 0;
       canBet = true;
+      // 命中后，强制投状态结束
+      forceBet = false;
     } else {
       lose++;
       score--;
       totalProfit -= cost;
-      missCount = 1;
-      canBet = missLimit === 1;
+      missCount++;
+      // 正常不中 → 停
+      if (!forceBet) canBet = false;
     }
 
+    /** 输出记录 */
     if (!isToday) {
       tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期 【 ${num} 】 (投)${isForce ? ' ⚠️' : ''} ${totalProfit}`);
     } else {
@@ -275,9 +281,9 @@ const runReplay = async (drawRows, date, lastRow) => {
     const iconsDesc2 = '图标说明:  ✅ 命中，🚫 未中, ⚠️ 强制投注';
     const ruleDesc = missLimit > 0 ? `不中即停，中则继续，${missLimit} 期未中强制投` : '不中即停，中则继续';
     
-    const output = `🅰️ ${picked.title}\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
+    const output = `🅰️ ${picked.title}\n\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
 \n${r.lines.join('\n')}`;
-    const simulate = `🅱️ ${picked.title}\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
+    const simulate = `🅱️ ${picked.title}\n\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
 \n${sim.lines.join('\n')}`;
     await QuickLook.present(output);
     await QuickLook.present(simulate);
@@ -311,10 +317,6 @@ const runReplayCollect = async (rows, date, lastRow, account, fastPick) => {
     credit_balance: account.Data.credit_balance,
     title: parseBetBody(fastPick).bet_log,
     date,
-    total: sim.total,
-    win: sim.win,
-    lose: sim.lose,
-    score: sim.score,
     profit: sim.totalProfit,
   };
 };
@@ -326,14 +328,15 @@ const collectAllRecords = async () => {
     pickStrategyOnce()
   ]);
 
-  if (!Array.isArray(records) || !records.length || !accent) {
+  if (!Array.isArray(records) || !records.length || !accent || !draw) {
     return { results: [], total: 0 };
   }
-
+  
   const { account, fastPick } = accent;
   const rows = sliceByTime(draw.drawRows, "08:05");
-  const lastRow = records[0]?.data?.[0] || null;
+  const lastRow = records[0]?.data?.[0]
   const { todayList } = replaySimulate(rows, [fastPick], lastRow, true);
+  const numCount = parseBetBody(fastPick).numCount;
   const today = new Date().toISOString().slice(0, 10);
   const tasks = [];
   
@@ -354,7 +357,12 @@ const collectAllRecords = async () => {
 
   const results = (await Promise.all(tasks)).filter(Boolean);
   const total = results.reduce((s, r) => s + (r.profit || 0), 0);
-  return { todayList, results, total };
+  return { 
+    todayList, 
+    results, 
+    total, 
+    numCount 
+  };
 };
 
 // 🈯️ 主程序
@@ -363,7 +371,7 @@ const showDateMenu = async () => {
   const list = JSON.parse(data);
   if (!Array.isArray(list) || !list.length) return;
 
-  const records = list.slice(0, 8);
+  const records = list.slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = records[0]?.date === today;
 
@@ -442,13 +450,13 @@ const addItem = async (widget, item, max, index, large, small) => {
 
 // ✅ 创建组件
 const createWidget = async (data) => {
-  const { account, credit_balance } = data.results[0];
+  const { account } = data.results[0];
   const family = config.widgetFamily;
   const small = family === 'small';
   const large = family === 'large';
   
   const widget = new ListWidget();
-  widget.setPadding(15, 15, 15, 15);
+  widget.setPadding(...(large ? [15, 20, 18, 15] : [15, 18, 15, 15]));
   widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
   widget.backgroundImage = await getCacheData('glass', imageUrl, 'img');
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -464,14 +472,11 @@ const createWidget = async (data) => {
   const columnStack = topStack.addStack();
   columnStack.size = new Size(7, 23);
   columnStack.cornerRadius = 50;
-  columnStack.backgroundColor = new Color(Number(credit_balance) < 30000 ? '#8B5FF4' : '#00C400');
+  columnStack.backgroundColor = new Color('#8B5FF4');
   topStack.addSpacer(10);
   
   if (!small) {
-    const missText = missLimit > 0 
-      ? `，${missLimit} 期未中强制投` 
-      : `，可用 ${credit_balance}`;
-    const nameText = topStack.addText(`账号 ${account}${missText}`);
+    const nameText = topStack.addText(`${data.numCount} 组，隔 ${missLimit} 期未中强制投`);
     nameText.font = Font.mediumSystemFont(16);
     nameText.textOpacity = 0.9
     topStack.addSpacer(10);
@@ -479,16 +484,16 @@ const createWidget = async (data) => {
     const barStack = topStack.addStack();
     barStack.setPadding(2, 7, 2, 7);
     barStack.cornerRadius = 7;
-    barStack.backgroundColor = data.total < 0 ? Color.red() : Color.green();
+    barStack.backgroundColor = data.total < 0 ? Color.red() : Color.blue();
     const statusText = barStack.addText(`${data.total}`);
     statusText.font = Font.boldSystemFont(14);
     statusText.textColor = Color.white();
   }
   
   if (small) {
-    const dateText = topStack.addText(`${missLimit} 期未中强投`);
+    const dateText = topStack.addText(`${data.numCount}组隔${missLimit}期`);
     dateText.font = Font.systemFont(16);
-    dateText.textOpacity = 0.95;
+    dateText.textOpacity = 0.9
   }
   mainStack.addSpacer();
   
@@ -503,13 +508,8 @@ const createWidget = async (data) => {
     if (!item) continue;
     await add(stack => addItem(stack, item, max, i + 1, large, small));
   };
-  
-  if (config.runsInApp) {
-    widget.presentMedium()
-  } else {
-    Script.setWidget(widget);
-    Script.complete();
-  }
+  mainStack.addSpacer();
+  return widget;
 };
 
 // 🈯️ 错误组件
@@ -526,10 +526,15 @@ await (async () => {
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
-    console.log(finalResults)
     if (!finalResults.results.length) {
       return await createErrorWidget();
     }
-    await createWidget(finalResults);
+    const widget = await createWidget(finalResults);
+    if (config.runsInApp) {
+      widget.presentMedium();
+    } else {
+      Script.setWidget(widget);
+      Script.complete();
+    }
   }
 })();
