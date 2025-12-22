@@ -436,13 +436,6 @@ const addItem = async (widget, item, max, index, large, small) => {
     : large 
       ? Color.blue() 
       : (item.profit < 0 ? Color.red() : Color.blue());
-  
-  if (item.forced) {
-    stack.addSpacer(6);
-    const actionText = stack.addText(item.action);
-    actionText.font = Font.mediumSystemFont(14);
-    actionText.textColor = new Color('#FF4800');
-  }
   stack.addSpacer();
 };
 
