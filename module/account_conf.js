@@ -317,8 +317,8 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
   const prize = water - cost;
   const ordered = rows.slice().reverse();
   const tempLines = [];
-  let missCount = 0; // 连续未中期数
-  let forceBet = false; // 是否触发强制投
+  let missCount = 0;
+  let forceBet = false;
 
   ordered.forEach(r => {
     const num = drawNumber(r);
@@ -327,7 +327,7 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
     const hit = isHit(r, bodies);
 
     /** 未投注状态 */
-    if (!canBet && !forceBet) {
+    if (!canBet && !forceBet && missLimit !== 1) {
       tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
 
       if (hit) {
@@ -342,11 +342,11 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
       return;
     }
 
-    /** 强制投 / 正常投 */
+    /** missLimit = 1 或强制投 / 正常投 */
     const isForce = forceBet && !canBet;
-    // 强制投只生效一次
     forceBet = false;
     canBet = true;
+
     if (hit) {
       win++;
       score++;
@@ -364,7 +364,7 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
       tempLines.push(
         ` 🚫 ${time} - ${period}期   【 ${num} 】   (投)${isForce ? ' ⚠️' : ''}   ${totalProfit}`
       );
-      canBet = false;
+      canBet = missLimit === 1;
     }
   });
 
@@ -755,7 +755,7 @@ const configMenu = async (betData, selected, conf) => {
     case 'missLimit': {
       const res = await collectInputs(
         '连续未中自动投注',
-        '设置为 0：关闭此功能，不中一直停\n设置为 3：连续未中 3 期后自动投注',
+        '设置为 0：关闭此功能，不中一直停\n设置为 1：不论中或不中，每期都投\n设置为 3：连续未中 3 期后自动投注',
         [{ hint: '未中期数', value: conf.custom.missLimit ?? 0 }]
       );
       const val = Number(res?.[0]);
