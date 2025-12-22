@@ -48,17 +48,17 @@ const defaultData = {
   }
 }
 
+const autoUpdate = async () => {
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
+  fm.writeString(module.filename, script);
+};
+
 // ✅ 获取 BoxJs 数据
 const getBoxjsData = async (key = 'bet_data') => {
   try {
     const data = await new Request(`http://boxjs.com/query/data/${key}`).loadJSON();
     return JSON.parse(data.val);
   } catch {}
-};
-
-const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
-  fm.writeString(module.filename, script);
 };
 
 // ✅ 保存 BoxJs 数据
@@ -319,7 +319,7 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
   const ordered = rows.slice().reverse();
   const tempLines = [];
   let missCount = 0;
-  let forceBet = false;
+  let forceBet = false; // 强制状态
 
   ordered.forEach(r => {
     const num = drawNumber(r);
@@ -327,46 +327,40 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
     const period = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
 
-    /** 未投注状态 */
+    /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
-      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
-
+      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期 【 ${num} 】 ${hit ? '投 →' : '停'}`);
       if (hit) {
         canBet = true;
         missCount = 0;
       } else {
         missCount++;
-        if (missLimit > 0 && missCount === missLimit) {
-          forceBet = true;
-        }
+        if (missLimit > 0 && missCount >= missLimit) forceBet = true;
       }
       return;
     }
 
-    /** missLimit = 1 或强制投 / 正常投 */
-    const isForce = forceBet && !canBet;
-    forceBet = false;
-    canBet = true;
+    /** 投注状态（正常投或强制投） */
+    const isForce = forceBet; 
+    if (forceBet) canBet = true;
 
     if (hit) {
       win++;
       score++;
       totalProfit += prize;
       missCount = 0;
-      tempLines.push(
-        ` ✅ ${time} - ${period}期   【 ${num} 】   (投)${isForce ? ' ⚠️' : ''}   ${totalProfit}`
-      );
       canBet = true;
+      forceBet = false;
     } else {
       lose++;
       score--;
       totalProfit -= cost;
-      missCount = 1;
-      tempLines.push(
-        ` 🚫 ${time} - ${period}期   【 ${num} 】   (投)${isForce ? ' ⚠️' : ''}   ${totalProfit}`
-      );
-      canBet = missLimit === 1;
+      missCount++;
+      if (!forceBet) canBet = false;
     }
+
+    /** 输出记录 */
+    tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期 【 ${num} 】 (投)${isForce ? ' ⚠️' : ''} ${totalProfit}`);
   });
 
   return {
@@ -436,7 +430,7 @@ const statMenu = async (selected, conf) => {
   const list = await getBoxjsData('record_rows');
   if (!Array.isArray(list) || !list.length) return;
 
-  const records = list.slice(0, 8);
+  const records = list.slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = records[0]?.date === today;
 
