@@ -8,7 +8,7 @@
  * 设置为 1：不论中或不中，每期都投
  * 设置为 3：连续未中 3 期后自动投注
  */
-const missLimit = 3
+const missLimit = 0
 
 
 /** =======💜 统计盈亏 💜======= */
@@ -139,7 +139,7 @@ const replayNormal = (rows, bodies) => {
 };
 
 // ✅ 模拟投注回放
-const replaySimulate = (rows, bodies, lastRow) => {
+const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
   let canBet = lastRow ? isHit(lastRow, bodies) : false;
   let win = 0, lose = 0, score = 0;
   let totalProfit = 0;
@@ -147,6 +147,7 @@ const replaySimulate = (rows, bodies, lastRow) => {
   const prize = 9920 - cost;
   const ordered = rows.slice().reverse();
   const tempLines = [];
+  const todayList = [];
   let missCount = 0;
   let forceBet = false;
 
@@ -158,7 +159,17 @@ const replaySimulate = (rows, bodies, lastRow) => {
 
     /** 未投注状态 */
     if (!canBet && !forceBet && missLimit !== 1) {
-      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
+      if (!isToday) {
+        tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期 【 ${num} 】 ${hit ? '投 →' : '停'}`);
+      } else {
+        todayList.push({
+          time,
+          hit,
+          action: hit ? '投' : '停',
+          forced: false,
+          profit: totalProfit
+        });
+      }
 
       if (hit) {
         canBet = true;
@@ -172,7 +183,7 @@ const replaySimulate = (rows, bodies, lastRow) => {
       return;
     }
 
-    /** missLimit = 1 或强制投 / 正常投 */
+    /** 正常 / 强制 / missLimit = 1 */
     const isForce = forceBet && !canBet;
     forceBet = false;
     canBet = true;
@@ -182,24 +193,33 @@ const replaySimulate = (rows, bodies, lastRow) => {
       score++;
       totalProfit += prize;
       missCount = 0;
-      tempLines.push(
-        ` ✅ ${time} - ${period}期   【 ${num} 】   (投)${isForce ? ' ⚠️' : ''}   ${totalProfit}`
-      );
       canBet = true;
     } else {
       lose++;
       score--;
       totalProfit -= cost;
       missCount = 1;
-      tempLines.push(
-        ` 🚫 ${time} - ${period}期   【 ${num} 】   (投)${isForce ? ' ⚠️' : ''}   ${totalProfit}`
-      );
       canBet = missLimit === 1;
+    }
+
+    if (!isToday) {
+      tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期 【 ${num} 】 (投)${isForce ? ' ⚠️' : ''} ${totalProfit}`);
+    } else {
+      todayList.push({
+        time,
+        hit,
+        action: '投',
+        forced: isForce,
+        profit: totalProfit
+      });
     }
   });
 
-  return {
-    win, lose, score,
+  /** 返回分流 */
+  return isToday ? { todayList: todayList.reverse().slice(0, 28) } : {
+    win,
+    lose,
+    score,
     totalProfit,
     total: rows.length,
     lines: tempLines.reverse()
@@ -281,8 +301,7 @@ const pickStrategyOnce = async () => {
   return fastPick ? { account, fastPick } : null;
 };
 
-const runReplayCollect = async (drawRows, date, lastRow, account, fastPick) => {
-  const rows = sliceByTime(drawRows, "08:05");
+const runReplayCollect = async (rows, date, lastRow, account, fastPick) => {
   if (!rows?.length) return null;
   const sim = replaySimulate(rows, [fastPick], lastRow);
   
@@ -300,8 +319,9 @@ const runReplayCollect = async (drawRows, date, lastRow, account, fastPick) => {
 };
 
 const collectAllRecords = async () => {
-  const [records, accent] = await Promise.all([
+  const [records, draw, accent] = await Promise.all([
     getBoxjsData('record_rows'),
+    getBoxjsData('agent_data'),
     pickStrategyOnce()
   ]);
 
@@ -310,15 +330,16 @@ const collectAllRecords = async () => {
   }
 
   const { account, fastPick } = accent;
+  const rows = sliceByTime(draw.drawRows, "08:05");
+  const lastRow = records[0]?.data?.[0] || null;
+  const { todayList } = replaySimulate(rows, [fastPick], lastRow, true);
   const today = new Date().toISOString().slice(0, 10);
   const tasks = [];
-
+  
   // 今日
   if (records[0]?.date !== today) {
     tasks.push((async () => {
-      const { drawRows } = await getBoxjsData('agent_data') || {};
-      const lastRow = records[0]?.data?.[0] || null;
-      return runReplayCollect(drawRows, today, lastRow, account, fastPick);
+      return runReplayCollect(rows, today, lastRow, account, fastPick);
     })());
   }
 
@@ -332,129 +353,7 @@ const collectAllRecords = async () => {
 
   const results = (await Promise.all(tasks)).filter(Boolean);
   const total = results.reduce((s, r) => s + (r.profit || 0), 0);
-  return { results, total };
-};
-
-// 🈯️ 小组件排列逻辑
-const getRank = async (stack, { column }) => {
-  let i = -1;
-  const rows = [];
-  const add = async (fn) => {
-    i++;
-    if (i % column === 0) {
-      stack.layoutVertically();
-      rows.push(stack.addStack());
-    }
-    const r = Math.floor(i / column);
-    await fn(rows[r]);
-  };
-  return { add };
-};
-
-const addItem = async (widget, item, max, index, family) => {
-  const stack = widget.addStack();
-  stack.layoutHorizontally();
-  stack.centerAlignContent();
-  stack.size = new Size(0, 20);
-
-  const indexStack = stack.addStack();
-  indexStack.size = new Size(19, 0);
-  const indexText = indexStack.addText(String(index));
-  indexText.font = Font.boldSystemFont(15);
-  const textColor = index <= 3 
-    ? '#FF0000' : index <= 6
-    ? (family ? '#00C400' : '#FCA100') 
-    : '#00C400';
-  indexText.textColor = new Color(textColor);
-  stack.addSpacer(4);
-  
-  const monthDay = item.date.slice(5);
-  const titleText = stack.addText(monthDay);
-  titleText.font = Font.mediumSystemFont(14);
-  titleText.textColor = Color.dynamic(new Color('000000', 0.7), new Color('FFFFFF', 0.9));
-  stack.addSpacer(8);
-  
-  const idxText = stack.addText(String(item.profit));
-  idxText.font = Font.mediumSystemFont(15.5);
-  idxText.textColor = item.profit < 0 ? Color.red() : Color.blue();
-  stack.addSpacer();
-};
-
-// ✅ 创建组件
-const createWidget = async (data) => {
-  const { account, credit_balance } = data.results[0];
-  const family = config.widgetFamily === 'small' ;
-  
-  const widget = new ListWidget();
-  widget.setPadding(15, 15, 15, 15);
-  widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
-  widget.backgroundImage = await getCacheData('glass', imageUrl, 'img');
-  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
-  mainStack.addSpacer(5);
-  
-  const topStack = mainStack.addStack();
-  topStack.layoutHorizontally();
-  topStack.centerAlignContent();
-  topStack.addSpacer(6.5);
-  
-  const columnStack = topStack.addStack();
-  columnStack.size = new Size(7, 23);
-  columnStack.cornerRadius = 50;
-  columnStack.backgroundColor = new Color(Number(credit_balance) < 30000 ? '#8B5FF4' : '#00C400');
-  topStack.addSpacer(10);
-  
-  if (!family) {
-    const missText = missLimit > 0 
-      ? `，${missLimit} 期未中强制投` 
-      : `，可用 ${credit_balance}`;
-    const nameText = topStack.addText(`账号 ${account}${missText}`);
-    nameText.font = Font.mediumSystemFont(16);
-    nameText.textOpacity = 0.9
-    topStack.addSpacer(10);
-    
-    const barStack = topStack.addStack();
-    barStack.setPadding(2, 7, 2, 7);
-    barStack.cornerRadius = 7;
-    barStack.backgroundColor = data.total < 0 ? Color.red() : Color.green();
-    const statusText = barStack.addText(`${data.total}`);
-    statusText.font = Font.boldSystemFont(14);
-    statusText.textColor = Color.white();
-  }
-  
-  if (family) {
-    const dateText = topStack.addText(`${missLimit} 期未中强投`);
-    dateText.font = Font.systemFont(16);
-    dateText.textOpacity = 0.95;
-  }
-  
-  mainStack.addSpacer();
-  const stackItems = widget.addStack();
-  const count = family ? 1 : 2;
-  const { add } = await getRank(stackItems, { column: count });
-  const max = 5 * count;
-  for (let i = 0; i < max; ++i) {
-    const item = data.results[i];
-    if (!item) continue;
-    await add(stack => addItem(stack, item, max, i + 1, family));
-  };
-  
-  if (config.runsInApp) {
-    widget.presentMedium()
-  } else {
-    Script.setWidget(widget);
-    Script.complete();
-  }
-};
-
-// 🈯️ 错误组件
-const createErrorWidget = () => {
-  const widget = new ListWidget();
-  const text = widget.addText('某账号未写入规则');
-  text.font = Font.systemFont(17);
-  text.centerAlignText();
-  Script.setWidget(widget);
+  return { todayList, results, total };
 };
 
 // 🈯️ 主程序
@@ -485,11 +384,155 @@ const showDateMenu = async () => {
   return runReplay(record.data, record.date, lastRow);
 };
 
+// 🈯️ 小组件排列逻辑
+const getRank = async (stack, { column }) => {
+  let i = -1;
+  const rows = [];
+  const add = async (fn) => {
+    i++;
+    if (i % column === 0) {
+      stack.layoutVertically();
+      rows.push(stack.addStack());
+    }
+    const r = Math.floor(i / column);
+    await fn(rows[r]);
+  };
+  return { add };
+};
+
+const addItem = async (widget, item, max, index, large, small) => {
+  const stack = widget.addStack();
+  stack.layoutHorizontally();
+  stack.centerAlignContent();
+  stack.size = new Size(0, large ? 22 : 20);
+
+  const indexStack = stack.addStack();
+  indexStack.size = new Size(large ? 20 : 19, 0);
+  if (large) {
+    const indexText = indexStack.addText(item.hit ? '✅' : (item.action === '停' ? '⏸️' : '🚫'));
+    indexText.font = Font.boldSystemFont(15);
+  } else {
+    const indexText = indexStack.addText(String(index));
+    indexText.font = Font.boldSystemFont(15);
+    const textColor = index <= 3 
+      ? '#FF0000' 
+      : index <= 6
+      ? small ? '#00C400' : '#FCA100' 
+      : '#00C400';
+    indexText.textColor = new Color(textColor);
+  }
+  
+  stack.addSpacer(5);
+  const dateTime = large ?  item.time : item.date.slice(5);
+  const titleText = stack.addText(dateTime);
+  titleText.font = Font.mediumSystemFont(15);
+  titleText.textColor = Color.dynamic(new Color('000000', 0.8), new Color('FFFFFF', 0.9));
+  stack.addSpacer(8);
+  
+  const profitText = stack.addText(String(item.profit));
+  profitText.font = Font.mediumSystemFont(15.5);
+  profitText.textColor = large && item.forced 
+    ? new Color('#FF6800') 
+    : large 
+      ? Color.blue() 
+      : (item.profit < 0 ? Color.red() : Color.blue());
+  
+  if (item.forced) {
+    stack.addSpacer(6);
+    const actionText = stack.addText(item.action);
+    actionText.font = Font.mediumSystemFont(14);
+    actionText.textColor = new Color('#FF4800');
+  }
+  stack.addSpacer();
+};
+
+// ✅ 创建组件
+const createWidget = async (data) => {
+  const { account, credit_balance } = data.results[0];
+  const family = config.widgetFamily;
+  const small = family === 'small';
+  const large = family === 'large';
+  
+  const widget = new ListWidget();
+  widget.setPadding(15, 15, 15, 15);
+  widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
+  widget.backgroundImage = await getCacheData('glass', imageUrl, 'img');
+  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+  const mainStack = widget.addStack();
+  mainStack.layoutVertically();
+  mainStack.addSpacer(5);
+  
+  const topStack = mainStack.addStack();
+  topStack.layoutHorizontally();
+  topStack.centerAlignContent();
+  topStack.addSpacer(6.5);
+  
+  const columnStack = topStack.addStack();
+  columnStack.size = new Size(7, 23);
+  columnStack.cornerRadius = 50;
+  columnStack.backgroundColor = new Color(Number(credit_balance) < 30000 ? '#8B5FF4' : '#00C400');
+  topStack.addSpacer(10);
+  
+  if (!small) {
+    const missText = missLimit > 0 
+      ? `，${missLimit} 期未中强制投` 
+      : `，可用 ${credit_balance}`;
+    const nameText = topStack.addText(`账号 ${account}${missText}`);
+    nameText.font = Font.mediumSystemFont(16);
+    nameText.textOpacity = 0.9
+    topStack.addSpacer(10);
+    
+    const barStack = topStack.addStack();
+    barStack.setPadding(2, 7, 2, 7);
+    barStack.cornerRadius = 7;
+    barStack.backgroundColor = data.total < 0 ? Color.red() : Color.green();
+    const statusText = barStack.addText(`${data.total}`);
+    statusText.font = Font.boldSystemFont(14);
+    statusText.textColor = Color.white();
+  }
+  
+  if (small) {
+    const dateText = topStack.addText(`${missLimit} 期未中强投`);
+    dateText.font = Font.systemFont(16);
+    dateText.textOpacity = 0.95;
+  }
+  mainStack.addSpacer();
+  
+  const stackItems = widget.addStack();
+  const count = small ? 1 : 2;
+  const line = large ? 14 : 5;
+  const items = large ? 'todayList' : 'results';
+  const { add } = await getRank(stackItems, { column: count });
+  const max = line * count;
+  for (let i = 0; i < max; ++i) {
+    const item = data[items][i];
+    if (!item) continue;
+    await add(stack => addItem(stack, item, max, i + 1, large, small));
+  };
+  
+  if (config.runsInApp) {
+    widget.presentMedium()
+  } else {
+    Script.setWidget(widget);
+    Script.complete();
+  }
+};
+
+// 🈯️ 错误组件
+const createErrorWidget = () => {
+  const widget = new ListWidget();
+  const text = widget.addText('某账号未写入规则');
+  text.font = Font.systemFont(17);
+  text.centerAlignText();
+  Script.setWidget(widget);
+};
+
 await (async () => {
   if (config.runsInApp) {
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
+    console.log(finalResults)
     if (!finalResults.results.length) {
       return await createErrorWidget();
     }
