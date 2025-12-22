@@ -98,6 +98,7 @@ const isHit = (row, bodies) => {
 };
 
 const sliceByTime = (rows, targetTime, field = "period_datetime") => {
+  if (!rows?.length) return;
   const index = rows.findIndex(
     item => (item[field]?.split(" ")[1] || "").slice(0, 5) === targetTime
   );
@@ -183,7 +184,7 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
       return;
     }
 
-    /** 正常 / 强制 / missLimit = 1 */
+    /** 正常 / 强制 */
     const isForce = forceBet && !canBet;
     forceBet = false;
     canBet = true;
@@ -261,8 +262,8 @@ const getBetBody = async (drawRows) => {
 
 // ✅ 回放主函数 ( 预览 )
 const runReplay = async (drawRows, date, lastRow) => {
-  const { bodies, rows } = await getBetBody(drawRows);
-  if (!bodies.length) return
+  const { bodies, rows } = await getBetBody(drawRows) || {};
+  if (!bodies?.length) return
   
   while(true){
     const picked = await chooseFastPick(bodies);
@@ -430,7 +431,7 @@ const addItem = async (widget, item, max, index, large, small) => {
   stack.addSpacer(8);
   
   const profitText = stack.addText(String(item.profit));
-  profitText.font = Font.mediumSystemFont(15.5);
+  profitText.font = Font.mediumSystemFont(15);
   profitText.textColor = large && item.forced 
     ? new Color('#FF6800') 
     : large 
@@ -511,11 +512,24 @@ const createWidget = async (data) => {
   }
 };
 
+// 🈯️ 错误组件
+const createErrorWidget = () => {
+  const widget = new ListWidget();
+  const text = widget.addText('某账号未写入规则');
+  text.font = Font.systemFont(17);
+  text.centerAlignText();
+  Script.setWidget(widget);
+};
+
 await (async () => {
   if (config.runsInApp) {
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
+    console.log(finalResults)
+    if (!finalResults.results.length) {
+      return await createErrorWidget();
+    }
     await createWidget(finalResults);
   }
 })();
