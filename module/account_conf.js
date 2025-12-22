@@ -74,11 +74,6 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
   }
 };
 
-const autoUpdate = async () => {
-  const script = await new Request('22').loadString();
-  fm.writeString(module.filename, script);
-};
-
 // ✅ 通用 UI / 弹窗 
 const generateAlert = async (title, options, destructive = false) => {
   const alert = new Alert();
