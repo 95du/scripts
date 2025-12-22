@@ -518,24 +518,11 @@ const createWidget = async (data) => {
   }
 };
 
-// 🈯️ 错误组件
-const createErrorWidget = () => {
-  const widget = new ListWidget();
-  const text = widget.addText('某账号未写入规则');
-  text.font = Font.systemFont(17);
-  text.centerAlignText();
-  Script.setWidget(widget);
-};
-
 await (async () => {
   if (config.runsInApp) {
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
-    console.log(finalResults)
-    if (!finalResults.results.length) {
-      return await createErrorWidget();
-    }
     await createWidget(finalResults);
   }
 })();
