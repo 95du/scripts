@@ -56,6 +56,11 @@ const getBoxjsData = async (key = 'bet_data') => {
   } catch {}
 };
 
+const autoUpdate = async () => {
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
+  fm.writeString(module.filename, script);
+};
+
 // ✅ 保存 BoxJs 数据
 const saveBoxJsData = async (value, key = 'bet_data') => {
   const req = new Request('https://boxjs.com/api/save');
@@ -70,7 +75,7 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 };
 
 const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
+  const script = await new Request('22').loadString();
   fm.writeString(module.filename, script);
 };
 
@@ -268,6 +273,7 @@ const isHit = (row, bodies) => {
 };
 
 const sliceByTime = (rows, targetTime, field = "draw_datetime") => {
+  if (!rows?.length) return;
   const index = rows.findIndex(
     item => (item[field]?.split(" ")[1] || "").slice(0, 5) === targetTime
   );
@@ -400,6 +406,7 @@ const chooseFastPick = async (bodies) => {
 const runReplay = async (selected, conf, drawRows, date, lastRow) => {
   const section = conf.custom || {};
   const rows = sliceByTime(drawRows, "08:05");
+  if (!rows?.length) return;
   const bodies = section?.fastPick;
   if (!bodies?.length) {
     return await viewRule({
@@ -554,7 +561,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   const message = list
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
     .join('\n');
-
+    
   const idx = await presentSheetMenu(message, list.map((_, i) => `规则 ${i + 1}`));
   if (idx === -1) return;
   const rule = list[idx];
@@ -788,7 +795,7 @@ const configMenu = async (betData, selected, conf) => {
 
 // ✅ 主菜单入口
 const presentMenu = async () => {
-  const betData = await getBoxjsData();
+  let betData = await getBoxjsData();
   if (!Array.isArray(betData)) {
     betData = [];
   }
