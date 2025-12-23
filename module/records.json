@@ -9,9 +9,5 @@
     "handleOnePositioning_2",
     "handleTwoPositioning_1",
     "profitPush"
-  ],
-  "notifyConfig": {
-    "ä¸¤å­å®ä½çäºæ±æ» 4231": false
-  },
-  "isReplay": false
+  ]
 }
