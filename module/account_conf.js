@@ -480,11 +480,13 @@ const parseBetBody = (body) => {
   const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
   const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
   const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
+  const numCount = bet_number.split(",").length || '';
   return { 
     bet_number, 
     bet_log, 
     bet_money,
-    number_type 
+    number_type,
+    numCount
   }
 };
 
@@ -551,7 +553,10 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
     .join('\n');
     
-  const idx = await presentSheetMenu(message, list.map((_, i) => `规则 ${i + 1}`));
+  const idx = await presentSheetMenu(
+    message,
+    list.map((b, i) => `规则 ${i + 1} - ${parseBetBody(b).numCount}组`)
+  );
   if (idx === -1) return;
   const rule = list[idx];
   const { bet_log } = parseBetBody(rule);
