@@ -1,1 +1,12 @@
-[object Object]
+{
+  "disabledTasks": [
+    "dailyPush",
+    "handleOddEven",
+    "handleBigSmall",
+    "handelOnePositioning",
+    "handelTwoPositioning",
+    "handleOnePositioning_1",
+    "handleOnePositioning_2",
+    "handleTwoPositioning_1",
+  ]
+}
