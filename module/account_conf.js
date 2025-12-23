@@ -293,7 +293,7 @@ const replayNormal = (rows, bodies, water = 9700) => {
     if (hit) {
       win++; score++;
       totalProfit += prize;
-      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
+      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】   ${totalProfit}`);
     } else {
       lose++; score--;
       totalProfit -= cost;
@@ -329,7 +329,7 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
 
     /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
-      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期 【 ${num} 】 ${hit ? '投 →' : '停'}`);
+      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
       if (hit) {
         canBet = true;
         missCount = 0;
@@ -360,7 +360,7 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
     }
 
     /** 输出记录 */
-    tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期 【 ${num} 】 (投)${isForce ? ' ⚠️' : ''} ${totalProfit}`);
+    tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期   【 ${num} 】   投   ${totalProfit} ${isForce ? ' ⚠️' : ''}`);
   });
 
   return {
@@ -382,8 +382,8 @@ const chooseFastPick = async (bodies) => {
   const alert = new Alert();
   alert.message = filtered.map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`).join('\n');
   filtered.forEach((b, i) => {
-    const { bet_number } = parseBetBody(b);
-    alert.addAction(`规则 ${i + 1} - ${bet_number.split(',').length} 组`);
+    const { bet_number, numCount } = parseBetBody(b);
+    alert.addAction(`规则 ${i + 1} - ${numCount} 组`);
   });
   alert.addCancelAction('取消');
   const idx = await alert.presentSheet();
