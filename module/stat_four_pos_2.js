@@ -322,16 +322,17 @@ const runReplayCollect = async (rows, date, lastRow, account, fastPick) => {
 };
 
 const collectAllRecords = async () => {
-  const [records, draw, accent] = await Promise.all([
+  const [list, draw, accent] = await Promise.all([
     getBoxjsData('record_rows'),
     getBoxjsData('agent_data'),
     pickStrategyOnce()
   ]);
 
-  if (!Array.isArray(records) || !records.length || !accent || !draw) {
+  if (!Array.isArray(list) || !list.length || !accent || !draw) {
     return { results: [], total: 0 };
   }
   
+  const records = list.slice(0, 10);
   const { account, fastPick } = accent;
   const rows = sliceByTime(draw.drawRows, "08:05");
   const lastRow = records[0]?.data?.[0]
