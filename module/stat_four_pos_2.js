@@ -8,10 +8,11 @@
  * 设置为 1：不论中或不中，每期都投
  * 设置为 3：连续未中 3 期后自动投注
  */
-const missLimit = 4
+const missLimit = 3
 
 
 /** =======💜 统计盈亏 💜======= */
+
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), 'lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
@@ -125,7 +126,7 @@ const replayNormal = (rows, bodies) => {
     if (hit) {
       win++; score++;
       totalProfit += prize;
-      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
+      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】   ${totalProfit}`);
     } else {
       lose++; score--;
       totalProfit -= cost;
@@ -163,7 +164,7 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
     /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
       if (!isToday) {
-        tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期 【 ${num} 】 ${hit ? '投 →' : '停'}`);
+        tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
       } else {
         todayList.push({
           time,
@@ -210,7 +211,7 @@ const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
 
     /** 输出记录 */
     if (!isToday) {
-      tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期 【 ${num} 】 (投)${isForce ? ' ⚠️' : ''} ${totalProfit}`);
+      tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期   【 ${num} 】   投   ${totalProfit} ${isForce ? ' ⚠️' : ''}`);
     } else {
       todayList.push({
         time,
