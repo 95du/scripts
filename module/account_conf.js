@@ -546,7 +546,7 @@ const kuaixuan = async (betData, selected) => {
     injectListener();
   };
   injectListener();
-  await webView.present();
+  await webView.present(true);
 };
 
 /** =======💙 三级菜单 💙======= */
@@ -644,6 +644,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
+    c.custom.isReversed = !!c.custom.fastPick?.length;
   });
   await saveBoxJsData(betData);
 };
