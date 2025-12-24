@@ -234,9 +234,13 @@ const buildMessage = (acc, conf) => {
   const section = conf.custom || {};
   const taskStatus = section?.runTask ? '已开启' : '已关闭';
   const hasRule = section.hasRule ? '已设置' : '未设置';
+  const isReversed = section.isReversed ? '已反转' : '未反转';
+  const changeLog = section.changeLog ? '已修改' : '未修改';
   return `账号 ${acc.member_account}
 任务状态 【 ${taskStatus} 】
 任务规则 【 ${hasRule} 】
+反转规则 【 ${isReversed} 】
+日志内容 【 ${changeLog} 】
 赔率  ${section.water}
 强制投注  ${section.missLimit}
 全局倍数  ${section.globalMultiplier}
@@ -481,12 +485,14 @@ const parseBetBody = (body) => {
   const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
   const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
   const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
+  const guid = decoded.match(/guid=([^&]*)/)?.[1] || 0;
   const numCount = bet_number.split(",").length || '';
   return { 
     bet_number, 
     bet_log, 
     bet_money,
     number_type,
+    guid,
     numCount
   }
 };
@@ -546,6 +552,73 @@ const kuaixuan = async (betData, selected) => {
 
 /** =======💙 三级菜单 💙======= */
 
+// 过滤号码
+const getRemainingBySet = (excludes = []) => {
+  const excludeSet = new Set(
+    excludes.map(n => String(n).padStart(4, '0'))
+  );
+  const ALL_NUMBERS = Array.from({ length: 10000 }, (_, i) =>
+    String(i).padStart(4, '0')
+  );
+  return ALL_NUMBERS.filter(n => !excludeSet.has(n));
+};
+
+// 替换请求体参数
+const replaceParams = (bodyStr, replaceMap) => {
+  let result = bodyStr;
+  for (const key in replaceMap) {
+    const reg = new RegExp(`(${key}=)[^&]*`, "g");
+    result = result.replace(reg, `$1${encodeURIComponent(replaceMap[key])}`)
+  }
+  return result;
+};
+
+// 🆎 反转规则
+const reverseRule = async (betData, selected, conf) => {
+  const list = conf.custom?.fastPick;
+  if (!list?.length) return;
+  const alert = new Alert();
+  alert.title = '请选择要反转的规则';
+  alert.message = list
+    .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
+    .join('\n');
+
+  list.forEach((b, i) => {
+    const parsed = parseBetBody(b);
+    const action = `规则 ${i + 1} - ${parsed.numCount}组`;
+    parsed.guid === '1' ? alert.addDestructiveAction(action) : alert.addAction(action);
+  });
+
+  alert.addCancelAction('取消');
+  const idx = await alert.presentSheet();
+  if (idx === -1) return;
+  const rule = list[idx];
+  const parsed = parseBetBody(rule);
+  const isReversed = parsed.guid !== '1'; // 如果guid是1，表示已经反转过
+  const excludes = parsed.bet_number.split(',');
+  const remain = getRemainingBySet(excludes);
+
+  if (!remain.length) {
+    await generateAlert('反转后号码为空，操作已取消 ⚠️', ['完成']);
+    return;
+  }
+
+  const confirm = await generateAlert(
+    `确定对以下规则执行【反转规则】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`,
+    ['取消', '确定'], true
+  );
+  if (confirm !== 1) return;
+  await updateConfig(betData, selected, c => {
+    const newfastPick = replaceParams(rule, {
+      bet_number: remain.join(','),
+      guid: isReversed ? 1 : 0
+    });
+    c.custom.isReversed = !c.custom.isReversed;
+    c.custom.fastPick.splice(idx, 1, newfastPick);
+  });
+  await saveBoxJsData(betData);
+};
+
 // 🆎 规则操作（删除 / 暂停 / 恢复）
 const handleRuleAction = async (betData, selected, conf, { from, to, confirmText }) => {
   const list = conf.custom?.[from];
@@ -560,7 +633,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   );
   if (idx === -1) return;
   const rule = list[idx];
-  const { bet_log } = parseBetBody(rule);
+  const { bet_number, bet_log } = parseBetBody(rule);
   const confirm = await generateAlert(
     `${confirmText}\n${bet_log}`,
     ['取消', '确定'], true
@@ -603,16 +676,20 @@ const manageRule = async (betData, selected, conf) => {
   const { fastPick = [], cutRule = [] } = conf.custom || {};
   const opts = [];
   if (fastPick.length) {
-    opts.push({ name: '删除规则', action: removeRule }, { name: '暂停规则', action: cutRuleAction });
+    opts.push(
+      { name: '删除规则', action: removeRule },
+      { name: '暂停规则', action: cutRuleAction },
+      { name: '反转规则', action: reverseRule }
+    );
   }
   if (cutRule.length) {
     opts.push({ name: '恢复规则', action: restoreRule });
   }
-  if (!opts.length) {
-    await generateAlert('当前没有可管理的规则 ⚠️', ['完成']);
-    return;
-  }
-  const idx = await presentSheetMenu(buildMessage(selected, conf), opts.map(o => o.name));
+  if (!opts.length) return;
+  const idx = await presentSheetMenu(
+    buildMessage(selected, conf),
+    opts.map(o => o.name)
+  );
   if (idx === -1) return;
   await opts[idx].action(betData, selected, conf);
   await refreshReopen(betData, selected, conf, manageRule);
@@ -624,6 +701,7 @@ const setTaskType = async (betData, selected, conf) => {
   const opts = [
     { name: '账号密码', id: 'account' },
     { name: '设置赔率', id: 'water' },
+    { name: '修改日志', id: 'changeLog' },
     { name: '写入规则', id: 'writeRule' },
     { name: '查看规则', id: 'viewRule' },
     { name: '管理规则', id: 'manageRule' }
@@ -643,6 +721,17 @@ const setTaskType = async (betData, selected, conf) => {
       const val = Number(water?.[0]);
       const waterValue = Number.isInteger(val) && val >= 0 ? val : conf.custom.water;
       await updateConfig(betData, selected, c => { c.custom.water = waterValue });
+      break;
+    }
+    case 'changeLog': {
+      const changeLog = await collectInputs(
+        '修改投注日志', 
+        `🔥 内容在会员与代理端均可见 🔥${conf.custom?.changeLog ? '\n' + conf.custom.changeLog : ''}`, 
+        [{ hint: '输入任意内容', value: conf.custom.changeLog }]
+      );
+      if (changeLog.length) {
+        await updateConfig(betData, selected, c => { c.custom.changeLog = changeLog?.[0] });
+      }
       break;
     }
     case 'writeRule': 
