@@ -289,7 +289,6 @@ const runReplay = async (drawRows, date, lastRow) => {
 \n${sim.lines.join('\n')}`;
     await QuickLook.present(output);
     await QuickLook.present(simulate);
-    autoUpdate();
   }
   await showDateMenu();
 };
@@ -526,6 +525,7 @@ const createErrorWidget = () => {
 
 await (async () => {
   if (config.runsInApp) {
+    autoUpdate();
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
