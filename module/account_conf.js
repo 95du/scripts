@@ -546,7 +546,7 @@ const kuaixuan = async (betData, selected) => {
     injectListener();
   };
   injectListener();
-  await webView.present(true);
+  await webView.present();
 };
 
 /** =======💙 三级菜单 💙======= */
