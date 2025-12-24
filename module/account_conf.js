@@ -234,7 +234,7 @@ const buildMessage = (acc, conf) => {
   const section = conf.custom || {};
   const taskStatus = section?.runTask ? '已开启' : '已关闭';
   const hasRule = section.hasRule ? '已设置' : '未设置';
-  const isReversed = section.isReversed ? '已反转' : '未反转';
+  const isReversed = section.fastPick.some(b => Number(parseBetBody(b).guid) === 1) ? '已反转' : '未反转';
   const changeLog = section.changeLog ? '已修改' : '未修改';
   return `账号 ${acc.member_account}
 任务状态 【 ${taskStatus} 】
@@ -611,7 +611,6 @@ const reverseRule = async (betData, selected, conf) => {
       bet_number: remain.join(','),
       guid: isReversed ? 1 : 0
     });
-    c.custom.isReversed = !c.custom.isReversed ?? false;
     c.custom.fastPick.splice(idx, 1, newfastPick);
   });
   await saveBoxJsData(betData);
@@ -644,7 +643,6 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
-    c.custom.isReversed = !!c.custom.fastPick?.length;
   });
   await saveBoxJsData(betData);
 };
