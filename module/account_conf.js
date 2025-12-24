@@ -425,7 +425,6 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
 \n${sim.lines.join('\n')}`;
     await QuickLook.present(output);
     await QuickLook.present(simulate);
-    autoUpdate();
   }
   await statMenu(selected, conf);
 };
@@ -578,7 +577,7 @@ const reverseRule = async (betData, selected, conf) => {
   const list = conf.custom?.fastPick;
   if (!list?.length) return;
   const alert = new Alert();
-  alert.title = '请选择要反转的规则';
+  alert.title = '【 请选择要反转的规则 】';
   alert.message = list
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
     .join('\n');
@@ -588,8 +587,7 @@ const reverseRule = async (betData, selected, conf) => {
     const action = `规则 ${i + 1} - ${parsed.numCount}组`;
     parsed.guid === '1' ? alert.addDestructiveAction(action) : alert.addAction(action);
   });
-
-  alert.addCancelAction('取消');
+  alert.addCancelAction('返回');
   const idx = await alert.presentSheet();
   if (idx === -1) return;
   const rule = list[idx];
@@ -604,7 +602,7 @@ const reverseRule = async (betData, selected, conf) => {
   }
 
   const confirm = await generateAlert(
-    `确定对以下规则执行【反转规则】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`,
+    `确定对以下规则执行【 反转规则 】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`,
     ['取消', '确定'], true
   );
   if (confirm !== 1) return;
@@ -899,4 +897,5 @@ const presentMenu = async () => {
   if (conf) await configMenu(betData, selected, conf);
 };
 
+autoUpdate();
 await presentMenu();
