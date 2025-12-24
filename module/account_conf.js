@@ -611,7 +611,7 @@ const reverseRule = async (betData, selected, conf) => {
       bet_number: remain.join(','),
       guid: isReversed ? 1 : 0
     });
-    c.custom.isReversed = !c.custom.isReversed;
+    c.custom.isReversed = !c.custom.isReversed ?? false;
     c.custom.fastPick.splice(idx, 1, newfastPick);
   });
   await saveBoxJsData(betData);
