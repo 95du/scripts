@@ -19,17 +19,32 @@ if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
 const imageUrl = `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png`;
 const boxjsApi = 'http://boxjs.com/query/data';
+const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
 const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/stat_four_pos_2.js').loadString();
+  const script = await new Request(`${github}/stat_four_pos_2.js`).loadString();
   fm.writeString(module.filename, script);
 };
+autoUpdate();
 
 const getBoxjsData = async (key = 'bet_data') => {
   try {
     const data = await new Request(`${boxjsApi}/${key}`).loadJSON();
     return JSON.parse(data.val);
   } catch {}
+};
+
+// ✅ 保存 BoxJs 数据
+const saveBoxJsData = async (value, key = 'bet_data') => {
+  const req = new Request('https://boxjs.com/api/save');
+  req.method = 'POST';
+  req.headers = { 'Content-Type': 'application/json' };
+  req.body = JSON.stringify([{ key, val: JSON.stringify(value) }]);
+  try {
+    return await req.loadJSON();
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 // ✅ 缓存文件
@@ -370,8 +385,11 @@ const collectAllRecords = async () => {
 // 🈯️ 主程序
 const showDateMenu = async () => {
   const data = await getCacheData('record_rows', `${boxjsApi}/record_rows`, 'json', 4);
-  const list = JSON.parse(data);
-  if (!Array.isArray(list) || !list.length) return;
+  let list = JSON.parse(data || '[]');
+  if (!Array.isArray(list) || !list.length) {
+    list = await new Request(`${github}/records.json`).loadJSON()
+    await saveBoxJsData(list, 'record_rows');
+  }
 
   const records = list.slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
@@ -381,7 +399,7 @@ const showDateMenu = async () => {
     ? records.map(r => r.date)
     : [today, ...records.map(r => r.date)];
 
-  const idx = await presentSheetMenu('选择日期查看记录', titles, today);
+  const idx = await presentSheetMenu(null, titles, today);
   if (idx === -1) return;
   if (!hasToday && idx === 0) {
     const { drawRows } = await getBoxjsData('agent_data') || {};
@@ -525,7 +543,6 @@ const createErrorWidget = () => {
 
 await (async () => {
   if (config.runsInApp) {
-    autoUpdate();
     await showDateMenu();
   } else {
     const finalResults = await collectAllRecords();
