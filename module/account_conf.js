@@ -8,21 +8,6 @@ if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
 // ✅ 默认配置
 const defaultConfig = {
-  start: '08:00',
-  end: '05:00',
-  useOpposite: false,
-  runTask: true,
-  rule: false,
-  lastScheme: null,
-  followTrend: null,
-  reverseTypes: [],
-  reversePositions: [],
-  excludeTypes: [],
-  excludePositions: [],
-  types: ['56789', '01234', '13579', '02468', '12890', '34567'],
-  multiplier: [1, 3, 2, 4],
-  globalMultiplier: 1,
-  stopLossLimit: 50,
   custom: {
     start: '08:00',
     end: '05:00',
@@ -52,6 +37,7 @@ const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
   fm.writeString(module.filename, script);
 };
+autoUpdate();
 
 // ✅ 获取 BoxJs 数据
 const getBoxjsData = async (key = 'bet_data') => {
@@ -75,9 +61,10 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 };
 
 // ✅ 通用 UI / 弹窗 
-const generateAlert = async (title, options, destructive = false) => {
+const generateAlert = async (title, message, options, destructive = false) => {
   const alert = new Alert();
   alert.title = title;
+  alert.message = message;
   options.forEach((opt, i) =>
     destructive && i === 1 ? alert.addDestructiveAction(opt) : alert.addAction(opt)
   );
@@ -442,7 +429,7 @@ const statMenu = async (selected, conf) => {
     ? records.map(r => r.date)
     : [today, ...records.map(r => r.date)];
 
-  const idx = await presentSheetMenu('选择日期', titles, today);
+  const idx = await presentSheetMenu(null, titles, today);
   if (idx === -1) return;
 
   if (!hasToday && idx === 0) {
@@ -597,13 +584,13 @@ const reverseRule = async (betData, selected, conf) => {
   const remain = getRemainingBySet(excludes);
 
   if (!remain.length) {
-    await generateAlert('反转后号码为空，操作已取消 ⚠️', ['完成']);
+    await generateAlert('反转后号码为空，操作已取消 ⚠️', null, ['完成']);
     return;
   }
 
   const confirm = await generateAlert(
-    `确定对以下规则执行【 反转规则 】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`,
-    ['取消', '确定'], true
+    `确定对以下规则执行【 反转规则 】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`, 
+    null, ['取消', '确定'], true
   );
   if (confirm !== 1) return;
   await updateConfig(betData, selected, c => {
@@ -632,7 +619,8 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   const rule = list[idx];
   const { bet_number, bet_log } = parseBetBody(rule);
   const confirm = await generateAlert(
-    `${confirmText}\n${bet_log}`,
+    confirmText,
+    bet_log,
     ['取消', '确定'], true
   );
   if (confirm !== 1) return;
@@ -757,13 +745,13 @@ const manageAccount = async (betData, selected) => {
   if (acc.account && acc.password) {
     const confirm = await generateAlert(
       `账号：${acc.account}\n密码：${acc.password}`,
-      ['取消', '删除'], true
+      null, ['取消', '删除'], true
     );
     if (confirm === 1) {
       delete acc.account;
       delete acc.password;
       await saveBoxJsData(betData);
-      await generateAlert(`已删除账号和密码 ✅`, ['完成']);
+      await generateAlert(`已删除账号和密码 ✅`, null, ['完成']);
     }
     return;
   }
@@ -783,7 +771,7 @@ const manageAccount = async (betData, selected) => {
   acc.account = account.trim();
   acc.password = password.trim();
   await saveBoxJsData(betData);
-  await generateAlert(`保存成功 ✅\n账号：${acc.account}\n密码：${acc.password}`, ['完成']);
+  await generateAlert(`保存成功 ✅\n账号：${acc.account}\n密码：${acc.password}`, null, ['完成']);
 };
 
 // ✅ 显示不同倍数设置表单
@@ -823,7 +811,7 @@ const configMenu = async (betData, selected, conf) => {
 
   switch (choice.id) {
     case 'delAccount': {
-      const confirm = await generateAlert(`${choice.name} ${selected.member_account}❓`, ['取消', '确定'], true);
+      const confirm = await generateAlert(`${choice.name} ${selected.member_account}❓`, null,  ['取消', '确定'], true);
       if (confirm === 1) {
         betData = betData.filter(acc => acc.member_account !== selected.member_account);
         return await saveBoxJsData(betData);
@@ -832,7 +820,7 @@ const configMenu = async (betData, selected, conf) => {
     }
     
     case 'reset': {
-      const confirm = await generateAlert(`是否${choice.name}配置❓`, ['取消', '确定'], true);
+      const confirm = await generateAlert(`是否${choice.name}配置❓`, null, ['取消', '确定'], true);
       if (confirm === 1) {
         await updateConfig(betData, selected, c => { c.custom = defaultConfig.custom });
         await saveBoxJsData(betData);
@@ -896,5 +884,4 @@ const presentMenu = async () => {
   if (conf) await configMenu(betData, selected, conf);
 };
 
-autoUpdate();
 await presentMenu();
