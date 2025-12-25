@@ -1,10 +1,13 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: light-gray; icon-glyph: user-astronaut;
-const isDev = false
+
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), 'lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
+
+const isDev = false
+const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
 // ✅ 默认配置
 const defaultConfig = {
@@ -34,10 +37,39 @@ const defaultData = {
 }
 
 const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/module/account_conf.js').loadString();
+  const script = await new Request(`${github}/account_conf.js`).loadString();
   fm.writeString(module.filename, script);
 };
 autoUpdate();
+
+// ✅ 缓存文件
+const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
+  const path = fm.joinPath(basePath, name);
+  const isExpired = () => cacheHours !== undefined && fm.fileExists(path) &&
+    (Date.now() - fm.creationDate(path).getTime()) / 36e5 > cacheHours;
+  const read = () => {
+    if (!fm.fileExists(path) || isExpired()) return null;
+    if (type === 'img') return fm.readImage(path);
+    if (type === 'json') return JSON.parse(fm.readString(path));
+    return fm.readString(path);
+  };
+  const write = (data) => {
+    if (type === 'img') fm.writeImage(path, data);
+    else fm.writeString(path, type === 'json' ? JSON.stringify(data) : data);
+  };
+  return (async () => {
+    const cached = read();
+    if (cached) return cached;
+    const req = new Request(url);
+    if (type === 'img') data = await req.loadImage();
+    else if (type === 'json') {
+      const res = await req.loadJSON();
+      data = res?.val ?? res;
+    } else data = await req.loadString();
+    if (data) write(data);
+    return data;
+  })();
+};
 
 // ✅ 获取 BoxJs 数据
 const getBoxjsData = async (key = 'bet_data') => {
@@ -204,6 +236,26 @@ const processDataText = (data, selected) => {
     });
     return { title, content: text.trim() };
   });
+};
+
+// ✅ 解析 Body 参数
+const parseBetBody = (body) => {
+  let decoded = '';
+  try { decoded = decodeURIComponent(body); } catch { decoded = body || ''; }
+  const bet_number = decoded.match(/bet_number=([^&]*)/)?.[1] || '';
+  const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
+  const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
+  const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
+  const guid = decoded.match(/guid=([^&]*)/)?.[1] || 0;
+  const numCount = bet_number.split(",").length || '';
+  return { 
+    bet_number, 
+    bet_log, 
+    bet_money,
+    number_type,
+    guid,
+    numCount
+  }
 };
 
 // ✅ 更新配置
@@ -418,9 +470,13 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
 
 // ✅ 统计菜单
 const statMenu = async (selected, conf) => {
-  const list = await getBoxjsData('record_rows');
-  if (!Array.isArray(list) || !list.length) return;
-
+  const data = await getCacheData('record_rows', `http://boxjs.com/query/data/record_rows`, 'json', 4);
+  let list = JSON.parse(data || '[]');
+  if (!Array.isArray(list) || !list.length) {
+    list = await new Request(`${github}/records.json`).loadJSON()
+    await saveBoxJsData(list, 'record_rows');
+  }
+  
   const records = list.slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = records[0]?.date === today;
@@ -446,43 +502,6 @@ const statMenu = async (selected, conf) => {
 
 /** ========💜 写入规则 💜======== */
 
-// ✅ 缓存文件
-const getCacheData = async (name, url, cacheHours = 24) => {
-  const path = fm.joinPath(basePath, name);
-  if (fm.fileExists(path)) {
-    const createTime = fm.creationDate(path).getTime();
-    const hoursPassed = (Date.now() - createTime) / (60 * 60 * 1000);
-    if (hoursPassed <= cacheHours) {
-      return fm.readString(path);
-    } else {
-      fm.remove(path);
-    }
-  }
-  const res = await new Request(url).loadString();
-  if (res) fm.writeString(path, res);
-  return res;
-};
-
-// ✅ 解析 Body 参数
-const parseBetBody = (body) => {
-  let decoded = '';
-  try { decoded = decodeURIComponent(body); } catch { decoded = body || ''; }
-  const bet_number = decoded.match(/bet_number=([^&]*)/)?.[1] || '';
-  const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
-  const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
-  const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
-  const guid = decoded.match(/guid=([^&]*)/)?.[1] || 0;
-  const numCount = bet_number.split(",").length || '';
-  return { 
-    bet_number, 
-    bet_log, 
-    bet_money,
-    number_type,
-    guid,
-    numCount
-  }
-};
-
 const saveBody = (arr, event) => {
   const incoming = parseBetBody(event);
   const idx = arr.findIndex(item => parseBetBody(item).bet_log === incoming.bet_log);
@@ -497,8 +516,8 @@ const saveBody = (arr, event) => {
 
 // ✅ 运行快选 HTML
 const kuaixuan = async (betData, selected) => {
-  const codeMaker = await getCacheData('codeMaker', 'https://raw.githubusercontent.com/95du/scripts/master/module/codeMaker.js');
-  const kuaixuan = await getCacheData('kuaixuan', 'https://raw.githubusercontent.com/95du/scripts/master/module/kuaixuan.js');
+  const codeMaker = await getCacheData('codeMaker', `${github}/codeMaker.js`, 'js', 24);
+  const kuaixuan = await getCacheData('kuaixuan', `${github}/kuaixuan.js`, 'js', 24);
   
   if (typeof require === 'undefined') require = importModule;
   const KuaiXuan = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
@@ -543,10 +562,10 @@ const getRemainingBySet = (excludes = []) => {
   const excludeSet = new Set(
     excludes.map(n => String(n).padStart(4, '0'))
   );
-  const ALL_NUMBERS = Array.from({ length: 10000 }, (_, i) =>
+  const all_numbers = Array.from({ length: 10000 }, (_, i) =>
     String(i).padStart(4, '0')
   );
-  return ALL_NUMBERS.filter(n => !excludeSet.has(n));
+  return all_numbers.filter(n => !excludeSet.has(n));
 };
 
 // 替换请求体参数
@@ -619,8 +638,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   const rule = list[idx];
   const { bet_number, bet_log } = parseBetBody(rule);
   const confirm = await generateAlert(
-    confirmText,
-    bet_log,
+    confirmText, bet_log,
     ['取消', '确定'], true
   );
   if (confirm !== 1) return;
