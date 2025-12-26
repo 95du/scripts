@@ -31,7 +31,7 @@ const defaultData = {
   Data: {
     member_account: "admin",
     period_no: "20251221211",
-    credit_balance: "10000",
+    credit_balance: "0",
     previous_draw_no: "0,0,0,0,0",
   }
 }
