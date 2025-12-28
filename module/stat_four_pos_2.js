@@ -3,18 +3,18 @@
 // icon-color: deep-purple; icon-glyph: yin-yang;
 /**
  * 手动修改第 8 行的数字
- * 连续未中自动投注 ‼️‼️‼️
+ * 连续未中自动投 ‼️‼️‼️
  * 设置为 0：关闭此功能，不中一直停
  * 设置为 1：不论中或不中，每期都投
- * 设置为 3：连续未中 3 期后自动投注
+ * 设置为 3：连续未中 3 期后自动投
  */
-const missLimit = 3
+const missLimit = 1
 
 
 /** =======💜 统计盈亏 💜======= */
 
 const fm = FileManager.local();
-const basePath = fm.joinPath(fm.documentsDirectory(), 'lottery');
+const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
 const imageUrl = `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png`;
@@ -22,7 +22,7 @@ const boxjsApi = 'http://boxjs.com/query/data';
 const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
 const autoUpdate = async () => {
-  const script = await new Request(`${github}/stat_four_pos_2.js`).loadString();
+  const script = await new Request(`${github}/four_pos.js`).loadString();
   fm.writeString(module.filename, script);
 };
 autoUpdate();
@@ -384,7 +384,7 @@ const collectAllRecords = async () => {
 
 // 🈯️ 主程序
 const showDateMenu = async () => {
-  const data = await getCacheData('record_rows', `${boxjsApi}/record_rows`, 'json', 4);
+  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
   let list = JSON.parse(data || '[]');
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON()
