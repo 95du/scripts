@@ -545,6 +545,7 @@ const buildBody = async (event, kx, bet_log = '', isLog) => {
       return event.data;
       break;
     case 'custom':
+      if (!event.data.length) return;
       const bet_number = event.data.join(',');
       return replaceParams(kx.body(), { bet_number, bet_log });
       break;
