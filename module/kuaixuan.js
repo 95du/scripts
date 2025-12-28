@@ -267,6 +267,7 @@ class CodeMaker {
     
     const generateBody = (maker) => {
       const f = maker;
+      if (!f.numberList.length) return
       const body = Object.entries({
         bet_number: f.numberList.join(','),
         bet_money: 0.1,
