@@ -4,11 +4,375 @@
 class CodeMaker {
   constructor(codeMaker, Data) {
     this.codeMaker = codeMaker;
-    this.Data = Data;
+    this.Data = Data || {};
     this.css = this.css();
     this.intercept = this.intercept();
   }
   
+  // 日志解析 → options
+  parseToOptions = (text) => {
+    const o = {
+      symbol: "X",
+      isXian: 0,
+      numberType: 40,
+      firstNumber: "",
+      secondNumber: "",
+      thirdNumber: "",
+      fourthNumber: "",
+      fifthNumber: "",
+      positionType: 0,
+      positionFilter: 0,
+      fixedPositions: [0, 0, 0, 0],
+      symbolPositions: [],
+      remainFixedFilter: -1,
+      remainFixedNumbers: [],
+      remainMatchFilter: -1,
+      remainMatchNumbers: [],
+      remainMatchFilterThree: -1,
+      remainMatchNumbersThree: [],
+      remainValueRanges: [], 
+      transformNumbers: [],
+      fullTransform: false,
+      upperNumbers: [],
+      upPrize: false,
+      exceptNumbers: [],
+      containFilter: -1,
+      containNumbers: [],
+      repeatTwoWordsFilter: -1,
+      repeatDoubleWordsFilter: -1,
+      repeatThreeWordsFilter: -1,
+      repeatFourWordsFilter: -1,
+      twoBrotherFilter: -1,
+      threeBrotherFilter: -1,
+      fourBrotherFilter: -1,
+      logarithmNumberFilter: -1,
+      logarithmNumbers: [ [] ],
+      oddNumberFilter: -1,
+      oddNumberPositions: [],
+      evenNumberFilter: -1,
+      evenNumberPositions: [],
+      bigNumberFilter: -1,
+      bigNumberPositions: [],
+      smallNumberFilter: -1,
+      smallNumberPositions: [],
+    };
+  
+    // 定位类型
+    if (text.includes("[四定位]")) o.numberType = 40;
+    
+    // 定位置 [取/除]（千/百/十/个）
+    const positionMatch = text.match(/定位置“\[(取|除)\]”：([^；]+)/);
+    if (positionMatch) {
+      o.positionFilter = positionMatch[1] === "取" ? 0 : 1;
+      const nums = {};
+      const numMatch = positionMatch[2].match(/(千|百|十|个)=\[(\d+)\]/g);
+      if (numMatch) {
+        numMatch.forEach(item => {
+          const m = item.match(/(千|百|十|个)=\[(\d+)\]/);
+          if (m) nums[m[1]] = m[2];
+        });
+      }
+      o.firstNumber = nums["千"] || ""
+      o.secondNumber = nums["百"] || ""
+      o.thirdNumber = nums["十"] || ""
+      o.fourthNumber = nums["个"] || ""
+      o.positionType = 0;
+    }
+    
+    // 配数 [取/除]
+    const peishuMatch = text.match(/配数“\[(取|除)\]”/);
+    if (peishuMatch) {
+      const m1 = text.match(/第1位：\[([0-9]+)\]/);
+      const m2 = text.match(/第2位：\[([0-9]+)\]/);
+      const m3 = text.match(/第3位：\[([0-9]+)\]/);
+      const m4 = text.match(/第4位：\[([0-9]+)\]/);
+      if (m1) o.firstNumber  = m1[1];
+      if (m2) o.secondNumber = m2[1];
+      if (m3) o.thirdNumber  = m3[1];
+      if (m4) o.fourthNumber = m4[1];
+      o.positionType = 1;
+      o.positionFilter = peishuMatch[1] === '除' ? 1 : 0;
+    }
+  
+    // 固定合分 [取/除]
+    const fixed = text.match(
+      /固定合分(取值|除值)：第\[1\]位选中，第\[2\]位选中，第\[3\]位选中，第\[4\]位选中，内容：\[(.*?)\]/
+    );
+    if (fixed) {
+      o.remainFixedFilter = fixed[1] === "取值" ? 0 : 1;
+      o.remainFixedNumbers = [[
+        [1, 1, 1, 1],
+        fixed[2].split("")
+      ]];
+    }
+    
+    // 不定合分值(两数合)
+    const twoMatch = text.match(/不定合分值\(两数合\)：\[([0-9]+)\]/);
+    if (twoMatch) {
+      o.remainMatchFilter = 2;
+      o.remainMatchNumbers = twoMatch[1].split('');
+    }
+    
+    // 不定合分值(三数合)
+    const threeMatch = text.match(/不定合分值\(三数合\)：\[([0-9]+)\]/);
+    if (threeMatch) {
+      o.remainMatchFilterThree = 3;
+      o.remainMatchNumbersThree = threeMatch[1].split('');
+    }
+  
+    // 合分值范围
+    const range = text.match(/合分值范围：\[([0-9]+)-([0-9]+)\]/);
+    if (range) o.remainValueRanges = [Number(range[1]), Number(range[2])];
+  
+    // 包含【取/除】
+    const containMatch = text.match(/包含“\[(取|除)\]”数：\[([0-9]+)\]/);
+    if (containMatch) {
+      o.containFilter = containMatch[1] === "取" ? 0 : 1;
+      o.containNumbers = containMatch[2].split('');
+    }
+    
+    // 复式【取/除】
+    const multipleMatch = text.match(/复式“\[(取|除)\]”数：\[([0-9]+)\]/);
+    if (multipleMatch) {
+      o.multipleFilter  = multipleMatch[1] === "取" ? 0 : 1;
+      o.multipleNumbers = multipleMatch[2].split('');
+    }
+    
+    // 双重、双双重、三重、四重 [除]
+    if (/[^双]双重“\[除\]”/.test(text)) o.repeatTwoWordsFilter = 1;
+    if (/双双重“\[除\]”/.test(text)) o.repeatDoubleWordsFilter = 1;
+    if (text.includes("三重“[除]”")) o.repeatThreeWordsFilter = 1;
+    if (text.includes("四重“[除]”")) o.repeatFourWordsFilter = 1;
+  
+    // 兄弟 [除]
+    if (text.includes("二兄弟“[除]”")) o.twoBrotherFilter = 1;
+    if (text.includes("三兄弟“[除]”")) o.threeBrotherFilter = 1;
+    if (text.includes("四兄弟“[除]”")) o.fourBrotherFilter = 1;
+  
+    // 全转数
+    const transform = text.match(/全转数：\[([0-9]+)\]/);
+    if (transform) {
+      o.fullTransform = true;
+      o.transformNumbers = transform[1].split('');
+    }
+    
+    // 上奖数
+    const upper = text.match(/上奖数：\[([0-9]+)\]/);
+    if (upper) {
+      o.upPrize = true;
+      o.upperNumbers = upper[1].split('');
+    }
+    
+    // 排除数
+    const except = text.match(/排除数：\[([0-9]+)\]/);
+    if (except) {
+      o.exceptNumbers = except[1].split('');
+    }
+    
+    // 对数 [取/除]
+    if (text.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
+    if (text.includes("对数“[除]”")) o.logarithmNumberFilter = 1;
+    const logMatches = [...text.matchAll(/\[([0-9]{2})\]/g)];
+    if (logMatches.length) {
+      o.logarithmNumbers = logMatches
+        .slice(0, 5)
+        .map(m => m[1].split(""));
+    }
+    
+    // 单数 [取/除]
+    const oddMatch = text.match(/单数“\[(取|除)\]”数：(.+?)(?=，(双数|大数|小数)|$)/);
+    if (oddMatch) {
+      o.oddNumberFilter = oddMatch[1] === "取" ? 0 : 1;
+      o.oddNumberPositions = [0,0,0,0];
+      [...oddMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+        const idx = Number(m[1])-1;
+        if (idx>=0 && idx<4) o.oddNumberPositions[idx] = 1;
+      });
+    }
+    
+    // 双数 [取/除]
+    const evenMatch = text.match(/双数“\[(取|除)\]”数：(.+?)(?=，(单数|大数|小数)|$)/);
+    if (evenMatch) {
+      o.evenNumberFilter = evenMatch[1] === "取" ? 0 : 1;
+      o.evenNumberPositions = [0,0,0,0];
+      [...evenMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+        const idx = Number(m[1])-1;
+        if (idx>=0 && idx<4) o.evenNumberPositions[idx] = 1;
+      });
+    }
+    
+    // 大数 [取/除]
+    const bigMatch = text.match(/大数“\[(取|除)\]”数：(.+?)(?=，(单数|双数|小数)|$)/);
+    if (bigMatch) {
+      o.bigNumberFilter = bigMatch[1] === "取" ? 0 : 1;
+      o.bigNumberPositions = [0,0,0,0];
+      [...bigMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+        const idx = Number(m[1])-1;
+        if (idx>=0 && idx<4) o.bigNumberPositions[idx] = 1;
+      });
+    }
+    
+    // 小数 [取/除]
+    const smallMatch = text.match(/小数“\[(取|除)\]”数：(.+?)(?=，(单数|双数|大数)|$)/);
+    if (smallMatch) {
+      o.smallNumberFilter = smallMatch[1] === "取" ? 0 : 1;
+      o.smallNumberPositions = [0,0,0,0];
+      [...smallMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+        const idx = Number(m[1])-1;
+        if (idx>=0 && idx<4) o.smallNumberPositions[idx] = 1;
+      });
+    }
+  
+    return o;
+  };
+  
+  // 转换号码 js
+  logJS = (input, options) => {
+    return `
+    window.invoke = (type, data) => {
+      window.dispatchEvent(new CustomEvent('JBridge', { detail: { type, data } }))
+    }
+    
+    const setFiltersLog = (log, o) => {
+      if (log.includes("二兄弟“[取]”")) o.twoBrotherFilter = 0;
+      if (log.includes("三兄弟“[取]”")) o.threeBrotherFilter = 0;
+      if (log.includes("四兄弟“[取]”")) o.fourBrotherFilter = 0;
+      if (log.includes("双双重“[取]”")) o.repeatDoubleWordsFilter = 0;
+      if (log.includes("双重“[取]”") && !log.includes("双双重“[取]”")) o.repeatTwoWordsFilter = 0;
+      if (log.includes("三重“[取]”")) o.repeatThreeWordsFilter = 0;
+      if (log.includes("四重“[取]”")) o.repeatFourWordsFilter = 0;
+      if (log.includes("单数“[取]”")) o.oddNumberFilter = 0;
+      if (log.includes("双数“[取]”")) o.evenNumberFilter = 0;
+      if (log.includes("大数“[取]”")) o.bigNumberFilter = 0;
+      if (log.includes("小数“[取]”")) o.smallNumberFilter = 0;
+      if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
+    };
+    
+    const renderLogs = (logs) => logs.map((l, i) => \`<div class="stagger" style="animation-delay:\${i*0.1}s"><span class="icon">✓</span>\${l}</div>\`).join('');
+    
+    const renderTable = (list) => {
+      const numberList = document.getElementById('numberList');
+      if (!list.length) {
+        numberList.innerHTML = "<tr><td colspan='7'>没有这样的号码</td></tr>";
+      } else {
+        let html = '';
+        for (let i = 0; i < list.length; i += 7) {
+          html += '<tr>';
+          html += list.slice(i, i + 7).map(num => \`<td>\${num}</td>\`).join('');
+          html += '</tr>';
+        }
+        numberList.innerHTML = html
+      }
+    };
+    
+    const generateBody = (maker) => {
+      const f = maker;
+      const body = Object.entries({
+        bet_number: f.numberList.join(','),
+        bet_money: 0.1,
+        bet_way: 102,
+        is_xian: f.options.isXian,
+        number_type: f.options.numberType,
+        bet_log: f.logs.join('，'),
+        guid: this.guid || 0,
+        period_no: 20251229097,
+        operation_condition: f.operation_condition || f.options
+      }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
+        .join('&');
+      invoke('origin', body);
+    };
+    
+    try {
+      const maker = new CodeMaker(${JSON.stringify(options)});
+      const o = maker.options;
+      const log = "${input.replace(/"/g, '\\"')}";
+      setFiltersLog(log, o);
+      maker.log();
+      maker.onCompleted = function() {
+        const list = this.numberList;
+        document.getElementById('log').innerHTML = "<b>【 匹配日志 】</b><br>" + renderLogs(this.logs);
+        document.getElementById('count').textContent = list.length + " 组";
+        renderTable(list);
+        
+        const audio = document.getElementById('audio');
+        const originBtn = document.getElementById('originBtn');
+        originBtn.onclick = () => {
+          generateBody(maker);
+          audio && audio.play();
+        };
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.onclick = () => {
+          invoke('custom', list);
+          audio && audio.play();
+        };
+      };
+      maker.generate();
+    } catch (err) {
+      document.getElementById('numberList').innerHTML = "<tr><td colspan='7' class='error'>" + err.message + "</td></tr>";
+    }`;
+  };
+  
+  // 日志生成号码 HTML
+  logHtml = (input) => {
+    const options = this.parseToOptions(input);
+    const js = this.logJS(input, options);
+    return `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+      <style>
+        body{margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.6;background:#153B7D}
+        .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow-y:auto}
+        .log{font-size:14px;color:#fff}
+        .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+        .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
+        .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+        .save-btn:active{transform:scale(.96)}
+        .numbers{max-height: 24.68vh;}
+        .numbers-scroll{height: calc(24.68vh - 20px);overflow-y:auto;}
+        table.t-2{width:100%;border-collapse:collapse}
+        table.t-2 td{border:1px solid rgba(255,255,255,.6);padding:6px;text-align:center;font-family:monospace;font-weight:700;font-size:14px;color:#fff}
+        .error{color:red;font-weight:700;font-size:15px;text-align:center}
+        .stagger{opacity:0;animation:fadeInAnimation .3s ease-in-out forwards;display:flex;align-items:center;margin-bottom:4px}
+        .icon{color:#00ff6a;font-weight:700;margin-right:6px}
+        @keyframes fadeInAnimation{from{opacity:0}to{opacity:1}}
+        @media(prefers-color-scheme:dark){body{background:#000}}
+        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
+        @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-60px) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.5)}}
+      </style>
+    </head>
+    <body>
+      <script>
+        for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
+      </script>
+      <div class="log" id="log">错误: 请复制正确的原站日志</div>
+      <div class="count-bar">
+        <button class="save-btn" id="originBtn">原版规则</button>
+        <div class="count" id="count"></div>
+        <button class="save-btn" id="saveBtn">隐私规则</button>
+      </div>
+      <div class="numbers">
+        <div class="numbers-scroll">
+          <table class="t-2" id="numberList"></table>
+        </div>
+      </div>
+      <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
+      <script>
+        ${this.codeMaker}
+        ${js}
+      </script>
+    </body>
+    </html>`;
+  };
+  
+  // 原站请求体
+  body = () => {
+    return `bet_number=0000%2C1111%2C2222%2C3333%2C4444%2C5555%2C6666%2C7777%2C8888%2C9999&bet_money=1&bet_way=102&is_xian=0&number_type=40&bet_log=%5B%E5%9B%9B%E5%AE%9A%E4%BD%8D%5D%EF%BC%8C%E5%9B%9B%E9%87%8D%E2%80%9C%5B%E5%8F%96%5D%E2%80%9D%E6%93%8D%E4%BD%9C&guid=03202d8a-40be-4c9e-8e86-85390389c416&period_no=20251228028&operation_condition=%7B%22symbol%22%3A%22X%22%2C%22isXian%22%3A0%2C%22firstNumber%22%3A%22%22%2C%22secondNumber%22%3A%22%22%2C%22thirdNumber%22%3A%22%22%2C%22fourthNumber%22%3A%22%22%2C%22fifthNumber%22%3A%22%22%2C%22numberType%22%3A40%2C%22positionType%22%3A0%2C%22positionFilter%22%3A0%2C%22remainFixedFilter%22%3A0%2C%22remainFixedNumbers%22%3A%5B%5D%2C%22remainMatchFilter%22%3A0%2C%22remainMatchFilterThree%22%3A0%2C%22remainMatchNumbers%22%3A%5B%5D%2C%22remainMatchNumbersThree%22%3A%5B%5D%2C%22remainValueRanges%22%3A%5B%5D%2C%22transformNumbers%22%3A%5B%5D%2C%22upperNumbers%22%3A%5B%5D%2C%22exceptNumbers%22%3A%5B%5D%2C%22fixedPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22symbolPositions%22%3A%5B%5D%2C%22containFilter%22%3A0%2C%22containNumbers%22%3A%5B%5D%2C%22multipleFilter%22%3A0%2C%22multipleNumbers%22%3A%5B%5D%2C%22repeatTwoWordsFilter%22%3A-1%2C%22repeatThreeWordsFilter%22%3A-1%2C%22repeatFourWordsFilter%22%3A0%2C%22repeatDoubleWordsFilter%22%3A-1%2C%22twoBrotherFilter%22%3A-1%2C%22threeBrotherFilter%22%3A-1%2C%22fourBrotherFilter%22%3A-1%2C%22logarithmNumberFilter%22%3A-1%2C%22logarithmNumbers%22%3A%5B%5B%5D%5D%2C%22oddNumberFilter%22%3A-1%2C%22oddNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22evenNumberFilter%22%3A-1%2C%22evenNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22bigNumberFilter%22%3A-1%2C%22bigNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22smallNumberFilter%22%3A-1%2C%22smallNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%7D`;
+  };
+  
+  // 原站 CSS
   css = () => {
     return `
     html { 
@@ -1488,4 +1852,4 @@ class CodeMaker {
   }
 }
 
-module.exports = CodeMaker;
+module.exports = { CodeMaker };
