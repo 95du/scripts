@@ -3,7 +3,7 @@
 // icon-color: light-gray; icon-glyph: user-astronaut;
 
 const fm = FileManager.local();
-const basePath = fm.joinPath(fm.documentsDirectory(), 'lottery');
+const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
 const isDev = false
@@ -139,7 +139,7 @@ const viewRule = async (data) => {
       @keyframes floatParticles { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 50% { opacity: 1; transform: translateY(-50px) scale(1); }
       100% { opacity: 0; transform: translateY(-100px) scale(0.5); }}
       .card { width: 100%; max-width: 400px; padding: 10px; border-radius: 15px; text-align: center; background: linear-gradient(130deg, #facf41, #f89e6d); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); margin-bottom: 20px; color: #fff; font-weight: bold; }
-      .text-content { width: 100%; max-width: 400px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; color: #fff; white-space: pre-wrap; overflow-y: auto; max-height: 80vh; }
+      .text-content { width: 100%; max-width: 400px; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 15px; color: #fff; white-space: pre-wrap; overflow-y: auto; max-height: 80vh; }
     </style>
   </head>
   <body>
@@ -470,7 +470,7 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
 
 // ✅ 统计菜单
 const statMenu = async (selected, conf) => {
-  const data = await getCacheData('record_rows', `http://boxjs.com/query/data/record_rows`, 'json', 4);
+  const data = await getCacheData('record_rows.json', `http://boxjs.com/query/data/record_rows`, 'json', 4);
   let list = JSON.parse(data || '[]');
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON()
@@ -514,15 +514,47 @@ const saveBody = (arr, event) => {
   return arr;
 };
 
-// ✅ 运行快选 HTML
-const kuaixuan = async (betData, selected) => {
-  const codeMaker = await getCacheData('codeMaker', `${github}/codeMaker.js`, 'js', 24);
-  const kuaixuan = await getCacheData('kuaixuan', `${github}/kuaixuan.js`, 'js', 24);
-  
+const getModule = async (Data) => {
+  const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js', 24);
   if (typeof require === 'undefined') require = importModule;
-  const KuaiXuan = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
-  const kx = await new KuaiXuan(codeMaker, selected.Data);
-  const html = await kx.html(selected);
+  const { CodeMaker } = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
+  const module = await new CodeMaker(codeMaker, Data);
+  return module;
+};
+
+const buildHtml = async (kx, isLog, bet_log = '', selected) => {
+  if (!isLog) return kx.html(selected);
+  if (!bet_log.includes('四定位')) {
+    await generateAlert('剪贴板没有符合的内容\n先复制原站完整的日志', bet_log, ['完成']);
+    return null;
+  }
+  return kx.logHtml(bet_log);
+};
+
+const buildBody = async (event, kx, bet_log = '', isLog) => {
+  if (!isLog) return event;
+  const confirm = await generateAlert(
+    '是否写入新的规则❓',
+    '根据原站的日志生成号码写入规则\n❗️隐私规则说明❗️\n已修改参数，类似修改了日志，让服务器无法识别你的规则。',
+    ['取消', '确定'], true
+  );
+  if (confirm !== 1) return null;
+  switch (event.type) {
+    case 'origin':
+      return event.data;
+      break;
+    case 'custom':
+      const bet_number = event.data.join(',');
+      return replaceParams(kx.body(), { bet_number, bet_log });
+      break;
+  }
+};
+
+// ✅ 运行快选 HTML
+const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
+  const kx = await getModule(selected.Data);
+  const html = await buildHtml(kx, isLog, bet_log, selected);
+  if (!html) return;
   
   const webView = new WebView();
   await webView.loadHTML(html, selected.baseUrl);
@@ -541,9 +573,14 @@ const kuaixuan = async (betData, selected) => {
       })()`, true
     ).catch(err => console.error(err));
     if (event) {
+      const body = await buildBody(event, kx, bet_log, isLog);
+      if (!body) {
+        injectListener();
+        return;
+      }
       await updateConfig(betData, selected, c => {
         c.custom.hasRule = true;
-        c.custom.fastPick = saveBody(c.custom.fastPick, event);
+        c.custom.fastPick = saveBody(c.custom.fastPick, body);
       });
       await saveBoxJsData(betData);
       const data = processDataText(betData, selected);
@@ -653,6 +690,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   await saveBoxJsData(betData);
 };
 
+// 🆎 管理规则
 const removeRule = (betData, selected, conf) =>
   handleRuleAction(betData, selected, conf, {
     from: 'fastPick',
@@ -674,12 +712,20 @@ const restoreRule = (betData, selected, conf) =>
     confirmText: '确定恢复以下规则❓'
   });
 
-// 🆎 管理规则
-const manageRule = async (betData, selected, conf) => {
+/** =======🩷 二级菜单 🩷======= */
+
+const setTaskType = async (betData, selected, conf) => {
   const { fastPick = [], cutRule = [] } = conf.custom || {};
-  const opts = [];
+
+  const opts = [
+    { name: '修改日志', id: 'changeLog' },
+    { name: '日志规则', id: 'logRule' },
+    { name: '写入规则', id: 'writeRule' },
+  ];
+
   if (fastPick.length) {
     opts.push(
+      { name: '查看规则', id: 'viewRule' },
       { name: '删除规则', action: removeRule },
       { name: '暂停规则', action: cutRuleAction },
       { name: '反转规则', action: reverseRule }
@@ -688,72 +734,46 @@ const manageRule = async (betData, selected, conf) => {
   if (cutRule.length) {
     opts.push({ name: '恢复规则', action: restoreRule });
   }
-  if (!opts.length) return;
   const idx = await presentSheetMenu(
     buildMessage(selected, conf),
     opts.map(o => o.name)
   );
   if (idx === -1) return;
-  await opts[idx].action(betData, selected, conf);
-  await refreshReopen(betData, selected, conf, manageRule);
-};
-
-/** =======🩷 二级菜单 🩷======= */
-
-const setTaskType = async (betData, selected, conf) => {
-  const opts = [
-    { name: '账号密码', id: 'account' },
-    { name: '设置赔率', id: 'water' },
-    { name: '修改日志', id: 'changeLog' },
-    { name: '写入规则', id: 'writeRule' },
-    { name: '查看规则', id: 'viewRule' },
-    { name: '管理规则', id: 'manageRule' }
-  ];
-
-  const subIndex = await presentSheetMenu(buildMessage(selected, conf), opts.map(o => o.name));
-  if (subIndex === -1) return;
-  const choice = opts[subIndex];
+  const choice = opts[idx];
   if (!choice) return;
 
-  switch (choice.id) {
-    case 'account':
-      await manageAccount(betData, selected);
-      break;
-    case 'water': {
-      const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9700 )', [{ hint: '赔率', value: conf.custom.water ?? 9700 }] );
-      const val = Number(water?.[0]);
-      const waterValue = Number.isInteger(val) && val >= 0 ? val : conf.custom.water;
-      await updateConfig(betData, selected, c => { c.custom.water = waterValue });
-      break;
-    }
-    case 'changeLog': {
-      const changeLog = await collectInputs(
-        '修改投注日志', 
-        `🔥 内容在会员与代理端均可见 🔥${conf.custom?.changeLog ? '\n' + conf.custom.changeLog : ''}`, 
-        [{ hint: '输入任意内容', value: conf.custom.changeLog }]
-      );
-      if (changeLog.length) {
-        await updateConfig(betData, selected, c => { c.custom.changeLog = changeLog?.[0] });
+  if (typeof choice.action === 'function') {
+    await choice.action(betData, selected, conf);
+  } else {
+    switch (choice.id) {
+      case 'changeLog': {
+        const changeLog = await collectInputs(
+          '修改投注日志', 
+          `🔥 内容在会员与代理端均可见 🔥${conf.custom?.changeLog ? '\n' + conf.custom.changeLog : ''}`, 
+          [{ hint: '输入任意内容', value: conf.custom.changeLog }]
+        );
+        if (changeLog.length) {
+          await updateConfig(betData, selected, c => { c.custom.changeLog = changeLog?.[0] });
+        }
+        break;
       }
-      break;
+      case 'logRule':
+        await kuaixuan(betData, selected, true, Pasteboard.paste()?.trim());
+        break;
+      case 'writeRule':
+        await kuaixuan(betData, selected);
+        break;
+      case 'viewRule': {
+        const data = processDataText(betData, selected);
+        await viewRule(data[0]);
+        break;
+      }
     }
-    case 'writeRule': 
-      await kuaixuan(betData, selected);
-      break;
-    case 'viewRule': {
-      const data = processDataText(betData, selected);
-      await viewRule(data[0]);
-      break;
-    }
-    case 'manageRule':
-      await manageRule(betData, selected, conf);
-      break;
   }
-
   await refreshReopen(betData, selected, conf, setTaskType);
 };
 
-/** ========🧡 一级菜单 🧡======== */
+/** =======🩷 二级菜单 🩷======= */
 
 // ✅ 账号密码逻辑
 const manageAccount = async (betData, selected) => {
@@ -792,29 +812,16 @@ const manageAccount = async (betData, selected) => {
   await generateAlert(`保存成功 ✅\n账号：${acc.account}\n密码：${acc.password}`, null, ['完成']);
 };
 
-// ✅ 显示不同倍数设置表单
-const multiplierMenu = async (betData, selected, conf) => {
-  const section = conf.custom || {};
-  const results = await collectInputs('设置倍数', '影响对应规则的投注金额', [{ hint: '全局倍数', value: section.globalMultiplier ?? 1 }]);
-  if (!results.length) return;
-  await updateConfig(betData, selected, c => { c.custom.globalMultiplier = Number(results[0]) || 1 });
-  await refreshReopen(betData, selected, conf, multiplierMenu);
-};
-
-// ✅ 主配置菜单
-const configMenu = async (betData, selected, conf) => {
+// ✅ 账号管理菜单
+const accountManage = async (betData, selected, conf) => {
   const alert = new Alert();
   alert.message = buildMessage(selected, conf);
 
   const opts = [
     { name: '删除账号', id: 'delAccount', specify: true },
     { name: '重置规则', id: 'reset', specify: true },
-    { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask' },
-    { name: '时间区间', id: 'time' },
-    { name: '设置倍数', id: 'multiplierMenu' },
-    { name: '强制投注', id: 'missLimit' },
-    { name: '盈亏统计', id: 'stat' },
-    { name: '投注规则', id: 'rule' },
+    { name: '账号密码', id: 'account' },
+    { name: '设置赔率', id: 'water' },
   ];
 
   opts.forEach(item => {
@@ -832,11 +839,11 @@ const configMenu = async (betData, selected, conf) => {
       const confirm = await generateAlert(`${choice.name} ${selected.member_account}❓`, null,  ['取消', '确定'], true);
       if (confirm === 1) {
         betData = betData.filter(acc => acc.member_account !== selected.member_account);
-        return await saveBoxJsData(betData);
+        await saveBoxJsData(betData);
+        return true;
       }
       break;
     }
-    
     case 'reset': {
       const confirm = await generateAlert(`是否${choice.name}配置❓`, null, ['取消', '确定'], true);
       if (confirm === 1) {
@@ -845,7 +852,61 @@ const configMenu = async (betData, selected, conf) => {
       }
       break;
     }
-    
+    case 'account':
+      await manageAccount(betData, selected);
+      break;
+    case 'water': {
+      const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9700 )', [{ hint: '赔率', value: conf.custom.water ?? 9700 }] );
+      const val = Number(water?.[0]);
+      const waterValue = Number.isInteger(val) && val >= 0 ? val : conf.custom.water;
+      await updateConfig(betData, selected, c => { c.custom.water = waterValue });
+      break;
+    }
+  }
+  await refreshReopen(betData, selected, conf, accountManage);
+};
+
+/** ========🧡 一级菜单 🧡======== */
+
+// ✅ 显示不同倍数设置表单
+const multiplierMenu = async (betData, selected, conf) => {
+  const section = conf.custom || {};
+  const results = await collectInputs('设置倍数', '影响对应规则的投注金额', [{ hint: '全局倍数', value: section.globalMultiplier ?? 1 }]);
+  if (!results.length) return;
+  await updateConfig(betData, selected, c => { c.custom.globalMultiplier = Number(results[0]) || 1 });
+  await refreshReopen(betData, selected, conf, multiplierMenu);
+};
+
+// ✅ 主配置菜单
+const configMenu = async (betData, selected, conf) => {
+  const alert = new Alert();
+  alert.message = buildMessage(selected, conf);
+
+  const opts = [
+    { name: '管理账号', id: 'accountManage' },
+    { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask', specify: true },
+    { name: '时间区间', id: 'time' },
+    { name: '设置倍数', id: 'multiplierMenu' },
+    { name: '强制投注', id: 'missLimit' },
+    { name: '盈亏统计', id: 'stat' },
+    { name: '投注规则', id: 'rule' },
+  ];
+
+  opts.forEach(item => {
+    if (item.specify) alert.addDestructiveAction(item.name);
+    else alert.addAction(item.name);
+  });
+  alert.addCancelAction('完成');
+  const idx = await alert.presentSheet();
+  if (idx === -1) return;
+  const choice = opts[idx];
+  if (!choice) return;
+
+  switch (choice.id) {
+    case 'accountManage': 
+      const acc = await accountManage(betData, selected, conf);
+      if (acc) return;
+      break;
     case 'missLimit': {
       const res = await collectInputs(
         '连续未中自动投注',
@@ -857,12 +918,10 @@ const configMenu = async (betData, selected, conf) => {
       await updateConfig(betData, selected, c => { c.custom.missLimit = missLimitVal });
       break;
     }
-    
     case 'runTask': {
       await updateConfig(betData, selected, c => { c.custom.runTask = !c.custom.runTask });
       break;
     }
-
     case 'multiplierMenu':
       await refreshReopen(betData, selected, conf, multiplierMenu);
       break;
