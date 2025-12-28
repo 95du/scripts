@@ -535,8 +535,8 @@ const buildHtml = async (kx, isLog, bet_log = '', selected) => {
 const buildBody = async (event, kx, bet_log = '', isLog) => {
   if (!isLog) return event;
   const confirm = await generateAlert(
-    '是否写入新的规则❓',
-    '根据原站的日志生成号码写入规则\n❗️隐私规则说明❗️\n已修改参数，类似修改了日志，让服务器无法识别你的规则。',
+    '是否写入新的规则',
+    '根据原站的日志生成号码写入规则\n❗️隐私规则说明❗️\n已修改参数，类似修改了日志，让服务器无法识别这个规则。',
     ['取消', '确定'], true
   );
   if (confirm !== 1) return null;
