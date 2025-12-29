@@ -582,7 +582,7 @@ const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
       });
       await saveBoxJsData(betData);
       const data = processDataText(betData, selected);
-      await viewRule(data[0]);
+      Timer.schedule(500, false, async () => { await viewRule(data[0]) });
     }
     injectListener();
   };
