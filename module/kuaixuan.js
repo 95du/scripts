@@ -351,9 +351,9 @@ class CodeMaker {
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
         ${this.css}
-        body{overflow-y: auto;margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.6;background:#153B7D}
+        body{overflow-y: auto;margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.4;background:#153B7D}
         .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);}
-        .log{font-size:14px;color:#fff}
+        .log{font-size:14.5px;color:#fff}
         .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
         .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
