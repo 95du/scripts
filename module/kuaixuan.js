@@ -352,7 +352,7 @@ class CodeMaker {
       <style>
         ${this.css}
         body{overflow-y: auto;margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.6;background:#153B7D}
-        .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow-y:auto}
+        .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);}
         .log{font-size:14px;color:#fff}
         .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
