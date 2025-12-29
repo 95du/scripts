@@ -265,6 +265,32 @@ class CodeMaker {
       }
     };
     
+    const doSave = (f) => {
+      const $n = $("#numberList")
+      const $s = $(".betStatus")
+      const $c = $("#multi_count");
+      $n.hide(); $s.show(); 
+      $c.html("0").removeClass("red");
+      const total = f.numberList.length;
+      $s.find('span').text(total); 
+      const start = Date.now();
+      const duration = Math.min(1000, 500 + total * 0.7);
+    
+      const step = () => {
+        $c.addClass("red");
+        const p = Math.min((Date.now() - start) / duration, 1);
+        $c.html(Math.floor(total * p));
+        if (p < 1) {
+          requestAnimationFrame(step);
+        } else {
+          const audio = document.getElementById('audio');
+          if (audio) audio.play();
+          setTimeout(() => { $s.hide(); $n.show(); resetAll(); }, 600);
+        }
+      };
+      requestAnimationFrame(step);
+    };
+    
     const generateBody = (maker) => {
       const f = maker;
       if (!f.numberList.length) return
@@ -281,6 +307,7 @@ class CodeMaker {
       }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
         .join('&');
       invoke('origin', body);
+      doSave(f);
     };
     
     try {
@@ -295,16 +322,15 @@ class CodeMaker {
         document.getElementById('count').textContent = list.length + " 组";
         renderTable(list);
         
-        const audio = document.getElementById('audio');
         const originBtn = document.getElementById('originBtn');
         originBtn.onclick = () => {
           generateBody(maker);
-          audio && audio.play();
         };
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.onclick = () => {
+          if (!list.length) return;
           invoke('custom', list);
-          audio && audio.play();
+          doSave(maker);
         };
       };
       maker.generate();
@@ -324,7 +350,8 @@ class CodeMaker {
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
-        body{margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.6;background:#153B7D}
+        ${this.css}
+        body{overflow-y: auto;margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.6;background:#153B7D}
         .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow-y:auto}
         .log{font-size:14px;color:#fff}
         .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
@@ -356,7 +383,12 @@ class CodeMaker {
       </div>
       <div class="numbers">
         <div class="numbers-scroll">
-          <table class="t-2" id="numberList"></table>
+          <td class="no-padding">
+            <div style="overflow-y:auto; min-height:100px; max-height:300px;">
+              <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
+              <div class="betStatus" style="color:#fff"><img src="https://raw.githubusercontent.com/95du/scripts/master/img/ticket/loading.gif" /><br /><br /><span>0</span>个注单正在写入，已完成<i id="multi_count"></i>个</div>
+            </div>
+          </td>
         </div>
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
@@ -551,7 +583,6 @@ class CodeMaker {
     /* kuaida */
     .bd_print_list {height:109px; overflow:auto}
     .bd_print_list_max {height:600px;}
-    
     .betStatus {
       text-align:center;
       vertical-align:central;
@@ -564,9 +595,7 @@ class CodeMaker {
     .systime{
       position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
     }
-    
     .ssc_table_bg {background:#fff repeat-y center;background-size:100%;*background:#fff;}
-    
     /* testline */
     .testline .status {display:none; color:red; margin:0 0 0 10px;}
     .testline .best .status {display:inline-block;}
