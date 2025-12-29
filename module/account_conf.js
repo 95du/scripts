@@ -572,10 +572,6 @@ const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
     ).catch(err => console.error(err));
     if (event) {
       const body = await buildBody(event, kx, bet_log, isLog);
-      if (!body) {
-        injectListener();
-        return;
-      }
       await updateConfig(betData, selected, c => {
         c.custom.hasRule = true;
         c.custom.fastPick = saveBody(c.custom.fastPick, body);
