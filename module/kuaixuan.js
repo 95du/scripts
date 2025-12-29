@@ -371,7 +371,7 @@ class CodeMaker {
         .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
         .numbers{max-height: 23.8vh;}
         .numbers-scroll{height: calc(23.8vh - 20px);overflow-y:auto;}
-        table.t-2 td{border:1px solid rgba(255,255,255,.6); color:#fff}
+        table.t-2 td{border:1px solid #fff; color:#fff}
         .error{color:red;font-weight:700;font-size:15px;text-align:center}
         .stagger{opacity:0;animation:fadeInAnimation .3s ease-in-out forwards;display:flex;align-items:center;margin-bottom:4px}
         .icon{color:#00ff6a;font-weight:700;margin-right:6px}
