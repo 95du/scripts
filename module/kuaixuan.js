@@ -310,6 +310,11 @@ class CodeMaker {
       doSave(f);
     };
     
+    const bindColor = (btn) => {
+      btn.style.color = 'darkGray';
+      setTimeout(() => btn.style.color = '', 1150);
+    };
+    
     try {
       const maker = new CodeMaker(${JSON.stringify(options)});
       const o = maker.options;
@@ -324,10 +329,12 @@ class CodeMaker {
         
         const originBtn = document.getElementById('originBtn');
         originBtn.onclick = () => {
+          bindColor(originBtn);
           generateBody(maker);
         };
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.onclick = () => {
+          bindColor(saveBtn);
           if (!list.length) return;
           invoke('custom', list);
           doSave(maker);
@@ -357,7 +364,6 @@ class CodeMaker {
         .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
         .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
-        .save-btn:active{transform:scale(.96)}
         .numbers{max-height: 23.8vh;}
         .numbers-scroll{height: calc(23.8vh - 20px);overflow-y:auto;}
         table.t-2 td{border:1px solid rgba(255,255,255,.6); color:#fff}
@@ -366,7 +372,7 @@ class CodeMaker {
         .icon{color:#00ff6a;font-weight:700;margin-right:6px}
         @keyframes fadeInAnimation{from{opacity:0}to{opacity:1}}
         @media(prefers-color-scheme:dark){body{background:#000}}
-        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
+        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%; opacity:0;animation:floatParticles 6s infinite ease-in-out}
         @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-60px) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.5)}}
       </style>
     </head>
