@@ -518,7 +518,7 @@ const saveBody = (arr, event) => {
 
 const getModule = async (Data) => {
   const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js', 24);
-  await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js', 24);
+  await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js', 4);
   if (typeof require === 'undefined') require = importModule;
   const { CodeMaker } = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
   const module = await new CodeMaker(codeMaker, Data);
