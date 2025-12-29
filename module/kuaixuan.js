@@ -233,7 +233,7 @@ class CodeMaker {
       window.dispatchEvent(new CustomEvent('JBridge', { detail: { type, data } }))
     }
     
-    const setFiltersLog = (log, o) => {
+    const setLogs = (log, o) => {
       if (log.includes("二兄弟“[取]”")) o.twoBrotherFilter = 0;
       if (log.includes("三兄弟“[取]”")) o.threeBrotherFilter = 0;
       if (log.includes("四兄弟“[取]”")) o.fourBrotherFilter = 0;
@@ -314,7 +314,7 @@ class CodeMaker {
       const maker = new CodeMaker(${JSON.stringify(options)});
       const o = maker.options;
       const log = "${input.replace(/"/g, '\\"')}";
-      setFiltersLog(log, o);
+      setLogs(log, o);
       maker.log();
       maker.onCompleted = function() {
         const list = this.numberList;
