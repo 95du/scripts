@@ -253,7 +253,7 @@ class CodeMaker {
     const renderTable = (list) => {
       const numberList = document.getElementById('numberList');
       if (!list.length) {
-        numberList.innerHTML = "<tr><td colspan='7'>没有这样的号码</td></tr>";
+        numberList.innerHTML = "<tr><td style='padding:2px;'>没有这样的号码</td></tr>";
       } else {
         let html = '';
         for (let i = 0; i < list.length; i += 7) {
@@ -265,7 +265,7 @@ class CodeMaker {
       }
     };
     
-    const doSave = (f) => {
+    const doSave = (f, btn) => {
       const $n = $("#numberList")
       const $s = $(".betStatus")
       const $c = $("#multi_count");
@@ -285,15 +285,22 @@ class CodeMaker {
         } else {
           const audio = document.getElementById('audio');
           if (audio) audio.play();
-          setTimeout(() => { $s.hide(); $n.show(); resetAll(); }, 600);
+          setTimeout(() => { 
+            btn.style.color = '';
+            $s.hide(); $n.show(); 
+            resetAll(); 
+          }, 600);
         }
       };
       requestAnimationFrame(step);
     };
     
-    const generateBody = (maker) => {
+    const getBody = (maker, btn) => {
       const f = maker;
-      if (!f.numberList.length) return
+      if (!f.numberList.length) {
+        btn.style.color = '';
+        return;
+      }
       const body = Object.entries({
         bet_number: f.numberList.join(','),
         bet_money: 0.1,
@@ -307,12 +314,7 @@ class CodeMaker {
       }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
         .join('&');
       invoke('origin', body);
-      doSave(f);
-    };
-    
-    const bindColor = (btn) => {
-      btn.style.color = 'darkGray';
-      setTimeout(() => btn.style.color = '', 1150);
+      doSave(f, btn);
     };
     
     try {
@@ -327,17 +329,20 @@ class CodeMaker {
         document.getElementById('count').textContent = list.length + " 组";
         renderTable(list);
         
-        const originBtn = document.getElementById('originBtn');
-        originBtn.onclick = () => {
-          bindColor(originBtn);
-          generateBody(maker);
+        const origBtn = document.getElementById('originBtn');
+        origBtn.onclick = () => {
+          origBtn.style.color = 'bbb'
+          getBody(maker, origBtn);
         };
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.onclick = () => {
-          bindColor(saveBtn);
-          if (!list.length) return;
+          saveBtn.style.color = '#bbb'
+          if (!list.length) {
+            saveBtn.style.color = '';
+            return;
+          }
           invoke('custom', list);
-          doSave(maker);
+          doSave(maker, saveBtn);
         };
       };
       maker.generate();
