@@ -358,10 +358,9 @@ class CodeMaker {
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
         .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
         .save-btn:active{transform:scale(.96)}
-        .numbers{max-height: 24.68vh;}
-        .numbers-scroll{height: calc(24.68vh - 20px);overflow-y:auto;}
-        table.t-2{width:100%;border-collapse:collapse}
-        table.t-2 td{border:1px solid rgba(255,255,255,.6);padding:6px;text-align:center;font-family:monospace;font-weight:700;font-size:14px;color:#fff}
+        .numbers{max-height: 23.8vh;}
+        .numbers-scroll{height: calc(23.8vh - 20px);overflow-y:auto;}
+        table.t-2 td{border:1px solid rgba(255,255,255,.6); color:#fff}
         .error{color:red;font-weight:700;font-size:15px;text-align:center}
         .stagger{opacity:0;animation:fadeInAnimation .3s ease-in-out forwards;display:flex;align-items:center;margin-bottom:4px}
         .icon{color:#00ff6a;font-weight:700;margin-right:6px}
@@ -383,12 +382,8 @@ class CodeMaker {
       </div>
       <div class="numbers">
         <div class="numbers-scroll">
-          <td class="no-padding">
-            <div style="overflow-y:auto; min-height:100px; max-height:300px;">
-              <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
-              <div class="betStatus" style="color:#fff"><img src="https://raw.githubusercontent.com/95du/scripts/master/img/ticket/loading.gif" /><br /><br /><span>0</span>个注单正在写入，已完成<i id="multi_count"></i>个</div>
-            </div>
-          </td>
+          <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
+            <div class="betStatus" style="color:#fff"><img src="https://raw.githubusercontent.com/95du/scripts/master/img/ticket/loading.gif" /><br /><br /><span>0</span>个注单正在写入，已完成<i id="multi_count"></i>个</div>
         </div>
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
