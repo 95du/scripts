@@ -52,11 +52,11 @@ const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
     if (type === 'img') return fm.readImage(path);
     if (type === 'json') return JSON.parse(fm.readString(path));
     return fm.readString(path);
-  };
+  }
   const write = (data) => {
     if (type === 'img') fm.writeImage(path, data);
     else fm.writeString(path, type === 'json' ? JSON.stringify(data) : data);
-  };
+  }
   return (async () => {
     const cached = read();
     if (cached) return cached;
@@ -107,7 +107,9 @@ const collectInputs = async (title, message, fields) => {
   const alert = new Alert();
   alert.title = title;
   alert.message = message;
-  fields.forEach(({ hint, value }) => alert.addTextField(hint, String(value ?? '')));
+  fields.forEach(({ hint, value }) => {
+    alert.addTextField(hint, String(value ?? ''))
+  });
   alert.addAction("取消");
   alert.addAction("确认");
   const idx = await alert.presentAlert();
@@ -241,7 +243,7 @@ const processDataText = (data, selected) => {
 // ✅ 解析 Body 参数
 const parseBetBody = (body) => {
   let decoded = '';
-  try { decoded = decodeURIComponent(body); } catch { decoded = body || ''; }
+  try { decoded = decodeURIComponent(body); } catch { decoded = body || '' }
   const bet_number = decoded.match(/bet_number=([^&]*)/)?.[1] || '';
   const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
   const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
@@ -534,12 +536,6 @@ const buildHtml = async (kx, isLog, bet_log = '', selected) => {
 
 const buildBody = async (event, kx, bet_log = '', isLog) => {
   if (!isLog) return event;
-  const confirm = await generateAlert(
-    '是否写入新的规则',
-    '根据原站的日志生成号码写入规则\n❗️隐私规则说明❗️\n已修改参数，类似修改了日志，让服务器无法识别这个规则。',
-    ['取消', '确定'], true
-  );
-  if (confirm !== 1) return null;
   switch (event.type) {
     case 'origin':
       return event.data;
@@ -804,7 +800,6 @@ const manageAccount = async (betData, selected) => {
   alert.addAction('保存');
   const res = await alert.presentAlert();
   if (res !== 0) return;
-
   const account = alert.textFieldValue(0);
   const password = alert.textFieldValue(1);
   if (!account || !password) return;
