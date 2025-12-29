@@ -45,8 +45,11 @@ autoUpdate();
 // ✅ 缓存文件
 const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
   const path = fm.joinPath(basePath, name);
-  const isExpired = () => cacheHours !== undefined && fm.fileExists(path) &&
-    (Date.now() - fm.creationDate(path).getTime()) / 36e5 > cacheHours;
+  const isExpired = () => {
+    if (cacheHours === undefined || !fm.fileExists(path)) return false;
+    const last = fm.modificationDate(path);
+    return (Date.now() - last.getTime()) / 36e5 > cacheHours;
+  };
   const read = () => {
     if (!fm.fileExists(path) || isExpired()) return null;
     if (type === 'img') return fm.readImage(path);
@@ -61,6 +64,7 @@ const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
     const cached = read();
     if (cached) return cached;
     const req = new Request(url);
+    let data;
     if (type === 'img') data = await req.loadImage();
     else if (type === 'json') {
       const res = await req.loadJSON();
