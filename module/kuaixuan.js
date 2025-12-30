@@ -6,8 +6,21 @@ class CodeMaker {
     this.codeMaker = codeMaker;
     this.Data = Data || {};
     this.css = this.css();
-    this.intercept = this.intercept();
   }
+  
+  /**
+   * 根据类型发起 HTTP 请求
+   */
+  async httpRequest(url, type) {
+    const request = new Request(url);
+    request.timeoutInterval = 10;
+    let data;
+    if (type === 'json') {
+      const res = await request.loadJSON();
+      data = res?.val ?? res;
+    } else data = await request.loadString();
+    if (data) return data;
+  };
   
   // 日志解析 → options
   parseToOptions = (text) => {
@@ -609,7 +622,21 @@ class CodeMaker {
   };
   
   // 注入拦截 js
-  intercept = () => {
+  intercept = async () => {
+    const agent_data = await this.httpRequest(`http://boxjs.com/query/data/agent_data`, 'json');
+    const { drawRows } = JSON.parse(agent_data) || {};
+    
+    const drawRowsArr = {
+      Status: 1,
+      Data: {
+        Rows: drawRows.map(row => ({
+          ...row,
+          period_datetime: row.period_datetime.split(' ')[1]
+        })),
+        PageIndex: 1
+      }
+    };
+    
     const { period_no } = this.Data;
     const curStatus = {
       last_seconds : 300,
@@ -740,7 +767,162 @@ class CodeMaker {
         };
         requestAnimationFrame(step);
       }
+      
+      // 开奖结果
+      const drawResult = ${JSON.stringify(drawRowsArr)};
+      if (window.template && drawResult?.Data) {
+        const html = template('tpl_refresh', {
+          HideYiziWuer: '0',
+          Data: drawResult.Data
+        });
+        document.getElementById('tbody').innerHTML = html;
+      };
+      
+      window.showModule = function (id) {
+        const modules = document.querySelectorAll('[name="module"]');
+        modules.forEach(el => el.classList.remove('active'));
+      
+        const target = document.getElementById(id);
+        if (target) target.classList.add('active');
+      
+        if (id === 'drawnumber') document.getElementById('pager')?.classList.add('active');
+      
+        const tabs = document.querySelectorAll('.header-tabs span');
+        tabs.forEach(tab => {
+          const list = tab.classList;
+          list.remove('active');
+          list.add('inactive');
+        });
+      
+        const activeTab =
+          id === 'drawnumber' ? document.getElementById('tab_draw') : document.getElementById('tab_kuaixuan');
+        const list = activeTab?.classList
+        list.add('active');
+        list.remove('inactive');
+      };
+        document.getElementById('tab_draw')?.addEventListener('click', () => {
+        showModule('drawnumber');
+      });
+      document.getElementById('tab_kuaixuan')?.addEventListener('click', () => {
+        showModule('kuaixuan');
+      });
+      showModule('kuaixuan');
     })`;
+  };
+  
+  // 结果模块
+  drawnumber = () => {
+    return `<div name="module" id="drawnumber" class="m5 mt5">
+      <form id="form1" autocomplete="off">
+        <div class="mt10" id="bd_serverinfo">
+          <table class="t-1">
+            <thead>
+              <tr class="bg3 tc">
+                <td colspan="11">
+                  开奖号码
+                </td>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </form>
+      <div class="mt10">
+        <form>
+          <table class="t-1">
+            <thead>
+              <tr class="bg3" style="text-align:center">
+                <td width="15%">期号</td>
+                <td width="15%">开奖时间</td>
+                <td width="10%">仟</td>
+                <td width="10%">佰</td>
+                <td width="10%">拾</td>
+                <td width="10%">个</td>
+                <td width="10%">五</td>
+              </tr>
+            </thead>
+            <tbody id="tbody" class="fn-hover"> <script type="text/html" id="tpl_refresh">
+              {{if !Data.Rows.length}}
+              <tr>
+                <td colspan="8">暂无数据！</td>
+              </tr>
+              {{else}}
+                {{each Data.Rows as item i }}
+                {{var is_show1 = item.period_status == 3;}}
+                {{var is_show2 = (item.thousand_no != "0" || item.hundred_no != "0" || item.ten_no != "0" || item.one_no != "0" || item.ball5 != "0");}}
+                {{var is_show = (is_show1 || is_show2);}}
+                {{if i==0 && Data.PageIndex == 1 }}
+                <tr>
+                  <td>
+                    {{item.period_no}}
+                    <span class="red">
+                      {{if item.is_deleted == 1}}(已删){{/if}}
+                      {{if item.enable_status == 2}}(已废置){{/if}}
+                      {{if item.enable_status == 3}}(休市){{/if}}
+                    </span>
+                  </td>
+                  <td>{{if item.period_status != 3}}--
+                    {{else}}{{item.period_datetime}}{{/if}}
+                  </td>
+                  <td>
+                    <span class="bg-ball ball2">{{if is_show}}{{item.thousand_no}}{{/if}}</span>
+                  </td>
+                  <td>
+                    <span class="bg-ball ball2">{{if is_show}}{{item.hundred_no}}{{/if}}</span>
+                  </td>
+                  <td>
+                    <span class="bg-ball ball2">{{if is_show}}{{item.ten_no}}{{/if}}</span>
+                  </td>
+                  <td>
+                    <span class="bg-ball ball2">{{if is_show}}{{item.one_no}}{{/if}}</span>
+                  </td>
+                  {{if HideYiziWuer == '0'}}
+                  <td>
+                    <span class="bg-ball ball2">{{if is_show}}{{item.ball5}}{{/if}}</span>
+                  </td>
+                  {{/if}}
+                </tr>
+                {{else}}
+                  <tr>
+                    <td>
+                      {{item.period_no}}
+                      <span class="red">
+                        {{if item.is_deleted == 1}}(已删){{/if}}
+                        {{if item.enable_status == 2}}(已废置){{/if}}
+                        {{if item.enable_status == 3}}(休市){{/if}}
+                      </span>
+                    </td>
+                    <td>{{if item.period_status != 3}}--
+                      {{else}}{{item.period_datetime}}{{/if}}
+                    </td>
+                    <td>
+                      <span class="bg-ball ball1">{{if is_show}}{{item.thousand_no}}{{/if}}</span>
+                    </td>
+                    <td>
+                      <span class="bg-ball ball1">{{if is_show}}{{item.hundred_no}}{{/if}}</span>
+                    </td>
+                    <td>
+                      <span class="bg-ball ball1">{{if is_show}}{{item.ten_no}}{{/if}}</span>
+                    </td>
+                    <td>
+                      <span class="bg-ball ball1">{{if is_show}}{{item.one_no}}{{/if}}</span>
+                    </td>
+                    {{if HideYiziWuer == '0'}}
+                    <td>
+                      <span class="bg-ball ball1">{{if is_show}}{{item.ball5}}{{/if}}</span>
+                    </td>
+                    {{/if}}
+                  </tr>
+                  {{/if}}
+                  {{/each}}
+                  {{/if}}
+              </script>
+            </tbody>
+          </table>
+        </form>
+      </div>
+    </div>
+    <div name="module" id="pager" class="pager" >第 <span class="pageindex red">1</span> 页 共 <span class="pagecount red">17</span> 页 共 <span class="recordcount red">252</span> 条 <br />
+    </div>`;
   };
   
   // 返回完整 HTML
@@ -781,6 +963,19 @@ class CodeMaker {
         .header-1 {
           line-height: 2rem;
         }
+        .header-tabs {
+          display: flex;
+          gap: 1.2rem;
+        }
+        .header-tabs span {
+          cursor: pointer;
+          transition: color .2s;
+        }
+        /* 当前显示 */
+        .header-tabs span.active {
+          color: #fff;
+          opacity: 0.6;
+        }
         .header-2 {
           margin-top: 0.3rem;
           font-size: 1.2rem;
@@ -797,6 +992,12 @@ class CodeMaker {
           left: 0; 
           right: 0;
           overflow-y: auto;
+        }
+        [name="module"] {
+          display: none;
+        }
+        [name="module"].active {
+          display: block;
         }
         #tip {
           position: fixed;
@@ -816,17 +1017,33 @@ class CodeMaker {
         }
         #tip.show { opacity: 1; }
         #tip.hide { opacity: 0; }
+        /* 开奖结果 */
+        .bg-ball {
+          display: inline-block;
+          width: 2rem;
+          height: 2rem;
+          line-height: 2rem;
+          text-align: center;
+          border-radius: 50%;
+          margin: 0.8rem 0.35rem;
+        }
       </style>
     </head>
     <body>
       <div id="header" class="header">
-        <div class="header-1">快选规则 ( 离线 )</div>
+        <div class="header-1">
+          <div class="header-tabs">
+            <span id="tab_kuaixuan">快选规则</span><span id="tab_draw">开奖结果</span>
+          </div>
+        </div>
         <div class="header-2">开奖结果 ${previous_no} &nbsp;&nbsp;账号 ${member_account}&nbsp;&nbsp;可用 ${credit_balance}
         </div>
       </div>
       <div class="tc systime" id="systime"></div>
       <div id="tip"><span></span></div>
       <div class="module">
+        ${this.drawnumber()}
+        <!-- 快选模块 -->
         <div name="module" id="kuaixuan" class="kuaixuan">
           <div class="right mt10">
             <div class="bd m5">
@@ -1867,7 +2084,7 @@ class CodeMaker {
         </script>
         <script>
           ${this.codeMaker}
-          ${this.intercept}
+          ${await this.intercept()}
         </script>
       <script type="text/html" id="tpl_number">
       {{if Data && Data.length >0}}
