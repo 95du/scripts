@@ -2,42 +2,13 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-green; icon-glyph: superscript;
 class CodeMaker {
-  constructor(codeMaker, Data) {
+  constructor(codeMaker, selected) {
     this.codeMaker = codeMaker;
-    this.Data = Data || {};
+    this.Data = selected.Data || {};
+    this.drawRows = selected.drawRows;
     this.css = this.css();
     this.drawnumber = this.drawnumber();
   }
-  
-  /**
-   * 根据类型发起 HTTP 请求
-   */
-  async httpRequest(url, type) {
-    const request = new Request(url);
-    request.timeoutInterval = 10;
-    let data;
-    if (type === 'json') {
-      const res = await request.loadJSON();
-      data = res?.val ?? res;
-    } else data = await request.loadString();
-    if (data) return data;
-  };
-  
-  async getAgentData() {
-    const agent_data = await this.httpRequest(`http://boxjs.com/query/data/agent_data`, 'json');
-    const { drawRows } = JSON.parse(agent_data || '{}');
-    const drawRowsArr = {
-      Status: 1,
-      Data: {
-        Rows: drawRows?.map(row => ({
-          ...row,
-          period_datetime: row.period_datetime.split(' ')[1]
-        })),
-        PageIndex: 1
-      }
-    };
-    return drawRowsArr || [];
-  };
   
   // 日志解析 → options
   parseToOptions = (text) => {
@@ -640,7 +611,16 @@ class CodeMaker {
   
   // 注入拦截 js
   intercept = async () => {
-    const drawRows = await this.getAgentData();
+    const drawRows = {
+      Status: 1,
+      Data: {
+        Rows: this.drawRows?.map(row => ({
+          ...row,
+          period_datetime: row.period_datetime.split(' ')[1]
+        })),
+        PageIndex: 1
+      }
+    };
     const { period_no } = this.Data;
     const curStatus = {
       last_seconds : 300,
