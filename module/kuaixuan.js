@@ -783,7 +783,7 @@ class CodeMaker {
         document.getElementById('tbody').innerHTML = html;
       };
       
-      window.showModule = function (id) {
+      window.showModule = (id) => {
         const modules = document.querySelectorAll('[name="module"]');
         modules.forEach(el => el.classList.remove('active'));
       
@@ -2089,10 +2089,7 @@ class CodeMaker {
             </tr>
           </table>
         </script>
-        <script>
-          ${this.codeMaker}
-          ${js}
-        </script>
+      </div>
       <script type="text/html" id="tpl_number">
       {{if Data && Data.length >0}}
       {{each Data as item i}}
@@ -2104,6 +2101,10 @@ class CodeMaker {
         {{else}}
       <tr><td>没有这样的号码</td></tr>
       {{/if}}
+      </script>
+      <script>
+        ${this.codeMaker}
+        ${js}
       </script>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
       </audio>
