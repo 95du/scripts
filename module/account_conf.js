@@ -145,7 +145,6 @@ const viewRule = async (data) => {
       .particle { position: absolute; width: 5px; height: 5px; background: rgba(255, 255, 255, 0.8); border-radius: 50%; opacity: 0; animation: floatParticles 5s infinite ease-in-out; }
       @keyframes floatParticles { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 50% { opacity: 1; transform: translateY(-50px) scale(1); }
       100% { opacity: 0; transform: translateY(-100px) scale(0.5); }}
-      .card { width: 100%; max-width: 400px; padding: 10px; border-radius: 15px; text-align: center; background: linear-gradient(130deg, #facf41, #f89e6d); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); margin-bottom: 20px; color: #fff; font-weight: bold; }
       .text-content { width: 100%; max-width: 400px; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 15px; color: #fff; white-space: pre-wrap; overflow-y: auto; max-height: 80vh; }
     </style>
   </head>
@@ -153,7 +152,8 @@ const viewRule = async (data) => {
     <script>
       for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
     </script>
-    <div class="card"><h3>${data.title}</h3></div><div class="text-content">${data.content}</div>
+    <div class="text-content" style='text-align:center;'><h3>${data.title}</h3></div></br>
+    <div class="text-content">${data.content}</div>
   </body>
   </html>`;
   const webView = new WebView();
