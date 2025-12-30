@@ -76,10 +76,11 @@ const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
 };
 
 // ✅ 获取 BoxJs 数据
-const getBoxjsData = async (key = 'bet_data') => {
+const getBoxjsData = async (key) => {
   try {
     const data = await new Request(`http://boxjs.com/query/data/${key}`).loadJSON();
-    return JSON.parse(data.val);
+    const val = data?.val;
+    return JSON.parse(val ?? (key === 'bet_data' ? '[]' : '{}'));
   } catch {}
 };
 
@@ -482,7 +483,7 @@ const statMenu = async (selected, conf) => {
     list = await new Request(`${github}/records.json`).loadJSON()
     await saveBoxJsData(list, 'record_rows');
   }
-  
+
   const records = list.slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = records[0]?.date === today;
@@ -495,9 +496,8 @@ const statMenu = async (selected, conf) => {
   if (idx === -1) return;
 
   if (!hasToday && idx === 0) {
-    const { drawRows } = await getBoxjsData('agent_data') || {};
     const lastRow = records[0]?.data?.[0] || null;
-    return runReplay(selected, conf, drawRows, today, lastRow);
+    return runReplay(selected, conf, selected.drawRows, today, lastRow);
   }
 
   const recordIndex = hasToday ? idx : idx - 1;
@@ -520,12 +520,12 @@ const saveBody = (arr, event) => {
   return arr;
 };
 
-const getModule = async (Data) => {
+const getModule = async (selected) => {
   const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js', 24);
   await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js', 4);
   if (typeof require === 'undefined') require = importModule;
   const { CodeMaker } = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
-  const module = await new CodeMaker(codeMaker, Data);
+  const module = await new CodeMaker(codeMaker, selected);
   return module;
 };
 
@@ -554,7 +554,7 @@ const buildBody = async (event, kx, bet_log = '', isLog) => {
 
 // ✅ 运行快选 HTML
 const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
-  const kx = await getModule(selected.Data);
+  const kx = await getModule(selected);
   const html = await buildHtml(kx, isLog, bet_log, selected);
   if (!html) return;
   
@@ -755,9 +755,11 @@ const setTaskType = async (betData, selected, conf) => {
         }
         break;
       }
-      case 'logRule':
-        await kuaixuan(betData, selected, true, Pasteboard.paste()?.trim());
+      case 'logRule': {
+        const paste = Pasteboard.paste()?.trim();
+        await kuaixuan(betData, selected, true, paste);
         break;
+      }
       case 'writeRule':
         await kuaixuan(betData, selected);
         break;
@@ -932,28 +934,33 @@ const configMenu = async (betData, selected, conf) => {
       await refreshReopen(betData, selected, conf, setTaskType);
       break;
   }
-
   await refreshReopen(betData, selected, conf, configMenu);
 };
 
 // ✅ 主菜单入口
 const presentMenu = async () => {
-  let betData = await getBoxjsData();
+  let [betData, agent_data] = await Promise.all([
+    getBoxjsData('bet_data'),
+    getBoxjsData('agent_data')
+  ]);
   if (!Array.isArray(betData)) {
     betData = [];
   }
   const hasTestAccount = betData.some(i => i.type === 'test');
-  if (!betData?.length || !hasTestAccount) {
+  if (betData?.length && !hasTestAccount) {
     betData.push(defaultData);
     await saveBoxJsData(betData);
   }
   const alert = new Alert();
-  alert.message = '【 账号配置 】\n首次使用请先设置投注规则';
+  alert.message = '【 账号配置 】\n首次使用请先登录再设置投注规则';
   betData.forEach(a => alert.addAction(a.member_account));
   alert.addCancelAction('取消');
   const idx = await alert.presentSheet();
   if (idx === -1) return;
   const selected = betData[idx];
+  if (typeof agent_data !== 'undefined') {
+    selected.drawRows = agent_data.drawRows;
+  }
   const conf = selected.settings || defaultConfig;
   if (conf) await configMenu(betData, selected, conf);
 };
