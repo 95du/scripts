@@ -6,6 +6,7 @@ class CodeMaker {
     this.codeMaker = codeMaker;
     this.Data = Data || {};
     this.css = this.css();
+    this.drawnumber = this.drawnumber();
   }
   
   /**
@@ -20,6 +21,22 @@ class CodeMaker {
       data = res?.val ?? res;
     } else data = await request.loadString();
     if (data) return data;
+  };
+  
+  async getAgentData() {
+    const agent_data = await this.httpRequest(`http://boxjs.com/query/data/agent_data`, 'json');
+    const { drawRows } = JSON.parse(agent_data || '{}');
+    const drawRowsArr = {
+      Status: 1,
+      Data: {
+        Rows: drawRows?.map(row => ({
+          ...row,
+          period_datetime: row.period_datetime.split(' ')[1]
+        })),
+        PageIndex: 1
+      }
+    };
+    return drawRowsArr || [];
   };
   
   // 日志解析 → options
@@ -623,20 +640,7 @@ class CodeMaker {
   
   // 注入拦截 js
   intercept = async () => {
-    const agent_data = await this.httpRequest(`http://boxjs.com/query/data/agent_data`, 'json');
-    const { drawRows } = JSON.parse(agent_data) || {};
-    
-    const drawRowsArr = {
-      Status: 1,
-      Data: {
-        Rows: drawRows.map(row => ({
-          ...row,
-          period_datetime: row.period_datetime.split(' ')[1]
-        })),
-        PageIndex: 1
-      }
-    };
-    
+    const drawRows = await this.getAgentData();
     const { period_no } = this.Data;
     const curStatus = {
       last_seconds : 300,
@@ -644,8 +648,9 @@ class CodeMaker {
       next_period_no: period_no,
       status : 0,
     }
+    
     return `
-      document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
       const showTips = (msg, duration = 1500) => {
         const tip = document.getElementById("tip");
         const text = tip.querySelector("span");
@@ -769,7 +774,7 @@ class CodeMaker {
       }
       
       // 开奖结果
-      const drawResult = ${JSON.stringify(drawRowsArr)};
+      const drawResult = ${JSON.stringify(drawRows)};
       if (window.template && drawResult?.Data) {
         const html = template('tpl_refresh', {
           HideYiziWuer: '0',
@@ -933,6 +938,8 @@ class CodeMaker {
       credit_balance 
     } = account.Data;
     const previous_no = previous_draw_no.replace(/,/g, " ");
+    const js = await this.intercept();
+    
     return `
     <html>
     <head>
@@ -1042,7 +1049,7 @@ class CodeMaker {
       <div class="tc systime" id="systime"></div>
       <div id="tip"><span></span></div>
       <div class="module">
-        ${this.drawnumber()}
+        ${this.drawnumber}
         <!-- 快选模块 -->
         <div name="module" id="kuaixuan" class="kuaixuan">
           <div class="right mt10">
@@ -2084,7 +2091,7 @@ class CodeMaker {
         </script>
         <script>
           ${this.codeMaker}
-          ${await this.intercept()}
+          ${js}
         </script>
       <script type="text/html" id="tpl_number">
       {{if Data && Data.length >0}}
