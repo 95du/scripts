@@ -1020,7 +1020,7 @@ class CodeMaker {
       <div id="header" class="header">
         <div class="header-1">
           <div class="header-tabs">
-            <span id="tab_kuaixuan">快选规则</span><span id="tab_draw">开奖结果</span>
+            <span id="tab_kuaixuan">快选规则</span><span id="tab_draw">开奖号码</span>
           </div>
         </div>
         <div class="header-2">开奖结果 ${previous_no} &nbsp;&nbsp;账号 ${member_account}&nbsp;&nbsp;可用 ${credit_balance}
