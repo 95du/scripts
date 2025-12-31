@@ -253,25 +253,6 @@ class CodeMaker {
       if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
     };
     
-    const bindRepeatTwoWordsFilter = (maker) => {
-      const checkboxes = document.querySelectorAll('.repeat-two-words-filter');
-      checkboxes.forEach(cb => {
-        cb.addEventListener('change', () => {
-          checkboxes.forEach(c => { if (c !== cb) c.checked = false });
-          if (cb.checked) {
-            maker.options
-            .repeatTwoWordsFilter =
-              Number(cb.getAttribute('repeatWordsFilter'));
-          } else {
-            maker.options
-            .repeatTwoWordsFilter = -1;
-          }
-          maker.log();
-          maker.generate();
-        });
-      });
-    };
-    
     const renderLogs = (logs) => logs.map((l, i) => \`<div class="stagger" style="animation-delay:\${i*0.1}s"><span class="icon">✓</span>\${l}</div>\`).join('');
     
     const renderTable = (list) => {
@@ -343,7 +324,6 @@ class CodeMaker {
     
     try {
       const maker = new CodeMaker(${JSON.stringify(options)});
-      bindRepeatTwoWordsFilter(maker)
       const o = maker.options;
       const log = "${input.replace(/"/g, '\\"')}";
       setLogs(log, o);
@@ -404,24 +384,6 @@ class CodeMaker {
         @media(prefers-color-scheme:dark){body{background:#000}}
         .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%; opacity:0;animation:floatParticles 6s infinite ease-in-out}
         @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-60px) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.5)}}
-        
-        .filter-bar {
-          margin: 10px 0 10px;
-          padding: 8px 12px;
-          background: rgba(255,255,255,.15);
-          border-radius: 15px;
-          color: #fff;
-          font-size: 16px;
-          text-align: center; 
-        }
-        
-        .filter-bar label {
-          cursor: pointer;
-        }
-    
-        .red2 {
-          color: yellow;
-        }
       </style>
     </head>
     <body>
@@ -433,15 +395,6 @@ class CodeMaker {
         <button class="save-btn" id="originBtn">原版规则</button>
         <div class="count" id="count"></div>
         <button class="save-btn" id="saveBtn">隐私规则</button>
-      </div>
-      <div class="filter-bar">
-        <label>
-          <input type="checkbox" class="repeat-two-words-filter checkbox" repeatWordsFilter="1"> 除
-        </label>
-        <label style="margin-left:12px;">
-          <input type="checkbox" class="repeat-two-words-filter checkbox" repeatWordsFilter="0"> 取
-        </label>
-        (<strong class="red2">双重</strong>)
       </div>
       <div class="numbers">
         <div class="numbers-scroll">
