@@ -2,12 +2,16 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-green; icon-glyph: superscript;
 class CodeMaker {
-  constructor(codeMaker, selected) {
+  constructor(codeMaker, sel) {
     this.codeMaker = codeMaker;
-    this.Data = selected.Data || {};
-    this.drawRows = selected.drawRows;
+    this.Data = sel.Data || {};
+    this.drawRows = sel.drawRows;
+    this.billData = sel.bill;
+    this.logData = sel.log;
     this.css = this.css();
     this.drawnumber = this.drawnumber();
+    this.historyBill = this.historyBill();
+    this.quickSelectLog = this.quickSelectLog();
   }
   
   // 日志解析 → options
@@ -249,6 +253,25 @@ class CodeMaker {
       if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
     };
     
+    const bindRepeatTwoWordsFilter = (maker) => {
+      const checkboxes = document.querySelectorAll('.repeat-two-words-filter');
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          checkboxes.forEach(c => { if (c !== cb) c.checked = false });
+          if (cb.checked) {
+            maker.options
+            .repeatTwoWordsFilter =
+              Number(cb.getAttribute('repeatWordsFilter'));
+          } else {
+            maker.options
+            .repeatTwoWordsFilter = -1;
+          }
+          maker.log();
+          maker.generate();
+        });
+      });
+    };
+    
     const renderLogs = (logs) => logs.map((l, i) => \`<div class="stagger" style="animation-delay:\${i*0.1}s"><span class="icon">✓</span>\${l}</div>\`).join('');
     
     const renderTable = (list) => {
@@ -320,6 +343,7 @@ class CodeMaker {
     
     try {
       const maker = new CodeMaker(${JSON.stringify(options)});
+      bindRepeatTwoWordsFilter(maker)
       const o = maker.options;
       const log = "${input.replace(/"/g, '\\"')}";
       setLogs(log, o);
@@ -380,6 +404,24 @@ class CodeMaker {
         @media(prefers-color-scheme:dark){body{background:#000}}
         .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%; opacity:0;animation:floatParticles 6s infinite ease-in-out}
         @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-60px) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.5)}}
+        
+        .filter-bar {
+          margin: 10px 0 10px;
+          padding: 8px 12px;
+          background: rgba(255,255,255,.15);
+          border-radius: 15px;
+          color: #fff;
+          font-size: 16px;
+          text-align: center; 
+        }
+        
+        .filter-bar label {
+          cursor: pointer;
+        }
+    
+        .red2 {
+          color: yellow;
+        }
       </style>
     </head>
     <body>
@@ -391,6 +433,15 @@ class CodeMaker {
         <button class="save-btn" id="originBtn">原版规则</button>
         <div class="count" id="count"></div>
         <button class="save-btn" id="saveBtn">隐私规则</button>
+      </div>
+      <div class="filter-bar">
+        <label>
+          <input type="checkbox" class="repeat-two-words-filter checkbox" repeatWordsFilter="1"> 除
+        </label>
+        <label style="margin-left:12px;">
+          <input type="checkbox" class="repeat-two-words-filter checkbox" repeatWordsFilter="0"> 取
+        </label>
+        (<strong class="red2">双重</strong>)
       </div>
       <div class="numbers">
         <div class="numbers-scroll">
@@ -753,60 +804,89 @@ class CodeMaker {
         requestAnimationFrame(step);
       }
       
-      // 开奖结果
+      // 号码/日志/账单模块数据
       const drawResult = ${JSON.stringify(drawRows)};
-      if (window.template && drawResult?.Data) {
+      const logResult = ${JSON.stringify(this.logData)};
+      const billResult = ${JSON.stringify(this.billData)};
+      
+      // 渲染号码
+      const renderDraw = () => {
+        if (!window.template || !drawResult?.Data) return;
         const html = template('tpl_refresh', {
           HideYiziWuer: '0',
           Data: drawResult.Data
         });
-        document.getElementById('tbody').innerHTML = html;
+        const tbody = document.getElementById('tbody')
+        tbody.innerHTML = html;
+      };
+      // 渲染日志
+      const renderLog = () => {
+        if (!window.template || !logResult?.Data) return;
+        const html = template('tpl_log', {
+          Data: logResult.Data
+        });
+        const tbody = document.getElementById('log_tbody');
+        tbody.innerHTML = html;
+      };
+      // 渲染账单
+      const renderBill = () => {
+        if (!window.template || !billResult?.Data) return;
+        const html = template('tpl_bill', {
+          Data: billResult.Data
+        });
+        const tbody = document.getElementById('bill_tbody');
+        tbody.innerHTML = html;
       };
       
+      // 切换模块样式
       window.showModule = (id) => {
-        const modules = document.querySelectorAll('[name="module"]');
-        modules.forEach(el => el.classList.remove('active'));
-      
+        if (id === 'drawnumber') renderDraw();
+        if (id === 'bill') renderBill();
+        if (id === 'log') renderLog();
+        document.querySelectorAll('[name="module"]').forEach(el => el.classList.remove('active'));
         const target = document.getElementById(id);
         if (target) target.classList.add('active');
+        // 滚动到顶部
+        const module = document.querySelector('.module');
+        [target, module].forEach(el => el && (el.scrollTop = 0));
       
-        if (id === 'drawnumber') document.getElementById('pager')?.classList.add('active');
-      
-        const tabs = document.querySelectorAll('.header-tabs span');
-        tabs.forEach(tab => {
-          const list = tab.classList;
-          list.remove('active');
-          list.add('inactive');
+        const tabMap = { 
+          kuaixuan:'tab_kuaixuan', 
+          drawnumber:'tab_draw', 
+          bill:'tab_bill', 
+          log:'tab_log' 
+        };
+        document.querySelectorAll('.header-tabs span').forEach(tab => {
+          const tl = tab.classList;
+          tl.remove('active');
+          tl.add('inactive');
         });
-      
-        const activeTab =
-          id === 'drawnumber' ? document.getElementById('tab_draw') : document.getElementById('tab_kuaixuan');
-        const list = activeTab?.classList
-        list.add('active');
-        list.remove('inactive');
+        const activeTab = document.getElementById(tabMap[id]);
+        if (activeTab) {
+          const al = activeTab.classList;
+          al.add('active');
+          al.remove('inactive');
+        }
       };
-        document.getElementById('tab_draw')?.addEventListener('click', () => {
-        showModule('drawnumber');
+      document.querySelectorAll('.header-tabs span').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const moduleId = tab.dataset.module;
+          if (moduleId) showModule(moduleId);
+        });
       });
-      document.getElementById('tab_kuaixuan')?.addEventListener('click', () => {
-        showModule('kuaixuan');
-      });
+      // 初始化模块
       showModule('kuaixuan');
     })`;
   };
   
-  // 结果模块
+  // 号码模块
   drawnumber = () => {
     return `<div name="module" id="drawnumber" class="m5 mt5">
       <form id="form1" autocomplete="off">
         <div class="mt10" id="bd_serverinfo">
           <table class="t-1">
             <thead>
-              <tr class="bg3 tc">
-                <td colspan="11">
-                  开奖号码
-                </td>
-              </tr>
+              <tr class="bg3 tc"><td colspan="11">开奖号码</td></tr>
             </thead>
           </table>
         </div>
@@ -816,98 +896,164 @@ class CodeMaker {
           <table class="t-1">
             <thead>
               <tr class="bg3" style="text-align:center">
-                <td width="15%">期号</td>
-                <td width="15%">开奖时间</td>
-                <td width="10%">仟</td>
-                <td width="10%">佰</td>
-                <td width="10%">拾</td>
-                <td width="10%">个</td>
-                <td width="10%">五</td>
+                <td width="15%">期号</td><td width="15%">开奖时间</td><td width="10%">仟</td><td width="10%">佰</td><td width="10%">拾</td><td width="10%">个</td><td width="10%">五</td>
               </tr>
             </thead>
-            <tbody id="tbody" class="fn-hover"> <script type="text/html" id="tpl_refresh">
-              {{if !Data.Rows.length}}
-              <tr>
-                <td colspan="8">暂无数据！</td>
-              </tr>
-              {{else}}
-                {{each Data.Rows as item i }}
-                {{var is_show1 = item.period_status == 3;}}
-                {{var is_show2 = (item.thousand_no != "0" || item.hundred_no != "0" || item.ten_no != "0" || item.one_no != "0" || item.ball5 != "0");}}
-                {{var is_show = (is_show1 || is_show2);}}
-                {{if i==0 && Data.PageIndex == 1 }}
-                <tr>
-                  <td>
-                    {{item.period_no}}
-                    <span class="red">
-                      {{if item.is_deleted == 1}}(已删){{/if}}
-                      {{if item.enable_status == 2}}(已废置){{/if}}
-                      {{if item.enable_status == 3}}(休市){{/if}}
-                    </span>
-                  </td>
-                  <td>{{if item.period_status != 3}}--
-                    {{else}}{{item.period_datetime}}{{/if}}
-                  </td>
-                  <td>
-                    <span class="bg-ball ball2">{{if is_show}}{{item.thousand_no}}{{/if}}</span>
-                  </td>
-                  <td>
-                    <span class="bg-ball ball2">{{if is_show}}{{item.hundred_no}}{{/if}}</span>
-                  </td>
-                  <td>
-                    <span class="bg-ball ball2">{{if is_show}}{{item.ten_no}}{{/if}}</span>
-                  </td>
-                  <td>
-                    <span class="bg-ball ball2">{{if is_show}}{{item.one_no}}{{/if}}</span>
-                  </td>
-                  {{if HideYiziWuer == '0'}}
-                  <td>
-                    <span class="bg-ball ball2">{{if is_show}}{{item.ball5}}{{/if}}</span>
-                  </td>
-                  {{/if}}
-                </tr>
-                {{else}}
-                  <tr>
-                    <td>
-                      {{item.period_no}}
-                      <span class="red">
-                        {{if item.is_deleted == 1}}(已删){{/if}}
-                        {{if item.enable_status == 2}}(已废置){{/if}}
-                        {{if item.enable_status == 3}}(休市){{/if}}
-                      </span>
-                    </td>
-                    <td>{{if item.period_status != 3}}--
-                      {{else}}{{item.period_datetime}}{{/if}}
-                    </td>
-                    <td>
-                      <span class="bg-ball ball1">{{if is_show}}{{item.thousand_no}}{{/if}}</span>
-                    </td>
-                    <td>
-                      <span class="bg-ball ball1">{{if is_show}}{{item.hundred_no}}{{/if}}</span>
-                    </td>
-                    <td>
-                      <span class="bg-ball ball1">{{if is_show}}{{item.ten_no}}{{/if}}</span>
-                    </td>
-                    <td>
-                      <span class="bg-ball ball1">{{if is_show}}{{item.one_no}}{{/if}}</span>
-                    </td>
-                    {{if HideYiziWuer == '0'}}
-                    <td>
-                      <span class="bg-ball ball1">{{if is_show}}{{item.ball5}}{{/if}}</span>
-                    </td>
-                    {{/if}}
-                  </tr>
-                  {{/if}}
-                  {{/each}}
-                  {{/if}}
-              </script>
-            </tbody>
+            <tbody id="tbody" class="fn-hover"></tbody>
           </table>
         </form>
       </div>
     </div>
     <div name="module" id="pager" class="pager" >第 <span class="pageindex red">1</span> 页 共 <span class="pagecount red">17</span> 页 共 <span class="recordcount red">252</span> 条 <br />
-    </div>`;
+    </div>
+    <!-- 号码模板 -->
+    <script type="text/html" id="tpl_refresh">
+      {{if !Data.Rows.length}}
+        <tr><td colspan="8">暂无数据！</td></tr>
+      {{else}}
+        {{each Data.Rows as item i}}
+          {{var is_show1 = item.period_status == 3;}}
+          {{var is_show2 = (item.thousand_no != "0" || item.hundred_no != "0" || item.ten_no != "0" || item.one_no != "0" || item.ball5 != "0");}}
+          {{var is_show = (is_show1 || is_show2);}}
+    
+          {{if i == 0 && Data.PageIndex == 1}}
+            <tr>
+              <td>
+                {{item.period_no}}
+                <span class="red">
+                  {{if item.is_deleted == 1}}(已删){{/if}}
+                  {{if item.enable_status == 2}}(已废置){{/if}}
+                  {{if item.enable_status == 3}}(休市){{/if}}
+                </span>
+              </td>
+              <td>
+                {{if item.period_status != 3}}--
+                {{else}}{{item.period_datetime}}{{/if}}
+              </td>
+              <td><span class="bg-ball ball2">{{if is_show}}{{item.thousand_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball2">{{if is_show}}{{item.hundred_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball2">{{if is_show}}{{item.ten_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball2">{{if is_show}}{{item.one_no}}{{/if}}</span></td>
+              {{if HideYiziWuer == '0'}}
+                <td><span class="bg-ball ball2">{{if is_show}}{{item.ball5}}{{/if}}</span></td>
+              {{/if}}
+            </tr>
+          {{else}}
+            <tr>
+              <td>
+                {{item.period_no}}
+                <span class="red">
+                  {{if item.is_deleted == 1}}(已删){{/if}}
+                  {{if item.enable_status == 2}}(已废置){{/if}}
+                  {{if item.enable_status == 3}}(休市){{/if}}
+                </span>
+              </td>
+              <td>
+                {{if item.period_status != 3}}--
+                {{else}}{{item.period_datetime}}{{/if}}
+              </td>
+              <td><span class="bg-ball ball1">{{if is_show}}{{item.thousand_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball1">{{if is_show}}{{item.hundred_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball1">{{if is_show}}{{item.ten_no}}{{/if}}</span></td>
+              <td><span class="bg-ball ball1">{{if is_show}}{{item.one_no}}{{/if}}</span></td>
+              {{if HideYiziWuer == '0'}}
+                <td><span class="bg-ball ball1">{{if is_show}}{{item.ball5}}{{/if}}</span></td>
+              {{/if}}
+            </tr>
+          {{/if}}
+        {{/each}}
+      {{/if}}
+    </script>`;
+  };
+  
+  // 账单模块
+  historyBill = () => {
+    return `<div name="module" id="bill" class="m5 mt10">
+      <div class="mt10">
+        <table class="t-1">
+          <thead>
+            <tr class="bg3">
+              <td colspan="5" class="fb tc">历史账单 (今天)</td>
+            </tr>
+            <tr class="bg2 tc">
+              <td width="20%">期号</td><td width="20%">金额</td><td width="20%">回水</td><td width="20%">中奖</td><td width="20%">盈亏</td>
+            </tr>
+          </thead>
+          <tbody id="bill_tbody" class="fn-hover tc"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 账单模板 -->
+    <script type="text/html" id="tpl_bill">
+      {{if !Data.length}}
+      <tr>
+        <td colspan="5">暂无数据!</td>
+      </tr>
+      {{else}}
+        {{each Data as item i}}
+          {{if i != Data.length - 1}}
+          <tr>
+            <td class="f14 fb">
+              <a class="{{if item.show_frontend == 0}}red fb{{/if}}">
+                {{item.period_no}}
+              </a>
+            </td>
+            <td>{{item.bet_money}}</td>
+            <td>{{item.show_frontend == 0 ? '--' : item.return_water}}</td>
+            <td>{{item.show_frontend == 0 ? '--' : item.win_money}}</td>
+            <td class="fb">
+              {{item.show_frontend == 0 ? '--' : item.profit_loss_money}}
+            </td>
+          </tr>
+          {{else}}
+          <tr class="bg2">
+            <td>合计</td>
+            <td>{{item.bet_money}}</td>
+            <td>{{item.return_water}}</td>
+            <td>{{item.win_money}}</td>
+            <td>{{item.profit_loss_money}}</td>
+          </tr>
+          {{/if}}
+        {{/each}}
+      {{/if}}
+    </script>`;
+  };
+  
+  // 日志模块
+  quickSelectLog = () => {
+    return `<div name="module" id="log" class="m5 mt10">
+      <div class="mt10">
+        <table class="t-1">
+          <thead>
+            <tr class="bg3 tc">
+              <td colspan="4">日志</td>
+            </tr>
+            <tr class="bg2">
+              <td class="nowrap">笔数</td><td class="nowrap">金额</td><td>操作内容</td><td class="nowrap">操作时间</td>
+            </tr>
+          </thead>
+          <tbody id="log_tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 日志模板 -->
+    <script type="text/html" id="tpl_log">
+      {{if !Data.Rows || !Data.Rows.length}}
+        <tr>
+          <td colspan="4" class="tc">暂无数据!</td>
+        </tr>
+      {{else}}
+        {{each Data.Rows as item i}}
+          <tr>
+            <td>{{item.bet_count}}</td>
+            <td>{{item.bet_money}}</td>
+            <td>{{#item.operation_content | rpl_color}}</td>
+            <td>{{item.operation_datetime}}</td>
+          </tr>
+        {{/each}}
+      {{/if}}
+    </script>`;
   };
   
   // 返回完整 HTML
@@ -936,45 +1082,58 @@ class CodeMaker {
         .header {
           position: fixed;
           top: 0; left: 0; right: 0;
-          height: 4.8rem;
+          height: 5.5rem;
           background: #fb5924;
-          font-weight: bold;
+          font-weight: 600;
           display: flex;
           flex-direction: column;
           justify-content: center;
           align-items: center;
           text-align: center;
-          font-size: 1.5rem;
-          color: yellow;
         }
         .header-1 {
-          line-height: 2rem;
-        }
-        .header-tabs {
-          display: flex;
-          gap: 1.2rem;
-        }
-        .header-tabs span {
-          cursor: pointer;
-          transition: color .2s;
-        }
-        /* 当前显示 */
-        .header-tabs span.active {
-          color: #fff;
-          opacity: 0.6;
+          line-height: 1.6rem;
         }
         .header-2 {
-          margin-top: 0.3rem;
+          margin-top: 0.55rem;
+          margin-bottom: -0.3rem;
           font-size: 1.2rem;
           line-height: 1.4rem;
           color: #fff;
         }
+        .header-tabs {
+          display: flex;
+          gap: 8px;
+        }
+        .header-tabs .tab {
+          padding: 6px 16px;
+          border-radius: 10px;
+          background-color: yellow;
+          color: #111;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-weight: 500;
+          font-size: 14px;
+          user-select: none;
+        }
+        /* 悬停效果 */
+        .header-tabs .tab:hover {
+          background-color: #e0e0e0;
+          color: #000;
+          transform: translateY(-2px);
+        }
+        /* 激活状态 */
+        .header-tabs .tab.active {
+          background: linear-gradient(90deg, #ff7e5f, #feb47b);
+          color: #fff;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
         .systime { 
-          margin-top: -2rem; 
+          margin-top: -1.3rem; 
         }
         .module {
           position: absolute;
-          top: calc(5rem + 2.6rem);
+          top: calc(5.5rem + 2.8rem);
           bottom: 0;
           left: 0; 
           right: 0;
@@ -1020,7 +1179,10 @@ class CodeMaker {
       <div id="header" class="header">
         <div class="header-1">
           <div class="header-tabs">
-            <span id="tab_kuaixuan">快选规则</span><span id="tab_draw">开奖号码</span>
+            <span id="tab_kuaixuan" data-module="kuaixuan" class="tab active">快选</span>
+            <span id="tab_draw" data-module="drawnumber" class="tab">开奖号码</span>
+            <span id="tab_bill" data-module="bill" class="tab">历史账单</span>
+            <span id="tab_log" data-module="log" class="tab">日志</span>
           </div>
         </div>
         <div class="header-2">开奖结果 ${previous_no} &nbsp;&nbsp;账号 ${member_account}&nbsp;&nbsp;可用 ${credit_balance}
@@ -1029,7 +1191,12 @@ class CodeMaker {
       <div class="tc systime" id="systime"></div>
       <div id="tip"><span></span></div>
       <div class="module">
+        <!-- 号码模块 -->
         ${this.drawnumber}
+        <!-- 账单模块 -->
+        ${this.historyBill}
+        <!-- 日志模块 -->
+        ${this.quickSelectLog}
         <!-- 快选模块 -->
         <div name="module" id="kuaixuan" class="kuaixuan">
           <div class="right mt10">
