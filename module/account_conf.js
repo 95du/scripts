@@ -592,6 +592,25 @@ const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
 
 /** =======💙 三级菜单 💙======= */
 
+// 数字出现次数统计
+const getDigitCountMap = (num) => {
+  const map = {};
+  for (const d of num) map[d] = (map[d] || 0) + 1;
+  return map;
+};
+
+// ✅ 双重(2+1+1) 或 双双重(2+2)
+// ❌ 排除三重、四重
+const isDoubleOrDoubleDouble = (num) => {
+  const counts = Object.values(getDigitCountMap(num));
+  if (counts.some(c => c >= 3)) return false; // 排除三重、四重
+  const pairCount = counts.filter(c => c === 2).length;
+  return pairCount === 1 || pairCount === 2;
+};
+
+// 过滤：取双重 + 双双重（remain 为数组）
+const filterDoubleNumbers = (remain = []) => remain.filter(n => n && isDoubleOrDoubleDouble(n));
+
 // 过滤号码
 const getRemainingBySet = (excludes = []) => {
   const excludeSet = new Set(
@@ -636,7 +655,8 @@ const reverseRule = async (betData, selected, conf) => {
   const isReversed = parsed.guid !== '1'; // 如果guid是1，表示已经反转过
   const excludes = parsed.bet_number.split(',');
   const remain = getRemainingBySet(excludes);
-
+  const doubleNum = filterDoubleNumbers(remain);
+  
   if (!remain.length) {
     await generateAlert('反转后号码为空，操作已取消 ⚠️', null, ['完成']);
     return;
@@ -649,7 +669,7 @@ const reverseRule = async (betData, selected, conf) => {
   if (confirm !== 1) return;
   await updateConfig(betData, selected, c => {
     const newfastPick = replaceParams(rule, {
-      bet_number: remain.join(','),
+      bet_number: doubleNum.join(','),
       guid: isReversed ? 1 : 0
     });
     c.custom.fastPick.splice(idx, 1, newfastPick);
