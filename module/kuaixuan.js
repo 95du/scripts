@@ -27,7 +27,7 @@ class CodeMaker {
       fifthNumber: "",
       positionType: 0,
       positionFilter: 0,
-      fixedPositions: [0, 0, 0, 0],
+      fixedPositions: [0,0,0,0],
       symbolPositions: [],
       remainFixedFilter: -1,
       remainFixedNumbers: [],
@@ -53,13 +53,13 @@ class CodeMaker {
       logarithmNumberFilter: -1,
       logarithmNumbers: [ [] ],
       oddNumberFilter: -1,
-      oddNumberPositions: [],
+      oddNumberPositions: [0,0,0,0],
       evenNumberFilter: -1,
-      evenNumberPositions: [],
+      evenNumberPositions: [0,0,0,0],
       bigNumberFilter: -1,
-      bigNumberPositions: [],
+      bigNumberPositions: [0,0,0,0],
       smallNumberFilter: -1,
-      smallNumberPositions: [],
+      smallNumberPositions: [0,0,0,0]
     };
   
     // 定位类型
@@ -266,110 +266,6 @@ class CodeMaker {
       if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
     };
     
-    // 不定位合（两数/三数）
-    const bindRemainMatch = (maker, o) => {
-      const two = document.querySelector('.remain-match-filter');
-      const three = document.querySelector('.remain-match-filter-three');
-      const inputs = document.querySelectorAll('input[name="budinghe"]');
-      // init
-      two.checked = o.remainMatchFilter === 2;
-      three.checked = o.remainMatchFilterThree === 3;
-      inputs[0].value = o.remainMatchNumbers?.join('') || '';
-      inputs[1].value = o.remainMatchNumbersThree?.join('') || '';
-      two.addEventListener('change', () => {
-        o.remainMatchFilter = two.checked ? 2 : -1;
-        maker.log(); maker.generate();
-      });
-      three.addEventListener('change', () => {
-        o.remainMatchFilterThree = three.checked ? 3 : -1;
-        maker.log(); maker.generate();
-      });
-      inputs[0].addEventListener('input', () => {
-        o.remainMatchNumbers = inputs[0].value.trim().split('');
-        maker.log(); maker.generate();
-      });
-      inputs[1].addEventListener('input', () => {
-        o.remainMatchNumbersThree = inputs[1].value.trim().split('');
-        maker.log(); maker.generate();
-      });
-    };
-    
-    // 合分值范围
-    const bindValueRange = (maker, o) => {
-      const min = document.querySelector('input[name="zhifanwei1"]');
-      const max = document.querySelector('input[name="zhifanwei2"]');
-      min.value = o.remainValueRanges?.[0] ?? '';
-      max.value = o.remainValueRanges?.[1] ?? '';
-      const update = () => {
-        const a = min.value.trim();
-        const b = max.value.trim();
-        o.remainValueRanges = a || b ? [Number(a), Number(b)] : [];
-        maker.log(); maker.generate();
-      };
-      min.addEventListener('input', update);
-      max.addEventListener('input', update);
-    };
-    
-    // 上奖 + 排除
-    const bindUpperExcept = (maker, o) => {
-      const upper = document.querySelector('.upper-filter-item');
-      const except = document.querySelector('.except-filter-item');
-      upper.value = o.upperNumbers?.join('') || '';
-      except.value = o.exceptNumbers?.join('') || '';
-      upper.addEventListener('input', () => {
-        const v = upper.value.trim();
-        o.upPrize = !!v;
-        o.upperNumbers = v ? v.split('') : [];
-        maker.log(); 
-        maker.generate();
-      });
-      except.addEventListener('input', () => {
-        const v = except.value.trim();
-        o.exceptNumbers = v ? v.split('') : [];
-        maker.log(); 
-        maker.generate();
-      });
-    };
-    
-    // 四字定含
-    const bindContain = (maker, o) => {
-      const filters = document.querySelectorAll('.contain-filter');
-      const input = document.querySelector('.contain-filter-item');
-      filters.forEach(cb => {
-        const v = Number(cb.getAttribute('containFilter'));
-        cb.checked = o.containFilter === v;
-      });
-      input.value = o.containNumbers?.join('') || '';
-      filters.forEach(cb => {
-        cb.addEventListener('change', () => {
-          if (!cb.checked) {
-            o.containFilter = -1;
-          } else {
-            filters.forEach(other => other !== cb && (other.checked = false));
-            o.containFilter = Number(cb.getAttribute('containFilter'));
-          }
-          // 只有勾选了除/取才更新数字
-          if (o.containFilter !== -1) {
-            const v = input.value.trim();
-            o.containNumbers = v ? v.split('') : [];
-          } else {
-            o.containNumbers = [];
-          }
-          maker.log();
-          maker.generate();
-        });
-      });
-      // 只有勾选了除/取时才生效
-      input.addEventListener('input', () => {
-        if (o.containFilter !== -1) {
-          const v = input.value.trim();
-          o.containNumbers = v ? v.split('') : [];
-          maker.log();
-          maker.generate();
-        }
-      });
-    };
-    
     // 初始化 checkbox 状态
     const checkboxMap = [
       { selector: '.repeat-words-filter[data-level="2"]', field: 'repeatTwoWordsFilter' },
@@ -384,7 +280,15 @@ class CodeMaker {
       { selector: '.big-number-filter[data-level="big"]', field: 'bigNumberFilter', type: 'big' },
       { selector: '.small-number-filter[data-level="small"]', field: 'smallNumberFilter', type: 'small' },
     ];
-
+    
+    const apply = (maker, type) => {
+      maker.log();
+      maker.generate();
+      if (type && window.__kx?.produceWord) {
+        window.__kx.produceWord(type);
+      }
+    };
+    
     const bindCheckboxGroup = (maker, { selector, field, type }) => {
       const checkboxes = document.querySelectorAll(selector);
       // init
@@ -405,14 +309,101 @@ class CodeMaker {
           } else {
             maker.options[field] = -1;
           }
-          maker.log();
-          maker.generate();
+          apply(maker, type);
           if (type) window.__kx.produceWord(type);
         });
       });
     };
     
-    // 绑定单双大小 + 初始化显示
+    // 不定位合分(两/三数)
+    const bindRemainMatch = (maker, o) => {
+      const two = document.querySelector('.remain-match-filter');
+      const three = document.querySelector('.remain-match-filter-three');
+      const [i2, i3] = document.querySelectorAll('input[name="budinghe"]');
+      two.checked = o.remainMatchFilter === 2;
+      three.checked = o.remainMatchFilterThree === 3;
+      i2.value = o.remainMatchNumbers?.join('') || '';
+      i3.value = o.remainMatchNumbersThree?.join('') || '';
+      two.onchange = () => {
+        o.remainMatchFilter = two.checked ? 2 : -1;
+        apply(maker);
+      };
+      three.onchange = () => {
+        o.remainMatchFilterThree = three.checked ? 3 : -1;
+        apply(maker);
+      };
+      i2.oninput = () => {
+        o.remainMatchNumbers = i2.value.trim().split('');
+        apply(maker);
+      };
+      i3.oninput = () => {
+        o.remainMatchNumbersThree = i3.value.trim().split('');
+        apply(maker);
+      };
+    };
+    
+    // 值范围
+    const bindValueRange = (maker, o) => {
+      const min = document.querySelector('input[name="zhifanwei1"]');
+      const max = document.querySelector('input[name="zhifanwei2"]');
+      min.value = o.remainValueRanges?.[0] ?? '';
+      max.value = o.remainValueRanges?.[1] ?? '';
+      const update = () => {
+        const a = min.value.trim();
+        const b = max.value.trim();
+        o.remainValueRanges = a || b ? [Number(a), Number(b)] : [];
+        apply(maker);
+      };
+      min.oninput = max.oninput = update;
+    };
+    
+    // 上奖 + 排除
+    const bindUpperExcept = (maker, o) => {
+      const upper = document.querySelector('.upper-filter-item');
+      const except = document.querySelector('.except-filter-item');
+      upper.value = o.upperNumbers?.join('') || '';
+      except.value = o.exceptNumbers?.join('') || '';
+      upper.oninput = () => {
+        const v = upper.value.trim();
+        o.upPrize = !!v;
+        o.upperNumbers = v ? v.split('') : [];
+        apply(maker);
+      };
+      except.oninput = () => {
+        const v = except.value.trim();
+        o.exceptNumbers = v ? v.split('') : [];
+        apply(maker);
+      };
+    };
+    
+    // 四字定含
+    const bindContain = (maker, o) => {
+      const filters = document.querySelectorAll('.contain-filter');
+      const input = document.querySelector('.contain-filter-item');
+      filters.forEach(cb => cb.checked = o.containFilter === Number(cb.getAttribute('containFilter')));
+      input.value = o.containNumbers?.join('') || '';
+      filters.forEach(cb => {
+        cb.onchange = () => {
+          if (!cb.checked) {
+            o.containFilter = -1;
+            o.containNumbers = [];
+          } else {
+            filters.forEach(x => x !== cb && (x.checked = false));
+            o.containFilter = Number(cb.getAttribute('containFilter'));
+            o.containNumbers = input.value.trim().split('');
+          }
+          apply(maker);
+        };
+      });
+      input.oninput = () => {
+        if (o.containFilter !== -1) {
+          o.containNumbers = input.value.trim().split('');
+          apply(maker);
+        }
+      };
+    };
+    
+    // 单双大小
     const bindPosition = (maker) => {
       const types = ['odd', 'even', 'big', 'small'];
       types.forEach(type => {
@@ -422,8 +413,7 @@ class CodeMaker {
           cb.checked = maker.options[field][i] === 1;
           cb.addEventListener('change', () => {
             maker.options[field][i] = cb.checked ? 1 : 0;
-            maker.log();
-            maker.generate();
+            apply(maker);
             window.__kx.produceWord(type);
           });
         });
@@ -509,7 +499,7 @@ class CodeMaker {
       const kx = window.__kx = new Kuaixuan({ json: { Param: {} } });
       kx.codeMaker = maker;
       const log = "${input.replace(/"/g, '\\"')}";
-      setLogs(log, maker.options);
+      setLogs(log, o);
       maker.log();
       
       checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
