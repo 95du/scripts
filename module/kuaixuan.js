@@ -63,7 +63,7 @@ class CodeMaker {
     };
   
     // 定位类型
-    if (text.includes("[四定位]")) o.numberType = 40;
+    if (text.includes("四定位")) o.numberType = 40;
     
     // 定位置 [取/除]（千/百/十/个）
     const positionMatch = text.match(/定位置“\[(取|除)\]”：([^；]+)/);
@@ -231,8 +231,21 @@ class CodeMaker {
     return o;
   };
   
+  // 判断是否为 4 位号码数组输入
+  isPureNumbersInput = (text) =>
+    /^(\d{4})(\s*,\s*\d{4})*$/.test(text.trim());
+  
+  // 解析成号码数组
+  parseNumber = (text) => text
+    .replace(/\s+/g, '')
+    .split(',')
+    .filter(n => /^\d{4}$/.test(n));
+  
   // 转换号码 js
-  logJS = (input, options) => {
+  logScript = (input, options) => {
+    const isArrayMode = this.isPureNumbersInput(input);
+    const rawNumbers = isArrayMode ? this.parseNumber(input) : [];
+    
     return `
     window.invoke = (type, data) => {
       window.dispatchEvent(new CustomEvent('JBridge', { detail: { type, data } }))
@@ -251,6 +264,67 @@ class CodeMaker {
       if (log.includes("大数“[取]”")) o.bigNumberFilter = 0;
       if (log.includes("小数“[取]”")) o.smallNumberFilter = 0;
       if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
+    };
+    
+    // 初始化 checkbox 状态
+    const checkboxMap = [
+      { selector: '.repeat-words-filter[data-level="2"]', field: 'repeatTwoWordsFilter' },
+      { selector: '.repeat-words-filter[data-level="double"]', field: 'repeatDoubleWordsFilter' },
+      { selector: '.repeat-words-filter[data-level="3"]', field: 'repeatThreeWordsFilter' },
+      { selector: '.repeat-words-filter[data-level="4"]', field: 'repeatFourWordsFilter' },
+      { selector: '.brother-filter[data-level="2"]', field: 'twoBrotherFilter' },
+      { selector: '.brother-filter[data-level="3"]', field: 'threeBrotherFilter' },
+      { selector: '.brother-filter[data-level="4"]', field: 'fourBrotherFilter' },
+      { selector: '.odd-number-filter[data-level="odd"]', field: 'oddNumberFilter', type: 'odd' },
+      { selector: '.even-number-filter[data-level="even"]', field: 'evenNumberFilter', type: 'even' },
+      { selector: '.big-number-filter[data-level="big"]', field: 'bigNumberFilter', type: 'big' },
+      { selector: '.small-number-filter[data-level="small"]', field: 'smallNumberFilter', type: 'small' },
+    ];
+
+    const bindCheckboxGroup = (maker, { selector, field, type }) => {
+      const checkboxes = document.querySelectorAll(selector);
+      // init
+      checkboxes.forEach(cb => {
+        const v = maker.options[field];
+        const action = cb.dataset.action;
+        cb.checked =
+          (v === 0 && action === 'include') ||
+          (v === 1 && action === 'exclude');
+      });
+      // bind
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          const action = cb.dataset.action;
+          if (cb.checked) {
+            checkboxes.forEach(o => o !== cb && (o.checked = false));
+            maker.options[field] = action === 'include' ? 0 : 1;
+          } else {
+            maker.options[field] = -1;
+          }
+          maker.log();
+          maker.generate();
+          if (type) window.__kx.produceWord(type);
+        });
+      });
+    };
+    
+    // 绑定单双大小 + 初始化显示
+    const bindPosition = (maker) => {
+      const types = ['odd', 'even', 'big', 'small'];
+      types.forEach(type => {
+        const field = \`\${type}NumberPositions\`;
+        document.querySelectorAll(\`.\${type}-number-item\`)
+          .forEach((cb, i) => {
+          cb.checked = maker.options[field][i] === 1;
+          cb.addEventListener('change', () => {
+            maker.options[field][i] = cb.checked ? 1 : 0;
+            maker.log();
+            maker.generate();
+            window.__kx.produceWord(type);
+          });
+        });
+      });
+      types.forEach(type => window.__kx.produceWord(type));
     };
     
     const renderLogs = (logs) => logs.map((l, i) => \`<div class="stagger" style="animation-delay:\${i*0.1}s"><span class="icon">✓</span>\${l}</div>\`).join('');
@@ -300,6 +374,7 @@ class CodeMaker {
       requestAnimationFrame(step);
     };
     
+    // 保存请求体
     const getBody = (maker, btn) => {
       const f = maker;
       if (!f.numberList.length) {
@@ -323,25 +398,49 @@ class CodeMaker {
     };
     
     try {
+      const filterContainer = document.getElementById('filterContainer');
+      filterContainer.innerHTML = document.getElementById('tpl_sid').innerHTML;
       const maker = new CodeMaker(${JSON.stringify(options)});
-      const o = maker.options;
+      const kx = window.__kx = new Kuaixuan({ json: { Param: {} } });
+      kx.codeMaker = maker;
       const log = "${input.replace(/"/g, '\\"')}";
-      setLogs(log, o);
+      setLogs(log, maker.options);
       maker.log();
+      checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
+      bindPosition(maker);
+      
+      // 如果是数组模式，把数组作为白名单
+      const isArrayMode = ${isArrayMode};
+      const rawNumbers = ${JSON.stringify(rawNumbers)};
+      if (isArrayMode) {
+        maker.rawNumberList = [...rawNumbers];
+        maker._originGenerate = maker.generate;
+        maker.generate = function () {
+          this.numberList = [...this.rawNumberList];
+          this._originGenerate();
+          const set = new Set(this.rawNumberList);
+          this.numberList = this.numberList.filter(n => set.has(n));
+          this.onCompleted.call(this);
+        };
+      }
+      
       maker.onCompleted = function() {
         const list = this.numberList;
-        document.getElementById('log').innerHTML = "<b>【 匹配日志 】</b><br>" + renderLogs(this.logs);
-        document.getElementById('count').textContent = list.length + " 组";
+        document.getElementById('log')
+        .innerHTML = "<b>【 匹配日志 】</b><br>" + renderLogs(this.logs);
+        document.getElementById('count').textContent = list.length;
         renderTable(list);
         
         const origBtn = document.getElementById('originBtn');
         origBtn.onclick = () => {
           origBtn.style.color = 'bbb'
           getBody(maker, origBtn);
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         };
         const saveBtn = document.getElementById('saveBtn');
         saveBtn.onclick = () => {
           saveBtn.style.color = '#bbb'
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
           if (!list.length) {
             saveBtn.style.color = '';
             return;
@@ -359,7 +458,7 @@ class CodeMaker {
   // 日志生成号码 HTML
   logHtml = (input) => {
     const options = this.parseToOptions(input);
-    const js = this.logJS(input, options);
+    const logScript = this.logScript(input, options);
     return `
     <html>
     <head>
@@ -368,22 +467,36 @@ class CodeMaker {
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
         ${this.css}
-        body{overflow-y: auto;margin:0;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.4;background:#153B7D}
-        .log,.numbers{background:rgba(255,255,255,.15);padding:20px;border-radius:15px;margin-bottom:15px;box-shadow:0 8px 24px rgba(0,0,0,.15);}
-        .log{font-size:14.5px;color:#fff}
-        .count{font-size:22px;font-weight:700;color:#fff;text-align:center;margin:15px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
+        body{margin:0;overflow-y:auto;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.4;background:#153B7D}
+        .log,.numbers{background:rgba(255,255,255,.15);border-radius:15px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
+        .log{padding:15px 20px;font-size:14.5px;color:#fff}
+        .count{font-size:22px;font-weight:bold;color:#fff;text-align:center;margin:5px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
-        .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:0;cursor:pointer;background:rgba(255,255,255,.25);color:#fff;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
-        .numbers{max-height: 23.8vh;}
-        .numbers-scroll{height: calc(23.8vh - 20px);overflow-y:auto;}
-        table.t-2 td{border:1px solid #fff; color:#fff}
-        .error{color:red;font-weight:700;font-size:15px;text-align:center}
-        .stagger{opacity:0;animation:fadeInAnimation .3s ease-in-out forwards;display:flex;align-items:center;margin-bottom:4px}
-        .icon{color:#00ff6a;font-weight:700;margin-right:6px}
+        .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,255,255,.25);color:#fff}
+        .numbers{padding:20px;max-height:23.8vh}
+        .numbers-scroll{height:calc(23.8vh - 20px);overflow-y:auto}
+        .t-2 td{border:1px solid #fff;color:#fff}
+        .error{color:red;font-weight:bold;font-size:15px;text-align:center}
+        .stagger{opacity:0;display:flex;align-items:center;margin-bottom:4px;animation:fadeInAnimation .3s ease-in-out forwards}
+        .icon{color:#00ff6a;font-weight:bold;margin-right:6px}
         @keyframes fadeInAnimation{from{opacity:0}to{opacity:1}}
-        @media(prefers-color-scheme:dark){body{background:#000}}
-        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%; opacity:0;animation:floatParticles 6s infinite ease-in-out}
-        @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)}50%{opacity:1;transform:translateY(-60px) scale(1)}100%{opacity:0;transform:translateY(-120px) scale(.5)}}
+        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
+        @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)} 50%{opacity:1;transform:translateY(-60px) scale(1)} 100%{opacity:0;transform:translateY(-120px) scale(.5)}}
+        @media (prefers-color-scheme: dark){body{background:#000}}
+        .filter-bar{margin:10px 0;padding:10px 20px;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
+        .red2{color:yellow}
+        .two-col-repeat{display: flex;gap: 40.5px;}
+        .two-col-repeat .col {white-space: nowrap;}
+        .two-col-brother {display: flex;gap: 24.5px;}
+        .two-col-brother .col {white-space: nowrap;}
+        #selectWord_odd,
+        #selectCondition_odd,
+        #selectWord_even,
+        #selectCondition_even,
+        #selectWord_big,
+        #selectCondition_big,
+        #selectWord_small,
+        #selectCondition_small {color: #00F800;margin-left: 2px;}
       </style>
     </head>
     <body>
@@ -391,6 +504,7 @@ class CodeMaker {
         for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
       </script>
       <div class="log" id="log">错误: 请复制正确的原站日志</div>
+      <div id="filterContainer"></div>
       <div class="count-bar">
         <button class="save-btn" id="originBtn">原版规则</button>
         <div class="count" id="count"></div>
@@ -403,17 +517,117 @@ class CodeMaker {
         </div>
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
+      <script type="text/html" id="tpl_sid">
+        <tr>
+          <td colspan="4">
+            <div class="filter-bar">
+              <div class="two-col-repeat">
+                <div class="col">
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="2" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="2" data-action="include"> 取</label>
+                  (<strong class="red2">双重</strong>)
+                </div>
+                <div class="col">
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="double" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="double" data-action="include"> 取</label>
+                  (<strong class="red2">双双重</strong>)
+                </div>
+              </div>
+              <div class="two-col-repeat">
+                <div class="col">
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="3" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="3" data-action="include"> 取</label>
+                  (<strong class="red2">三重</strong>)
+                </div>
+                <div class="col">
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="4" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="repeat-words-filter checkbox" data-level="4" data-action="include"> 取</label>
+                  (<strong class="red2">四重</strong>)
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <div class="filter-bar">
+              <div class="two-col-brother">
+                <div class="col">
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="2" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="2" data-action="include"> 取</label>
+                  (<strong class="red2">二兄弟</strong>)
+                </div>
+                <div class="col">
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="3" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="3" data-action="include"> 取</label>
+                  (<strong class="red2">三兄弟</strong>)
+                </div>
+              </div>
+              <div class="two-col-brother">
+                <div class="col">
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="4" data-action="exclude"> 除</label>
+                  <label><input type="checkbox" class="brother-filter checkbox" data-level="4" data-action="include"> 取</label>
+                  (<strong class="red2">四兄弟</strong>)
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <div class="filter-bar">
+          <tr>
+            <td colspan="4">
+              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="exclude">除</label>
+              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="include">取</label> (<strong class="red4">单</strong>) <input type="checkbox" class="odd-number-item checkbox">
+              <input type="checkbox" class="odd-number-item checkbox">
+              <input type="checkbox" class="odd-number-item checkbox">
+              <input type="checkbox" class="odd-number-item checkbox">
+              <span class="green fb f16"><span id="selectWord_odd"></span>  <span id="selectCondition_odd"></span></span>
+          </td>
+        </tr><br />
+        <tr>
+          <td colspan="4">
+            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="exclude">除</label>
+            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="include">取</label> (<strong class="red4">双</strong>) <input type="checkbox" class="even-number-item checkbox">
+            <input type="checkbox" class="even-number-item checkbox">
+            <input type="checkbox" class="even-number-item checkbox">
+            <input type="checkbox" class="even-number-item checkbox">
+            <span class="green fb f16"><span id="selectWord_even"></span>  <span id="selectCondition_even"></span></span>
+          </td>
+        </tr><br />
+        <tr>
+          <td colspan="4">
+            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="exclude">除</label>
+            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="include">取</label> (<strong class="red4">大</strong>) <input type="checkbox" class="big-number-item checkbox">
+              <input type="checkbox" class="big-number-item checkbox">
+              <input type="checkbox" class="big-number-item checkbox">
+              <input type="checkbox" class="big-number-item checkbox">
+              <span class="green fb f16"><span id="selectWord_big"></span>  <span id="selectCondition_big"></span></span>
+            </td>
+          </tr><br />
+          <tr>
+            <td colspan="4">
+              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="exclude">除</label>
+              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="include">取</label> (<strong class="red4">小</strong>) <input type="checkbox" class="small-number-item checkbox">
+                <input type="checkbox" class="small-number-item checkbox">
+                <input type="checkbox" class="small-number-item checkbox">
+                <input type="checkbox" class="small-number-item checkbox">
+                <span class="green fb f16"><span id="selectWord_small"></span>  <span id="selectCondition_small"></span></span>
+            </td>
+          </tr>
+        </div>
+      </script>
       <script>
         ${this.codeMaker}
-        ${js}
+        ${logScript}
       </script>
     </body>
     </html>`;
   };
   
   // 原站请求体
-  body = () => {
-    return `bet_number=0000%2C1111%2C2222%2C3333%2C4444%2C5555%2C6666%2C7777%2C8888%2C9999&bet_money=1&bet_way=102&is_xian=0&number_type=40&bet_log=%5B%E5%9B%9B%E5%AE%9A%E4%BD%8D%5D%EF%BC%8C%E5%9B%9B%E9%87%8D%E2%80%9C%5B%E5%8F%96%5D%E2%80%9D%E6%93%8D%E4%BD%9C&guid=03202d8a-40be-4c9e-8e86-85390389c416&period_no=20251228028&operation_condition=%7B%22symbol%22%3A%22X%22%2C%22isXian%22%3A0%2C%22firstNumber%22%3A%22%22%2C%22secondNumber%22%3A%22%22%2C%22thirdNumber%22%3A%22%22%2C%22fourthNumber%22%3A%22%22%2C%22fifthNumber%22%3A%22%22%2C%22numberType%22%3A40%2C%22positionType%22%3A0%2C%22positionFilter%22%3A0%2C%22remainFixedFilter%22%3A0%2C%22remainFixedNumbers%22%3A%5B%5D%2C%22remainMatchFilter%22%3A0%2C%22remainMatchFilterThree%22%3A0%2C%22remainMatchNumbers%22%3A%5B%5D%2C%22remainMatchNumbersThree%22%3A%5B%5D%2C%22remainValueRanges%22%3A%5B%5D%2C%22transformNumbers%22%3A%5B%5D%2C%22upperNumbers%22%3A%5B%5D%2C%22exceptNumbers%22%3A%5B%5D%2C%22fixedPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22symbolPositions%22%3A%5B%5D%2C%22containFilter%22%3A0%2C%22containNumbers%22%3A%5B%5D%2C%22multipleFilter%22%3A0%2C%22multipleNumbers%22%3A%5B%5D%2C%22repeatTwoWordsFilter%22%3A-1%2C%22repeatThreeWordsFilter%22%3A-1%2C%22repeatFourWordsFilter%22%3A0%2C%22repeatDoubleWordsFilter%22%3A-1%2C%22twoBrotherFilter%22%3A-1%2C%22threeBrotherFilter%22%3A-1%2C%22fourBrotherFilter%22%3A-1%2C%22logarithmNumberFilter%22%3A-1%2C%22logarithmNumbers%22%3A%5B%5B%5D%5D%2C%22oddNumberFilter%22%3A-1%2C%22oddNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22evenNumberFilter%22%3A-1%2C%22evenNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22bigNumberFilter%22%3A-1%2C%22bigNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22smallNumberFilter%22%3A-1%2C%22smallNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%7D`;
+  body = (bet_money) => {
+    const money = (Number(bet_money ?? 1) + 0.1).toFixed(1);
+    return `bet_number=0000%2C1111%2C2222%2C3333%2C4444%2C5555%2C6666%2C7777%2C8888%2C9999&bet_money=${money}&bet_way=102&is_xian=0&number_type=40&bet_log=%5B%E5%9B%9B%E5%AE%9A%E4%BD%8D%5D%EF%BC%8C%E5%9B%9B%E9%87%8D%E2%80%9C%5B%E5%8F%96%5D%E2%80%9D%E6%93%8D%E4%BD%9C&guid=03202d8a-40be-4c9e-8e86-85390389c416&period_no=20251228028&operation_condition=%7B%22symbol%22%3A%22X%22%2C%22isXian%22%3A0%2C%22firstNumber%22%3A%22%22%2C%22secondNumber%22%3A%22%22%2C%22thirdNumber%22%3A%22%22%2C%22fourthNumber%22%3A%22%22%2C%22fifthNumber%22%3A%22%22%2C%22numberType%22%3A40%2C%22positionType%22%3A0%2C%22positionFilter%22%3A0%2C%22remainFixedFilter%22%3A0%2C%22remainFixedNumbers%22%3A%5B%5D%2C%22remainMatchFilter%22%3A0%2C%22remainMatchFilterThree%22%3A0%2C%22remainMatchNumbers%22%3A%5B%5D%2C%22remainMatchNumbersThree%22%3A%5B%5D%2C%22remainValueRanges%22%3A%5B%5D%2C%22transformNumbers%22%3A%5B%5D%2C%22upperNumbers%22%3A%5B%5D%2C%22exceptNumbers%22%3A%5B%5D%2C%22fixedPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22symbolPositions%22%3A%5B%5D%2C%22containFilter%22%3A0%2C%22containNumbers%22%3A%5B%5D%2C%22multipleFilter%22%3A0%2C%22multipleNumbers%22%3A%5B%5D%2C%22repeatTwoWordsFilter%22%3A-1%2C%22repeatThreeWordsFilter%22%3A-1%2C%22repeatFourWordsFilter%22%3A0%2C%22repeatDoubleWordsFilter%22%3A-1%2C%22twoBrotherFilter%22%3A-1%2C%22threeBrotherFilter%22%3A-1%2C%22fourBrotherFilter%22%3A-1%2C%22logarithmNumberFilter%22%3A-1%2C%22logarithmNumbers%22%3A%5B%5B%5D%5D%2C%22oddNumberFilter%22%3A-1%2C%22oddNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22evenNumberFilter%22%3A-1%2C%22evenNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22bigNumberFilter%22%3A-1%2C%22bigNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22smallNumberFilter%22%3A-1%2C%22smallNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%7D`;
   };
   
   // 原站 CSS
@@ -668,6 +882,13 @@ class CodeMaker {
         };
       }
       
+      const switchModule = (mod) => {
+        const btn = kx.d.find(\`input[module="\${mod}"]\`)
+        if (btn.length && !btn.hasClass('active')) {
+          btn.click();
+        }
+      };
+      
       // 初始化
       window.G = window.G || {};
       G.modules = G.modules || {};
@@ -676,6 +897,7 @@ class CodeMaker {
       kx.d = $('#kuaixuan');
       kx.bd_template = $('#bd_template');
       kx.init();
+      switchModule('sid');
       
       // 启动原站倒计时
       if (typeof Header !== 'undefined') {
@@ -820,6 +1042,8 @@ class CodeMaker {
           al.add('active');
           al.remove('inactive');
         }
+        const pager = document.getElementById('pager');
+        if (pager) pager.classList.toggle('active', id === 'drawnumber');
       };
       document.querySelectorAll('.header-tabs span').forEach(tab => {
         tab.addEventListener('click', () => {
@@ -1045,7 +1269,7 @@ class CodeMaker {
           text-align: center;
         }
         .header-1 {
-          line-height: 1.6rem;
+          line-height: 1.4rem;
         }
         .header-2 {
           margin-top: 0.55rem;
@@ -1060,7 +1284,7 @@ class CodeMaker {
         }
         .header-tabs .tab {
           padding: 6px 16px;
-          border-radius: 10px;
+          border-radius: 8px;
           background-color: yellow;
           color: #111;
           cursor: pointer;
