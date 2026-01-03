@@ -591,9 +591,9 @@ class CodeMaker {
         .two-col-brother .col {white-space: nowrap;}
         .green {color: #00F800;margin-left: 2px;}
         input{font-size: 16px; -webkit-text-size-adjust: 100%;}
-        input[type="text"] {background-color: rgba(255, 255, 255, 0.25);height: 22px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #bbb;padding: 4px 8px;outline: none;}
+        input[type="text"] {background-color: rgba(255, 255, 255, 0.2);height: 22px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #bbb;padding: 4px 8px;outline: none;}
         input[name="zhifanwei1"],
-        input[name="zhifanwei2"] {width: 45px;height: 22px;}
+        input[name="zhifanwei2"] {width: 40px;height: 22px;}
       </style>
     </head>
     <body>
