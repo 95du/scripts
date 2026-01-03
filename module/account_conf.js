@@ -145,6 +145,7 @@ const viewRule = async (data) => {
       .particle { position: absolute; width: 5px; height: 5px; background: rgba(255, 255, 255, 0.8); border-radius: 50%; opacity: 0; animation: floatParticles 5s infinite ease-in-out; }
       @keyframes floatParticles { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 50% { opacity: 1; transform: translateY(-50px) scale(1); }
       100% { opacity: 0; transform: translateY(-100px) scale(0.5); }}
+      .card { width: 100%; max-width: 400px; padding: 10px; border-radius: 15px; text-align: center; background: rgba(255,255,255,0.1); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); margin-bottom: 20px; color: #fff; font-weight: bold; }
       .text-content { width: 100%; max-width: 400px; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 15px; color: #fff; white-space: pre-wrap; overflow-y: auto; max-height: 80vh; }
     </style>
   </head>
@@ -152,8 +153,7 @@ const viewRule = async (data) => {
     <script>
       for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
     </script>
-    <div class="text-content" style='text-align:center;'><h3>${data.title}</h3></div></br>
-    <div class="text-content">${data.content}</div>
+    <div class="card"><h3>${data.title}</h3></div><div class="text-content">${data.content}</div>
   </body>
   </html>`;
   const webView = new WebView();
@@ -529,16 +529,27 @@ const getModule = async (selected) => {
   return module;
 };
 
-const buildHtml = async (kx, isLog, bet_log = '', selected) => {
-  if (!isLog) return kx.html(selected);
-  if (!bet_log.includes('四定位')) {
-    await generateAlert('剪贴板没有符合的内容\n先复制原站完整的日志', bet_log, ['完成']);
-    return null;
-  }
-  return kx.logHtml(bet_log);
+const isNumberArr = str =>
+  typeof str === 'string' &&
+  /^(\d{4})(\s*,\s*\d{4})*$/.test(str.trim());
+
+const pickInputText = (input, bet_number) => {
+  if (isNumberArr(bet_number)) return bet_number;
+  if (isNumberArr(input)) return input;
+  if (input.includes('四定位')) return input;
+  return '';
 };
 
-const buildBody = async (event, kx, bet_log = '', isLog) => {
+const buildHtml = async (kx, isLog = false, input = '', selected, bet_number) => {
+  if (!isLog) return kx.html(selected);
+  const inputText = pickInputText(input, bet_number);
+  if (!inputText) {
+    return await generateAlert('剪贴板没有符合的内容\n先复制原站完整的日志', input.slice(0, 50), ['完成']);
+  }
+  return kx.logHtml(inputText);
+};
+
+const buildBody = async (event, Body, input = '', isLog) => {
   if (!isLog) return event;
   switch (event.type) {
     case 'origin':
@@ -547,16 +558,17 @@ const buildBody = async (event, kx, bet_log = '', isLog) => {
     case 'custom':
       if (!event.data.length) return;
       const bet_number = event.data.join(',');
-      return replaceParams(kx.body(), { bet_number, bet_log });
+      return replaceParams(Body, { bet_number, bet_log: input });
       break;
   }
 };
 
 // ✅ 运行快选 HTML
-const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
+const kuaixuan = async (betData, selected, isLog = false, input, bet_number, bet_money) => {
   const kx = await getModule(selected);
-  const html = await buildHtml(kx, isLog, bet_log, selected);
+  const html = await buildHtml(kx, isLog, input, selected, bet_number);
   if (!html) return;
+  const Body = kx.body(bet_money);
   
   const webView = new WebView();
   await webView.loadHTML(html, selected.baseUrl);
@@ -575,7 +587,7 @@ const kuaixuan = async (betData, selected, isLog = false, bet_log) => {
       })()`, true
     ).catch(err => console.error(err));
     if (event) {
-      const body = await buildBody(event, kx, bet_log, isLog);
+      const body = await buildBody(event, Body, input, isLog);
       await updateConfig(betData, selected, c => {
         c.custom.hasRule = true;
         c.custom.fastPick = saveBody(c.custom.fastPick, body);
@@ -636,20 +648,31 @@ const reverseRule = async (betData, selected, conf) => {
   const isReversed = parsed.guid !== '1'; // 如果guid是1，表示已经反转过
   const excludes = parsed.bet_number.split(',');
   const remain = getRemainingBySet(excludes);
+  const bet_number = remain.join(',');
 
   if (!remain.length) {
     await generateAlert('反转后号码为空，操作已取消 ⚠️', null, ['完成']);
     return;
   }
-
+  
   const confirm = await generateAlert(
-    `确定对以下规则执行【 反转规则 】❓\n\n原号码数：${parsed.numCount}\n反转后号码数：${remain.length}`, 
+    `‼️ 规则反转 ‼️\n原始号码数：${parsed.numCount}\n反转后号码数：${remain.length}`, 
     null, ['取消', '确定'], true
   );
   if (confirm !== 1) return;
+  
+  const tips = await generateAlert(
+    `【 再次筛选 】\n是否对反转后的 ${remain.length} 组号码进行二次操作❓`, 
+    null, ['取消', '确定'], true
+  );
+  if (tips === 1) {
+    return await kuaixuan(betData, selected, true, parsed.bet_log, bet_number, parsed.bet_money);
+  }
+  
+  // 以下是保存反转后的规则
   await updateConfig(betData, selected, c => {
     const newfastPick = replaceParams(rule, {
-      bet_number: remain.join(','),
+      bet_number,
       guid: isReversed ? 1 : 0
     });
     c.custom.fastPick.splice(idx, 1, newfastPick);
@@ -909,7 +932,7 @@ const configMenu = async (betData, selected, conf) => {
     case 'missLimit': {
       const res = await collectInputs(
         '连续未中自动投注',
-        '设置为 0：关闭此功能，不中一直停\n设置为 1：不论中或不中，每期都投\n设置为 3：连续未中 3 期后自动投注',
+        '设置为 0：命中一直投，不中一直停\n设置为 1：不论中或不中，每期都投\n设置为 3：连续未中 3 期后自动投注',
         [{ hint: '未中期数', value: conf.custom.missLimit ?? 0 }]
       );
       const val = Number(res?.[0]);
