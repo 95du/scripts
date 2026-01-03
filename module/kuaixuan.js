@@ -1423,7 +1423,7 @@ class CodeMaker {
                 <table class="t-1" cellpadding="0" cellspacing="0">
                   <thead>
                     <tr class="bg3">
-                      <td>生成号码框</td>
+                      <td>号码框</td>
                     </tr>
                   </thead>
                   <tbody>
