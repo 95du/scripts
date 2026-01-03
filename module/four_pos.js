@@ -354,6 +354,7 @@ const collectAllRecords = async () => {
   const lastRow = records[0]?.data?.[0]
   const { todayList } = replaySimulate(rows, [fastPick], lastRow, true);
   const numCount = parseBetBody(fastPick).numCount;
+  const bet_log = parseBetBody(fastPick).bet_log;
   const today = new Date().toISOString().slice(0, 10);
   const tasks = [];
   
@@ -378,7 +379,8 @@ const collectAllRecords = async () => {
     todayList, 
     results, 
     total, 
-    numCount 
+    numCount,
+    bet_log
   };
 };
 
@@ -471,6 +473,8 @@ const addItem = async (widget, item, max, index, large, small) => {
 // ✅ 创建组件
 const createWidget = async (data) => {
   const { account } = data.results[0];
+  const titleText = data.bet_log.length < 20 ? data.bet_log.replace(/\[四定位\]，?/g, '') : `隔 ${missLimit} 期未中强制投`;
+
   const family = config.widgetFamily;
   const small = family === 'small';
   const large = family === 'large';
@@ -496,7 +500,7 @@ const createWidget = async (data) => {
   topStack.addSpacer(10);
   
   if (!small) {
-    const nameText = topStack.addText(`${data.numCount} 组，隔 ${missLimit} 期未中强制投`);
+    const nameText = topStack.addText(`${data.numCount} 组，${titleText}`);
     nameText.font = Font.mediumSystemFont(16);
     nameText.textOpacity = 0.9
     topStack.addSpacer(10);
