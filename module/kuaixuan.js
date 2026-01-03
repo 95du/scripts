@@ -266,6 +266,110 @@ class CodeMaker {
       if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
     };
     
+    // 不定位合（两数/三数）
+    const bindRemainMatch = (maker, o) => {
+      const two = document.querySelector('.remain-match-filter');
+      const three = document.querySelector('.remain-match-filter-three');
+      const inputs = document.querySelectorAll('input[name="budinghe"]');
+      // init
+      two.checked = o.remainMatchFilter === 2;
+      three.checked = o.remainMatchFilterThree === 3;
+      inputs[0].value = o.remainMatchNumbers?.join('') || '';
+      inputs[1].value = o.remainMatchNumbersThree?.join('') || '';
+      two.addEventListener('change', () => {
+        o.remainMatchFilter = two.checked ? 2 : -1;
+        maker.log(); maker.generate();
+      });
+      three.addEventListener('change', () => {
+        o.remainMatchFilterThree = three.checked ? 3 : -1;
+        maker.log(); maker.generate();
+      });
+      inputs[0].addEventListener('input', () => {
+        o.remainMatchNumbers = inputs[0].value.trim().split('');
+        maker.log(); maker.generate();
+      });
+      inputs[1].addEventListener('input', () => {
+        o.remainMatchNumbersThree = inputs[1].value.trim().split('');
+        maker.log(); maker.generate();
+      });
+    };
+    
+    // 合分值范围
+    const bindValueRange = (maker, o) => {
+      const min = document.querySelector('input[name="zhifanwei1"]');
+      const max = document.querySelector('input[name="zhifanwei2"]');
+      min.value = o.remainValueRanges?.[0] ?? '';
+      max.value = o.remainValueRanges?.[1] ?? '';
+      const update = () => {
+        const a = min.value.trim();
+        const b = max.value.trim();
+        o.remainValueRanges = a || b ? [Number(a), Number(b)] : [];
+        maker.log(); maker.generate();
+      };
+      min.addEventListener('input', update);
+      max.addEventListener('input', update);
+    };
+    
+    // 上奖 + 排除
+    const bindUpperExcept = (maker, o) => {
+      const upper = document.querySelector('.upper-filter-item');
+      const except = document.querySelector('.except-filter-item');
+      upper.value = o.upperNumbers?.join('') || '';
+      except.value = o.exceptNumbers?.join('') || '';
+      upper.addEventListener('input', () => {
+        const v = upper.value.trim();
+        o.upPrize = !!v;
+        o.upperNumbers = v ? v.split('') : [];
+        maker.log(); 
+        maker.generate();
+      });
+      except.addEventListener('input', () => {
+        const v = except.value.trim();
+        o.exceptNumbers = v ? v.split('') : [];
+        maker.log(); 
+        maker.generate();
+      });
+    };
+    
+    // 四字定含
+    const bindContain = (maker, o) => {
+      const filters = document.querySelectorAll('.contain-filter');
+      const input = document.querySelector('.contain-filter-item');
+      filters.forEach(cb => {
+        const v = Number(cb.getAttribute('containFilter'));
+        cb.checked = o.containFilter === v;
+      });
+      input.value = o.containNumbers?.join('') || '';
+      filters.forEach(cb => {
+        cb.addEventListener('change', () => {
+          if (!cb.checked) {
+            o.containFilter = -1;
+          } else {
+            filters.forEach(other => other !== cb && (other.checked = false));
+            o.containFilter = Number(cb.getAttribute('containFilter'));
+          }
+          // 只有勾选了除/取才更新数字
+          if (o.containFilter !== -1) {
+            const v = input.value.trim();
+            o.containNumbers = v ? v.split('') : [];
+          } else {
+            o.containNumbers = [];
+          }
+          maker.log();
+          maker.generate();
+        });
+      });
+      // 只有勾选了除/取时才生效
+      input.addEventListener('input', () => {
+        if (o.containFilter !== -1) {
+          const v = input.value.trim();
+          o.containNumbers = v ? v.split('') : [];
+          maker.log();
+          maker.generate();
+        }
+      });
+    };
+    
     // 初始化 checkbox 状态
     const checkboxMap = [
       { selector: '.repeat-words-filter[data-level="2"]', field: 'repeatTwoWordsFilter' },
@@ -401,13 +505,19 @@ class CodeMaker {
       const filterContainer = document.getElementById('filterContainer');
       filterContainer.innerHTML = document.getElementById('tpl_sid').innerHTML;
       const maker = new CodeMaker(${JSON.stringify(options)});
+      const o = maker.options;
       const kx = window.__kx = new Kuaixuan({ json: { Param: {} } });
       kx.codeMaker = maker;
       const log = "${input.replace(/"/g, '\\"')}";
       setLogs(log, maker.options);
       maker.log();
+      
       checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
       bindPosition(maker);
+      bindRemainMatch(maker, o);
+      bindValueRange(maker, o);
+      bindUpperExcept(maker, o);
+      bindContain(maker, o);
       
       // 如果是数组模式，把数组作为白名单
       const isArrayMode = ${isArrayMode};
@@ -489,14 +599,11 @@ class CodeMaker {
         .two-col-repeat .col {white-space: nowrap;}
         .two-col-brother {display: flex;gap: 24.5px;}
         .two-col-brother .col {white-space: nowrap;}
-        #selectWord_odd,
-        #selectCondition_odd,
-        #selectWord_even,
-        #selectCondition_even,
-        #selectWord_big,
-        #selectCondition_big,
-        #selectWord_small,
-        #selectCondition_small {color: #00F800;margin-left: 2px;}
+        .green {color: #00F800;margin-left: 2px;}
+        input{font-size: 16px; -webkit-text-size-adjust: 100%;}
+        input[type="text"] {background-color: rgba(255, 255, 255, 0.25);height: 22px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #bbb;padding: 4px 8px;outline: none;}
+        input[name="zhifanwei1"],
+        input[name="zhifanwei2"] {width: 45px;height: 22px;}
       </style>
     </head>
     <body>
@@ -518,6 +625,50 @@ class CodeMaker {
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
       <script type="text/html" id="tpl_sid">
+        <tr>
+          <td colspan="4" class="remain-match-filter-item">
+            <div class="filter-bar">
+              <strong class="red2">不定位合分</strong><br>
+              <label><input type="checkbox" class="remain-match-filter checkbox" remainMatchFilter="2"> 两数合</label>
+              <input type="text" class="w90" name="budinghe" digits="true" maxlength="10"> &nbsp;&nbsp; <label><input type="checkbox" class="remain-match-filter-three checkbox" remainMatchFilterThree="3"> 三数合</label>
+              <input type="text" class="w90" name="budinghe" digits="true" maxlength="10">
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4" class="remain-match-filter-range">
+            <div class="filter-bar">
+              <strong class="red2"> 值 范 围</strong> 从 <input type="text" class="w30" name="zhifanwei1" digits="true" maxlength="10"> 值 至 <input type="text" class="w30" name="zhifanwei2" digits="true" maxlength="10">值
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <div class="filter-bar">
+              <strong class="red2">上奖</strong> <input type="text" class="upper-filter-item w80" name="shangjiang" digits="true" maxlength="10">
+              <span class="inlineblock">
+                <strong class="red2"> 排除</strong> <input type="text" class="except-filter-item w80" name="paichu" digits="true" maxlength="10">
+              </span>
+              <span class="gu-ding-wei-zhi hide">
+                <strong class="red2">固定位置</strong>
+                <input type="checkbox" class="fixed-position-item">
+                <input type="checkbox" class="fixed-position-item">
+                <input type="checkbox" class="fixed-position-item">
+                <input type="checkbox" class="fixed-position-item">
+              </span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4">
+            <div class="filter-bar">
+              <label><input type="checkbox" class="contain-filter checkbox" containFilter="1">除</label>
+              <label><input type="checkbox" class="contain-filter checkbox" containFilter="0" checked="checked">取</label>
+              <span class="inlineblock"> 四字定<strong class="red2">含</strong> <input type="text" class="contain-filter-item w80" name="han" digits="true" maxlength="10">
+              </span>
+            </div>
+          </td>
+        </tr>
         <tr>
           <td colspan="4">
             <div class="filter-bar">
