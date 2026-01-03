@@ -473,8 +473,14 @@ const addItem = async (widget, item, max, index, large, small) => {
 // ✅ 创建组件
 const createWidget = async (data) => {
   const { account } = data.results[0];
-  const titleText = data.bet_log.length < 20 ? data.bet_log.replace(/\[四定位\]，?/g, '') : `隔 ${missLimit} 期未中强制投`;
-
+  const rawText = data.bet_log.replace(/\[四定位\]，?/g, '');
+  const titleText =
+    data.bet_log.length < 20
+      ? rawText
+      : data.bet_log.length < 40
+        ? rawText.replace(/：.*$/, '')
+        : `隔 ${missLimit} 期未中强制投`;
+  
   const family = config.widgetFamily;
   const small = family === 'small';
   const large = family === 'large';
