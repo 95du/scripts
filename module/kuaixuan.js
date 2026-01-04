@@ -656,7 +656,7 @@ class CodeMaker {
         input[name="he3"],
         input[name="he4"] {width: 118px;height: 20px;}
         .filter-bar input[type="checkbox"],
-        .remain-fixed-filter-item input[type="checkbox"] {transform: scale(1.1);margin-right: 1px;vertical-align: middle;}
+        .remain-fixed-filter-item input[type="checkbox"] {transform: scale(1.1);margin-right: 1.2px;vertical-align: middle;}
         .filter-bar input[type="checkbox"],
         .remain-bar input[type="checkbox"] {
           margin-top: -2px;
@@ -690,10 +690,10 @@ class CodeMaker {
             <div class="remain-bar">
               <strong class="red2">固定合分</strong>&nbsp;
               <label>
-                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1">除
+                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1"> 除
               </label>
               <label>
-                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked>取
+                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked> 取
               </label>
             </div>
           </td>
