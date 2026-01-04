@@ -100,16 +100,30 @@ class CodeMaker {
     }
   
     // 固定合分 [取/除]
-    const fixed = text.match(
-      /固定合分(取值|除值)：第\[1\]位选中，第\[2\]位选中，第\[3\]位选中，第\[4\]位选中，内容：\[(.*?)\]/
-    );
-    if (fixed) {
-      o.remainFixedFilter = fixed[1] === "取值" ? 0 : 1;
-      o.remainFixedNumbers = [[
-        [1, 1, 1, 1],
-        fixed[2].split("")
-      ]];
-    }
+    const parseFixedRemain = (text, o) => {
+      o.remainFixedNumbers = [];
+      o.remainFixedFilter =  -1;
+      const groups = text.split('；').map(s => s.trim()).filter(Boolean);
+      groups.forEach(group => {
+        const typeMatch = group.match(/固定合分(取值|除值)/);
+        const type = typeMatch ? typeMatch[1] : '取值';
+        const contentMatch = group.match(/内容：\[(.*?)\]/);
+        if (!contentMatch) return;
+        const content = contentMatch[1].split('');
+        const posMatches = Array.from(group.matchAll(/第\[(\d)\]位选中/g));
+        const posArray = [0,0,0,0];
+        posMatches.forEach(m => {
+          const idx = Number(m[1]) - 1;
+          if (idx >=0 && idx < 4) posArray[idx] = 1;
+        });
+        o.remainFixedNumbers.push([
+          posArray, content
+        ]);
+        o.remainFixedFilter = type === '取值' ? 0 : 1;
+      });
+      return o;
+    };
+    parseFixedRemain(text, o);
     
     // 不定合分值(两数合)
     const twoMatch = text.match(/不定合分值\(两数合\)：\[([0-9]+)\]/);
@@ -291,7 +305,6 @@ class CodeMaker {
     
     const bindCheckboxGroup = (maker, { selector, field, type }) => {
       const checkboxes = document.querySelectorAll(selector);
-      // init
       checkboxes.forEach(cb => {
         const v = maker.options[field];
         const action = cb.dataset.action;
@@ -299,7 +312,6 @@ class CodeMaker {
           (v === 0 && action === 'include') ||
           (v === 1 && action === 'exclude');
       });
-      // bind
       checkboxes.forEach(cb => {
         cb.addEventListener('change', () => {
           const action = cb.dataset.action;
@@ -312,6 +324,49 @@ class CodeMaker {
           apply(maker, type);
           if (type) window.__kx.produceWord(type);
         });
+      });
+    };
+    
+    // 合分定位
+    const bindFixedRemainMulti = (maker, o) => {
+      const fcb  = [...document.querySelectorAll('.remain-fixed-filter')];
+      const rows = [...document.querySelectorAll('.remain-fixed-filter-item')];
+      if (!Array.isArray(o.remainFixedNumbers)) {
+        o.remainFixedNumbers = [];
+      }
+      fcb.forEach(cb => {
+        const val = +cb.getAttribute('remainFixedFilter');
+        cb.checked = o.remainFixedFilter === val || (o.remainFixedFilter == null && val === 0);
+        cb.onchange = () => {
+          fcb.forEach(x => x !== cb && (x.checked = false));
+          o.remainFixedFilter = cb.checked ? val : -1;
+          rows.forEach((row, i) => {
+            o.remainFixedNumbers[i] ||= [ [0,0,0,0], [] ];
+            const input = row.querySelector('input[type="text"]');
+            o.remainFixedNumbers[i][1] = o.remainFixedFilter !== -1 && input.value ? input.value.trim().split('') : [];
+          });
+          apply(maker);
+        };
+      });
+    
+      rows.forEach((row, i) => {
+        o.remainFixedNumbers[i] ||= [ [0,0,0,0], [] ];
+        const pos   = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
+        const input = row.querySelector('input[type="text"]');
+        pos.forEach((cb, j) => {
+          cb.checked = o.remainFixedNumbers[i][0][j] === 1;
+          cb.onchange = () => {
+            o.remainFixedNumbers[i][0][j] = cb.checked ? 1 : 0;
+            apply(maker);
+          };
+        });
+        input.value = o.remainFixedNumbers[i][1].join('');
+        input.oninput = () => {
+          if (o.remainFixedFilter !== -1) {
+            o.remainFixedNumbers[i][1] = input.value.trim().split('');
+            apply(maker);
+          }
+        };
       });
     };
     
@@ -503,6 +558,7 @@ class CodeMaker {
       maker.log();
       
       checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
+      bindFixedRemainMulti(maker, o);
       bindPosition(maker);
       bindRemainMatch(maker, o);
       bindValueRange(maker, o);
@@ -578,12 +634,12 @@ class CodeMaker {
         .t-2 td{border:1px solid #fff;color:#fff}
         .error{color:red;font-weight:bold;font-size:15px;text-align:center}
         .stagger{opacity:0;display:flex;align-items:center;margin-bottom:4px;animation:fadeInAnimation .3s ease-in-out forwards}
-        .icon{color:#00ff6a;font-weight:bold;margin-right:6px}
+        .icon{color:#00ff00;font-weight:bold;margin-right:6px}
         @keyframes fadeInAnimation{from{opacity:0}to{opacity:1}}
         .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
         @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)} 50%{opacity:1;transform:translateY(-60px) scale(1)} 100%{opacity:0;transform:translateY(-120px) scale(.5)}}
         @media (prefers-color-scheme: dark){body{background:#000}}
-        .filter-bar{margin:10px 0;padding:10px 20px;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
+        .remain-bar, .filter-bar{margin:10px 0;padding:10px 20px;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
         .red2{color:yellow}
         .two-col-repeat{display: flex;gap: 40.5px;}
         .two-col-repeat .col {white-space: nowrap;}
@@ -591,9 +647,17 @@ class CodeMaker {
         .two-col-brother .col {white-space: nowrap;}
         .green {color: #00F800;margin-left: 2px;}
         input{font-size: 16px; -webkit-text-size-adjust: 100%;}
-        input[type="text"] {background-color: rgba(255, 255, 255, 0.2);height: 22px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #bbb;padding: 4px 8px;outline: none;}
+        input[type="text"] {background-color: rgba(255, 255, 255, 0.2);height: 20px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #999;padding: 4px 8px;outline: none;}
         input[name="zhifanwei1"],
-        input[name="zhifanwei2"] {width: 40px;height: 22px;}
+        input[name="zhifanwei2"] {width: 40px;height: 20px;}
+        input[name="he1"],
+        input[name="he2"],
+        input[name="he3"],
+        input[name="he4"] {width: 118px;height: 20px;}
+        .filter-bar input[type="checkbox"],
+        .remain-fixed-filter-item input[type="checkbox"] {transform: scale(1.1);margin-right: 1px;vertical-align: middle;}
+        .filter-bar label {margin-right: 2px;}
+        .remain-bar {padding: 5px 20px;border-radius: 12px;margin-bottom: -8.5px;}
       </style>
     </head>
     <body>
@@ -615,6 +679,45 @@ class CodeMaker {
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
       <script type="text/html" id="tpl_sid">
+        <tr>
+          <td colspan="4" class="tc">
+            <div class="remain-bar">
+              <strong class="red2">固定合分</strong>&nbsp;
+              <label><input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1">除</label>
+              <label><input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked="checked">取</label>
+            </div>
+          </td>
+        </tr>
+        <div class="filter-bar">
+          <tr class="tc">
+            <td colspan="4">
+              <div class="remain-fixed-filter-item"> 1. <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="text" class="w90" name="he1" digits="true" maxlength="10">
+              </div>
+              <div class="remain-fixed-filter-item mt5"> 2. <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="text" class="w90" name="he2" digits="true" maxlength="10">
+              </div>
+              <div class="remain-fixed-filter-item mt5"> 3. <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="text" class="w90" name="he3" digits="true" maxlength="10">
+              </div>
+              <div class="remain-fixed-filter-item mt5"> 4. <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="checkbox">
+                <input type="text" class="w90" name="he4" digits="true" maxlength="10">
+              </div>
+            </td>
+          </tr>
+        </div>
         <tr>
           <td colspan="4" class="remain-match-filter-item">
             <div class="filter-bar">
