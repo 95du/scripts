@@ -657,8 +657,13 @@ class CodeMaker {
         input[name="he4"] {width: 118px;height: 20px;}
         .filter-bar input[type="checkbox"],
         .remain-fixed-filter-item input[type="checkbox"] {transform: scale(1.1);margin-right: 1px;vertical-align: middle;}
+        .filter-bar input[type="checkbox"],
+        .remain-bar input[type="checkbox"] {
+          margin-top: -2px;
+        }
         .filter-bar label {margin-right: 2px;}
         .remain-bar {padding: 5px 20px;border-radius: 12px;margin-bottom: -8.5px;}
+        .remain-fixed-filter-item .idx {display: inline-block;width: 20px;}
       </style>
     </head>
     <body>
@@ -684,41 +689,53 @@ class CodeMaker {
           <td colspan="4" class="tc">
             <div class="remain-bar">
               <strong class="red2">固定合分</strong>&nbsp;
-              <label><input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1">除</label>
-              <label><input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked="checked">取</label>
+              <label>
+                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1">除
+              </label>
+              <label>
+                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked>取
+              </label>
             </div>
           </td>
         </tr>
-        <div class="filter-bar">
-          <tr class="tc">
-            <td colspan="4">
-              <div class="remain-fixed-filter-item"> 1. <input type="checkbox">
+        <tr class="tc">
+          <td colspan="4">
+            <div class="filter-bar">
+              <div class="remain-fixed-filter-item">
+                <span class="idx">1.</span>
+                <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="text" class="w90" name="he1" digits="true" maxlength="10">
               </div>
-              <div class="remain-fixed-filter-item mt5"> 2. <input type="checkbox">
+              <div class="remain-fixed-filter-item mt5">
+                <span class="idx">2.</span>
+                <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="text" class="w90" name="he2" digits="true" maxlength="10">
               </div>
-              <div class="remain-fixed-filter-item mt5"> 3. <input type="checkbox">
+              <div class="remain-fixed-filter-item mt5">
+                <span class="idx">3.</span>
+                <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="text" class="w90" name="he3" digits="true" maxlength="10">
               </div>
-              <div class="remain-fixed-filter-item mt5"> 4. <input type="checkbox">
+              <div class="remain-fixed-filter-item mt5">
+                <span class="idx">4.</span>
+                <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="checkbox">
                 <input type="text" class="w90" name="he4" digits="true" maxlength="10">
               </div>
-            </td>
-          </tr>
-        </div>
+            </div>
+          </td>
+        </tr>
         <tr>
           <td colspan="4" class="remain-match-filter-item">
             <div class="filter-bar">
@@ -756,8 +773,8 @@ class CodeMaker {
         <tr>
           <td colspan="4">
             <div class="filter-bar">
-              <label><input type="checkbox" class="contain-filter checkbox" containFilter="1">除</label>
-              <label><input type="checkbox" class="contain-filter checkbox" containFilter="0" checked="checked">取</label>
+              <label><input type="checkbox" class="contain-filter checkbox" containFilter="1"> 除</label>
+              <label><input type="checkbox" class="contain-filter checkbox" containFilter="0" checked="checked"> 取</label>
               <span class="inlineblock"> 四字定<strong class="red2">含</strong> <input type="text" class="contain-filter-item w80" name="han" digits="true" maxlength="10">
               </span>
             </div>
@@ -821,8 +838,8 @@ class CodeMaker {
         <div class="filter-bar">
           <tr>
             <td colspan="4">
-              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="exclude">除</label>
-              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="include">取</label> (<strong class="red2">单</strong>) <input type="checkbox" class="odd-number-item checkbox">
+              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="exclude"> 除</label>
+              <label><input type="checkbox" class="odd-number-filter checkbox" data-level="odd" data-action="include"> 取</label> (<strong class="red2">单</strong>) <input type="checkbox" class="odd-number-item checkbox">
               <input type="checkbox" class="odd-number-item checkbox">
               <input type="checkbox" class="odd-number-item checkbox">
               <input type="checkbox" class="odd-number-item checkbox">
@@ -831,8 +848,8 @@ class CodeMaker {
         </tr><br />
         <tr>
           <td colspan="4">
-            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="exclude">除</label>
-            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="include">取</label> (<strong class="red2">双</strong>) <input type="checkbox" class="even-number-item checkbox">
+            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="exclude"> 除</label>
+            <label><input type="checkbox" class="even-number-filter checkbox" data-level="even" data-action="include"> 取</label> (<strong class="red2">双</strong>) <input type="checkbox" class="even-number-item checkbox">
             <input type="checkbox" class="even-number-item checkbox">
             <input type="checkbox" class="even-number-item checkbox">
             <input type="checkbox" class="even-number-item checkbox">
@@ -841,8 +858,8 @@ class CodeMaker {
         </tr><br />
         <tr>
           <td colspan="4">
-            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="exclude">除</label>
-            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="include">取</label> (<strong class="red2">大</strong>) <input type="checkbox" class="big-number-item checkbox">
+            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="exclude"> 除</label>
+            <label><input type="checkbox" class="big-number-filter checkbox" data-level="big" data-action="include"> 取</label> (<strong class="red2">大</strong>) <input type="checkbox" class="big-number-item checkbox">
               <input type="checkbox" class="big-number-item checkbox">
               <input type="checkbox" class="big-number-item checkbox">
               <input type="checkbox" class="big-number-item checkbox">
@@ -851,8 +868,8 @@ class CodeMaker {
           </tr><br />
           <tr>
             <td colspan="4">
-              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="exclude">除</label>
-              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="include">取</label> (<strong class="red2">小</strong>) <input type="checkbox" class="small-number-item checkbox">
+              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="exclude"> 除</label>
+              <label><input type="checkbox" class="small-number-filter checkbox" data-level="small" data-action="include"> 取</label> (<strong class="red2">小</strong>) <input type="checkbox" class="small-number-item checkbox">
                 <input type="checkbox" class="small-number-item checkbox">
                 <input type="checkbox" class="small-number-item checkbox">
                 <input type="checkbox" class="small-number-item checkbox">
