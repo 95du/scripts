@@ -331,7 +331,7 @@ class CodeMaker {
     const bindFixedRemainMulti = (maker, o) => {
       const fcb = [...document.querySelectorAll('.remain-fixed-filter')];
       const rows = [...document.querySelectorAll('.remain-fixed-filter-item')];
-      if (!o.remainFixedNumbers.length) return;
+      
       const updateLog = () => {
         let active = false;
         rows.forEach((row, i) => {
