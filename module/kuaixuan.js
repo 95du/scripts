@@ -329,44 +329,45 @@ class CodeMaker {
     
     // 合分定位
     const bindFixedRemainMulti = (maker, o) => {
-      const fcb  = [...document.querySelectorAll('.remain-fixed-filter')];
+      const fcb = [...document.querySelectorAll('.remain-fixed-filter')];
       const rows = [...document.querySelectorAll('.remain-fixed-filter-item')];
-      if (!Array.isArray(o.remainFixedNumbers)) {
-        o.remainFixedNumbers = [];
-      }
+      if (!Array.isArray(o.remainFixedNumbers)) o.remainFixedNumbers = [];
+      const updateLog = () => {
+        let active = false;
+        rows.forEach((row, i) => {
+          o.remainFixedNumbers[i] ||= [[0,0,0,0], []];
+          const input = row.querySelector('input[type="text"]');
+          const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
+          pos.forEach((cb, j) => o.remainFixedNumbers[i][0][j] = cb.checked ? 1 : 0);
+          const hasText = input.value.trim() && o.remainFixedFilter !== -1;
+          const hasPos = o.remainFixedNumbers[i][0].some(x => x === 1);
+          o.remainFixedNumbers[i][1] = (hasText && hasPos) ? input.value.trim().split('') : [];
+          if (hasText && hasPos) active = true;
+        });
+        o.remainFixedNumbers = active ? o.remainFixedNumbers : [];
+        apply(maker);
+      };
+    
       fcb.forEach(cb => {
         const val = +cb.getAttribute('remainFixedFilter');
-        cb.checked = o.remainFixedFilter === val || (o.remainFixedFilter == null && val === 0);
+        cb.checked = o.remainFixedFilter === val;
         cb.onchange = () => {
           fcb.forEach(x => x !== cb && (x.checked = false));
           o.remainFixedFilter = cb.checked ? val : -1;
-          rows.forEach((row, i) => {
-            o.remainFixedNumbers[i] ||= [ [0,0,0,0], [] ];
-            const input = row.querySelector('input[type="text"]');
-            o.remainFixedNumbers[i][1] = o.remainFixedFilter !== -1 && input.value ? input.value.trim().split('') : [];
-          });
-          apply(maker);
+          updateLog();
         };
       });
     
       rows.forEach((row, i) => {
-        o.remainFixedNumbers[i] ||= [ [0,0,0,0], [] ];
-        const pos   = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
+        o.remainFixedNumbers[i] ||= [[0,0,0,0], []];
+        const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
         const input = row.querySelector('input[type="text"]');
         pos.forEach((cb, j) => {
           cb.checked = o.remainFixedNumbers[i][0][j] === 1;
-          cb.onchange = () => {
-            o.remainFixedNumbers[i][0][j] = cb.checked ? 1 : 0;
-            apply(maker);
-          };
+          cb.onchange = updateLog;
         });
-        input.value = o.remainFixedNumbers[i][1].join('');
-        input.oninput = () => {
-          if (o.remainFixedFilter !== -1) {
-            o.remainFixedNumbers[i][1] = input.value.trim().split('');
-            apply(maker);
-          }
-        };
+        input.value = o.remainFixedNumbers[i][1]?.join('') || '';
+        input.oninput = updateLog;
       });
     };
     
