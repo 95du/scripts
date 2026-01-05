@@ -630,9 +630,9 @@ class CodeMaker {
         @media (prefers-color-scheme: dark){body{background:#000}}
         .filter-bar{margin:10px 0;padding:10px 20px;animation: fadeInUp 1s ease forwards;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
         .red2{color:yellow}
-        .two-col-repeat{display: flex;gap: 40.5px;}
+        .two-col-repeat{display: flex;gap: 32px;}
         .two-col-repeat .col {white-space: nowrap;}
-        .two-col-brother {display: flex;gap: 24.5px;}
+        .two-col-brother {display: flex;gap: 16px;}
         .two-col-brother .col {white-space: nowrap;}
         .green {color: #00F800;margin-left: 2px;}
         input{font-size: 16px; -webkit-text-size-adjust: 100%;}
