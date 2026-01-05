@@ -584,7 +584,7 @@ class CodeMaker {
       maker.onCompleted = function() {
         const list = this.numberList;
         document.getElementById('log')
-        .innerHTML = "<b>【 匹配日志 】</b><br>" + renderLogs(this.logs);
+          .innerHTML = \`<strong class="red2" style="font-size:16px;">【 匹配日志 】</strong><div style="height:5px"></div>\${renderLogs(this.logs)}\`;
         document.getElementById('count').textContent = list.length;
         renderTable(list);
         
