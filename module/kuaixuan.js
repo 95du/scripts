@@ -702,23 +702,19 @@ class CodeMaker {
                 <label><input type="checkbox" class="remain-fixed-filter" remainFixedFilter="1"> 除</label>
                 <label><input type="checkbox" class="remain-fixed-filter" remainFixedFilter="0" checked> 取</label>
               </div>
-              <div class="remain-fixed-filter-item">
-                <span class="idx">1.</span>
+              <div class="remain-fixed-filter-item"><span class="idx">1.</span>
                 <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
                 <input type="text" name="he1">
               </div>
-              <div class="remain-fixed-filter-item mt5">
-                <span class="idx">2.</span>
+              <div class="remain-fixed-filter-item mt5"><span class="idx">2.</span>
                 <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
                 <input type="text" name="he2">
               </div>
-              <div class="remain-fixed-filter-item mt5">
-                <span class="idx">3.</span>
+              <div class="remain-fixed-filter-item mt5"><span class="idx">3.</span>
                 <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
                 <input type="text" name="he3">
               </div>
-              <div class="remain-fixed-filter-item mt5">
-                <span class="idx">4.</span>
+              <div class="remain-fixed-filter-item mt5"><span class="idx">4.</span>
                 <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
                 <input type="text" name="he4">
               </div>
@@ -728,7 +724,6 @@ class CodeMaker {
         <tr>
           <td colspan="4" class="remain-match-filter-item">
             <div class="filter-bar">
-              <strong class="red2">不定位合分</strong><br>
               <label><input type="checkbox" class="remain-match-filter checkbox" remainMatchFilter="2"> 两数合</label>
               <input type="text" class="w90" name="budinghe" digits="true" maxlength="10"> &nbsp;&nbsp; <label><input type="checkbox" class="remain-match-filter-three checkbox" remainMatchFilterThree="3"> 三数合</label>
               <input type="text" class="w90" name="budinghe" digits="true" maxlength="10">
