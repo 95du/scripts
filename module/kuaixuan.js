@@ -331,20 +331,24 @@ class CodeMaker {
     const bindFixedRemainMulti = (maker, o) => {
       const fcb = [...document.querySelectorAll('.remain-fixed-filter')];
       const rows = [...document.querySelectorAll('.remain-fixed-filter-item')];
-      
       const updateLog = () => {
+        if (o.remainFixedFilter === -1) return;
         let active = false;
+        const next = [];
         rows.forEach((row, i) => {
-          o.remainFixedNumbers[i] ||= [[0,0,0,0], []];
           const input = row.querySelector('input[type="text"]');
           const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
-          pos.forEach((cb, j) => o.remainFixedNumbers[i][0][j] = cb.checked ? 1 : 0);
-          const hasText = input.value.trim() && o.remainFixedFilter !== -1;
-          const hasPos = o.remainFixedNumbers[i][0].some(x => x === 1);
-          o.remainFixedNumbers[i][1] = (hasText && hasPos) ? input.value.trim().split('') : [];
-          if (hasText && hasPos) active = true;
+          const posArr = [0, 0, 0, 0];
+          pos.forEach((cb, j) => posArr[j] = cb.checked ? 1 : 0);
+          const hasPos = posArr.some(x => x === 1);
+          const text = input.value.trim();
+          const hasText = !!text;
+          if (hasPos && hasText) {
+            active = true;
+            next[i] = [posArr, text.split('')];
+          }
         });
-        o.remainFixedNumbers = active ? o.remainFixedNumbers : [];
+        o.remainFixedNumbers = active ? next : [];
         apply(maker);
       };
     
@@ -357,16 +361,10 @@ class CodeMaker {
           updateLog();
         };
       });
-    
       rows.forEach((row, i) => {
-        o.remainFixedNumbers[i] ||= [[0,0,0,0], []];
         const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
         const input = row.querySelector('input[type="text"]');
-        pos.forEach((cb, j) => {
-          cb.checked = o.remainFixedNumbers[i][0][j] === 1;
-          cb.onchange = updateLog;
-        });
-        input.value = o.remainFixedNumbers[i][1]?.join('') || '';
+        pos.forEach(cb => cb.onchange = updateLog);
         input.oninput = updateLog;
       });
     };
