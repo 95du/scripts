@@ -191,7 +191,7 @@ class CodeMaker {
     // 对数 [取/除]
     if (text.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
     if (text.includes("对数“[除]”")) o.logarithmNumberFilter = 1;
-    const logMatches = [...text.matchAll(/\[([0-9]{2})\]/g)];
+    const logMatches = [...text.matchAll(/\[(\d{1,2})\]/g)];
     if (logMatches.length) {
       o.logarithmNumbers = logMatches
         .slice(0, 5)
