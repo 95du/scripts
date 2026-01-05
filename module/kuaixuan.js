@@ -327,46 +327,36 @@ class CodeMaker {
       });
     };
     
-    // 合分定位
+    // 固定位置合分
     const bindFixedRemainMulti = (maker, o) => {
       const fcb = [...document.querySelectorAll('.remain-fixed-filter')];
       const rows = [...document.querySelectorAll('.remain-fixed-filter-item')];
-      const updateLog = () => {
-        if (o.remainFixedFilter === -1) return;
-        let active = false;
-        const next = [];
-        rows.forEach((row, i) => {
+    
+      const update = () => {
+        if (o.remainFixedFilter === -1) return (o.remainFixedNumbers = [], apply(maker));
+        const numbers = rows.map(row => {
           const input = row.querySelector('input[type="text"]');
-          const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
-          const posArr = [0, 0, 0, 0];
-          pos.forEach((cb, j) => posArr[j] = cb.checked ? 1 : 0);
-          const hasPos = posArr.some(x => x === 1);
-          const text = input.value.trim();
-          const hasText = !!text;
-          if (hasPos && hasText) {
-            active = true;
-            next[i] = [posArr, text.split('')];
-          }
-        });
-        o.remainFixedNumbers = active ? next : [];
+          const pos = [...row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)')].map(cb => +cb.checked);
+          if (!pos.some(Boolean) || !input.value.trim()) return null;
+          return [pos, input.value.trim().split('')];
+        }).filter(Boolean);
+        o.remainFixedNumbers = numbers;
         apply(maker);
       };
     
       fcb.forEach(cb => {
         const val = +cb.getAttribute('remainFixedFilter');
         cb.checked = o.remainFixedFilter === val;
-        cb.onchange = () => {
-          fcb.forEach(x => x !== cb && (x.checked = false));
-          o.remainFixedFilter = cb.checked ? val : -1;
-          updateLog();
-        };
+        cb.onchange = () => (o.remainFixedFilter = cb.checked ? val : -1, fcb.forEach(x => x !== cb && (x.checked = false)), update());
       });
       rows.forEach((row, i) => {
-        const pos = row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)');
         const input = row.querySelector('input[type="text"]');
-        pos.forEach(cb => cb.onchange = updateLog);
-        input.oninput = updateLog;
+        const pos = [...row.querySelectorAll('input[type="checkbox"]:not(.remain-fixed-filter)')];
+        pos.forEach((cb, j) => (cb.checked = o.remainFixedNumbers?.[i]?.[0]?.[j] === 1, cb.onchange = update));
+        input.value = o.remainFixedNumbers?.[i]?.[1]?.join('') || '';
+        input.oninput = update;
       });
+      update();
     };
     
     // 不定位合分(两/三数)
