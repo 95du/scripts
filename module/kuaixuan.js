@@ -626,7 +626,7 @@ class CodeMaker {
         ${this.css}
         body{margin:0;overflow-y:auto;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.4;background:#153B7D}
         .log,.numbers{background:rgba(255,255,255,.15);border-radius:15px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
-        .log{padding:15px 20px;font-size:14.5px;color:#fff}
+        .log{animation: fadeInUp 0.7s ease forwards;padding:15px 20px;font-size:14.5px;color:#fff}
         .count{font-size:22px;font-weight:bold;color:#fff;text-align:center;margin:5px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
         .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
         .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,255,255,.25);color:#fff}
@@ -640,7 +640,7 @@ class CodeMaker {
         .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
         @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)} 50%{opacity:1;transform:translateY(-60px) scale(1)} 100%{opacity:0;transform:translateY(-120px) scale(.5)}}
         @media (prefers-color-scheme: dark){body{background:#000}}
-        .remain-bar, .filter-bar{margin:10px 0;padding:10px 20px;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
+        .filter-bar{margin:10px 0;padding:10px 20px;animation: fadeInUp 1s ease forwards;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
         .red2{color:yellow}
         .two-col-repeat{display: flex;gap: 40.5px;}
         .two-col-repeat .col {white-space: nowrap;}
@@ -662,8 +662,17 @@ class CodeMaker {
           margin-top: -2px;
         }
         .filter-bar label {margin-right: 2px;}
-        .remain-bar {padding: 5px 20px;border-radius: 12px;margin-bottom: -8.5px;}
+        .remain-bar {
+          margin-bottom: 6px;
+        }
         .remain-fixed-filter-item .idx {display: inline-block;width: 20px;}
+        /* 先定义动画 */
+        @keyframes fadeInUp {0% {opacity: 0;transform: translate3d(0, 100%, 0);}100% {opacity: 1;transform: none;}}
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+          40% {transform: translateY(-15px);}
+          60% {transform: translateY(-7.5px);}
+        }
       </style>
     </head>
     <body>
@@ -687,51 +696,31 @@ class CodeMaker {
       <script type="text/html" id="tpl_sid">
         <tr>
           <td colspan="4" class="tc">
-            <div class="remain-bar">
-              <strong class="red2">固定合分</strong>&nbsp;
-              <label>
-                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="1"> 除
-              </label>
-              <label>
-                <input type="checkbox" class="remain-fixed-filter checkbox" remainFixedFilter="0" checked> 取
-              </label>
-            </div>
-          </td>
-        </tr>
-        <tr class="tc">
-          <td colspan="4">
             <div class="filter-bar">
+              <div class="remain-bar">
+                <strong class="red2">固定合分</strong>
+                <label><input type="checkbox" class="remain-fixed-filter" remainFixedFilter="1"> 除</label>
+                <label><input type="checkbox" class="remain-fixed-filter" remainFixedFilter="0" checked> 取</label>
+              </div>
               <div class="remain-fixed-filter-item">
                 <span class="idx">1.</span>
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="text" class="w90" name="he1" digits="true" maxlength="10">
+                <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
+                <input type="text" name="he1">
               </div>
               <div class="remain-fixed-filter-item mt5">
                 <span class="idx">2.</span>
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="text" class="w90" name="he2" digits="true" maxlength="10">
+                <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
+                <input type="text" name="he2">
               </div>
               <div class="remain-fixed-filter-item mt5">
                 <span class="idx">3.</span>
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="text" class="w90" name="he3" digits="true" maxlength="10">
+                <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
+                <input type="text" name="he3">
               </div>
               <div class="remain-fixed-filter-item mt5">
                 <span class="idx">4.</span>
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="text" class="w90" name="he4" digits="true" maxlength="10">
+                <input type="checkbox"><input type="checkbox"><input type="checkbox"><input type="checkbox">
+                <input type="text" name="he4">
               </div>
             </div>
           </td>
