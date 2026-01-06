@@ -327,6 +327,93 @@ class CodeMaker {
       });
     };
     
+    // 定位置配数全转
+    const bindPosPeiShuMulti = (maker, o) => {
+      const filters = [...document.querySelectorAll('.position-filter')];
+      const fixedRow = document.querySelector('.fixed-input');
+      const peiRow   = document.querySelector('.match-input');
+      const fixedInputs = [...fixedRow.querySelectorAll('input[boxNumber]')];
+      const peiInputs   = [...peiRow.querySelectorAll('input[boxNumber]')];
+      const names = ['firstNumber','secondNumber','thirdNumber','fourthNumber'];
+    
+      let peiEverEdited = false;
+      let autoSwitched = false;
+      const hideAll = () => {
+        fixedRow.classList.add('hide')
+        peiRow.classList.add('hide');
+      };
+    
+      const isPeiEmpty = () => peiInputs.every(i => i.value.trim() === '');
+      const getFixedTake = () => filters.find(cb => +cb.getAttribute('positionType') === 0 && +cb.getAttribute('positionFilter') === 0);
+      const getDefaultFilter = (type) => filters.find(cb => +cb.getAttribute('positionType') === type);
+    
+      const update = () => {
+        let checked = filters.find(cb => cb.checked);
+        if (checked && +checked.getAttribute('positionType') === 1 && peiEverEdited && isPeiEmpty() && !autoSwitched) {
+          const fixedTake = getFixedTake();
+          filters.forEach(cb => cb.checked = false);
+          fixedTake.checked = true;
+          checked = fixedTake;
+          autoSwitched = true;
+        }
+        // 确保至少有一个复选框选中
+        if (!checked) {
+          checked = getDefaultFilter(0);
+          checked.checked = true;
+        }
+        const positionType = +checked.getAttribute('positionType');
+        const positionFilter = +checked.getAttribute('positionFilter');
+    
+        const inputs = positionType === 0 ? fixedInputs : peiInputs;
+        const values = inputs.map(i => i.value.trim());
+        o.positionType = positionType;
+        o.positionFilter = positionFilter;
+        [o.firstNumber, o.secondNumber, o.thirdNumber, o.fourthNumber] = values;
+        hideAll();
+        if (positionType === 0) fixedRow.classList.remove('hide');
+        else peiRow.classList.remove('hide');
+        apply(maker);
+      };
+    
+      filters.forEach(cb => {
+        cb.onchange = () => {
+          const type = +cb.getAttribute('positionType');
+          filters.forEach(o => {
+            if (o !== cb && +o.getAttribute('positionType') === type) o.checked = false;
+          });
+          filters.forEach(o => {
+            if (+o.getAttribute('positionType') !== type) o.checked = false;
+          });
+          // 保证至少一个选中
+          if (!cb.checked) {
+            cb.checked = true;
+          }
+          update();
+        };
+      });
+    
+      fixedInputs.forEach(input => {
+        input.oninput = update;
+      });
+      peiInputs.forEach(input => {
+        input.oninput = () => {
+          peiEverEdited = true;
+          autoSwitched = false;
+          update();
+        };
+      });
+      // ===== 初始化 UI =====
+      filters.forEach(cb => {
+        const t = +cb.getAttribute('positionType');
+        const f = +cb.getAttribute('positionFilter');
+        cb.checked = (o.positionType === t && o.positionFilter === f);
+      });
+    
+      fixedInputs.forEach((i, idx) => i.value = (o.positionType === 0 ? o[names[idx]] : '') || '');
+      peiInputs.forEach((i, idx) => i.value = (o.positionType === 1 ? o[names[idx]] : '') || '');
+      update();
+    };
+    
     // 固定位置合分
     const bindFixedRemainMulti = (maker, o) => {
       const fcb = [...document.querySelectorAll('.remain-fixed-filter')];
@@ -547,6 +634,7 @@ class CodeMaker {
       maker.log();
       
       checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
+      bindPosPeiShuMulti(maker, o);
       bindFixedRemainMulti(maker, o);
       bindPosition(maker);
       bindRemainMatch(maker, o);
@@ -612,54 +700,267 @@ class CodeMaker {
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
         ${this.css}
-        body{margin:0;overflow-y:auto;padding:20px;min-height:100vh;font-family:-apple-system,Arial;color:#000;line-height:1.4;background:#153B7D}
-        .log,.numbers{background:rgba(255,255,255,.15);border-radius:15px;box-shadow:0 8px 24px rgba(0,0,0,.15)}
-        .log{animation: fadeInUp 0.7s ease forwards;padding:15px 20px;font-size:14.5px;color:#fff}
-        .count{font-size:22px;font-weight:bold;color:#fff;text-align:center;margin:5px 0;text-shadow:0 1px 3px rgba(0,0,0,.4)}
-        .count-bar{display:flex;align-items:center;justify-content:center;gap:15px;margin:15px 0}
-        .save-btn{padding:6px 14px;font-size:14px;border-radius:8px;border:none;cursor:pointer;background:rgba(255,255,255,.25);color:#fff}
-        .numbers{padding:20px;max-height:23.8vh}
-        .numbers-scroll{height:calc(23.8vh - 20px);overflow-y:auto}
-        .t-2 td{border:1px solid #fff;color:#fff}
-        .error{color:red;font-weight:bold;font-size:15px;text-align:center}
-        .stagger{opacity:0;display:flex;align-items:center;margin-bottom:4px;animation:fadeInAnimation .3s ease-in-out forwards}
-        .icon{color:#00ff00;font-weight:bold;margin-right:6px}
-        @keyframes fadeInAnimation{from{opacity:0}to{opacity:1}}
-        .particle{position:fixed;width:4px;height:4px;background:rgba(255,255,255,.8);border-radius:50%;opacity:0;animation:floatParticles 6s infinite ease-in-out}
-        @keyframes floatParticles{0%{opacity:0;transform:translateY(0) scale(.5)} 50%{opacity:1;transform:translateY(-60px) scale(1)} 100%{opacity:0;transform:translateY(-120px) scale(.5)}}
-        @media (prefers-color-scheme: dark){body{background:#000}}
-        .filter-bar{margin:10px 0;padding:10px 20px;animation: fadeInUp 1s ease forwards;background:rgba(255,255,255,.15);border-radius:15px;color:#fff;font-size:16px;text-align:left}
-        .red2{color:yellow}
-        .two-col-repeat{display: flex;gap: 32px;}
-        .two-col-repeat .col {white-space: nowrap;}
-        .two-col-brother {display: flex;gap: 16px;}
-        .two-col-brother .col {white-space: nowrap;}
-        .green {color: #00F800;margin-left: 2px;}
-        input{font-size: 16px; -webkit-text-size-adjust: 100%;}
-        input[type="text"] {background-color: rgba(255, 255, 255, 0.2);height: 20px;vertical-align: middle;display: inline-block;line-height: 1.4;color: #FFF;border-radius: 6px;border: .5px solid #999;padding: 4px 8px;outline: none;}
+        body {
+          margin: 0;
+          overflow-y: auto;
+          padding: 20px;
+          min-height: 100vh;
+          font-family: -apple-system, Arial;
+          color: #000;
+          line-height: 1.4;
+          background: #153B7D;
+        }
+        
+        .log,
+        .numbers {
+          background: rgba(255, 255, 255, .15);
+          border-radius: 15px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
+        }
+        
+        .log {
+          animation: fadeInUp .7s ease forwards;
+          padding: 15px 20px;
+          font-size: 14.5px;
+          color: #fff;
+        }
+        
+        .count {
+          font-size: 22px;
+          font-weight: bold;
+          color: #fff;
+          text-align: center;
+          margin: 5px 0;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+        }
+        
+        .count-bar {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 15px;
+          margin: 15px 0;
+        }
+        
+        .save-btn {
+          padding: 6px 14px;
+          font-size: 14px;
+          border-radius: 8px;
+          border: none;
+          cursor: pointer;
+          background: rgba(255, 255, 255, .25);
+          color: #fff;
+        }
+        
+        .numbers {
+          padding: 20px;
+          max-height: 23.8vh;
+        }
+        
+        .numbers-scroll {
+          height: calc(23.8vh - 20px);
+          overflow-y: auto;
+        }
+        
+        .t-2 td {
+          border: 1px solid #fff;
+          color: #fff;
+        }
+        
+        .filter-bar {
+          margin: 10px 0 10px;
+          padding: 10px 20px;
+          background: rgba(255,255,255,.15);
+          border-radius: 15px;
+          color: #fff;
+          font-size: 16px;
+          text-align: left; 
+          animation: fadeInUp .7s ease forwards;
+        }
+        
+        .filter-bar label {
+          margin-right: 2px;
+        }
+        
+        .filter-bar table {
+          color: #fff;
+        }
+        
+        .red2 {
+          color: yellow;
+        }
+        
+        .two-col-repeat {
+          display: flex;
+          gap: 32px;
+        }
+        
+        .two-col-repeat .col {
+          white-space: nowrap;
+        }
+        
+        .two-col-brother {
+          display: flex;
+          gap: 16px;
+        }
+        
+        .two-col-brother .col {
+          white-space: nowrap;
+        }
+        
+        .green {
+          color: #00FF00;
+          margin-left: 2px;
+        }
+        
+        input {
+          font-size: 16px;
+          -webkit-text-size-adjust: 100%;
+        }
+        
+        input[type="text"] {
+          background-color: rgba(255, 255, 255, 0.2);
+          height: 20px;
+          vertical-align: middle;
+          display: inline-block;
+          line-height: 1.4;
+          color: #FFF;
+          border-radius: 6px;
+          border: .5px solid #999;
+          padding: 4px 8px;
+          outline: none;
+        }
+        
+        /* 值范围输入框 */
         input[name="zhifanwei1"],
-        input[name="zhifanwei2"] {width: 40px;height: 20px;}
+        input[name="zhifanwei2"] {
+          width: 40px;
+          height: 20px;
+        }
+        
         input[name="he1"],
         input[name="he2"],
         input[name="he3"],
-        input[name="he4"] {width: 118px;height: 20px;}
-        .filter-bar label {margin-right: 2px;}
-        .filter-bar input[type="checkbox"],
-        .remain-fixed-filter-item input[type="checkbox"] {transform: scale(1.1);margin-right: 1.5px;}
-        .remain-bar {
-          margin-bottom: 6px;
+        input[name="he4"] {
+          width: 115px;
+          height: 20px;
         }
-        .remain-fixed-filter-item .idx {display: inline-block;width: 20px;}
-        .remain-fixed-filter-item {display: flex;align-items: center;}
+        
+        input[boxNumber="1"],
+        input[boxNumber="2"],
+        input[boxNumber="3"],
+        input[boxNumber="4"] {
+          width: 100px;
+          height: 20px;
+        }
+        
+        .filter-bar input[type="checkbox"],
+        .remain-fixed-filter-item input[type="checkbox"] {
+          transform: scale(1.1);
+          margin-right: 1.5px;
+        }
+        
         .remain-fixed-filter-item input[type="checkbox"] {
           margin-right: 6px;
         }
-        /* 先定义动画 */
-        @keyframes fadeInUp {0% {opacity: 0;transform: translate3d(0, 100%, 0);}100% {opacity: 1;transform: none;}}
+        
+        .remain-bar {
+          margin-bottom: 6px;
+        }
+        
+        .remain-fixed-filter-item .idx {
+          display: inline-block;
+          width: 20px;
+        }
+        
+        .remain-fixed-filter-item {
+          display: flex;
+          align-items: center;
+        }
+        
+        /* 定位置配数全转 */
+        .filter-bar tr td:first-child {
+          padding-right: 32px;
+        }
+        
+        .fixed-input td,
+        .match-input td {
+          text-align: left;
+        }
+        
+        .fixed-input td > div:first-child,
+        .match-input td > div:first-child {
+          margin-top: 6px;
+        }
+        
+        /* 背景,图标 */
+        .error {
+          color: red;
+          font-size: 15px;
+          text-align: center;
+        }
+        
+        .stagger {
+          opacity: 0;
+          animation: fadeInAnimation .3s ease-in-out forwards;
+          display: flex;
+          align-items: center;
+          margin-top: 4px;
+        }
+        
+        .icon {
+          color: #00ff00;
+          font-weight: bold;
+          margin-right: 6px;
+        }
+        
+        @keyframes fadeInAnimation {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .particle {
+          position: fixed;
+          width: 4px;
+          height: 4px;
+          background: rgba(255, 255, 255, .8);
+          border-radius: 50%;
+          opacity: 0;
+          animation: floatParticles 6s infinite ease-in-out;
+        }
+        
+        @keyframes floatParticles {
+          0% { opacity: 0; transform: translateY(0) scale(.5); }
+          50% {
+            opacity: 1;
+            transform: translateY(-60px) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-120px) scale(.5);
+          }
+        }
+        
+        @media (prefers-color-scheme: dark) { body { background: #000; } }
+        
+        /* 列表动画 */
+        @keyframes fadeInUp {
+          0% { opacity: 0;transform: translate3d(0, 100%, 0); }
+          100% {
+            opacity: 1;
+            transform: none;
+          }
+        }
         @keyframes bounce {
-          0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-          40% {transform: translateY(-15px);}
-          60% {transform: translateY(-7.5px);}
+          0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+          }
+          40% {
+            transform: translateY(-15px);
+          }
+          60% {
+            transform: translateY(-7.5px);
+          }
         }
       </style>
     </head>
@@ -682,6 +983,46 @@ class CodeMaker {
       </div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
       <script type="text/html" id="tpl_sid">
+        <div class="filter-bar">
+          <table>
+            <tr>
+              <td colspan="2" >
+                <strong class="red2">定位置</strong>
+                <label><input type="checkbox" class="position-filter" positionType="0" positionFilter="1">除</label>
+                <label><input type="checkbox" class="position-filter" positionType="0" positionFilter="0" checked>取</label>
+              </td>
+              <td colspan="2" class="tc">
+                <strong class="red2">配数全转</strong>
+                <label><input type="checkbox" class="position-filter" positionType="1" positionFilter="1">除</label>
+                <label><input type="checkbox" class="position-filter" positionType="1" positionFilter="0">取</label>
+              </td>
+            </tr>
+            <tr class="fixed-input tc">
+              <td colspan="4">
+                <div>
+                  仟<input type="text" class="w90" boxNumber="1">
+                  佰<input type="text" class="w90" boxNumber="2">
+                </div>
+                <div class="mt5">
+                  拾<input type="text" class="w90" boxNumber="3">
+                  个<input type="text" class="w90" boxNumber="4">
+                </div>
+              </td>
+            </tr>
+            <tr class="match-input hide">
+              <td colspan="4" >
+                <div>
+                  <input type="text" class="w90" boxNumber="1"> 配,
+                  <input type="text" class="w90" boxNumber="2"> 配,
+                </div>
+                <div class="mt5">
+                  <input type="text" class="w90" boxNumber="3"> 配,
+                  <input type="text" class="w90" boxNumber="4">
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
         <tr>
           <td colspan="4" class="tc">
             <div class="filter-bar">
