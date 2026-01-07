@@ -265,6 +265,19 @@ class CodeMaker {
       window.dispatchEvent(new CustomEvent('JBridge', { detail: { type, data } }))
     }
     
+    const showTips = (msg, duration = 1500) => {
+      const tips = document.getElementById("tips");
+      const text = tips.querySelector("span");
+      text.textContent = msg;
+      tips.classList.remove("hide");
+      tips.classList.add("show");
+      clearTimeout(tips.timer);
+      tips.timer = setTimeout(() => {
+        tips.classList.remove("show");
+        tips.classList.add("hide");
+      }, duration);
+    };
+    
     const setLogs = (log, o) => {
       if (log.includes("二兄弟“[取]”")) o.twoBrotherFilter = 0;
       if (log.includes("三兄弟“[取]”")) o.threeBrotherFilter = 0;
@@ -296,6 +309,15 @@ class CodeMaker {
     ];
     
     const apply = (maker, type) => {
+      const o = maker.options;
+      if (o.positionType === 1) {
+        const hasPei =
+          o.firstNumber ||
+          o.secondNumber ||
+          o.thirdNumber ||
+          o.fourthNumber;
+        if (!hasPei) showTips("配数模式下必须输入‼️");
+      }
       maker.log();
       maker.generate();
       if (type && window.__kx?.produceWord) {
@@ -962,6 +984,40 @@ class CodeMaker {
             transform: translateY(-7.5px);
           }
         }
+        /* loading 圈 */
+        .loader {
+          width: 18px;
+          height: 18px;
+          border: 3px solid rgba(255,255,255,0.5);
+          border-top: 3px solid #fff;
+          border-radius: 50%;
+          margin: 10px auto;
+          animation: spin 0.5s linear infinite;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* 弹窗提示 */
+        #tips {
+          position: fixed;
+          top: 40%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0,0,0,0.8);
+          color: #fff;
+          padding: 15px 20px;
+          border-radius: 15px;
+          z-index: 9999;
+          max-width: 80%;
+          width: auto;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity .25s ease-in-out;
+        }
+        #tips.show { opacity: 1; }
+        #tips.hide { opacity: 0; }
       </style>
     </head>
     <body>
@@ -978,9 +1034,10 @@ class CodeMaker {
       <div class="numbers">
         <div class="numbers-scroll">
           <table class="t-2 tc" id="numberList" cellpadding="0" cellspacing="0"></table>
-            <div class="betStatus" style="color:#fff"><img src="https://raw.githubusercontent.com/95du/scripts/master/img/ticket/loading.gif" /><br /><br /><span>0</span>个注单正在写入，已完成<i id="multi_count"></i>个</div>
+            <div class="betStatus" style="color:#fff"><div class="loader"></div><span>0</span>个注单正在写入，已完成<i id="multi_count"></i>个</div>
         </div>
       </div>
+      <div id="tips"><span></span></div>
       <audio id="audio" src="https://www.bqxfiles.com/music/success.mp3">
       <script type="text/html" id="tpl_sid">
         <div class="filter-bar">
@@ -1661,7 +1718,7 @@ class CodeMaker {
     <!-- 号码模板 -->
     <script type="text/html" id="tpl_refresh">
       {{if !Data.Rows.length}}
-        <tr><td colspan="8">暂无数据！</td></tr>
+        <tr><td colspan="8">暂无数据</td></tr>
       {{else}}
         {{each Data.Rows as item i}}
           {{var is_show1 = item.period_status == 3;}}
@@ -1739,7 +1796,7 @@ class CodeMaker {
     <script type="text/html" id="tpl_bill">
       {{if !Data.length}}
       <tr>
-        <td colspan="5">暂无数据!</td>
+        <td colspan="5">暂无数据</td>
       </tr>
       {{else}}
         {{each Data as item i}}
