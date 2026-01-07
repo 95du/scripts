@@ -1002,7 +1002,7 @@ class CodeMaker {
         /* 弹窗提示 */
         #tips {
           position: fixed;
-          top: 40%;
+          top: 25%;
           left: 50%;
           transform: translate(-50%, -50%);
           background: rgba(0,0,0,0.8);
