@@ -539,12 +539,9 @@ const pickInputText = (input, bet_number) => {
   return '';
 };
 
-const buildHtml = async (kx, isLog = false, input = '', selected, bet_number) => {
+const buildHtml = (kx, isLog = false, input = '', selected, bet_number) => {
   if (!isLog) return kx.html(selected);
   const inputText = pickInputText(input, bet_number);
-  if (!inputText) {
-    return await generateAlert('剪贴板没有符合的内容\n先复制原站完整的日志', input.slice(0, 50), ['完成']);
-  }
   return kx.logHtml(inputText);
 };
 
@@ -565,7 +562,7 @@ const buildBody = async (event, Body, input = '', isLog) => {
 // ✅ 运行快选 HTML
 const kuaixuan = async (betData, selected, isLog = false, input, bet_number, bet_money) => {
   const kx = await getModule(selected);
-  const html = await buildHtml(kx, isLog, input, selected, bet_number);
+  const html = buildHtml(kx, isLog, input, selected, bet_number);
   if (!html) return;
   const Body = kx.body(bet_money);
   
