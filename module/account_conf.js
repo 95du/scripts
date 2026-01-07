@@ -1,7 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: light-gray; icon-glyph: user-astronaut;
-
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
@@ -869,7 +868,11 @@ const accountManage = async (betData, selected, conf) => {
     case 'reset': {
       const confirm = await generateAlert(`是否${choice.name}配置❓`, null, ['取消', '确定'], true);
       if (confirm === 1) {
-        await updateConfig(betData, selected, c => { c.custom = defaultConfig.custom });
+        fm.remove(basePath);
+        await updateConfig(betData, selected, c => { 
+          c.custom = defaultConfig.custom;
+          selected.body = [];
+        });
         await saveBoxJsData(betData);
       }
       break;
@@ -896,7 +899,6 @@ const multiplierMenu = async (betData, selected, conf) => {
   const results = await collectInputs('设置倍数', '影响对应规则的投注金额', [{ hint: '全局倍数', value: section.globalMultiplier ?? 1 }]);
   if (!results.length) return;
   await updateConfig(betData, selected, c => { c.custom.globalMultiplier = Number(results[0]) || 1 });
-  await refreshReopen(betData, selected, conf, multiplierMenu);
 };
 
 // ✅ 主配置菜单
@@ -945,7 +947,7 @@ const configMenu = async (betData, selected, conf) => {
       break;
     }
     case 'multiplierMenu':
-      await refreshReopen(betData, selected, conf, multiplierMenu);
+      await multiplierMenu(betData, selected, conf);
       break;
     case 'time':
       await setTimeRange(betData, selected, conf);
