@@ -775,8 +775,9 @@ const setTaskType = async (betData, selected, conf) => {
         break;
       }
       case 'logRule': {
-        const paste = Pasteboard.paste()?.trim();
-        await kuaixuan(betData, selected, true, paste);
+        const paste = Pasteboard.paste();
+        const input = paste?.replace(/\[|\]/g, '').trim();
+        await kuaixuan(betData, selected, true, input);
         break;
       }
       case 'writeRule':
