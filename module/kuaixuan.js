@@ -59,38 +59,38 @@ class CodeMaker {
       bigNumberFilter: -1,
       bigNumberPositions: [0,0,0,0],
       smallNumberFilter: -1,
-      smallNumberPositions: [0,0,0,0]
+      smallNumberPositions: [0,0,0,0],
     };
   
     // 定位类型
     if (text.includes("四定位")) o.numberType = 40;
     
     // 定位置 [取/除]（千/百/十/个）
-    const positionMatch = text.match(/定位置“\[(取|除)\]”：([^；]+)/);
+    const positionMatch = text.match(/定位置“(取|除)”：([^；]+)/);
     if (positionMatch) {
       o.positionFilter = positionMatch[1] === "取" ? 0 : 1;
       const nums = {};
-      const numMatch = positionMatch[2].match(/(千|百|十|个)=\[(\d+)\]/g);
+      const numMatch = positionMatch[2].match(/(千|百|十|个)=([0-9]+)/g);
       if (numMatch) {
         numMatch.forEach(item => {
-          const m = item.match(/(千|百|十|个)=\[(\d+)\]/);
+          const m = item.match(/(千|百|十|个)=([0-9]+)/);
           if (m) nums[m[1]] = m[2];
         });
       }
-      o.firstNumber = nums["千"] || ""
-      o.secondNumber = nums["百"] || ""
-      o.thirdNumber = nums["十"] || ""
-      o.fourthNumber = nums["个"] || ""
+      o.firstNumber  = nums["千"] || ''
+      o.secondNumber = nums["百"] || ''
+      o.thirdNumber  = nums["十"] || ''
+      o.fourthNumber = nums["个"] || ''
       o.positionType = 0;
     }
     
     // 配数 [取/除]
-    const peishuMatch = text.match(/配数“\[(取|除)\]”/);
+    const peishuMatch = text.match(/配数“(取|除)”/);
     if (peishuMatch) {
-      const m1 = text.match(/第1位：\[([0-9]+)\]/);
-      const m2 = text.match(/第2位：\[([0-9]+)\]/);
-      const m3 = text.match(/第3位：\[([0-9]+)\]/);
-      const m4 = text.match(/第4位：\[([0-9]+)\]/);
+      const m1 = text.match(/第1位：([0-9]+)/);
+      const m2 = text.match(/第2位：([0-9]+)/);
+      const m3 = text.match(/第3位：([0-9]+)/);
+      const m4 = text.match(/第4位：([0-9]+)/);
       if (m1) o.firstNumber  = m1[1];
       if (m2) o.secondNumber = m2[1];
       if (m3) o.thirdNumber  = m3[1];
@@ -102,23 +102,21 @@ class CodeMaker {
     // 固定合分 [取/除]
     const parseFixedRemain = (text, o) => {
       o.remainFixedNumbers = [];
-      o.remainFixedFilter =  -1;
+      o.remainFixedFilter = -1;
       const groups = text.split('；').map(s => s.trim()).filter(Boolean);
       groups.forEach(group => {
         const typeMatch = group.match(/固定合分(取值|除值)/);
         const type = typeMatch ? typeMatch[1] : '取值';
-        const contentMatch = group.match(/内容：\[(.*?)\]/);
+        const contentMatch = group.match(/内容：([0-9]+)/);
         if (!contentMatch) return;
         const content = contentMatch[1].split('');
-        const posMatches = Array.from(group.matchAll(/第\[(\d)\]位选中/g));
+        const posMatches = Array.from(group.matchAll(/第(\d)位选中/g));
         const posArray = [0,0,0,0];
         posMatches.forEach(m => {
           const idx = Number(m[1]) - 1;
           if (idx >=0 && idx < 4) posArray[idx] = 1;
         });
-        o.remainFixedNumbers.push([
-          posArray, content
-        ]);
+        o.remainFixedNumbers.push([posArray, content]);
         o.remainFixedFilter = type === '取值' ? 0 : 1;
       });
       return o;
@@ -126,124 +124,117 @@ class CodeMaker {
     parseFixedRemain(text, o);
     
     // 不定合分值(两数合)
-    const twoMatch = text.match(/不定合分值\(两数合\)：\[([0-9]+)\]/);
+    const twoMatch = text.match(/不定合分值\(两数合\)：([0-9]+)/);
     if (twoMatch) {
       o.remainMatchFilter = 2;
       o.remainMatchNumbers = twoMatch[1].split('');
     }
     
     // 不定合分值(三数合)
-    const threeMatch = text.match(/不定合分值\(三数合\)：\[([0-9]+)\]/);
+    const threeMatch = text.match(/不定合分值\(三数合\)：([0-9]+)/);
     if (threeMatch) {
       o.remainMatchFilterThree = 3;
       o.remainMatchNumbersThree = threeMatch[1].split('');
     }
   
     // 合分值范围
-    const range = text.match(/合分值范围：\[([0-9]+)-([0-9]+)\]/);
+    const range = text.match(/合分值范围：([0-9]+)-([0-9]+)/);
     if (range) o.remainValueRanges = [Number(range[1]), Number(range[2])];
   
-    // 包含【取/除】
-    const containMatch = text.match(/包含“\[(取|除)\]”数：\[([0-9]+)\]/);
+    // 包含取/除
+    const containMatch = text.match(/包含“(取|除)”数：([0-9]+)/);
     if (containMatch) {
       o.containFilter = containMatch[1] === "取" ? 0 : 1;
       o.containNumbers = containMatch[2].split('');
     }
-    
-    // 复式【取/除】
-    const multipleMatch = text.match(/复式“\[(取|除)\]”数：\[([0-9]+)\]/);
-    if (multipleMatch) {
-      o.multipleFilter  = multipleMatch[1] === "取" ? 0 : 1;
-      o.multipleNumbers = multipleMatch[2].split('');
-    }
-    
-    // 双重、双双重、三重、四重 [除]
-    if (/[^双]双重“\[除\]”/.test(text)) o.repeatTwoWordsFilter = 1;
-    if (/双双重“\[除\]”/.test(text)) o.repeatDoubleWordsFilter = 1;
-    if (text.includes("三重“[除]”")) o.repeatThreeWordsFilter = 1;
-    if (text.includes("四重“[除]”")) o.repeatFourWordsFilter = 1;
   
-    // 兄弟 [除]
-    if (text.includes("二兄弟“[除]”")) o.twoBrotherFilter = 1;
-    if (text.includes("三兄弟“[除]”")) o.threeBrotherFilter = 1;
-    if (text.includes("四兄弟“[除]”")) o.fourBrotherFilter = 1;
+    // 双重、双双重、三重、四重 除
+    if (/[^双]双重“除”/.test(text)) o.repeatTwoWordsFilter = 1;
+    if (/双双重“除”/.test(text)) o.repeatDoubleWordsFilter = 1;
+    if (/三重“除”/.test(text)) o.repeatThreeWordsFilter = 1;
+    if (/四重“除”/.test(text)) o.repeatFourWordsFilter = 1;
+  
+    // 兄弟 除
+    if (text.includes("二兄弟“除”")) o.twoBrotherFilter = 1;
+    if (text.includes("三兄弟“除”")) o.threeBrotherFilter = 1;
+    if (text.includes("四兄弟“除”")) o.fourBrotherFilter = 1;
   
     // 全转数
-    const transform = text.match(/全转数：\[([0-9]+)\]/);
+    const transform = text.match(/全转数：([0-9]+)/);
     if (transform) {
       o.fullTransform = true;
       o.transformNumbers = transform[1].split('');
     }
     
     // 上奖数
-    const upper = text.match(/上奖数：\[([0-9]+)\]/);
+    const upper = text.match(/上奖数：([0-9]+)/);
     if (upper) {
       o.upPrize = true;
       o.upperNumbers = upper[1].split('');
     }
     
     // 排除数
-    const except = text.match(/排除数：\[([0-9]+)\]/);
+    const except = text.match(/排除数：([0-9]+)/);
     if (except) {
       o.exceptNumbers = except[1].split('');
     }
-    
-    // 对数 [取/除]
-    if (text.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
-    if (text.includes("对数“[除]”")) o.logarithmNumberFilter = 1;
-    const logMatches = [...text.matchAll(/\[(\d{1,2})\]/g)];
+  
+    // 对数 取/除
+    if (text.includes("对数“取”")) o.logarithmNumberFilter = 0;
+    if (text.includes("对数“除”")) o.logarithmNumberFilter = 1;
+    const logMatches = [...text.matchAll(/\d{1,2}/g)];
     if (logMatches.length) {
       o.logarithmNumbers = logMatches
         .slice(0, 5)
-        .map(m => m[1].split(""));
+        .map(m => m[0].split(""));
     }
-    
-    // 单数 [取/除]
-    const oddMatch = text.match(/单数“\[(取|除)\]”数：(.+?)(?=，(双数|大数|小数)|$)/);
+  
+    // 单数 取/除
+    const oddMatch = text.match(/单数“(取|除)”数：(.+?)(?=，(双数|大数|小数)|$)/);
     if (oddMatch) {
       o.oddNumberFilter = oddMatch[1] === "取" ? 0 : 1;
       o.oddNumberPositions = [0,0,0,0];
-      [...oddMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+      [...oddMatch[2].matchAll(/第(\d+)位/g)].forEach(m => {
         const idx = Number(m[1])-1;
         if (idx>=0 && idx<4) o.oddNumberPositions[idx] = 1;
       });
     }
-    
-    // 双数 [取/除]
-    const evenMatch = text.match(/双数“\[(取|除)\]”数：(.+?)(?=，(单数|大数|小数)|$)/);
+  
+    // 双数 取/除
+    const evenMatch = text.match(/双数“(取|除)”数：(.+?)(?=，(单数|大数|小数)|$)/);
     if (evenMatch) {
       o.evenNumberFilter = evenMatch[1] === "取" ? 0 : 1;
       o.evenNumberPositions = [0,0,0,0];
-      [...evenMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+      [...evenMatch[2].matchAll(/第(\d+)位/g)].forEach(m => {
         const idx = Number(m[1])-1;
         if (idx>=0 && idx<4) o.evenNumberPositions[idx] = 1;
       });
     }
-    
-    // 大数 [取/除]
-    const bigMatch = text.match(/大数“\[(取|除)\]”数：(.+?)(?=，(单数|双数|小数)|$)/);
+  
+    // 大数 取/除
+    const bigMatch = text.match(/大数“(取|除)”数：(.+?)(?=，(单数|双数|小数)|$)/);
     if (bigMatch) {
       o.bigNumberFilter = bigMatch[1] === "取" ? 0 : 1;
       o.bigNumberPositions = [0,0,0,0];
-      [...bigMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+      [...bigMatch[2].matchAll(/第(\d+)位/g)].forEach(m => {
         const idx = Number(m[1])-1;
         if (idx>=0 && idx<4) o.bigNumberPositions[idx] = 1;
       });
     }
-    
-    // 小数 [取/除]
-    const smallMatch = text.match(/小数“\[(取|除)\]”数：(.+?)(?=，(单数|双数|大数)|$)/);
+  
+    // 小数 取/除
+    const smallMatch = text.match(/小数“(取|除)”数：(.+?)(?=，(单数|双数|大数)|$)/);
     if (smallMatch) {
       o.smallNumberFilter = smallMatch[1] === "取" ? 0 : 1;
       o.smallNumberPositions = [0,0,0,0];
-      [...smallMatch[2].matchAll(/第\[(\d+)\]位/g)].forEach(m => {
+      [...smallMatch[2].matchAll(/第(\d+)位/g)].forEach(m => {
         const idx = Number(m[1])-1;
         if (idx>=0 && idx<4) o.smallNumberPositions[idx] = 1;
       });
     }
   
     return o;
-  };
+  }
   
   // 判断是否为 4 位号码数组输入
   isPureNumbersInput = (text) =>
@@ -279,18 +270,18 @@ class CodeMaker {
     };
     
     const setLogs = (log, o) => {
-      if (log.includes("二兄弟“[取]”")) o.twoBrotherFilter = 0;
-      if (log.includes("三兄弟“[取]”")) o.threeBrotherFilter = 0;
-      if (log.includes("四兄弟“[取]”")) o.fourBrotherFilter = 0;
-      if (log.includes("双双重“[取]”")) o.repeatDoubleWordsFilter = 0;
-      if (log.includes("双重“[取]”") && !log.includes("双双重“[取]”")) o.repeatTwoWordsFilter = 0;
-      if (log.includes("三重“[取]”")) o.repeatThreeWordsFilter = 0;
-      if (log.includes("四重“[取]”")) o.repeatFourWordsFilter = 0;
-      if (log.includes("单数“[取]”")) o.oddNumberFilter = 0;
-      if (log.includes("双数“[取]”")) o.evenNumberFilter = 0;
-      if (log.includes("大数“[取]”")) o.bigNumberFilter = 0;
-      if (log.includes("小数“[取]”")) o.smallNumberFilter = 0;
-      if (log.includes("对数“[取]”")) o.logarithmNumberFilter = 0;
+      if (log.includes("二兄弟“取”")) o.twoBrotherFilter = 0;
+      if (log.includes("三兄弟“取”")) o.threeBrotherFilter = 0;
+      if (log.includes("四兄弟“取”")) o.fourBrotherFilter = 0;
+      if (log.includes("双双重“取”")) o.repeatDoubleWordsFilter = 0;
+      if (log.includes("双重“取”") && !log.includes("双双重“取”")) o.repeatTwoWordsFilter = 0;
+      if (log.includes("三重“取”")) o.repeatThreeWordsFilter = 0;
+      if (log.includes("四重“取”")) o.repeatFourWordsFilter = 0;
+      if (log.includes("单数“取”")) o.oddNumberFilter = 0;
+      if (log.includes("双数“取”")) o.evenNumberFilter = 0;
+      if (log.includes("大数“取”")) o.bigNumberFilter = 0;
+      if (log.includes("小数“取”")) o.smallNumberFilter = 0;
+      if (log.includes("对数“取”")) o.logarithmNumberFilter = 0;
     };
     
     // 初始化 checkbox 状态
