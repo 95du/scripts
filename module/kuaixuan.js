@@ -77,10 +77,10 @@ class CodeMaker {
           if (m) nums[m[1]] = m[2];
         });
       }
-      o.firstNumber  = nums["千"] || ''
-      o.secondNumber = nums["百"] || ''
-      o.thirdNumber  = nums["十"] || ''
-      o.fourthNumber = nums["个"] || ''
+      o.firstNumber  = nums["千"];
+      o.secondNumber = nums["百"];
+      o.thirdNumber  = nums["十"];
+      o.fourthNumber = nums["个"];
       o.positionType = 0;
     }
     
