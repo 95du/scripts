@@ -4,7 +4,7 @@
 /**
  * 手动修改第 8 行的数字
  * 连续未中自动投 ‼️‼️‼️
- * 设置为 0：关闭此功能，不中一直停
+ * 设置为 0：命中继续投，不中一直停
  * 设置为 1：不论中或不中，每期都投
  * 设置为 3：连续未中 3 期后自动投
  */
@@ -12,7 +12,7 @@ const missLimit = 1
 
 
 /** =======💜 统计盈亏 💜======= */
-
+const isDev = false
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
@@ -47,33 +47,49 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
   }
 };
 
+// 🈯️ 获取记录数据
+const getRecordRows = async () => {
+  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  let list = JSON.parse(data || '[]');
+  if (!Array.isArray(list) || !list.length) {
+    list = await new Request(`${github}/records.json`).loadJSON()
+    await saveBoxJsData(list, 'record_rows');
+  }
+  return list;
+};
+
 // ✅ 缓存文件
-const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
+const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
   const path = fm.joinPath(basePath, name);
-  const isExpired = () => cacheHours !== undefined && fm.fileExists(path) &&
-    (Date.now() - fm.creationDate(path).getTime()) / 36e5 > cacheHours;
+  const isExpired = () => {
+    fm.fileExists(path) && (Date.now() - fm.creationDate(path).getTime()) / 36e5 > cacheHours;
+  }
   const read = () => {
-    if (!fm.fileExists(path) || isExpired()) return null;
-    if (type === 'img') return fm.readImage(path);
-    if (type === 'json') return JSON.parse(fm.readString(path));
-    return fm.readString(path);
+    if (fm.fileExists(path)) {
+      if (isExpired()) {
+        fm.remove(path);
+        return null;
+      }
+      if (type === 'img') return fm.readImage(path);
+      if (type === 'json') return JSON.parse(fm.readString(path));
+      return fm.readString(path);
+    }
   };
   const write = (data) => {
     if (type === 'img') fm.writeImage(path, data);
     else fm.writeString(path, type === 'json' ? JSON.stringify(data) : data);
   };
-  return (async () => {
-    const cached = read();
-    if (cached) return cached;
-    const req = new Request(url);
-    if (type === 'img') data = await req.loadImage();
-    else if (type === 'json') {
-      const res = await req.loadJSON();
-      data = res?.val ?? res;
-    } else data = await req.loadString();
-    if (data) write(data);
-    return data;
-  })();
+
+  const cached = read();
+  if (cached) return cached;
+  const req = new Request(url);
+  if (type === 'img') data = await req.loadImage();
+  else if (type === 'json') {
+    const res = await req.loadJSON();
+    data = res?.val ?? res;
+  } else data = await req.loadString();
+  if (data) write(data);
+  return data;
 };
 
 const presentSheetMenu = async (message, opt = [], sel = null) => {
@@ -124,188 +140,246 @@ const sliceByTime = (rows, targetTime, field = "period_datetime") => {
 };
 
 // ✅ 普通回放
-const replayNormal = (rows, bodies) => {
-  let win = 0, lose = 0, score = 0;
+const replayNormal = (rows, rule) => {
+  const bodies = [rule.body];
   let totalProfit = 0;
-  const cost = parseBetNumbers(bodies[0]).length;
+  let win = 0, lose = 0, score = 0;
+
+  const cost = parseBetNumbers(rule.body).length;
   const prize = 9920 - cost;
   const ordered = rows.slice().reverse();
-  const lines = [];
-  
+  const records = [];
+
   ordered.forEach(r => {
-    const num = drawNumber(r);
+    const open_code = drawNumber(r);
     const time = r.draw_datetime?.slice(11, 16);
-    const period = r.period_no.slice(-3);
-    const hit = bodies.some(b => parseBetNumbers(b).includes(num));
+    const period_no = r.period_no.slice(-3);
+    const hit = isHit(r, bodies);
 
     if (hit) {
-      win++; score++;
+      win++; score++; 
       totalProfit += prize;
-      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】   ${totalProfit}`);
     } else {
-      lose++; score--;
+      lose++; score--; 
       totalProfit -= cost;
-      lines.push(` 🚫 ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
     }
+
+    records.push({
+      hit,
+      hit_icon: hit ? '✅' : '🚫',
+      time,
+      period_no,
+      open_code,
+      action: '投',
+      profit: totalProfit,
+      forced: false
+    });
   });
 
   return {
-    win, lose, score,
-    total: rows.length,
-    totalProfit,
-    lines: lines.reverse()
+    mode: 'normal',
+    title: rule.title,
+    desc: '普通规则：每期都投 ( 默认 )',
+    summary: {
+      total: rows.length,
+      win,
+      lose,
+      unbet: 0,
+      score,
+      profit: totalProfit
+    },
+    records: records.reverse()
   };
 };
 
 // ✅ 模拟投注回放
-const replaySimulate = (rows, bodies, lastRow, isToday = false) => {
+const replaySimulate = (rows, rule, lastRow) => {
+  const bodies = [rule.body];
   let canBet = lastRow ? isHit(lastRow, bodies) : false;
-  let win = 0, lose = 0, score = 0;
   let totalProfit = 0;
-  const cost = parseBetNumbers(bodies[0]).length;
+  let win = 0, lose = 0, score = 0;
+  let missCount = 0;
+  let forceBet = false;
+  let unbet = 0;
+
+  const cost = parseBetNumbers(rule.body).length;
   const prize = 9920 - cost;
   const ordered = rows.slice().reverse();
-  const tempLines = [];
-  const todayList = [];
-  let missCount = 0;
-  let forceBet = false; 
+  const records = [];
 
   ordered.forEach(r => {
-    const num = drawNumber(r);
+    const open_code = drawNumber(r);
     const time = r.draw_datetime?.slice(11, 16);
-    const period = r.period_no.slice(-3);
+    const period_no = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
 
-    /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
-      if (!isToday) {
-        tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
-      } else {
-        todayList.push({
-          time,
-          hit,
-          action: hit ? '投' : '停',
-          forced: false,
-          profit: totalProfit
-        });
-      }
+      unbet++;
 
       if (hit) {
         canBet = true;
         missCount = 0;
       } else {
         missCount++;
-        // 达到missLimit触发强制投
         if (missLimit > 0 && missCount >= missLimit) forceBet = true;
       }
+
+      records.push({
+        hit,
+        hit_icon: hit ? '✅' : '⏸️',
+        time,
+        period_no,
+        open_code,
+        action: '停',
+        profit: totalProfit,
+        forced: false
+      });
       return;
     }
 
-    /** 投注状态（正常投或强制投） */
-    // 只要当前处于强制投状态，就显示 ⚠️
-    const isForce = forceBet; 
-    // 强制投状态一直投，直到命中
+    let forced = forceBet;
     if (forceBet) canBet = true;
 
     if (hit) {
-      win++;
-      score++;
+      win++; score++; 
       totalProfit += prize;
       missCount = 0;
       canBet = true;
-      // 命中后，强制投状态结束
       forceBet = false;
     } else {
-      lose++;
-      score--;
+      lose++; score--; 
       totalProfit -= cost;
       missCount++;
-      // 正常不中 → 停
       if (!forceBet) canBet = false;
     }
 
-    /** 输出记录 */
-    if (!isToday) {
-      tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期   【 ${num} 】   投   ${totalProfit} ${isForce ? ' ⚠️' : ''}`);
-    } else {
-      todayList.push({
-        time,
-        hit,
-        action: '投',
-        forced: isForce,
-        profit: totalProfit
-      });
-    }
+    records.push({
+      hit,
+      hit_icon: hit ? '✅' : '🚫',
+      time,
+      period_no,
+      open_code,
+      action: '投',
+      profit: totalProfit,
+      forced
+    });
   });
 
-  /** 返回分流 */
-  return isToday ? { todayList: todayList.reverse().slice(0, 28) } : {
-    win,
-    lose,
-    score,
-    totalProfit,
-    total: rows.length,
-    lines: tempLines.reverse()
+  return {
+    mode: 'simulate',
+    title: rule.title,
+    desc: `指定规则：不中即停，中则继续，${missLimit} 期未中强制投`,
+    summary: {
+      total: rows.length,
+      win,
+      lose,
+      unbet,
+      score,
+      profit: totalProfit
+    },
+    records: records.reverse()
   };
 };
 
-// ✅ 选择 fastPick
-const chooseFastPick = async (bodies) => {
-  const filtered = bodies.filter(b => {
-    const { number_type } = parseBetBody(b);
-    return number_type === '40';
-  });
-  if (!filtered.length) return null;
-
-  const alert = new Alert();
-  alert.message = filtered.map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`).join('\n');
-  filtered.forEach((b, i) => {
-    const { bet_number } = parseBetBody(b);
-    alert.addAction(`规则 ${i + 1} - ${bet_number.split(',').length} 组`);
-  });
-  alert.addCancelAction('取消');
-  const idx = await alert.presentSheet();
-  if (idx === -1) return null;
-  return { body: filtered[idx], title: parseBetBody(filtered[idx]).bet_log };
+// ✅ 规则列表
+const getRuleList = async (bodies) => {
+  return bodies.map((b, i) => {
+    const info = parseBetBody(b);
+    if (info.number_type !== '40') return null;
+    return { 
+      index: i, 
+      body: b, 
+      title: info.bet_log, 
+      label: `规则 ${i + 1} - ${info.numCount} 组`
+    };
+  }).filter(Boolean);
 };
 
-// ✅ 获取当前账号请求体
-const getBetBody = async (drawRows) => {
-  const rows = sliceByTime(drawRows, "08:05");
-  if (!rows?.length) return;
-  const betData = await getBoxjsData('bet_data') || [];
-  const bodies = betData?.[0]?.settings?.custom?.fastPick || [];
-  if (!bodies.length) {
-    QuickLook.present('❌ 未设置规则');
-    return { bodies: [] };
+// ✅ 日期列表
+const getDateList = async () => {
+  const records = await getRecordRows();
+  const today = new Date().toISOString().slice(0, 10);
+  const hasToday = records[0]?.date === today;
+  const dates = hasToday
+    ? records.map(r => r.date)
+    : [today, ...records.map(r => r.date)];
+  return { dates, records, hasToday };
+};
+
+const getReplayData = async (date, ruleId, bodies, drawRows) => {
+  const rules = await getRuleList(bodies);
+  const { dates, records, hasToday } = await getDateList();
+  const rule = rules.find(r => r.index == ruleId);
+  if (!rule) return null;
+  let rows = [];
+  let lastRow = null;
+
+  // 今日数据
+  if (date === dates[0] && !hasToday) {
+    rows = drawRows;
+    lastRow = records[0]?.data?.[0];
+  } else {
+    const idx = records.findIndex(r => r.date === date);
+    rows = records[idx]?.data || [];
+    lastRow = records[idx + 1]?.data?.[0] || null;
   }
-  return { bodies, rows };
+
+  return {
+    rules: rules.map(r => ({ id: r.index, label: r.label, body: r.body })),
+    dates: dates.map(d => ({ value: d, label: d })),
+    normal: replayNormal(rows, rule),
+    simulate: replaySimulate(rows, rule, lastRow)
+  };
 };
 
-// ✅ 回放主函数 ( 预览 )
-const runReplay = async (drawRows, date, lastRow) => {
-  const { bodies, rows } = await getBetBody(drawRows) || {};
-  if (!bodies?.length) return
+const getModule = async (selected) => {
+  const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js', 24);
+  await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js', 4);
+  if (typeof require === 'undefined') require = importModule;
+  const { CodeMaker } = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
+  const module = await new CodeMaker(codeMaker, selected);
+  return module;
+};
+
+// ✅ 回放主函数
+const statMenu = async () => {
+  const [betData, agentData] = await Promise.all([
+    getBoxjsData('bet_data'),
+    getBoxjsData('agent_data')
+  ]);
+  const account = betData[0];
+  const bodies = account.settings.custom?.fastPick || []
+  const drawRows = sliceByTime(agentData.drawRows || [], "08:05");
+
+  const kx = await getModule(account);
+  const today = new Date().toISOString().slice(0, 10);
+  const statData = await getReplayData(today, 0, bodies, drawRows);
+  if (!statData) return;
   
-  while(true){
-    const picked = await chooseFastPick(bodies);
-    if(!picked) break;
-    const numCount = parseBetBody(picked.body).numCount;
-    const r = replayNormal(rows, [picked.body]);
-    const sim = replaySimulate(rows, [picked.body], lastRow);
-
-    const iconsDesc1 = '图标说明:  ✅ 命中，🚫 未中';
-    const iconsDesc2 = '图标说明:  ✅ 命中，🚫 未中, ⚠️ 强制投注';
-    const ruleDesc = missLimit > 0 ? `不中即停，中则继续，${missLimit} 期未中强制投` : '不中即停，中则继续';
-    
-    const output = `🅰️ ${picked.title}\n\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 组数: ${numCount}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
-\n${r.lines.join('\n')}`;
-    const simulate = `🅱️ ${picked.title}\n\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 组数: ${numCount}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
-\n${sim.lines.join('\n')}`;
-    await QuickLook.present(output);
-    await QuickLook.present(simulate);
-  }
-  await showDateMenu();
+  const html = await kx.replayHtml(statData);
+  const webView = new WebView();
+  await webView.loadHTML(html);
+  const injectListener = async () => {
+    const event = await webView.evaluateJavaScript(`
+      (() => {
+        const controller = new AbortController();
+        const listener = (e) => {
+          completion(e.detail);
+          controller.abort();
+        };
+      window.addEventListener('JBridge', listener, { signal: controller.signal });
+      })()`, true
+    ).catch(err => console.error(err));
+    if (event.type === 'query') {
+      const data = await getReplayData(event.date, event.ruleId, bodies, drawRows);
+      await webView.evaluateJavaScript(
+        `window.renderReplay(${JSON.stringify(data)})`
+      );
+    }
+    injectListener();
+  };
+  injectListener();
+  await webView.present();
 };
 
 // 🈯️ 处理小组件数据逻辑
@@ -324,16 +398,16 @@ const pickStrategyOnce = async () => {
   return fastPick ? { account, fastPick } : null;
 };
 
-const runReplayCollect = async (rows, date, lastRow, account, fastPick) => {
+const runReplayCollect = async (rows, date, lastRow, account, rule) => {
   if (!rows?.length) return null;
-  const sim = replaySimulate(rows, [fastPick], lastRow);
+  const sim = replaySimulate(rows, rule, lastRow);
   
   return {
     account: account.Data.member_account,
     credit_balance: account.Data.credit_balance,
-    title: parseBetBody(fastPick).bet_log,
+    title: parseBetBody(rule.body).bet_log,
     date,
-    profit: sim.totalProfit,
+    profit: sim.summary.profit,
   };
 };
 
@@ -343,7 +417,7 @@ const collectAllRecords = async () => {
     getBoxjsData('agent_data'),
     pickStrategyOnce()
   ]);
-
+  
   if (!Array.isArray(list) || !list.length || !accent || !draw) {
     return { results: [], total: 0 };
   }
@@ -352,7 +426,9 @@ const collectAllRecords = async () => {
   const { account, fastPick } = accent;
   const rows = sliceByTime(draw.drawRows, "08:05");
   const lastRow = records[0]?.data?.[0]
-  const { todayList } = replaySimulate(rows, [fastPick], lastRow, true);
+  
+  const rule = { body: fastPick };
+  const replayData = replaySimulate(rows, rule, lastRow);
   const numCount = parseBetBody(fastPick).numCount;
   const bet_log = parseBetBody(fastPick).bet_log;
   const today = new Date().toISOString().slice(0, 10);
@@ -361,7 +437,7 @@ const collectAllRecords = async () => {
   // 今日
   if (records[0]?.date !== today) {
     tasks.push((async () => {
-      return runReplayCollect(rows, today, lastRow, account, fastPick);
+      return runReplayCollect(rows, today, lastRow, account, rule);
     })());
   }
 
@@ -369,50 +445,19 @@ const collectAllRecords = async () => {
   records.forEach((record, idx) => {
     const lastRow = records[idx + 1]?.data?.[0] || null;
     tasks.push(
-      runReplayCollect(record.data, record.date, lastRow, account, fastPick)
+      runReplayCollect(record.data, record.date, lastRow, account, rule)
     );
   });
 
   const results = (await Promise.all(tasks)).filter(Boolean);
   const total = results.reduce((s, r) => s + (r.profit || 0), 0);
   return { 
-    todayList, 
+    todayList: replayData.records, 
     results, 
     total, 
     numCount,
     bet_log
   };
-};
-
-// 🈯️ 主程序
-const showDateMenu = async () => {
-  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
-  let list = JSON.parse(data || '[]');
-  if (!Array.isArray(list) || !list.length) {
-    list = await new Request(`${github}/records.json`).loadJSON()
-    await saveBoxJsData(list, 'record_rows');
-  }
-
-  const records = list.slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
-  const hasToday = records[0]?.date === today;
-
-  const titles = hasToday
-    ? records.map(r => r.date)
-    : [today, ...records.map(r => r.date)];
-
-  const idx = await presentSheetMenu(null, titles, today);
-  if (idx === -1) return;
-  if (!hasToday && idx === 0) {
-    const { drawRows } = await getBoxjsData('agent_data') || {};
-    const lastRow = records[0]?.data?.[0] || null;
-    return runReplay(drawRows, today, lastRow);
-  }
-
-  const recordIndex = hasToday ? idx : idx - 1;
-  const record = records[recordIndex];
-  const lastRow = records[recordIndex + 1]?.data?.[0] || null;
-  return runReplay(record.data, record.date, lastRow);
 };
 
 // 🈯️ 小组件排列逻辑
@@ -475,9 +520,9 @@ const createWidget = async (data) => {
   const { account } = data.results[0];
   const rawText = data.bet_log.replace(/\[四定位\]，?/g, '');
   const titleText =
-    data.bet_log.length < 20
+    data.bet_log.length <= 20
       ? rawText
-      : data.bet_log.length < 40
+      : data.bet_log.length <= 40
         ? rawText.replace(/：.*$/, '')
         : `隔 ${missLimit} 期未中强制投`;
   
@@ -488,7 +533,9 @@ const createWidget = async (data) => {
   const widget = new ListWidget();
   widget.setPadding(...(large ? [15, 20, 18, 15] : [15, 18, 15, 15]));
   widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
-  widget.backgroundImage = await getCacheData('glass', imageUrl, 'img');
+  if (family === 'medium') {
+    widget.backgroundImage = await getCacheData('glass', imageUrl, 'img');
+  }
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
@@ -553,7 +600,7 @@ const createErrorWidget = () => {
 
 await (async () => {
   if (config.runsInApp) {
-    await showDateMenu();
+    await statMenu();
   } else {
     const finalResults = await collectAllRecords();
     if (!finalResults.results.length) {
