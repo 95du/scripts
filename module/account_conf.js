@@ -6,6 +6,7 @@ const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
 const isDev = false
+const boxjsApi = 'http://boxjs.com/query/data';
 const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
 // ✅ 默认配置
@@ -19,6 +20,7 @@ const defaultConfig = {
     cutRule: [],
     water: 9700,
     missLimit: 0,
+    profitLimit: 0,
     globalMultiplier: 1
   }
 };
@@ -29,7 +31,7 @@ const defaultData = {
   settings: defaultConfig,
   Data: {
     member_account: "admin",
-    period_no: "20251221211",
+    period_no: "20260112097",
     credit_balance: "0",
     previous_draw_no: "0,0,0,0,0",
   }
@@ -42,7 +44,7 @@ const autoUpdate = async () => {
 autoUpdate();
 
 // ✅ 缓存文件
-const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
+const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
   const path = fm.joinPath(basePath, name);
   const isExpired = () => {
     if (cacheHours === undefined || !fm.fileExists(path)) return false;
@@ -50,34 +52,37 @@ const getCacheData = (name, url, type = 'json', cacheHours = 4) => {
     return (Date.now() - last.getTime()) / 36e5 > cacheHours;
   };
   const read = () => {
-    if (!fm.fileExists(path) || isExpired()) return null;
-    if (type === 'img') return fm.readImage(path);
-    if (type === 'json') return JSON.parse(fm.readString(path));
-    return fm.readString(path);
+    if (fm.fileExists(path)) {
+      if (isExpired()) {
+        fm.remove(path);
+        return null;
+      }
+      if (type === 'img') return fm.readImage(path);
+      if (type === 'json') return JSON.parse(fm.readString(path));
+      return fm.readString(path);
+    }
   }
   const write = (data) => {
     if (type === 'img') fm.writeImage(path, data);
     else fm.writeString(path, type === 'json' ? JSON.stringify(data) : data);
   }
-  return (async () => {
-    const cached = read();
-    if (cached) return cached;
-    const req = new Request(url);
-    let data;
-    if (type === 'img') data = await req.loadImage();
-    else if (type === 'json') {
-      const res = await req.loadJSON();
-      data = res?.val ?? res;
-    } else data = await req.loadString();
-    if (data) write(data);
-    return data;
-  })();
+  const cached = read();
+  if (cached) return cached;
+  const req = new Request(url);
+  let data;
+  if (type === 'img') data = await req.loadImage();
+  else if (type === 'json') {
+    const res = await req.loadJSON();
+    data = res?.val ?? res;
+  } else data = await req.loadString();
+  if (data) write(data);
+  return data;
 };
 
 // ✅ 获取 BoxJs 数据
 const getBoxjsData = async (key) => {
   try {
-    const data = await new Request(`http://boxjs.com/query/data/${key}`).loadJSON();
+    const data = await new Request(`${boxjsApi}/${key}`).loadJSON();
     const val = data?.val;
     return JSON.parse(val ?? (key === 'bet_data' ? '[]' : '{}'));
   } catch {}
@@ -287,6 +292,7 @@ const buildMessage = (acc, conf) => {
 反转规则 【 ${isReversed} 】
 日志内容 【 ${changeLog} 】
 赔率  ${section.water}
+盈利上限  ${section.profitLimit || 0}
 强制投注  ${section.missLimit}
 全局倍数  ${section.globalMultiplier}
 时间区间  ${section.start ?? '08:00'} ~ ${section.end ?? '05:00'}`;
@@ -325,60 +331,82 @@ const sliceByTime = (rows, targetTime, field = "draw_datetime") => {
 };
 
 // ✅ 普通回放
-const replayNormal = (rows, bodies, water = 9700) => {
-  let win = 0, lose = 0, score = 0;
+const replayNormal = (rows, rule, water = 9700) => {
+  const bodies = [rule.body];
   let totalProfit = 0;
-  const cost = parseBetNumbers(bodies[0]).length;
+  let win = 0, lose = 0, score = 0;
+
+  const cost = parseBetNumbers(rule.body).length;
   const prize = water - cost;
   const ordered = rows.slice().reverse();
-  const lines = [];
-  
+  const records = [];
+
   ordered.forEach(r => {
-    const num = drawNumber(r);
+    const open_code = drawNumber(r);
     const time = r.draw_datetime?.slice(11, 16);
-    const period = r.period_no.slice(-3);
-    const hit = bodies.some(b => parseBetNumbers(b).includes(num));
+    const period_no = r.period_no.slice(-3);
+    const hit = isHit(r, bodies);
 
     if (hit) {
-      win++; score++;
+      win++; score++; 
       totalProfit += prize;
-      lines.push(` ✅ ${time} - ${period}期   【 ${num} 】   ${totalProfit}`);
     } else {
-      lose++; score--;
+      lose++; score--; 
       totalProfit -= cost;
-      lines.push(` 🚫 ${time} - ${period}期   【 ${num} 】     ${totalProfit}`);
     }
+
+    records.push({
+      hit,
+      hit_icon: hit ? '✅' : '🚫',
+      time,
+      period_no,
+      open_code,
+      action: '投',
+      profit: totalProfit,
+      forced: false
+    });
   });
 
   return {
-    win, lose, score,
-    total: rows.length,
-    totalProfit,
-    lines: lines.reverse()
+    mode: 'normal',
+    title: rule.title,
+    desc: '普通规则：每期都投 ( 默认 )',
+    summary: {
+      total: rows.length,
+      win,
+      lose,
+      unbet: 0,
+      score,
+      profit: totalProfit
+    },
+    records: records.reverse()
   };
 };
 
 // ✅ 模拟投注回放
-const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
+const replaySimulate = (rows, rule, lastRow, water = 9700, missLimit) => {
+  const bodies = [rule.body];
   let canBet = lastRow ? isHit(lastRow, bodies) : false;
-  let win = 0, lose = 0, score = 0;
   let totalProfit = 0;
-  const cost = parseBetNumbers(bodies[0]).length;
+  let win = 0, lose = 0, score = 0;
+  let missCount = 0;
+  let forceBet = false;
+  let unbet = 0;
+
+  const cost = parseBetNumbers(rule.body).length;
   const prize = water - cost;
   const ordered = rows.slice().reverse();
-  const tempLines = [];
-  let missCount = 0;
-  let forceBet = false; // 强制状态
+  const records = [];
 
   ordered.forEach(r => {
-    const num = drawNumber(r);
+    const open_code = drawNumber(r);
     const time = r.draw_datetime?.slice(11, 16);
-    const period = r.period_no.slice(-3);
+    const period_no = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
 
-    /** 未投注状态，正常停 */
     if (!canBet && !forceBet && missLimit !== 1) {
-      tempLines.push(` ${hit ? '✅' : '⏸️'} ${time} - ${period}期   【 ${num} 】   ${hit ? '投 →' : '停'}`);
+      unbet++;
+
       if (hit) {
         canBet = true;
         missCount = 0;
@@ -386,65 +414,127 @@ const replaySimulate = (rows, bodies, water = 9700, lastRow, missLimit = 0) => {
         missCount++;
         if (missLimit > 0 && missCount >= missLimit) forceBet = true;
       }
+
+      records.push({
+        hit,
+        hit_icon: hit ? '✅' : '⏸️',
+        time,
+        period_no,
+        open_code,
+        action: '停',
+        profit: totalProfit,
+        forced: false
+      });
       return;
     }
 
-    /** 投注状态（正常投或强制投） */
-    const isForce = forceBet; 
+    let forced = forceBet;
     if (forceBet) canBet = true;
 
     if (hit) {
-      win++;
-      score++;
+      win++; score++; 
       totalProfit += prize;
       missCount = 0;
       canBet = true;
       forceBet = false;
     } else {
-      lose++;
-      score--;
+      lose++; score--; 
       totalProfit -= cost;
       missCount++;
       if (!forceBet) canBet = false;
     }
 
-    /** 输出记录 */
-    tempLines.push(` ${hit ? '✅' : '🚫'} ${time} - ${period}期   【 ${num} 】   投   ${totalProfit} ${isForce ? ' ⚠️' : ''}`);
+    records.push({
+      hit,
+      hit_icon: hit ? '✅' : '🚫',
+      time,
+      period_no,
+      open_code,
+      action: '投',
+      profit: totalProfit,
+      forced
+    });
   });
 
   return {
-    win, lose, score,
-    totalProfit,
-    total: rows.length,
-    lines: tempLines.reverse()
+    mode: 'simulate',
+    title: rule.title,
+    desc: `指定规则：不中即停，中则继续，${missLimit} 期未中强制投`,
+    summary: {
+      total: rows.length,
+      win,
+      lose,
+      unbet,
+      score,
+      profit: totalProfit
+    },
+    records: records.reverse()
   };
 };
 
-// ✅ 选择 fastPick
-const chooseFastPick = async (bodies) => {
-  const filtered = bodies.filter(b => {
-    const { number_type } = parseBetBody(b);
-    return number_type === '40';
-  });
-  if (!filtered.length) return null;
-
-  const alert = new Alert();
-  alert.message = filtered.map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`).join('\n');
-  filtered.forEach((b, i) => {
-    const { bet_number, numCount } = parseBetBody(b);
-    alert.addAction(`规则 ${i + 1} - ${numCount} 组`);
-  });
-  alert.addCancelAction('取消');
-  const idx = await alert.presentSheet();
-  if (idx === -1) return;
-  return { body: filtered[idx], title: parseBetBody(filtered[idx]).bet_log };
+// ✅ 规则列表
+const getRuleList = async (bodies) => {
+  return bodies.map((b, i) => {
+    const info = parseBetBody(b);
+    if (info.number_type !== '40') return null;
+    return { 
+      index: i, 
+      body: b, 
+      title: info.bet_log, 
+      label: `规则 ${i + 1} - ${info.numCount} 组`
+    };
+  }).filter(Boolean);
 };
 
-// ✅ 回放主函数
-const runReplay = async (selected, conf, drawRows, date, lastRow) => {
+// ✅ 日期列表
+const getDateList = async () => {
+  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  let list = JSON.parse(data || '[]');
+  if (!Array.isArray(list) || !list.length) {
+    list = await new Request(`${github}/records.json`).loadJSON()
+    await saveBoxJsData(list, 'record_rows');
+  }
+  const records = list;
+  const today = new Date().toISOString().slice(0, 10);
+  const hasToday = records[0]?.date === today;
+  const dates = hasToday
+    ? records.map(r => r.date)
+    : [today, ...records.map(r => r.date)];
+  return { dates, records, hasToday };
+};
+
+// ✅ 计算回放数据
+const getReplayData = async (date, ruleId, drawRows, section) => {
+  const rules = await getRuleList(section.fastPick);
+  const { dates, records, hasToday } = await getDateList();
+  const rule = rules.find(r => r.index == ruleId);
+  if (!rule) return null;
+  let rows = [];
+  let lastRow = null;
+  
+  // 今日数据
+  if (date === dates[0] && !hasToday) {
+    rows = drawRows;
+    lastRow = records[0]?.data?.[0];
+  } else {
+    const idx = records.findIndex(r => r.date === date);
+    rows = records[idx]?.data || [];
+    lastRow = records[idx + 1]?.data?.[0] || null;
+  }
+
+  return {
+    rules: rules.map(r => ({ id: r.index, label: r.label, body: r.body })),
+    dates: dates.map(d => ({ value: d, label: d })),
+    normal: replayNormal(rows, rule, section.water),
+    simulate: replaySimulate(rows, rule, lastRow, section.water, section.missLimit)
+  };
+};
+
+// ✅ 回放数据
+const runReplay = async (selected, conf, date, ruleId) => {
   const section = conf.custom || {};
-  const rows = sliceByTime(drawRows, "08:05");
-  if (!rows?.length) return;
+  const drawRows = sliceByTime(selected.drawRows, "08:05");
+  if (!drawRows?.length) return;
   const bodies = section?.fastPick;
   if (!bodies?.length) {
     return await viewRule({
@@ -452,57 +542,40 @@ const runReplay = async (selected, conf, drawRows, date, lastRow) => {
       content: '暂无投注规则，请点击写入规则或已被暂停'
     })
   }
-  
-  while(true){
-    const picked = await chooseFastPick(bodies);
-    if(!picked) break;
-    const { numCount } = parseBetBody(picked.body) || 0;
-    const r = replayNormal(rows, [picked.body], section.water);
-    const sim = replaySimulate(rows, [picked.body], section.water, lastRow, section.missLimit);
-    
-    const iconsDesc1 = '图标说明:  ✅ 命中，🚫 未中';
-    const iconsDesc2 = '图标说明:  ✅ 命中，🚫 未中, ⚠️ 强制投注';
-    const ruleDesc = section.missLimit > 0 ? `不中即停，中则继续，${section.missLimit} 期未中强制投` : '不中即停，中则继续';
-    
-    const output = `🅰️ ${picked.title}\n\n${iconsDesc1}\n——————————————————————\n 日期: ${date}\n 组数: ${numCount}\n 期数: ${r.total}\n 命中: ${r.win}\n 未中: ${r.lose}\n 结果: ${r.score > 0 ? '+' : ''}${r.score}\n 盈亏: ${r.totalProfit}\n——————————————————————
-\n${r.lines.join('\n')}`;
-    const simulate = `🅱️ ${picked.title}\n\n💜 指定  【 ${ruleDesc} 】\n${iconsDesc2}\n——————————————————————\n 日期: ${date}\n 组数: ${numCount}\n 期数: ${sim.total}\n 命中: ${sim.win} \n 未中: ${sim.lose}\n 未投: ${sim.total - sim.win - sim.lose}\n 结果: ${sim.score > 0 ? '+' : ''}${sim.score}\n 盈亏: ${sim.totalProfit}\n——————————————————————
-\n${sim.lines.join('\n')}`;
-    await QuickLook.present(output);
-    await QuickLook.present(simulate);
-  }
-  await statMenu(selected, conf);
+  return await getReplayData(date, ruleId, drawRows, section);
 };
 
-// ✅ 统计菜单
+// ✅ 回放主函数
 const statMenu = async (selected, conf) => {
-  const data = await getCacheData('record_rows.json', `http://boxjs.com/query/data/record_rows`, 'json', 4);
-  let list = JSON.parse(data || '[]');
-  if (!Array.isArray(list) || !list.length) {
-    list = await new Request(`${github}/records.json`).loadJSON()
-    await saveBoxJsData(list, 'record_rows');
-  }
-
-  const records = list.slice(0, 10);
+  const kx = await getModule(selected);
   const today = new Date().toISOString().slice(0, 10);
-  const hasToday = records[0]?.date === today;
-
-  const titles = hasToday
-    ? records.map(r => r.date)
-    : [today, ...records.map(r => r.date)];
-
-  const idx = await presentSheetMenu(null, titles, today);
-  if (idx === -1) return;
-
-  if (!hasToday && idx === 0) {
-    const lastRow = records[0]?.data?.[0] || null;
-    return runReplay(selected, conf, selected.drawRows, today, lastRow);
-  }
-
-  const recordIndex = hasToday ? idx : idx - 1;
-  const record = records[recordIndex];
-  const lastRow = records[recordIndex + 1]?.data?.[0] || null;
-  return runReplay(selected, conf, record.data, record.date, lastRow);
+  const statData = await runReplay(selected, conf, today, 0);
+  if (!statData) return;
+  
+  const html = await kx.replayHtml(statData);
+  const webView = new WebView();
+  await webView.loadHTML(html);
+  const injectListener = async () => {
+    const event = await webView.evaluateJavaScript(`
+      (() => {
+        const controller = new AbortController();
+        const listener = (e) => {
+          completion(e.detail);
+          controller.abort();
+        };
+      window.addEventListener('JBridge', listener, { signal: controller.signal });
+      })()`, true
+    ).catch(err => console.error(err));
+    if (event.type === 'query') {
+      const data = await runReplay(selected, conf, event.date, event.ruleId);
+      await webView.evaluateJavaScript(
+        `window.renderReplay(${JSON.stringify(data)})`
+      );
+    }
+    injectListener();
+  };
+  injectListener();
+  await webView.present();
 };
 
 /** ========💜 写入规则 💜======== */
@@ -909,6 +982,7 @@ const configMenu = async (betData, selected, conf) => {
     { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask', specify: true },
     { name: '时间区间', id: 'time' },
     { name: '设置倍数', id: 'multiplierMenu' },
+    { name: '盈利上限', id: 'profitLimit' },
     { name: '强制投注', id: 'missLimit' },
     { name: '盈亏统计', id: 'stat' },
     { name: '投注规则', id: 'rule' },
@@ -929,6 +1003,17 @@ const configMenu = async (betData, selected, conf) => {
       const acc = await accountManage(betData, selected, conf);
       if (acc) return;
       break;
+    case 'profitLimit': {
+      const res = await collectInputs(
+        '盈利上限',
+        '达到设置分数后停止投注',
+        [{ hint: '输入上限值', value: conf.custom.profitLimit ?? 0 }]
+      );
+      const val = Number(res?.[0]);
+      const profitLimitVal = Number.isInteger(val) && val >= 0 ? val : conf.custom.profitLimit;
+      await updateConfig(betData, selected, c => { c.custom.profitLimit = profitLimitVal });
+      break;
+    }
     case 'missLimit': {
       const res = await collectInputs(
         '连续未中自动投注',
