@@ -14,6 +14,402 @@ class CodeMaker {
     this.quickSelectLog = this.quickSelectLog();
   }
   
+  // 回放统计
+  replayScript = (statData) => {
+    return `document.addEventListener('DOMContentLoaded', () => {
+      let normalResult = {};
+      let assignResult = {};
+    
+      const renderNormal = () => {
+        if (!window.template) return;
+        const tbody = document.getElementById('normal_tbody')
+        tbody.innerHTML = template('tpl_normal', { Data: normalResult.records || [] });
+        document.getElementById('normal_summary').innerHTML =
+          template('tpl_summary_text', {
+            title: normalResult.title,
+            summary: normalResult.summary,
+            desc: normalResult.desc
+          });
+      };
+    
+      const renderAssign = () => {
+        if (!window.template) return;
+        const tbody = document.getElementById('assign_tbody')
+        tbody.innerHTML = template('tpl_assign', { Data: assignResult.records || [] });
+        document.getElementById('assign_summary').innerHTML =
+          template('tpl_summary_text', {
+            title: assignResult.title,
+            summary: assignResult.summary,
+            desc: assignResult.desc
+          });
+      };
+    
+      window.renderReplay = (data) => {
+        if (!data) return;
+        normalResult = data.normal || {};
+        assignResult = data.simulate || {};
+        renderNormal();
+        renderAssign();
+      };
+    
+      // 构建下拉选项
+      const buildSelect = (id, list, valueKey, labelKey, title) => {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.innerHTML = '';
+        const header = document.createElement('option');
+        header.textContent = title;
+        header.value = '';
+        header.disabled = true;
+        header.selected = true;
+        select.appendChild(header);
+        list.forEach(item => {
+          const option = document.createElement('option');
+          option.value = item[valueKey];
+          option.textContent = item[labelKey];
+          select.appendChild(option);
+        });
+      };
+    
+      // 初始化选择器 + 默认显示今日数据
+      const initSelectors = (meta) => {
+        buildSelect('ruleSelect', meta.rules, 'id', 'label', '选择规则');
+        buildSelect('dateSelect', meta.dates, 'value', 'label', '选择日期');
+        const rule = document.getElementById('ruleSelect');
+        const date = document.getElementById('dateSelect');
+        if (rule.options[1]) rule.selectedIndex = 1;
+        if (date.options[1]) date.selectedIndex = 1;
+        window.renderReplay(meta);
+      };
+    
+      // 选择变化时触发回放
+      const sendQuery = () => {
+        const dateSelect = document.getElementById('dateSelect');
+        const ruleSelect = document.getElementById('ruleSelect');
+        if (!dateSelect.value || !ruleSelect.value) return;
+        window.dispatchEvent(new CustomEvent('JBridge', {
+          detail: {
+            type: 'query',
+            date: dateSelect.value,
+            ruleId: ruleSelect.value
+          }
+        }));
+      };
+      
+      ['dateSelect', 'ruleSelect'].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.onchange = sendQuery;
+      });
+    
+      // 模式切换
+      window.showModule = (id) => {
+        if (id === 'normal') renderNormal();
+        if (id === 'assign') renderAssign();
+        document.querySelectorAll('[name="module"]').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById(id);
+        if (target) target.classList.add('active');
+        const module = document.querySelector('.module');
+        [target, module].forEach(el => el && (el.scrollTop = 0));
+        const tabMap = { normal: 'tab_normal', assign: 'tab_assign' };
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+          tab.classList.remove('active', 'blue', 'orange');
+        });
+        const activeTab = document.getElementById(tabMap[id]);
+        if (activeTab) activeTab.classList.add('active', id === 'normal' ? 'blue' : 'orange');
+      };
+    
+      document.querySelectorAll('.header-tabs span').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const id = tab.dataset.module;
+          if (id) showModule(id);
+        });
+      });
+    
+      showModule('normal');
+      initSelectors(${JSON.stringify(statData)});
+    })`
+  };
+
+  // 回放 HTML
+  replayHtml = (statData) => {
+    const replayScript = this.replayScript(statData);
+    return `
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+      <style>
+        ${this.css}
+        body { 
+          font-family: -apple-system,Arial;
+        }
+        
+        .t-1 .bg3 td {
+          background:#e3f5fd;
+        }
+        
+        .header {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          height: 5rem;
+          font-weight: 600;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+        }
+      
+        /* 模式切换按钮 */
+        .mode-switch {
+          display: flex;
+          background: #eee;
+          border-radius: 22px;
+          padding: 4px;
+          gap: 12px;
+        }
+        
+        .mode-tab {
+          min-width: 90px;
+          padding: 8px 18px;
+          text-align: center;
+          font-size: 15px;
+          font-weight: 600;
+          border-radius: 22px;
+          cursor: pointer;
+          transition: all .25s ease;
+          background: #00c400;
+          color: #fff;
+        }
+        
+        .mode-tab.active {
+          color: #fff;
+          box-shadow: 0 3px 8px rgba(0,0,0,.18);
+        }
+        
+        .mode-tab.blue.active {
+          background: #008DFF;
+        }
+        
+        .mode-tab.orange.active {
+          background: #ff7800;
+        }
+        
+        .module {
+          position: absolute;
+          top: calc(5.5rem + 3rem);
+          bottom: 0;
+          left: 0; 
+          right: 0;
+          overflow-y: auto;
+        }
+        
+        [name="module"] {
+          display: none;
+        }
+        [name="module"].active {
+          display: block;
+        }
+        
+        .selectTab {
+          margin-top: 5.5rem;
+          background: #eee;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+        }
+        
+        .select {
+          outline: none;
+          font-size: 15px;
+          color: #fff;
+          border-radius: 22px;
+          padding: 5px 15px;
+          text-align-last: center;
+          white-space: nowrap;
+          overflow: hidden;
+          background-color: #8B5FF4;
+          appearance: none;
+          width: 145px;
+        }
+        
+        .summary-text {
+          margin-bottom: 18px;
+          background: #fff;
+          overflow: hidden;
+          border: 1px solid #e5e5ea;
+          font-size: 15px;
+          color: #111;
+        }
+        
+        .summary-text.normal {
+          border-color: #cfe7ff;
+          background: #f3f8ff;
+        }
+        
+        .summary-text.assign {
+          border-color: #ffd8bd;
+          background: #fff9f3;
+        }
+        
+        .summary-row {
+          padding: 4px 8px;
+          border-bottom: 1px solid #e5e5ea;
+          line-height: 1.8;
+        }
+        
+        .summary-text.normal 
+        .summary-row {
+          border-bottom: 1px solid #cfe7ff;
+        }
+        
+        .summary-text.assign 
+        .summary-row {
+          border-bottom: 1px solid #ffd8bd;
+        }
+        
+        .summary-row:last-child {
+          border-bottom: none;
+        }
+        
+        .summary-text.normal 
+        .summary-title {
+          background: #e9f2ff;
+        }
+        
+        .summary-text.assign 
+        .summary-title {
+          background: #fff1e7;
+        }
+        
+        .summary-title {
+          line-height: 20px;
+          padding: 8px 8px;
+        }
+        
+        .summary-pair {
+          display: flex;
+          justify-content: space-between;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="header" class="header">
+        <div class="mode-switch header-tabs">
+          <span id="tab_normal" class="mode-tab blue" data-module="normal">普通规则</span>
+          <span id="tab_assign" class="mode-tab orange" data-module="assign">指定规则</span>
+        </div>
+      </div>
+      <div class="tc selectTab">
+        <select class="select" id="ruleSelect"></select>
+        <select class="select" id="dateSelect"></select>
+      </div>
+      <div class="module">
+        <div name="module" id="normal" class="m5 mt10">
+          <div class="summary-text normal" id="normal_summary"></div>
+          <table class="t-1">
+            <thead>
+              <tr class="bg2 tc">
+                <td>命中</td>
+                <td>时间</td>
+                <td>期号</td>
+                <td>开奖</td>
+                <td>动作</td>
+                <td>盈亏</td>
+                <td>常规</td>
+              </tr>
+            </thead>
+            <tbody id="normal_tbody" class="fn-hover tc"></tbody>
+          </table>
+        </div>
+        <div name="module" id="assign" class="m5 mt10">
+          <div class="summary-text assign" id="assign_summary"></div>
+          <table class="t-1">
+            <thead>
+              <tr class="bg2 tc">
+                <td>命中</td>
+                <td>时间</td>
+                <td>期号</td>
+                <td>开奖</td>
+                <td>动作</td>
+                <td>盈亏</td>
+                <td>强投</td>
+              </tr>
+            </thead>
+            <tbody id="assign_tbody" class="fn-hover tc"></tbody>
+          </table>
+        </div>
+        <script type="text/html" id="tpl_summary_text">
+          <div class="summary-row summary-title">
+            {{title}}
+          </div>
+          {{if desc}}
+          <div class="summary-row">
+            {{desc}}
+          </div>
+          {{/if}}
+          <div class="summary-row summary-pair"><span class="fb" style="{{summary.profit > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">盈亏：{{summary.profit}}</span><span>期数：{{summary.total}}</span></div>
+          <div class="summary-row summary-pair"><span>命中：{{summary.win}}</span><span>未中：{{summary.lose}}</span>
+          </div>
+          <div class="summary-row summary-pair"><span>未投：{{summary.unbet}}</span><span>结果：{{summary.score}}</span>
+          </div>
+        </script>
+        <script type="text/html" id="tpl_normal">
+          {{if !Data.length}}
+          <tr>
+            <td colspan="6">暂无数据</td>
+          </tr>
+          {{else}}
+            {{each Data as item i}}
+              <tr>
+                <td>{{item.hit_icon}}</td>
+                <td>{{item.time}}</td>
+                <td>{{item.period_no}}</td>
+                <td>
+                  <a>{{item.open_code}}</a>
+                </td>
+                <td>{{item.action}}</td>
+                <td style='color:#008DFF'>
+                  {{item.profit}}
+                </td>
+                <td></td>
+              </tr>
+            {{/each}}
+          {{/if}}
+        </script>
+        <script type="text/html" id="tpl_assign">
+          {{if !Data.length}}
+          <tr>
+            <td colspan="7">暂无数据</td>
+          </tr>
+          {{else}}
+            {{each Data as item i}}
+              <tr style="background:#fff7f0">
+                <td>{{item.hit_icon}}</td>
+                <td>{{item.time}}</td>
+                <td>{{item.period_no}}</td>
+                <td>
+                  <a>{{item.open_code}}</a>
+                </td>
+                <td>{{item.action}}</td>
+                <td style='color:#008DFF'>
+                {{item.profit}}</td>
+                <td>{{item.forced ? '⚠️' : '-'}}</td>
+              </tr>
+            {{/each}}
+          {{/if}}
+        </script>
+      </div>
+      <script>
+        ${this.codeMaker}
+        ${replayScript}
+      </script>
+    </body>
+    </html>`;
+  };
+  
   // 日志解析 → options
   parseToOptions = (text) => {
     const o = {
@@ -1773,7 +2169,7 @@ class CodeMaker {
         <table class="t-1">
           <thead>
             <tr class="bg3">
-              <td colspan="5" class="fb tc">历史账单 (今天)</td>
+              <td colspan="5" class="tc">历史账单</td>
             </tr>
             <tr class="bg2 tc">
               <td width="20%">期号</td><td width="20%">金额</td><td width="20%">回水</td><td width="20%">中奖</td><td width="20%">盈亏</td>
