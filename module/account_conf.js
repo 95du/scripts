@@ -31,7 +31,7 @@ const defaultData = {
   settings: defaultConfig,
   Data: {
     member_account: "admin",
-    period_no: "20260112097",
+    period_no: "202601120097",
     credit_balance: "0",
     previous_draw_no: "0,0,0,0,0",
   }
@@ -633,7 +633,7 @@ const buildBody = async (event, Body, input = '', isLog) => {
 };
 
 // ✅ 运行快选 HTML
-const kuaixuan = async (betData, selected, isLog = false, input, bet_number, bet_money) => {
+const kuaixuan = async (betData, selected, conf, isLog = false, input, bet_number, bet_money) => {
   const kx = await getModule(selected);
   const html = await buildHtml(kx, isLog, input, selected, bet_number);
   if (!html) return;
@@ -662,8 +662,7 @@ const kuaixuan = async (betData, selected, isLog = false, input, bet_number, bet
         c.custom.fastPick = saveBody(c.custom.fastPick, body);
       });
       await saveBoxJsData(betData);
-      const data = processDataText(betData, selected);
-      Timer.schedule(500, false, async () => { await viewRule(data[0]) });
+      await statMenu(selected, conf);
     }
     injectListener();
   };
@@ -735,7 +734,7 @@ const reverseRule = async (betData, selected, conf) => {
     null, ['取消', '确定'], true
   );
   if (tips === 1) {
-    return await kuaixuan(betData, selected, true, parsed.bet_log, bet_number, parsed.bet_money);
+    return await kuaixuan(betData, selected, conf, true, parsed.bet_log, bet_number, parsed.bet_money);
   }
   
   // 以下是保存反转后的规则
@@ -850,11 +849,11 @@ const setTaskType = async (betData, selected, conf) => {
       case 'logRule': {
         const paste = Pasteboard.paste();
         const input = paste?.replace(/\[|\]/g, '').trim();
-        await kuaixuan(betData, selected, true, input);
+        await kuaixuan(betData, selected, conf, true, input);
         break;
       }
       case 'writeRule':
-        await kuaixuan(betData, selected);
+        await kuaixuan(betData, selected, conf);
         break;
       case 'viewRule': {
         const data = processDataText(betData, selected);
