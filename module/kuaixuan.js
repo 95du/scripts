@@ -230,9 +230,15 @@ class CodeMaker {
           text-align-last: center;
           white-space: nowrap;
           overflow: hidden;
-          background-color: #8B5FF4;
           appearance: none;
           width: 145px;
+        }
+        
+        .select.purple {
+          background-color: #8B5FF4;
+        }
+        .select.green {
+          background-color: #00C300;
         }
         
         .summary-text {
@@ -303,8 +309,8 @@ class CodeMaker {
         </div>
       </div>
       <div class="tc selectTab">
-        <select class="select" id="ruleSelect"></select>
-        <select class="select" id="dateSelect"></select>
+        <select class="select purple" id="ruleSelect"></select>
+        <select class="select green" id="dateSelect"></select>
       </div>
       <div class="module">
         <div name="module" id="normal" class="m5 mt10">
