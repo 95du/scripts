@@ -347,12 +347,20 @@ const statMenu = async () => {
     getBoxjsData('bet_data'),
     getBoxjsData('agent_data')
   ]);
-  const account = betData[0];
-  const bodies = account.settings.custom?.fastPick || []
-  const drawRows = sliceByTime(agentData.drawRows || [], "08:05");
-
-  const kx = await getModule(account);
+  
+  const bodies = Object.values(
+    betData.flatMap(x => x?.settings?.custom?.fastPick || [])
+      .filter(v => v && parseBetBody(v)?.bet_log)
+      .reduce((map, v) => {
+        const key = parseBetBody(v).bet_log;
+        map[key] = v;
+        return map;
+      }, {})
+  );
+  
+  const kx = await getModule(betData[0]);
   const today = new Date().toISOString().slice(0, 10);
+  const drawRows = sliceByTime(agentData.drawRows || [], "08:05");
   const statData = await getReplayData(today, 0, bodies, drawRows);
   if (!statData) return;
   
@@ -422,7 +430,7 @@ const collectAllRecords = async () => {
     return { results: [], total: 0 };
   }
   
-  const records = list.slice(0, 10);
+  const records = list.slice(0, 20);
   const { account, fastPick } = accent;
   const rows = sliceByTime(draw.drawRows, "08:05");
   const lastRow = records[0]?.data?.[0]
