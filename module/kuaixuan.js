@@ -179,8 +179,8 @@ class CodeMaker {
           border-radius: 22px;
           cursor: pointer;
           transition: all .25s ease;
-          background: #00c400;
-          color: #fff;
+          background: #ddd;
+          color: #111;
         }
         
         .mode-tab.active {
