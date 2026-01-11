@@ -488,7 +488,7 @@ const getRuleList = async (bodies) => {
 
 // ✅ 日期列表
 const getDateList = async () => {
-  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json');
   let list = JSON.parse(data || '[]');
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON()
@@ -593,8 +593,8 @@ const saveBody = (arr, event) => {
 };
 
 const getModule = async (selected) => {
-  const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js', 24);
-  await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js', 4);
+  const codeMaker = await getCacheData('codeMaker.js', `${github}/codeMaker.js`, 'js');
+  await getCacheData('kuaixuan.js', `${github}/kuaixuan.js`, 'js');
   if (typeof require === 'undefined') require = importModule;
   const { CodeMaker } = require(isDev ? './kuaixuan' : `${basePath}/kuaixuan`);
   const module = await new CodeMaker(codeMaker, selected);
