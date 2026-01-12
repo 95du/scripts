@@ -1350,11 +1350,11 @@ const saveRecordRows = (drawRows) => {
     records.unshift({ date: today, data: drawRows });
   }
   // 保留最近 15 天
-  if (records.length > 15) {
-    records = records.slice(0, 15);
+  if (records.length > 20) {
+    records = records.slice(0, 20);
   }
   $.setjson(records, $.recordRows_key);
-  $.msg(`${exists ? '覆盖' : '新增'}保存 ${today} 成功 ✅`, '', `当前共 ${records.length} 天记录，最多保留 15 天`);
+  $.msg(`${exists ? '覆盖' : '新增'}保存 ${today} 成功 ✅`, '', `当前共 ${records.length} 天记录，最多保留 20 天`);
 };
 
 /** ======🧡 辅助函数 🧡====== */
