@@ -17,6 +17,13 @@ class CodeMaker {
   // 回放统计
   replayScript = (statData) => {
     return `document.addEventListener('DOMContentLoaded', () => {
+      if (window.template) {
+        template.helper("rpl_color", function(t) {
+          if (!t) return '';
+          return String(t).replace(/\\[([a-zA-Z0-9,\.\u4e00-\u9fa5,-]*)?\\]/g, (_, e) => "<span class='red'>" + e + "</span>");
+        });
+      }
+      
       let normalResult = {};
       let assignResult = {};
     
@@ -349,7 +356,7 @@ class CodeMaker {
         </div>
         <script type="text/html" id="tpl_summary_text">
           <div class="summary-row summary-title">
-            {{title}}
+            {{= rpl_color(title) }}
           </div>
           {{if desc}}
           <div class="summary-row">
