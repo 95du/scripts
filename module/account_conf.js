@@ -5,7 +5,7 @@ const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
-const isDev = false
+const isDev = true
 const boxjsApi = 'http://boxjs.com/query/data';
 const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
@@ -21,6 +21,7 @@ const defaultConfig = {
     water: 9700,
     missLimit: 0,
     profitLimit: 0,
+    lossLimit: 0,
     globalMultiplier: 1
   }
 };
@@ -133,6 +134,13 @@ const presentSheetMenu = async (message, opt = [], sel = null) => {
   });
   alert.addCancelAction('取消');
   return await alert.presentSheet();
+};
+
+const getSafeInt = (input, oldVal = 0, min = 0) => {
+  const v = Number(input[0]);
+  if (!Number.isInteger(v)) return oldVal;
+  if (v < min) return oldVal;
+  return v;
 };
 
 // ✅ 查看规则
@@ -293,6 +301,7 @@ const buildMessage = (acc, conf) => {
 日志内容 【 ${changeLog} 】
 赔率  ${section.water}
 盈利上限  ${section.profitLimit || 0}
+亏损下限  ${section.lossLimit || 0}
 强制投注  ${section.missLimit}
 全局倍数  ${section.globalMultiplier}
 时间区间  ${section.start ?? '08:00'} ~ ${section.end ?? '05:00'}`;
@@ -749,7 +758,7 @@ const reverseRule = async (betData, selected, conf) => {
 };
 
 // 🆎 规则操作（删除 / 暂停 / 恢复）
-const handleRuleAction = async (betData, selected, conf, { from, to, confirmText }) => {
+const handleRule = async (betData, selected, conf, { from, to, confirmText }) => {
   const list = conf.custom?.[from];
   if (!list?.length) return;
   const message = list
@@ -771,7 +780,7 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
   await updateConfig(betData, selected, c => {
     c.custom[from].splice(idx, 1);
     if (to) {
-      c.custom[to] = c.custom[to] || []
+      c.custom[to] = c.custom[to];
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
@@ -780,22 +789,19 @@ const handleRuleAction = async (betData, selected, conf, { from, to, confirmText
 };
 
 // 🆎 管理规则
-const removeRule = (betData, selected, conf) =>
-  handleRuleAction(betData, selected, conf, {
+const removeRule = (betData, selected, conf) => handleRule(betData, selected, conf, {
     from: 'fastPick',
     to: null,
     confirmText: '确定删除以下规则❓'
   });
 
-const cutRuleAction = (betData, selected, conf) =>
-  handleRuleAction(betData, selected, conf, {
+const cutRuleAction = (betData, selected, conf) => handleRule(betData, selected, conf, {
     from: 'fastPick',
     to: 'cutRule',
     confirmText: '确定暂停以下规则❓'
   });
 
-const restoreRule = (betData, selected, conf) =>
-  handleRuleAction(betData, selected, conf, {
+const restoreRule = (betData, selected, conf) => handleRule(betData, selected, conf, {
     from: 'cutRule',
     to: 'fastPick',
     confirmText: '确定恢复以下规则❓'
@@ -952,13 +958,38 @@ const accountManage = async (betData, selected, conf) => {
       break;
     case 'water': {
       const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9700 )', [{ hint: '赔率', value: conf.custom.water ?? 9700 }] );
-      const val = Number(water?.[0]);
-      const waterValue = Number.isInteger(val) && val >= 0 ? val : conf.custom.water;
+      const waterValue = getSafeInt(water, conf.custom.water);
       await updateConfig(betData, selected, c => { c.custom.water = waterValue });
       break;
     }
   }
   await refreshReopen(betData, selected, conf, accountManage);
+};
+
+// ✅ 风控设置菜单
+const riskLimitMenu = async (betData, selected, conf) => {
+  const alert = new Alert();
+  alert.message = buildMessage(selected, conf);
+
+  const menus = [
+    { name: '盈利上限', key: 'profitLimit', hint: '输入盈利上限', desc: '达到设置盈利后停止投注\n0 表示不限制' },
+    { name: '亏损下限', key: 'lossLimit', hint: '输入亏损下限', desc: '达到设置亏损后停止投注\n0 表示不限制' },
+    { name: '强制投注', key: 'missLimit', hint: '未中期数', desc: '0：命中一直投，不中一直停\n1：不论中或不中，每期都投\n3：连续未中 3 期后自动投注' },
+  ];
+
+  menus.forEach(m => alert.addAction(m.name));
+  alert.addCancelAction('返回');
+  const idx = await alert.presentSheet();
+  if (idx === -1) return;
+  const menu = menus[idx];
+  if (!menu) return;
+  const currentVal = conf.custom[menu.key] ?? 0;
+  const res = await collectInputs(menu.name, menu.desc, [{ hint: menu.hint, value: currentVal }]);
+  const value = getSafeInt(res, currentVal, 0);
+  await updateConfig(betData, selected, c => {
+    c.custom[menu.key] = value;
+  });
+  await refreshReopen(betData, selected, conf, riskLimitMenu);
 };
 
 /** ========🧡 一级菜单 🧡======== */
@@ -981,8 +1012,7 @@ const configMenu = async (betData, selected, conf) => {
     { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask', specify: true },
     { name: '时间区间', id: 'time' },
     { name: '设置倍数', id: 'multiplierMenu' },
-    { name: '盈利上限', id: 'profitLimit' },
-    { name: '强制投注', id: 'missLimit' },
+    { name: '投注控制', id: 'betControl' },
     { name: '盈亏统计', id: 'stat' },
     { name: '投注规则', id: 'rule' },
   ];
@@ -999,31 +1029,12 @@ const configMenu = async (betData, selected, conf) => {
 
   switch (choice.id) {
     case 'accountManage': 
-      const acc = await accountManage(betData, selected, conf);
+      const acc = await accountManage(betData, selected, conf)
       if (acc) return;
       break;
-    case 'profitLimit': {
-      const res = await collectInputs(
-        '盈利上限',
-        '达到设置分数后停止投注',
-        [{ hint: '输入上限值', value: conf.custom.profitLimit ?? 0 }]
-      );
-      const val = Number(res?.[0]);
-      const profitLimitVal = Number.isInteger(val) && val >= 0 ? val : conf.custom.profitLimit;
-      await updateConfig(betData, selected, c => { c.custom.profitLimit = profitLimitVal });
-      break;
-    }
-    case 'missLimit': {
-      const res = await collectInputs(
-        '连续未中自动投注',
-        '设置为 0：命中一直投，不中一直停\n设置为 1：不论中或不中，每期都投\n设置为 3：连续未中 3 期后自动投注',
-        [{ hint: '未中期数', value: conf.custom.missLimit ?? 0 }]
-      );
-      const val = Number(res?.[0]);
-      const missLimitVal = Number.isInteger(val) && val >= 0 ? val : conf.custom.missLimit;
-      await updateConfig(betData, selected, c => { c.custom.missLimit = missLimitVal });
-      break;
-    }
+    case 'betControl': 
+      await refreshReopen(betData, selected, conf, riskLimitMenu);
+     break;
     case 'runTask': {
       await updateConfig(betData, selected, c => { c.custom.runTask = !c.custom.runTask });
       break;
