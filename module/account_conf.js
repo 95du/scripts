@@ -5,7 +5,7 @@ const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
 
-const isDev = true
+const isDev = false
 const boxjsApi = 'http://boxjs.com/query/data';
 const github = 'https://raw.githubusercontent.com/95du/scripts/master/module';
 
