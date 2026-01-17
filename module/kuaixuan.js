@@ -252,6 +252,7 @@ class CodeMaker {
           background: #fff;
           overflow: hidden;
           border: 1px solid #e5e5ea;
+          box-sizing: border-box;
           font-size: 15px;
           color: #111;
         }
@@ -268,8 +269,8 @@ class CodeMaker {
         
         .summary-row {
           padding: 4px 10px;
-          border-bottom: 1px solid #e5e5ea;
           line-height: 1.8;
+          border-bottom: 1px solid #e5e5ea;
         }
         
         .summary-text.normal 
@@ -282,7 +283,7 @@ class CodeMaker {
           border-bottom: 1px solid #ffd8bd;
         }
         
-        .summary-row:last-child {
+        .summary-text .summary-row:last-of-type {
           border-bottom: none;
         }
         
