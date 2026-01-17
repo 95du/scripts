@@ -13,6 +13,7 @@ const missLimit = 1
 const water = 9920
 
 /** =======💜 统计盈亏 💜======= */
+
 const isDev = false
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
@@ -52,7 +53,7 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 const getRecordRows = async () => {
   let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
   if (!Array.isArray(list) || !list.length) {
-    list = await new Request(`${github}/records.json`).loadJSON()
+    list = await new Request(`${github}/records.json`).loadJSON();
     await saveBoxJsData(list, 'record_rows');
   }
   return list;
