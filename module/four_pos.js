@@ -3,13 +3,14 @@
 // icon-color: deep-purple; icon-glyph: yin-yang;
 /**
  * 手动修改第 8 行的数字
+ * 赔率修改第 9 行的数字
  * 连续未中自动投 ‼️‼️‼️
  * 设置为 0：命中继续投，不中一直停
  * 设置为 1：不论中或不中，每期都投
  * 设置为 3：连续未中 3 期后自动投
  */
 const missLimit = 1
-
+const water = 9920
 
 /** =======💜 统计盈亏 💜======= */
 const isDev = false
@@ -49,8 +50,7 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 
 // 🈯️ 获取记录数据
 const getRecordRows = async () => {
-  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
-  let list = JSON.parse(data || '[]');
+  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON()
     await saveBoxJsData(list, 'record_rows');
@@ -86,7 +86,7 @@ const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
   if (type === 'img') data = await req.loadImage();
   else if (type === 'json') {
     const res = await req.loadJSON();
-    data = res?.val ?? res;
+    data = res?.val ? JSON.parse(res.val) : res;
   } else data = await req.loadString();
   if (data) write(data);
   return data;
@@ -146,7 +146,7 @@ const replayNormal = (rows, rule) => {
   let win = 0, lose = 0, score = 0;
 
   const cost = parseBetNumbers(rule.body).length;
-  const prize = 9920 - cost;
+  const prize = water - cost;
   const ordered = rows.slice().reverse();
   const records = [];
 
@@ -179,8 +179,9 @@ const replayNormal = (rows, rule) => {
   return {
     mode: 'normal',
     title: rule.title,
-    desc: '普通规则：每期都投 ( 默认 )',
     summary: {
+      desc: '普通规则：每期都投 ( 默认 )',
+      water,
       total: rows.length,
       win,
       lose,
@@ -264,12 +265,14 @@ const replaySimulate = (rows, rule, lastRow) => {
       forced
     });
   });
-
+  
+  const ruleText = missLimit === 0 ? '不中即停，中则继续' : missLimit === 1 ? '每期都投' : `连续 ${missLimit} 期未中强制投`;
   return {
     mode: 'simulate',
     title: rule.title,
-    desc: `指定规则：不中即停，中则继续，${missLimit} 期未中强制投`,
     summary: {
+      desc: `指定规则：${ruleText}`,
+      water,
       total: rows.length,
       win,
       lose,
@@ -290,7 +293,7 @@ const getRuleList = async (bodies) => {
       index: i, 
       body: b, 
       title: info.bet_log, 
-      label: `规则 ${i + 1} - ${info.numCount} 组`
+      label: `${i + 1}， ${info.numCount} 组`
     };
   }).filter(Boolean);
 };
@@ -349,11 +352,13 @@ const statMenu = async () => {
   ]);
   
   const bodies = Object.values(
-    betData.flatMap(x => x?.settings?.custom?.fastPick || [])
-      .filter(v => v && parseBetBody(v)?.bet_log)
+    betData
+      .flatMap(x => x?.settings?.custom?.fastPick || [])
+      .filter(v => v && parseBetBody(v)?.bet_number)
       .reduce((map, v) => {
-        const key = parseBetBody(v).bet_log;
-        map[key] = v;
+        const len = parseBetBody(v).bet_number.split(',').filter(Boolean).length;
+        const key = String(len);
+        if (!map[key]) map[key] = v;
         return map;
       }, {})
   );
@@ -430,7 +435,7 @@ const collectAllRecords = async () => {
     return { results: [], total: 0 };
   }
   
-  const records = list.slice(0, 20);
+  const records = list.slice(0, 15);
   const { account, fastPick } = accent;
   const rows = sliceByTime(draw.drawRows, "08:05");
   const lastRow = records[0]?.data?.[0]
