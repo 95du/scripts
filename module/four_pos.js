@@ -111,11 +111,14 @@ const parseBetBody = (body) => {
   const bet_number = decoded.match(/bet_number=([^&]*)/)?.[1] || '';
   const numCount = bet_number.split(",").length || '';
   const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
+  const guid = decoded.match(/guid=([^&]*)/)?.[1] || '';
+  const guidPart = guid ? guid.split('-')[0] : '';
   return { 
     bet_number, 
     numCount,
     bet_log, 
-    number_type 
+    number_type,
+    guidPart
   };
 };
 
@@ -183,7 +186,7 @@ const replayNormal = (rows, rule) => {
     summary: {
       desc: '普通规则：每期都投 ( 默认 )',
       water,
-      total: rows.length,
+      total: rule.normalTotal,
       win,
       lose,
       unbet: 0,
@@ -274,7 +277,7 @@ const replaySimulate = (rows, rule, lastRow) => {
     summary: {
       desc: `指定规则：${ruleText}`,
       water,
-      total: rows.length,
+      total: rule.simulateTotal,
       win,
       lose,
       unbet,
@@ -286,13 +289,16 @@ const replaySimulate = (rows, rule, lastRow) => {
 };
 
 // ✅ 规则列表
-const getRuleList = async (bodies) => {
+const getRuleList = async (bodies, statTotal) => {
   return bodies.map((b, i) => {
     const info = parseBetBody(b);
     if (info.number_type !== '40') return null;
+    const { normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
     return { 
       index: i, 
       body: b, 
+      normalTotal, 
+      simulateTotal,
       title: info.bet_log, 
       label: `${i + 1}， ${info.numCount} 组`
     };
@@ -310,8 +316,8 @@ const getDateList = async () => {
   return { dates, records, hasToday };
 };
 
-const getReplayData = async (date, ruleId, bodies, drawRows) => {
-  const rules = await getRuleList(bodies);
+const getReplayData = async (date, ruleId, bodies, drawRows, statTotal) => {
+  const rules = await getRuleList(bodies, statTotal);
   const { dates, records, hasToday } = await getDateList();
   const rule = rules.find(r => r.index == ruleId);
   if (!rule) return null;
@@ -345,6 +351,27 @@ const getModule = async (selected) => {
   return module;
 };
 
+const mergeStatTotal = (betData) => {
+  const result = {};
+  for (const acc of betData || []) {
+    const statTotal = acc?.settings?.custom?.statTotal;
+    if (!statTotal) continue;
+    for (const guid in statTotal) {
+      const row = statTotal[guid];
+      if (!row) continue;
+      if (!result[guid]) {
+        result[guid] = {
+          normalTotal: 0,
+          simulateTotal: 0
+        };
+      }
+      result[guid].normalTotal += Number(row.normalTotal) || 0;
+      result[guid].simulateTotal += Number(row.simulateTotal) || 0;
+    }
+  }
+  return result;
+};
+
 // ✅ 回放主函数
 const statMenu = async () => {
   const [betData, agentData] = await Promise.all([
@@ -352,6 +379,7 @@ const statMenu = async () => {
     getBoxjsData('agent_data')
   ]);
   
+  const statTotal = mergeStatTotal(betData);
   const bodies = Object.values(
     betData
       .flatMap(x => x?.settings?.custom?.fastPick || [])
@@ -367,7 +395,7 @@ const statMenu = async () => {
   const kx = await getModule(betData[0]);
   const today = new Date().toISOString().slice(0, 10);
   const drawRows = sliceByTime(agentData.drawRows || [], "08:05");
-  const statData = await getReplayData(today, 0, bodies, drawRows);
+  const statData = await getReplayData(today, 0, bodies, drawRows, statTotal);
   if (!statData) return;
   
   const html = await kx.replayHtml(statData);
@@ -385,7 +413,7 @@ const statMenu = async () => {
       })()`, true
     ).catch(err => console.error(err));
     if (event.type === 'query') {
-      const data = await getReplayData(event.date, event.ruleId, bodies, drawRows);
+      const data = await getReplayData(event.date, event.ruleId, bodies, drawRows, statTotal);
       await webView.evaluateJavaScript(
         `window.renderReplay(${JSON.stringify(data)})`
       );
