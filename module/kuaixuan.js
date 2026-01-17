@@ -46,8 +46,7 @@ class CodeMaker {
         document.getElementById('assign_summary').innerHTML =
           template('tpl_summary_text', {
             title: assignResult.title,
-            summary: assignResult.summary,
-            desc: assignResult.desc
+            summary: assignResult.summary
           });
       };
     
@@ -238,7 +237,7 @@ class CodeMaker {
           white-space: nowrap;
           overflow: hidden;
           appearance: none;
-          width: 145px;
+          width: 130px;
         }
         
         .select.purple {
@@ -268,7 +267,7 @@ class CodeMaker {
         }
         
         .summary-row {
-          padding: 4px 8px;
+          padding: 4px 10px;
           border-bottom: 1px solid #e5e5ea;
           line-height: 1.8;
         }
@@ -299,7 +298,7 @@ class CodeMaker {
         
         .summary-title {
           line-height: 20px;
-          padding: 8px 8px;
+          padding: 8px 10px;
         }
         
         .summary-pair {
@@ -358,12 +357,13 @@ class CodeMaker {
           <div class="summary-row summary-title">
             {{= rpl_color(title) }}
           </div>
-          {{if desc}}
-          <div class="summary-row">
-            {{desc}}
+          <div class="summary-row summary-pair">
+            <span>{{summary.desc}}</span><span>赔率：{{summary.water}}</span>
           </div>
-          {{/if}}
-          <div class="summary-row summary-pair"><span class="fb" style="{{summary.profit > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">盈亏：{{summary.profit}}</span><span>期数：{{summary.total}}</span></div>
+          <div class="summary-row summary-pair">
+            <span style="{{summary.profit > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">今日盈亏：{{summary.profit}}</span>
+            <span style="{{summary.total > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">记录汇总：{{summary.total || 0}}</span>
+          </div>
           <div class="summary-row summary-pair"><span>命中：{{summary.win}}</span><span>未中：{{summary.lose}}</span>
           </div>
           <div class="summary-row summary-pair"><span>未投：{{summary.unbet}}</span><span>净胜：{{summary.score}}</span>
@@ -399,7 +399,7 @@ class CodeMaker {
           </tr>
           {{else}}
             {{each Data as item i}}
-              <tr style="background:#fff7f0">
+              <tr>
                 <td>{{item.hit_icon}}</td>
                 <td>{{item.time}}</td>
                 <td>{{item.period_no}}</td>
@@ -661,9 +661,13 @@ class CodeMaker {
     const rawNumbers = isArrayMode ? this.parseNumber(input) : [];
     
     return `
-    window.invoke = (type, data) => {
-      window.dispatchEvent(new CustomEvent('JBridge', { detail: { type, data } }))
+    const kx = window.__kx = new Kuaixuan({ json: { Param: {} } });
+    window.invoke = (data) => {
+      window.dispatchEvent(new CustomEvent('JBridge', { detail: { data } }))
     }
+    
+    // 隐私规则参数
+    const fakeParam = {"symbol":"X","isXian":0,"firstNumber":"13579","secondNumber":"02468","thirdNumber":"","fourthNumber":"","fifthNumber":"","numberType":40,"positionType":1,"positionFilter":0,"remainFixedFilter":0,"remainFixedNumbers":[[[1,1,1,1],["0","1","2","4","5","6","7","8","9"]]],"remainMatchFilter":2,"remainMatchFilterThree":3,"remainMatchNumbers":["2","4","6","8"],"remainMatchNumbersThree":["1","3","5","7"],"remainValueRanges":[6,29],"transformNumbers":[],"upperNumbers":[],"exceptNumbers":[],"fixedPositions":[0,0,0,0],"symbolPositions":[],"containFilter":0,"containNumbers":["2","3","5","8"],"multipleFilter":0,"multipleNumbers":[],"repeatTwoWordsFilter":-1,"repeatThreeWordsFilter":1,"repeatFourWordsFilter":-1,"repeatDoubleWordsFilter":1,"twoBrotherFilter":0,"threeBrotherFilter":-1,"fourBrotherFilter":-1,"logarithmNumberFilter":-1,"logarithmNumbers":[["1"],["1","3"],["5","7"],["9"],["2"]],"oddNumberFilter":-1,"oddNumberPositions":[0,0,0,0],"evenNumberFilter":-1,"evenNumberPositions":[0,0,0,0],"bigNumberFilter":-1,"bigNumberPositions":[0,0,0,0],"smallNumberFilter":-1,"smallNumberPositions":[0,0,0,0]}
     
     const showTips = (msg, duration = 1500) => {
       const tips = document.getElementById("tips");
@@ -1022,26 +1026,38 @@ class CodeMaker {
     };
     
     // 保存请求体
-    const getBody = (maker, btn) => {
+    const getBody = (maker, type) => {
       const f = maker;
-      if (!f.numberList.length) {
-        btn.style.color = '';
-        return;
-      }
+      const fake = JSON.stringify(fakeParam);
+      const options = type === 'custom' ? fake : f.options;
       const body = Object.entries({
         bet_number: f.numberList.join(','),
-        bet_money: 0.1,
+        bet_money: '01',
         bet_way: 102,
         is_xian: f.options.isXian,
         number_type: f.options.numberType,
         bet_log: f.logs.join('，'),
-        guid: this.guid || 0,
+        guid: kx.guid,
         period_no: 20251229097,
-        operation_condition: f.operation_condition || f.options
+        operation_condition: options
       }).map(([k, v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
         .join('&');
-      invoke('origin', body);
-      doSave(f, btn);
+      return body;
+    };
+    
+    const bindActionBtn = (maker, list, btnId, type) => {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.onclick = () => {
+        btn.style.color = '#bbb';
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        if (!list.length) {
+          btn.style.color = '';
+          return;
+        }
+        invoke(getBody(maker, type));
+        doSave(maker, btn);
+      };
     };
     
     try {
@@ -1049,10 +1065,8 @@ class CodeMaker {
       filterContainer.innerHTML = document.getElementById('tpl_sid').innerHTML;
       const maker = new CodeMaker(${JSON.stringify(options)});
       const o = maker.options;
-      const kx = window.__kx = new Kuaixuan({ json: { Param: {} } });
       kx.codeMaker = maker;
-      const log = "${input.replace(/"/g, '\\"')}";
-      setLogs(log, o);
+      setLogs('${input}', o);
       maker.log();
       
       checkboxMap.forEach(cfg => bindCheckboxGroup(maker, cfg));
@@ -1085,24 +1099,8 @@ class CodeMaker {
           .innerHTML = \`<strong class="red2" style="font-size:16px;">【 匹配日志 】</strong><div style="height:5px"></div>\${renderLogs(this.logs)}\`;
         document.getElementById('count').textContent = list.length;
         renderTable(list);
-        
-        const origBtn = document.getElementById('originBtn');
-        origBtn.onclick = () => {
-          origBtn.style.color = 'bbb'
-          getBody(maker, origBtn);
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        };
-        const saveBtn = document.getElementById('saveBtn');
-        saveBtn.onclick = () => {
-          saveBtn.style.color = '#bbb'
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          if (!list.length) {
-            saveBtn.style.color = '';
-            return;
-          }
-          invoke('custom', list);
-          doSave(maker, saveBtn);
-        };
+        bindActionBtn(maker, list, 'originBtn', 'origin');
+        bindActionBtn(maker, list, 'saveBtn', 'custom');
       };
       maker.generate();
     } catch (err) {
@@ -1272,7 +1270,7 @@ class CodeMaker {
         input[boxNumber="2"],
         input[boxNumber="3"],
         input[boxNumber="4"] {
-          width: 100px;
+          width: 115px;
           height: 20px;
         }
         
@@ -1656,12 +1654,6 @@ class CodeMaker {
     </html>`;
   };
   
-  // 原站请求体
-  body = (bet_money) => {
-    const money = (Number(bet_money ?? 1) + 0.1).toFixed(1);
-    return `bet_number=0000%2C1111%2C2222%2C3333%2C4444%2C5555%2C6666%2C7777%2C8888%2C9999&bet_money=${money}&bet_way=102&is_xian=0&number_type=40&bet_log=%5B%E5%9B%9B%E5%AE%9A%E4%BD%8D%5D%EF%BC%8C%E5%9B%9B%E9%87%8D%E2%80%9C%5B%E5%8F%96%5D%E2%80%9D%E6%93%8D%E4%BD%9C&guid=03202d8a-40be-4c9e-8e86-85390389c416&period_no=20251228028&operation_condition=%7B%22symbol%22%3A%22X%22%2C%22isXian%22%3A0%2C%22firstNumber%22%3A%22%22%2C%22secondNumber%22%3A%22%22%2C%22thirdNumber%22%3A%22%22%2C%22fourthNumber%22%3A%22%22%2C%22fifthNumber%22%3A%22%22%2C%22numberType%22%3A40%2C%22positionType%22%3A0%2C%22positionFilter%22%3A0%2C%22remainFixedFilter%22%3A0%2C%22remainFixedNumbers%22%3A%5B%5D%2C%22remainMatchFilter%22%3A0%2C%22remainMatchFilterThree%22%3A0%2C%22remainMatchNumbers%22%3A%5B%5D%2C%22remainMatchNumbersThree%22%3A%5B%5D%2C%22remainValueRanges%22%3A%5B%5D%2C%22transformNumbers%22%3A%5B%5D%2C%22upperNumbers%22%3A%5B%5D%2C%22exceptNumbers%22%3A%5B%5D%2C%22fixedPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22symbolPositions%22%3A%5B%5D%2C%22containFilter%22%3A0%2C%22containNumbers%22%3A%5B%5D%2C%22multipleFilter%22%3A0%2C%22multipleNumbers%22%3A%5B%5D%2C%22repeatTwoWordsFilter%22%3A-1%2C%22repeatThreeWordsFilter%22%3A-1%2C%22repeatFourWordsFilter%22%3A0%2C%22repeatDoubleWordsFilter%22%3A-1%2C%22twoBrotherFilter%22%3A-1%2C%22threeBrotherFilter%22%3A-1%2C%22fourBrotherFilter%22%3A-1%2C%22logarithmNumberFilter%22%3A-1%2C%22logarithmNumbers%22%3A%5B%5B%5D%5D%2C%22oddNumberFilter%22%3A-1%2C%22oddNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22evenNumberFilter%22%3A-1%2C%22evenNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22bigNumberFilter%22%3A-1%2C%22bigNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%2C%22smallNumberFilter%22%3A-1%2C%22smallNumberPositions%22%3A%5B0%2C0%2C0%2C0%5D%7D`;
-  };
-  
   // 原站 CSS
   css = () => {
     return `
@@ -1982,7 +1974,6 @@ class CodeMaker {
           .join('&');
           
         completion?.(body);
-        window.dispatchEvent(new CustomEvent('JBridge', { detail: body }));
         
         // 显示动画
         const $n = $("#numberList")
@@ -2898,7 +2889,7 @@ class CodeMaker {
                 <span class="inlineblock">
                   <strong class="red2">排除</strong> <input type="text" class="except-filter-item w80" name="paichu" digits="true" maxlength="10">
                 </span>
-                <span class="gu-ding-wei-zhi hide">
+                <span class="gu-ding-wei-zhi hide"></br>
                   <strong class="red2">固定位置</strong>
                   <input type="checkbox" class="fixed-position-item">
                   <input type="checkbox" class="fixed-position-item">
