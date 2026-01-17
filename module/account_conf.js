@@ -102,6 +102,16 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
   }
 };
 
+// 🈯️ 获取记录数据
+const getRecordRows = async () => {
+  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  if (!list?.length) {
+    list = await new Request(`${github}/records.json`).loadJSON();
+    await saveBoxJsData(list, 'record_rows');
+  }
+  return list;
+};
+
 // ✅ 通用 UI / 弹窗 
 const generateAlert = async (title, message, options, destructive = false) => {
   const alert = new Alert();
@@ -505,12 +515,7 @@ const getRuleList = async ({ fastPick, statTotal } = section) => {
 
 // ✅ 日期列表
 const getDateList = async () => {
-  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json');
-  if (!Array.isArray(list) || !list.length) {
-    list = await new Request(`${github}/records.json`).loadJSON()
-    await saveBoxJsData(list, 'record_rows');
-  }
-  const records = list;
+  const records = await getRecordRows();
   const today = new Date().toISOString().slice(0, 10);
   const hasToday = records[0]?.date === today;
   const dates = hasToday
