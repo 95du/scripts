@@ -695,7 +695,6 @@ class CodeMaker {
       if (log.includes("双数“取”")) o.evenNumberFilter = 0;
       if (log.includes("大数“取”")) o.bigNumberFilter = 0;
       if (log.includes("小数“取”")) o.smallNumberFilter = 0;
-      if (log.includes("对数“取”")) o.logarithmNumberFilter = 0;
     };
     
     // 初始化 checkbox 状态
