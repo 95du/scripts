@@ -19,7 +19,7 @@ const defaultConfig = {
     fastPick: [],
     cutRule: [],
     water: 9700,
-    missLimit: 0,
+    missLimit: 1,
     profitLimit: 0,
     lossLimit: 0,
     globalMultiplier: 1
@@ -74,7 +74,7 @@ const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
   if (type === 'img') data = await req.loadImage();
   else if (type === 'json') {
     const res = await req.loadJSON();
-    data = res?.val ?? res;
+    data = res?.val ? JSON.parse(res.val) : res;
   } else data = await req.loadString();
   if (data) write(data);
   return data;
@@ -265,15 +265,16 @@ const parseBetBody = (body) => {
   const bet_log = decoded.match(/bet_log=([^&]*)/)?.[1];
   const bet_money = decoded.match(/bet_money=([^&]*)/)?.[1];
   const number_type = decoded.match(/number_type=([^&]*)/)?.[1] || '';
-  const guid = decoded.match(/guid=([^&]*)/)?.[1] || 0;
   const numCount = bet_number.split(",").length || '';
+  const guid = decoded.match(/guid=([^&]*)/)?.[1] || '';
+  const guidPart = guid ? guid.split('-')[0] : '';
   return { 
     bet_number, 
     bet_log, 
     bet_money,
     number_type,
-    guid,
-    numCount
+    numCount,
+    guidPart
   }
 };
 
@@ -292,7 +293,7 @@ const buildMessage = (acc, conf) => {
   const section = conf.custom || {};
   const taskStatus = section?.runTask ? '已开启' : '已关闭';
   const hasRule = section.hasRule ? '已设置' : '未设置';
-  const isReversed = section.fastPick.some(b => Number(parseBetBody(b).guid) === 1) ? '已反转' : '未反转';
+  const isReversed = section.fastPick.some(b => parseBetBody(b).bet_money === '02') ? '已反转' : '未反转';
   const changeLog = section.changeLog ? '已修改' : '未修改';
   return `账号 ${acc.member_account}
 任务状态 【 ${taskStatus} 】
@@ -379,9 +380,10 @@ const replayNormal = (rows, rule, water = 9700) => {
   return {
     mode: 'normal',
     title: rule.title,
-    desc: '普通规则：每期都投 ( 默认 )',
     summary: {
-      total: rows.length,
+      desc: '普通规则：每期都投 ( 默认 )',
+      water,
+      total: rule.normalTotal,
       win,
       lose,
       unbet: 0,
@@ -464,13 +466,16 @@ const replaySimulate = (rows, rule, lastRow, water = 9700, missLimit) => {
       forced
     });
   });
-
+  
+  const ruleText = missLimit === 0 ? '不中即停，中则继续' : missLimit === 1 ? '每期都投' : `连续 ${missLimit} 期未中强制投`;
+  
   return {
     mode: 'simulate',
     title: rule.title,
-    desc: `指定规则：不中即停，中则继续，${missLimit} 期未中强制投`,
     summary: {
-      total: rows.length,
+      desc: `指定规则：${ruleText}`,
+      water,
+      total: rule.simulateTotal,
       win,
       lose,
       unbet,
@@ -482,23 +487,25 @@ const replaySimulate = (rows, rule, lastRow, water = 9700, missLimit) => {
 };
 
 // ✅ 规则列表
-const getRuleList = async (bodies) => {
-  return bodies.map((b, i) => {
+const getRuleList = async ({ fastPick, statTotal } = section) => {
+  return fastPick.map((b, i) => {
     const info = parseBetBody(b);
     if (info.number_type !== '40') return null;
+    const { normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
     return { 
       index: i, 
       body: b, 
       title: info.bet_log, 
-      label: `规则 ${i + 1} - ${info.numCount} 组`
+      normalTotal, 
+      simulateTotal,
+      label: `${i + 1}， ${info.numCount} 组`
     };
   }).filter(Boolean);
 };
 
 // ✅ 日期列表
 const getDateList = async () => {
-  const data = await getCacheData('record_rows.json', `${boxjsApi}/record_rows`, 'json');
-  let list = JSON.parse(data || '[]');
+  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json');
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON()
     await saveBoxJsData(list, 'record_rows');
@@ -514,7 +521,7 @@ const getDateList = async () => {
 
 // ✅ 计算回放数据
 const getReplayData = async (date, ruleId, drawRows, section) => {
-  const rules = await getRuleList(section.fastPick);
+  const rules = await getRuleList(section);
   const { dates, records, hasToday } = await getDateList();
   const rule = rules.find(r => r.index == ruleId);
   if (!rule) return null;
@@ -544,8 +551,7 @@ const runReplay = async (selected, conf, date, ruleId) => {
   const section = conf.custom || {};
   const drawRows = sliceByTime(selected.drawRows, "08:05");
   if (!drawRows?.length) return;
-  const bodies = section?.fastPick;
-  if (!bodies?.length) {
+  if (!section.fastPick?.length) {
     return await viewRule({
       title: `账号: ${selected.member_account}`,
       content: '暂无投注规则，请点击写入规则或已被暂停'
@@ -591,7 +597,15 @@ const statMenu = async (selected, conf) => {
 
 const saveBody = (arr, event) => {
   const incoming = parseBetBody(event);
-  const idx = arr.findIndex(item => parseBetBody(item).bet_log === incoming.bet_log);
+  const incomingLog = incoming.bet_log;
+  const incomingLen = incoming.bet_number.split(',').filter(Boolean).length;
+
+  const idx = arr.findIndex(item => {
+    const info = parseBetBody(item);
+    const len = info.bet_number.split(',').filter(Boolean).length;
+    return info.bet_log === incomingLog && len === incomingLen;
+  });
+
   if (idx >= 0) {
     const exists = parseBetBody(arr[idx]);
     if (exists.bet_money !== incoming.bet_money) arr[idx] = event;
@@ -627,26 +641,11 @@ const buildHtml = async (kx, isLog = false, input = '', selected, bet_number) =>
   return kx.logHtml(inputText);
 };
 
-const buildBody = async (event, Body, input = '', isLog) => {
-  if (!isLog) return event;
-  switch (event.type) {
-    case 'origin':
-      return event.data;
-      break;
-    case 'custom':
-      if (!event.data.length) return;
-      const bet_number = event.data.join(',');
-      return replaceParams(Body, { bet_number, bet_log: input });
-      break;
-  }
-};
-
 // ✅ 运行快选 HTML
 const kuaixuan = async (betData, selected, conf, isLog = false, input, bet_number, bet_money) => {
   const kx = await getModule(selected);
   const html = await buildHtml(kx, isLog, input, selected, bet_number);
   if (!html) return;
-  const Body = kx.body(bet_money);
   
   const webView = new WebView();
   await webView.loadHTML(html, selected.baseUrl);
@@ -665,7 +664,7 @@ const kuaixuan = async (betData, selected, conf, isLog = false, input, bet_numbe
       })()`, true
     ).catch(err => console.error(err));
     if (event) {
-      const body = await buildBody(event, Body, input, isLog);
+      const body = !isLog ? event : event.data;
       await updateConfig(betData, selected, c => {
         c.custom.hasRule = true;
         c.custom.fastPick = saveBody(c.custom.fastPick, body);
@@ -686,9 +685,7 @@ const getRemainingBySet = (excludes = []) => {
   const excludeSet = new Set(
     excludes.map(n => String(n).padStart(4, '0'))
   );
-  const all_numbers = Array.from({ length: 10000 }, (_, i) =>
-    String(i).padStart(4, '0')
-  );
+  const all_numbers = Array.from({ length: 10000 }, (_, i) => String(i).padStart(4, '0'));
   return all_numbers.filter(n => !excludeSet.has(n));
 };
 
@@ -715,14 +712,13 @@ const reverseRule = async (betData, selected, conf) => {
   list.forEach((b, i) => {
     const parsed = parseBetBody(b);
     const action = `规则 ${i + 1} - ${parsed.numCount}组`;
-    parsed.guid === '1' ? alert.addDestructiveAction(action) : alert.addAction(action);
+    parsed.bet_money === '02' ? alert.addDestructiveAction(action) : alert.addAction(action);
   });
   alert.addCancelAction('返回');
   const idx = await alert.presentSheet();
   if (idx === -1) return;
   const rule = list[idx];
   const parsed = parseBetBody(rule);
-  const isReversed = parsed.guid !== '1'; // 如果guid是1，表示已经反转过
   const excludes = parsed.bet_number.split(',');
   const remain = getRemainingBySet(excludes);
   const bet_number = remain.join(',');
@@ -750,7 +746,7 @@ const reverseRule = async (betData, selected, conf) => {
   await updateConfig(betData, selected, c => {
     const newfastPick = replaceParams(rule, {
       bet_number,
-      guid: isReversed ? 1 : 0
+      bet_money: parsed.bet_money !== '02' ? '02' : '01'
     });
     c.custom.fastPick.splice(idx, 1, newfastPick);
   });
@@ -784,6 +780,7 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText }) =>
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
+    delete c.custom.statTotal;
   });
   await saveBoxJsData(betData);
 };
@@ -950,6 +947,7 @@ const accountManage = async (betData, selected, conf) => {
           selected.body = [];
         });
         await saveBoxJsData(betData);
+        if (fm.fileExists(basePath)) fm.remove(basePath);
       }
       break;
     }
@@ -972,8 +970,8 @@ const riskLimitMenu = async (betData, selected, conf) => {
   alert.message = buildMessage(selected, conf);
 
   const menus = [
-    { name: '盈利上限', key: 'profitLimit', hint: '输入盈利上限', desc: '达到设置盈利后停止投注\n0 表示不限制' },
-    { name: '亏损下限', key: 'lossLimit', hint: '输入亏损下限', desc: '达到设置亏损后停止投注\n0 表示不限制' },
+    { name: '盈利上限', key: 'profitLimit', hint: '输入盈利上限', desc: '达到设置的盈利值停止投注\n0 表示不限制' },
+    { name: '亏损下限', key: 'lossLimit', hint: '输入亏损下限', desc: '达到设置的亏损值停止投注\n0 表示不限制' },
     { name: '强制投注', key: 'missLimit', hint: '未中期数', desc: '0：命中一直投，不中一直停\n1：不论中或不中，每期都投\n3：连续未中 3 期后自动投注' },
   ];
 
@@ -988,6 +986,7 @@ const riskLimitMenu = async (betData, selected, conf) => {
   const value = getSafeInt(res, currentVal, 0);
   await updateConfig(betData, selected, c => {
     c.custom[menu.key] = value;
+    if (menu.key === 'missLimit') c.custom.needRecalc = true;
   });
   await refreshReopen(betData, selected, conf, riskLimitMenu);
 };
@@ -997,9 +996,15 @@ const riskLimitMenu = async (betData, selected, conf) => {
 // ✅ 显示不同倍数设置表单
 const multiplierMenu = async (betData, selected, conf) => {
   const section = conf.custom || {};
-  const results = await collectInputs('设置倍数', '影响对应规则的投注金额', [{ hint: '全局倍数', value: section.globalMultiplier ?? 1 }]);
+  const results = await collectInputs(
+    '设置倍数', 
+    '影响对应规则的投注金额', 
+    [{ hint: '全局倍数', value: section.globalMultiplier ?? 1 }]
+  );
   if (!results.length) return;
-  await updateConfig(betData, selected, c => { c.custom.globalMultiplier = Number(results[0]) || 1 });
+  await updateConfig(betData, selected, c => { 
+    c.custom.globalMultiplier = Number(results[0]) || 1 
+  });
 };
 
 // ✅ 主配置菜单
