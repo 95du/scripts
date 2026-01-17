@@ -384,6 +384,19 @@ const mergeDrawData = async (oldData, newData, pages) => {
 
 /** =======💜 主程序 💜======= */
 
+// 初始化记录
+const initRecords = async () => {
+  const records = await httpRequest({
+    url: 'https://raw.githubusercontent.com/95du/scripts/master/module/records.json',
+    method: 'GET',
+    headers: { "Content-Type": "application/json;charset=UTF-8" }
+  });
+  if (records?.length) {
+    $.setjson(records, $.recordRows_key);
+    return records;
+  }
+};
+
 // 限制时间段不执行
 const isBetweenLimit = (now = new Date()) => {
   const minutes = now.getHours() * 60 + now.getMinutes();
@@ -419,7 +432,8 @@ const fetchDrawRows = async (page, retries = 2, delay = 1000) => {
     if (drawRows.length) {
       await shouldNotify();
       const records = $.getjson($.recordRows_key) || [];
-      await updateHistoryStat(records);
+      if (!records?.length) records = await initRecords();
+      if (records?.length) await updateHistoryStat(records);
     }
     
     if (isBetweenLimit()) {
