@@ -12,6 +12,7 @@
 const missLimit = 1
 const water = 9920
 
+
 /** =======💜 统计盈亏 💜======= */
 
 const isDev = false
@@ -452,19 +453,14 @@ const buildRuleKey = (guidPart) => {
   });
 };
 
-const runReplayCollect = async (rows, date, lastRow, rule) => {
-  if (!rows?.length) return null;
-  const sim = replaySimulate(rows, rule, lastRow);
-  return {
-    date,
-    profit: sim.summary.profit,
-  };
-};
-
 const buildHistoryResults = async (records, rule) => {
   const tasks = records.map((record, idx) => {
     const lastRow = records[idx + 1]?.data?.[0] || null;
-    return runReplayCollect(record.data, record.date, lastRow, rule);
+    const sim = replaySimulate(record.data, rule, lastRow);
+    return {
+      date: record.date, 
+      profit: sim.summary.profit,
+    };
   });
   return (await Promise.all(tasks)).filter(Boolean);
 };
@@ -667,7 +663,7 @@ const createErrorWidget = () => {
 };
 
 await (async () => {
-  if (config.runsInApp) {
+  if (!config.runsInApp) {
     await statMenu();
   } else {
     const finalResults = await collectAllRecords();
