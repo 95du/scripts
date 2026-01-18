@@ -29,7 +29,7 @@ const autoUpdate = async () => {
   const script = await new Request(`${github}/four_pos.js`).loadString();
   fm.writeString(module.filename, script);
 };
-// autoUpdate();
+autoUpdate();
 
 const getBoxjsData = async (key = 'bet_data') => {
   try {
