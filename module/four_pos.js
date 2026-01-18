@@ -663,7 +663,7 @@ const createErrorWidget = () => {
 };
 
 await (async () => {
-  if (!config.runsInApp) {
+  if (config.runsInApp) {
     await statMenu();
   } else {
     const finalResults = await collectAllRecords();
