@@ -457,7 +457,6 @@ const runReplayCollect = async (rows, date, lastRow, rule) => {
   const sim = replaySimulate(rows, rule, lastRow);
   return {
     date,
-    title: parseBetBody(rule.body).bet_log,
     profit: sim.summary.profit,
   };
 };
@@ -477,7 +476,7 @@ const collectAllRecords = async () => {
     getBoxjsData('bet_data')
   ]);
 
-  if (!list?.length || !draw || !betData) return null;
+  if (!list?.length || !draw || !betData?.length) return null;
 
   const bodies = mergeFastPickArr(betData);
   if (!bodies.length) return null;
