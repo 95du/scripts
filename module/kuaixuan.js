@@ -1254,7 +1254,7 @@ class CodeMaker {
         /* 值范围输入框 */
         input[name="zhifanwei1"],
         input[name="zhifanwei2"] {
-          width: 40px;
+          width: 48px;
           height: 20px;
         }
         
