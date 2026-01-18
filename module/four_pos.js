@@ -29,7 +29,7 @@ const autoUpdate = async () => {
   const script = await new Request(`${github}/four_pos.js`).loadString();
   fm.writeString(module.filename, script);
 };
-autoUpdate();
+// autoUpdate();
 
 const getBoxjsData = async (key = 'bet_data') => {
   try {
@@ -377,23 +377,24 @@ const mergeStatTotal = (betData) => {
 
 // ✅ 合并 fastPick
 const mergeFastPickArr = (betData) => {
-  const bodies = Object.values(
-    betData
-      .flatMap(x => x?.settings?.custom?.fastPick || [])
-      .map(v => v ? ({ raw: v, parsed: parseBetBody(v) }) : null)
-      .filter(v => 
-        v &&
-        v.parsed?.bet_number &&
-        v.parsed.number_type !== '20'
-      )
-      .reduce((map, v) => {
-        const len = v.parsed.bet_number.split(',').filter(Boolean).length;
-        const key = String(len);
-        if (!map[key]) map[key] = v.raw
-        return map;
-      }, {})
-  );
-  return bodies;
+  const map = {};
+
+  betData.flatMap(x => x?.settings?.custom?.fastPick || [])
+    .forEach(raw => {
+      if (!raw) return;
+      const parsed = parseBetBody(raw);
+      if (!parsed?.bet_number) return;
+      if (parsed.number_type === '20') return; // 排除
+
+      const key = [
+        parsed.number_type,
+        parsed.bet_log,
+        parsed.bet_number
+      ].join('|');
+      if (!map[key]) map[key] = raw;
+    });
+
+  return Object.values(map);
 };
 
 // ✅ 回放主函数
