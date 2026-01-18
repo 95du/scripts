@@ -18,6 +18,7 @@ const isDev = false
 const fm = FileManager.local();
 const basePath = fm.joinPath(fm.documentsDirectory(), '95du_lottery');
 if (!fm.fileExists(basePath)) fm.createDirectory(basePath);
+const collectPath = fm.joinPath(basePath, 'collect_results_cache.json');
 
 const imageUrl = `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_2.png`;
 const boxjsApi = 'http://boxjs.com/query/data';
@@ -351,6 +352,7 @@ const getModule = async (selected) => {
   return module;
 };
 
+// ✅ 合并汇总对象
 const mergeStatTotal = (betData) => {
   const result = {};
   for (const acc of betData || []) {
@@ -372,14 +374,8 @@ const mergeStatTotal = (betData) => {
   return result;
 };
 
-// ✅ 回放主函数
-const statMenu = async () => {
-  const [betData, agentData] = await Promise.all([
-    getBoxjsData('bet_data'),
-    getBoxjsData('agent_data')
-  ]);
-  
-  const statTotal = mergeStatTotal(betData);
+// ✅ 合并 fastPick
+const mergeFastPickArr = (betData) => {
   const bodies = Object.values(
     betData
       .flatMap(x => x?.settings?.custom?.fastPick || [])
@@ -391,6 +387,18 @@ const statMenu = async () => {
         return map;
       }, {})
   );
+  return bodies;
+};
+
+// ✅ 回放主函数
+const statMenu = async () => {
+  const [betData, agentData] = await Promise.all([
+    getBoxjsData('bet_data'),
+    getBoxjsData('agent_data')
+  ]);
+  
+  const statTotal = mergeStatTotal(betData);
+  const bodies = mergeFastPickArr(betData);
   
   const kx = await getModule(betData[0]);
   const today = new Date().toISOString().slice(0, 10);
@@ -425,78 +433,97 @@ const statMenu = async () => {
 };
 
 // 🈯️ 处理小组件数据逻辑
-const pickFastPickFromAccount = (account) => {
-  const list = account.settings.custom?.fastPick || []
-  if (!list.length) return null;
-  return list[Math.floor(Math.random() * list.length)];
+const readCollectCache = () => {
+  if (fm.fileExists(collectPath)) {
+    return  JSON.parse(fm.readString(collectPath));
+  }
+  return null;
 };
 
-const pickStrategyOnce = async () => {
-  const betData = await getBoxjsData('bet_data') || [];
-  const validAccs = betData.filter(acc => (acc.settings?.custom?.fastPick || []).some(a => a?.length));
-  if (!validAccs.length) return null;
-  const account = validAccs[Math.floor(Math.random() * validAccs.length)];
-  const fastPick = pickFastPickFromAccount(account);
-  return fastPick ? { account, fastPick } : null;
+const writeCollectCache = (data) => {
+  fm.writeString(collectPath, JSON.stringify(data));
 };
 
-const runReplayCollect = async (rows, date, lastRow, account, rule) => {
+const buildRuleKey = (guidPart) => {
+  return JSON.stringify({
+    guid: guidPart,
+    missLimit,
+    water
+  });
+};
+
+const runReplayCollect = async (rows, date, lastRow, rule) => {
   if (!rows?.length) return null;
   const sim = replaySimulate(rows, rule, lastRow);
-  
   return {
-    account: account.Data.member_account,
-    credit_balance: account.Data.credit_balance,
-    title: parseBetBody(rule.body).bet_log,
     date,
+    title: parseBetBody(rule.body).bet_log,
     profit: sim.summary.profit,
   };
 };
 
+const buildHistoryResults = async (records, rule) => {
+  const tasks = records.map((record, idx) => {
+    const lastRow = records[idx + 1]?.data?.[0] || null;
+    return runReplayCollect(record.data, record.date, lastRow, rule);
+  });
+  return (await Promise.all(tasks)).filter(Boolean);
+};
+
 const collectAllRecords = async () => {
-  const [list, draw, accent] = await Promise.all([
+  const [list, draw, betData] = await Promise.all([
     getBoxjsData('record_rows'),
     getBoxjsData('agent_data'),
-    pickStrategyOnce()
+    getBoxjsData('bet_data')
   ]);
-  
-  if (!Array.isArray(list) || !list.length || !accent || !draw) {
-    return { results: [], total: 0 };
-  }
-  
-  const records = list.slice(0, 15);
-  const { account, fastPick } = accent;
-  const rows = sliceByTime(draw.drawRows, "08:05");
-  const lastRow = records[0]?.data?.[0]
-  
+
+  if (!list?.length || !draw || !betData) return null;
+
+  const bodies = mergeFastPickArr(betData);
+  if (!bodies.length) return null;
+  const fastPick = bodies[Math.floor(Math.random() * bodies.length)];
   const rule = { body: fastPick };
-  const replayData = replaySimulate(rows, rule, lastRow);
-  const numCount = parseBetBody(fastPick).numCount;
-  const bet_log = parseBetBody(fastPick).bet_log;
+
+  const { numCount, bet_log, guidPart } = parseBetBody(fastPick);
+  const ruleKey = buildRuleKey(guidPart);
+
+  const records = list.slice(0, 20);
   const today = new Date().toISOString().slice(0, 10);
-  const tasks = [];
-  
-  // 今日
-  if (records[0]?.date !== today) {
-    tasks.push((async () => {
-      return runReplayCollect(rows, today, lastRow, account, rule);
-    })());
+  const lastHistoryDate = records[0]?.date;
+
+  let cache = readCollectCache();
+  if (!cache) cache = { ruleMap: {} };
+  const hitCache = cache?.ruleMap[ruleKey];
+
+  let historyResults = [];
+  let historyTotal = 0;
+
+  const canUseCache = hitCache && hitCache.lastDate === lastHistoryDate;
+  if (canUseCache) {
+    historyResults = hitCache.results || [];
+    historyTotal = hitCache.total || 0;
+  } else {
+    historyResults = await buildHistoryResults(records, rule);
+    historyTotal = historyResults.reduce((s, r) => s + (r.profit || 0), 0);
+
+    cache.ruleMap[ruleKey] = {
+      lastDate: lastHistoryDate,
+      results: historyResults,
+      total: historyTotal
+    };
+    writeCollectCache(cache);
   }
 
-  // 历史
-  records.forEach((record, idx) => {
-    const lastRow = records[idx + 1]?.data?.[0] || null;
-    tasks.push(
-      runReplayCollect(record.data, record.date, lastRow, account, rule)
-    );
-  });
+  // 今日实时
+  const rows = sliceByTime(draw.drawRows, "08:05");
+  const lastRow = records[0]?.data?.[0] || null;
+  const todayReplay = replaySimulate(rows, rule, lastRow);
+  const todayTotal = todayReplay.records.at(-1)?.profit || 0
 
-  const results = (await Promise.all(tasks)).filter(Boolean);
-  const total = results.reduce((s, r) => s + (r.profit || 0), 0);
-  return { 
-    todayList: replayData.records, 
-    results, 
-    total, 
+  return {
+    todayList: todayReplay.records,
+    results: historyResults,
+    total: historyTotal,
     numCount,
     bet_log
   };
