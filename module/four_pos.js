@@ -380,11 +380,16 @@ const mergeFastPickArr = (betData) => {
   const bodies = Object.values(
     betData
       .flatMap(x => x?.settings?.custom?.fastPick || [])
-      .filter(v => v && parseBetBody(v)?.bet_number)
+      .map(v => v ? ({ raw: v, parsed: parseBetBody(v) }) : null)
+      .filter(v => 
+        v &&
+        v.parsed?.bet_number &&
+        v.parsed.number_type !== '20'
+      )
       .reduce((map, v) => {
-        const len = parseBetBody(v).bet_number.split(',').filter(Boolean).length;
+        const len = v.parsed.bet_number.split(',').filter(Boolean).length;
         const key = String(len);
-        if (!map[key]) map[key] = v;
+        if (!map[key]) map[key] = v.raw
         return map;
       }, {})
   );
