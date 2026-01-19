@@ -593,7 +593,7 @@ const createWidget = async (data) => {
     data.bet_log.length <= 20
       ? rawText
       : data.bet_log.length <= 40
-        ? rawText.replace(/：.*$/, '')
+        ? rawText.replace(/：.*$/, '').replace(/操作.*$/, '')
         : `隔 ${missLimit} 期未中强制投`;
   
   const family = config.widgetFamily;
