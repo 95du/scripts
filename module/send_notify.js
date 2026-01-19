@@ -136,6 +136,7 @@ const shouldNotify = async () => {
       if (account?.drawRows) delete account.drawRows;
       if (!account?.cookie) continue;
       const { memberData, bill, log } = await fetchMemberAndBill(account);
+      if (!memberData) continue;
       if (memberData) {
         account.Data = memberData;
         account.bill = {};
