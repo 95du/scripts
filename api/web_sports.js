@@ -183,8 +183,8 @@ async function main(family) {
   // 获取新的赛事列表
   const getCategoryList = async () => {
     const url = 'https://sqb3.com/prod-api/category/list?type=0';
-    const { data } = await module.getCacheData(url, 240, 'categoryList.json');
-    const categoryList = data.twoCategoryList.find(item => item.name === chooseSports);
+    const { data } = await module.getCacheData(url, 240, 'categoryList.json') || {};
+    const categoryList = data?.twoCategoryList.find(item => item.name === chooseSports);
     return categoryList;
   };
   
