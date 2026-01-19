@@ -157,7 +157,7 @@ const shouldNotify = async () => {
       const profit = target?.profit_loss_money ?? 0;
 
       const profit_Text = profit > 0 ? `盈利 ${profit}` : profit < 0 ? `亏损 ${-profit}` : '持平 0';
-      const emoji = profit_loss_money > 0 ? '✅' :  (profit_loss_money == 0 && win_money == 0) ? '⭕️' : '🚫';
+      const emoji = profit_loss_money > 0 ? '✅' :  (profit_loss_money == 0 && win_money == 0) ? '✴️' : '🚫';
       
       const title = `可用分 ${memberData?.credit_balance || 0}  ${profit_Text}`;
       const medium = `${emoji} 投注 ${bet_money} - 中奖 ${win_money} - 盈亏 ${profit_loss_money}`;
