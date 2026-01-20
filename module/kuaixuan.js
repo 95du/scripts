@@ -1897,10 +1897,11 @@ class CodeMaker {
   
   // 注入拦截 js
   intercept = async () => {
+    const rows = this.drawRows;
     const drawRows = {
       Status: 1,
       Data: {
-        Rows: this.drawRows?.map(row => ({
+        Rows: rows?.map(row => ({
           ...row,
           period_datetime: row.period_datetime.split(' ')[1]
         })),
@@ -2367,12 +2368,7 @@ class CodeMaker {
           font-size: 14px;
           user-select: none;
         }
-        /* 悬停效果 */
-        .header-tabs .tab:hover {
-          background-color: #e0e0e0;
-          color: #000;
-          transform: translateY(-2px);
-        }
+        
         /* 激活状态 */
         .header-tabs .tab.active {
           background: linear-gradient(90deg, #ff7e5f, #feb47b);
