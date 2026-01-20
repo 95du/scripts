@@ -1093,7 +1093,7 @@ class CodeMaker {
       const btn = document.getElementById(btnId);
       if (!btn) return;
       btn.onclick = () => {
-        btn.style.color = '#bbb';
+        btn.style.color = '#000';
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         if (!list.length) {
           btn.style.color = '';
@@ -1209,10 +1209,11 @@ class CodeMaker {
         .save-btn {
           padding: 6px 14px;
           font-size: 14px;
+          font-weight: 600;
           border-radius: 8px;
           border: none;
           cursor: pointer;
-          background: rgba(255, 255, 255, .25);
+          background: orange;
           color: #fff;
         }
         
@@ -1470,7 +1471,7 @@ class CodeMaker {
       <div id="filterContainer"></div>
       <div class="count-bar">
         <button class="save-btn" id="originBtn">原版规则</button>
-        <div class="count" id="count"></div>
+        <div class="count" id="count">0</div>
         <button class="save-btn" id="saveBtn">隐私规则</button>
       </div>
       <div class="numbers">
