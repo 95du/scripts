@@ -305,7 +305,7 @@ const buildMessage = (acc, conf) => {
   const hasRule = section.hasRule ? '已设置' : '未设置';
   const isReversed = section.fastPick.some(b => parseBetBody(b).bet_money === '02') ? '已反转' : '未反转';
   const changeLog = section.changeLog ? '已修改' : '未修改';
-  return `账号 ${acc.member_account}
+  return `账号 ${acc.member_account}，可用 ${acc.Data.credit_balance}
 任务状态 【 ${taskStatus} 】
 任务规则 【 ${hasRule} 】
 反转规则 【 ${isReversed} 】
@@ -633,23 +633,16 @@ const isNumberArr = str =>
   typeof str === 'string' &&
   /^(\d{4})(\s*,\s*\d{4})*$/.test(str.trim());
 
-const pickInputText = (input, bet_number) => {
-  if (isNumberArr(bet_number)) return bet_number;
-  if (isNumberArr(input)) return input;
-  if (input.includes('四定位')) return input;
-  return '';
-};
-
-const buildHtml = async (kx, isLog = false, input = '', selected, bet_number) => {
+const buildHtml = async (selected, isLog = false, input = '', log = '', money) => {
+  const kx = await getModule(selected);
   if (!isLog) return kx.html(selected);
-  const inputText = pickInputText(input, bet_number);
-  return kx.logHtml(inputText);
+  const text = isNumberArr(input) || input.includes('四定位') ? input : '';
+  return kx.logHtml(text, log, money);
 };
 
 // ✅ 运行快选 HTML
-const kuaixuan = async (betData, selected, conf, isLog = false, input, bet_number, bet_money) => {
-  const kx = await getModule(selected);
-  const html = await buildHtml(kx, isLog, input, selected, bet_number);
+const kuaixuan = async (betData, selected, conf, isLog = false, input, log = '', money) => {
+  const html = await buildHtml(selected, isLog, input, log, money);
   if (!html) return;
   
   const webView = new WebView();
@@ -727,7 +720,8 @@ const reverseRule = async (betData, selected, conf) => {
   const excludes = parsed.bet_number.split(',');
   const remain = getRemainingBySet(excludes);
   const bet_number = remain.join(',');
-
+  const money = parsed.bet_money !== '02' ? '02' : '01';
+  
   if (!remain.length) {
     await generateAlert('反转后号码为空，操作已取消 ⚠️', null, ['完成']);
     return;
@@ -744,14 +738,14 @@ const reverseRule = async (betData, selected, conf) => {
     null, ['取消', '确定'], true
   );
   if (tips === 1) {
-    return await kuaixuan(betData, selected, conf, true, parsed.bet_log, bet_number, parsed.bet_money);
+    return await kuaixuan(betData, selected, conf, true, bet_number, parsed.bet_log, money);
   }
   
   // 以下是保存反转后的规则
   await updateConfig(betData, selected, c => {
     const newfastPick = replaceParams(rule, {
       bet_number,
-      bet_money: parsed.bet_money !== '02' ? '02' : '01'
+      bet_money: money
     });
     c.custom.fastPick.splice(idx, 1, newfastPick);
   });
