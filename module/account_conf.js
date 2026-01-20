@@ -766,7 +766,7 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText }) =>
   );
   if (idx === -1) return;
   const rule = list[idx];
-  const { bet_number, bet_log } = parseBetBody(rule);
+  const { guidPart, bet_log } = parseBetBody(rule);
   const confirm = await generateAlert(
     confirmText, bet_log,
     ['取消', '确定'], true
@@ -779,7 +779,9 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText }) =>
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
-    delete c.custom.statTotal;
+    if (c.custom.statTotal && guidPart) {
+      delete c.custom.statTotal[guidPart];
+    }
   });
   await saveBoxJsData(betData);
 };
