@@ -764,7 +764,7 @@ class CodeMaker {
           o.secondNumber ||
           o.thirdNumber ||
           o.fourthNumber;
-        if (!hasPei) showTips("配数模式下必须输入‼️");
+        if (!hasPei) showTips("配数模式下必须输入❗️");
       }
       maker.log();
       maker.generate();
@@ -1467,7 +1467,7 @@ class CodeMaker {
       <script>
         for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
       </script>
-      <div class="log" id="log">复制正确的原站日志或者号码也可直接操作</div>
+      <div class="log" id="log">复制正确的原站日志或者号码 😇</div>
       <div id="filterContainer"></div>
       <div class="count-bar">
         <button class="save-btn" id="originBtn">原版规则</button>
