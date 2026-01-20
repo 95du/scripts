@@ -657,7 +657,7 @@ class CodeMaker {
     .filter(n => /^\d{4}$/.test(n));
   
   // 转换号码 js
-  logScript = (input, options) => {
+  logScript = (input, options, log = '', money) => {
     const isArrayMode = this.isPureNumbersInput(input);
     const rawNumbers = isArrayMode ? this.parseNumber(input) : [];
     
@@ -1076,11 +1076,11 @@ class CodeMaker {
       const options = type === 'custom' ? fake : f.options;
       const body = Object.entries({
         bet_number: f.numberList.join(','),
-        bet_money: '01',
+        bet_money: '${money}' || '01',
         bet_way: 102,
         is_xian: f.options.isXian,
         number_type: f.options.numberType,
-        bet_log: f.logs.join('，'),
+        bet_log: '${log}' || f.logs.join('，'),
         guid: kx.guid,
         period_no: 20251229097,
         operation_condition: options
@@ -1153,9 +1153,9 @@ class CodeMaker {
   };
   
   // 日志生成号码 HTML
-  logHtml = (input) => {
+  logHtml = (input, log, money) => {
     const options = this.parseToOptions(input);
-    const logScript = this.logScript(input, options);
+    const logScript = this.logScript(input, options, log, money);
     return `
     <html>
     <head>
