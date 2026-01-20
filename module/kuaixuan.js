@@ -1993,10 +1993,17 @@ class CodeMaker {
         catch (e) {}
       }, true);
       
+      const genGuid = () =>
+        crypto?.randomUUID?.() ||
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c =>
+          ((Math.random()*16)|0).toString(16)
+        );
+      
       const resetAll = () => {
         const btn = document.getElementById('btn_reset');
         if (btn) btn.click(); 
         else kx.codeMaker.reset();
+        kx.guid = genGuid();
       };
       
       // 拦截下注，返回请求体
