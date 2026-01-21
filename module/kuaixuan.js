@@ -1467,7 +1467,7 @@ class CodeMaker {
       <script>
         for(let i=0;i<20;i++){ const p=document.createElement("div");p.className="particle";p.style.left=Math.random()*100+"vw";p.style.top=Math.random()*100+"vh";p.style.animationDelay=Math.random()*5+"s";document.body.appendChild(p); }
       </script>
-      <div class="log" id="log">复制正确的原站日志或者号码 😇</div>
+      <div class="log" id="log">复制正确的原站日志或者号码 ‼️</div>
       <div id="filterContainer"></div>
       <div class="count-bar">
         <button class="save-btn" id="originBtn">原版规则</button>
@@ -1833,26 +1833,6 @@ class CodeMaker {
     .pager .input {width:2em; height:1.2rem; padding:0; vertical-align:middle;}
     .pager .btn {padding:0; height:auto; line-height:1.7rem; vertical-align:middle;}
     
-    /* dialog */
-    .mask {position:absolute;margin-top:0;top:0;left:0;z-index:1000;width:100%;height:100%;background:#000;opacity:0.3;}
-    .mask .ifr-fix-ie6 {display:none; _display:block; width:100%; height: 100%; z-index: -1; _filter:alpha(opacity=0)}
-      .g-dialog {position: absolute; left: 0; top: 0; background: #fff; z-index: 1001; 
-      -moz-box-shadow:1px 1px 50px rgba(0,0,0,.3);
-      -webkit-box-shadow:1px 1px 50px rgba(0,0,0,.3);
-      box-shadow: 1px 1px 50px rgba(0,0,0,.3);
-      border-radius: 3px;
-      top:10%;
-    }
-    .g-dialog .dialog-hd {height:40px; cursor: move; border-bottom:1px solid #d8dce5; background: #f8f8f8; border-radius: 3px 3px 0 0;}
-    .g-dialog .dialog-hd .title {font-size:16px; line-height:40px; padding:0 0 0 10px;}
-    .g-dialog .dialog-hd .btn-close {width:34px; height:34px; line-height:34px; text-align:center; color:#c7ced8; font-size:34px; display:block; margin:2px 2px 0 0; text-decoration:none;}
-    .g-dialog .dialog-hd .btn-close:hover {color:#333;}
-    .g-dialog .dialog-bd {min-height:100px; _height:100px; padding:10px 10px 0;}
-    .g-dialog .dialog-ft {text-align: center; padding: 10px 0;}
-    .g-dialog .dialog-ft .btn {margin:0 10px;}
-    .g-dialog .dialog-ft :focus:not(.focus-visible) {outline: none;}
-    .g-alert .dialog-bd {word-break:break-all; word-wrap:break-word;}
-    .html-android .mask, .html-android .g-dialog {position:fixed;}
     /* module */
     .kuaixuan td.on {background:#ff9900;}
     .kuaixuan .tb-kuaixuan td {border:1px solid #f6d3bc; padding:5px 0;}
@@ -1865,26 +1845,6 @@ class CodeMaker {
     .keyboard-betno input[type=button] {border:1px solid yellow; color:yellow; background:red; box-sizing:border-box; width:100%; height:3.2rem; -webkit-appearance:none; font-size:2rem}
     .keyboard-money, .keyboard-money input[type=button] {background:blue;}
     
-    /* rule */
-    .rule .bd { padding:0 0.5rem;}
-    .rule .rule-ball {width:50%; margin:0 0 1em;}
-    .rule .rule-ball td {border:2px solid #f37999;}
-    .rule h1 {text-align:center; font-size:1.4rem; margin:1rem 0;}
-    .rule h2, .rule h3, .rule p {margin:0 0 1em;font-size:14px; line-height:21px;}
-    .rule p {text-indent:2em;}
-    .rule h2 {color:#FF00CC;}
-    
-    /* kuaida */
-    .bd_print_list {height:109px; overflow:auto}
-    .bd_print_list_max {height:600px;}
-    .betStatus {
-      text-align:center;
-      vertical-align:central;
-      margin-top:15%;
-      margin-bottom:15%;
-      font-size:18px;
-      display:none;
-    }
     /*倒计时*/
     .systime{
       position:fixed; top:0rem; height:2.2rem;  width:100%; line-height:2.2rem; background: #fff; 
