@@ -282,7 +282,7 @@ const updateHistoryStat = async (records, force = false) => {
         custom.missLimit
       );
 
-      $.msg(`账号 ${acc.member_account} ✅`, '历史回测四字定盈亏汇总统计', bet_log);
+      $.msg(`账号 ${acc.member_account}，历史记录汇总 ✅`, '', bet_log);
       updated = true;
     }
 
