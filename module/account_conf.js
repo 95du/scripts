@@ -801,6 +801,8 @@ const splitRuleHandle = async (betData, selected, conf) => {
     c.custom.fastPick.splice(idx, 1, ...newRules);
   });
   await saveBoxJsData(betData);
+  const data = processDataText(betData, selected);
+  await viewRule(data[0]);
 };
 
 // ✅ 修改单条规则日志
@@ -817,6 +819,7 @@ const editRuleLogHandle = async (betData, selected, conf, { from, idx, rule }) =
   const newRule = replaceParams(rule, { bet_log: newLog });
   await updateConfig(betData, selected, c => {
     c.custom[from].splice(idx, 1, newRule);
+    c.custom.changeLog = true;
   });
   await saveBoxJsData(betData);
 };
