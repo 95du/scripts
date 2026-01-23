@@ -18,7 +18,7 @@ const defaultConfig = {
     hasRule: false,
     fastPick: [],
     cutRule: [],
-    water: 9700,
+    water: 9800,
     missLimit: 1,
     profitLimit: 0,
     lossLimit: 0,
@@ -501,11 +501,11 @@ const getRuleList = async ({ fastPick, statTotal } = section) => {
   return fastPick.map((b, i) => {
     const info = parseBetBody(b);
     if (info.number_type !== '40') return null;
-    const { normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
+    const { bet_log, normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
     return { 
       index: i, 
       body: b, 
-      title: info.bet_log, 
+      title: bet_log ?? info.bet_log, 
       normalTotal, 
       simulateTotal,
       label: `${i + 1}， ${info.numCount} 组`
