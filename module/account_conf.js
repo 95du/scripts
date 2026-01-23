@@ -42,7 +42,7 @@ const autoUpdate = async () => {
   const script = await new Request(`${github}/account_conf.js`).loadString();
   fm.writeString(module.filename, script);
 };
-// autoUpdate();
+autoUpdate();
 
 // ✅ 缓存文件
 const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
