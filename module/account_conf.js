@@ -256,12 +256,9 @@ const processDataText = (data, selected) => {
     }
     const title = `账号: ${acc.member_account} ( ${bets.length} )`;
     let text = '';
-    bets.forEach((pick, i) => {
-      const p = Object.fromEntries(pick.split("&").map(s => s.split("=")));
-      const nums = decodeURIComponent(p.bet_number || p.betno || '').split(",").length;
-      const money = decodeURIComponent(p.bet_money || p.betmoney || '—');
-      const log = decodeURIComponent(p.bet_log || '—');
-      text += `规则: ${i + 1}\n注单数量: ${nums}\n每注金额: ${money}\n${log}\n\n`;
+    bets.forEach((body, i) => {
+      const p = parseBetBody(body);
+      text += `规则: ${i + 1}\n注单数量: ${p.numCount}\n每注金额: ${p.bet_money}\n${p.bet_log}\n\n`;
     });
     return { title, content: text.trim() };
   });
