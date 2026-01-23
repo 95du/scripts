@@ -657,7 +657,7 @@ class CodeMaker {
     .filter(n => /^\d{4}$/.test(n));
   
   // 转换号码 js
-  logScript = (input, options, log = '', money) => {
+  logScript = (input, options, log = '', money = '01') => {
     const isArrayMode = this.isPureNumbersInput(input);
     const rawNumbers = isArrayMode ? this.parseNumber(input) : [];
     
@@ -1076,7 +1076,7 @@ class CodeMaker {
       const options = type === 'custom' ? fake : f.options;
       const body = Object.entries({
         bet_number: f.numberList.join(','),
-        bet_money: '${money}' || '01',
+        bet_money: '${money}',
         bet_way: 102,
         is_xian: f.options.isXian,
         number_type: f.options.numberType,
