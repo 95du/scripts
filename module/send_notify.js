@@ -246,7 +246,7 @@ const replaySimulateFast = (rows, body, lastRow, water, missLimit = 1) => {
   return totalProfit;
 };
 
-const calcHistoryTotal = (records, body, water, missLimit) => {
+const calcHistoryTotal = (records, body, bet_log, water, missLimit) => {
   let normalTotal = 0;
   let simulateTotal = 0;
 
@@ -256,7 +256,7 @@ const calcHistoryTotal = (records, body, water, missLimit) => {
     normalTotal += replayNormalFast(rows, body, water);
     simulateTotal += replaySimulateFast(rows, body, lastRow, water, missLimit);
   }
-  return { normalTotal, simulateTotal };
+  return { bet_log, normalTotal, simulateTotal };
 };
 
 const updateHistoryStat = async (records, force = false) => {
@@ -278,6 +278,7 @@ const updateHistoryStat = async (records, force = false) => {
       custom.statTotal[guid] = calcHistoryTotal(
         records,
         body,
+        bet_log,
         custom.water,
         custom.missLimit
       );
