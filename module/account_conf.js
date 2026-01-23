@@ -27,7 +27,7 @@ const defaultConfig = {
 };
 
 const defaultData = {
-  member_account: '测试账号',
+  member_account: 'admin',
   type: 'test',
   settings: defaultConfig,
   Data: {
@@ -42,7 +42,7 @@ const autoUpdate = async () => {
   const script = await new Request(`${github}/account_conf.js`).loadString();
   fm.writeString(module.filename, script);
 };
-autoUpdate();
+// autoUpdate();
 
 // ✅ 缓存文件
 const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
@@ -752,9 +752,28 @@ const reverseRule = async (betData, selected, conf) => {
   await saveBoxJsData(betData);
 };
 
-// 🆎 规则操作（删除 / 暂停 / 恢复）
-const handleRule = async (betData, selected, conf, { from, to, confirmText }) => {
-  const list = conf.custom?.[from];
+// ✅ 切分一条规则 body 为 n 份
+const splitBetBody = (body, n = 2) => {
+  const info = parseBetBody(body);
+  const numbers = info.bet_number.split(',').filter(Boolean);
+  if (n <= 1 || numbers.length <= n) return [body];
+  const size = Math.ceil(numbers.length / n);
+  const groups = [];
+  for (let i = 0; i < n; i++) {
+    const part = numbers.slice(i * size, (i + 1) * size);
+    if (!part.length) continue;
+    const newBody = replaceParams(body, {
+      bet_number: part.join(','),
+      guid: `${Date.now()}-${Math.random().toString(16).slice(2)}`
+    });
+    groups.push(newBody);
+  }
+  return groups;
+};
+
+// ✅ 切分规则
+const splitRuleHandle = async (betData, selected, conf) => {
+  const list = conf.custom?.fastPick;
   if (!list?.length) return;
   const message = list
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
@@ -766,27 +785,86 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText }) =>
   );
   if (idx === -1) return;
   const rule = list[idx];
-  const { guidPart, bet_log } = parseBetBody(rule);
-  const confirm = await generateAlert(
-    confirmText, bet_log,
-    ['取消', '确定'], true
+  const info = parseBetBody(rule);
+
+  const res = await collectInputs(
+    '切分规则',
+    `当前 ${info.numCount} 组\n请输入要切成几份`,
+    [{ hint: '切分份数', value: 2 }]
   );
+  if (!res.length) return;
+  const number = Number(res[0]);
+  if (!Number.isInteger(number) || number < 2) return;
+  const newRules = splitBetBody(rule, number);
+
+  await updateConfig(betData, selected, c => {
+    c.custom.fastPick.splice(idx, 1, ...newRules);
+  });
+  await saveBoxJsData(betData);
+};
+
+// ✅ 修改单条规则日志
+const editRuleLogHandle = async (betData, selected, conf, { from, idx, rule }) => {
+  const info = parseBetBody(rule);
+  const res = await collectInputs(
+    '修改规则日志',
+    info.bet_log,
+    [{ hint: '规则日志', value: decodeURIComponent(info.bet_log) }]
+  );
+  if (!res.length) return;
+  const newLog = res[0].trim();
+  if (!newLog) return;
+  const newRule = replaceParams(rule, { bet_log: newLog });
+  await updateConfig(betData, selected, c => {
+    c.custom[from].splice(idx, 1, newRule);
+  });
+  await saveBoxJsData(betData);
+};
+
+// 🆎 规则操作（删除 / 暂停 / 恢复）
+const handleRule = async (betData, selected, conf, { from, to, confirmText, mode }) => {
+  const list = conf.custom?.[from];
+  if (!list?.length) return;
+
+  const idx = await presentSheetMenu(
+    list.map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`).join('\n'),
+    list.map((b, i) => `规则 ${i + 1} - ${parseBetBody(b).numCount}组`)
+  );
+  if (idx === -1) return;
+
+  let rule = list[idx];
+  const info = parseBetBody(rule);
+
+  if (mode === 'editLog') {
+    await editRuleLogHandle(betData, selected, conf, { from, idx, rule });
+    return;
+  }
+
+  // 删除 / 暂停 / 恢复
+  const confirm = await generateAlert(confirmText, info.bet_log, ['取消', '确定'], true);
   if (confirm !== 1) return;
   await updateConfig(betData, selected, c => {
     c.custom[from].splice(idx, 1);
     if (to) {
-      c.custom[to] = c.custom[to];
+      c.custom[to] ||= [];
       c.custom[to].push(rule);
     }
     c.custom.hasRule = !!c.custom.fastPick?.length;
-    if (c.custom.statTotal && guidPart) {
-      delete c.custom.statTotal[guidPart];
+    if (!to && c.custom.statTotal && info.guidPart) {
+      delete c.custom.statTotal[info.guidPart];
     }
   });
   await saveBoxJsData(betData);
 };
 
 // 🆎 管理规则
+const editRuleLog = (betData, selected, conf) => handleRule(betData, selected, conf, {
+  from: 'fastPick',
+  to: null,
+  confirmText: '修改该规则日志',
+  mode: 'editLog'
+});
+
 const removeRule = (betData, selected, conf) => handleRule(betData, selected, conf, {
     from: 'fastPick',
     to: null,
@@ -811,14 +889,15 @@ const setTaskType = async (betData, selected, conf) => {
   const { fastPick = [], cutRule = [] } = conf.custom || {};
 
   const opts = [
-    { name: '修改日志', id: 'changeLog' },
-    { name: '日志规则', id: 'logRule' },
     { name: '写入规则', id: 'writeRule' },
+    { name: '日志规则', id: 'logRule' }
   ];
 
   if (fastPick.length) {
     opts.push(
       { name: '查看规则', id: 'viewRule' },
+      { name: '修改日志', action: editRuleLog },
+      { name: '切分规则', action: splitRuleHandle },
       { name: '删除规则', action: removeRule },
       { name: '暂停规则', action: cutRuleAction },
       { name: '反转规则', action: reverseRule }
@@ -839,17 +918,6 @@ const setTaskType = async (betData, selected, conf) => {
     await choice.action(betData, selected, conf);
   } else {
     switch (choice.id) {
-      case 'changeLog': {
-        const changeLog = await collectInputs(
-          '修改投注日志', 
-          `🔥 内容在会员与代理端均可见 🔥${conf.custom?.changeLog ? '\n' + conf.custom.changeLog : ''}`, 
-          [{ hint: '输入任意内容', value: conf.custom.changeLog }]
-        );
-        if (changeLog.length) {
-          await updateConfig(betData, selected, c => { c.custom.changeLog = changeLog?.[0] });
-        }
-        break;
-      }
       case 'logRule': {
         const paste = Pasteboard.paste();
         const input = paste?.replace(/\[|\]/g, '').trim();
