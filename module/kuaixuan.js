@@ -797,6 +797,24 @@ class CodeMaker {
       });
     };
     
+    // 校验输入
+    const bindUniqueDigitInput = (selector, onChange) => {
+      document.querySelectorAll(selector).forEach(input => {
+        input.addEventListener('input', () => {
+          let val = input.value.replace(/\D/g, '');
+          let map = {}, out = '';
+          for (let c of val) {
+            if (!map[c]) {
+              map[c] = 1;
+              out += c;
+            }
+          }
+          if (out !== input.value) input.value = out;
+          onChange && onChange();
+        });
+      });
+    };
+    
     // 定位置配数全转
     const bindPosPeiShuMulti = (maker, o) => {
       const filters = [...document.querySelectorAll('.position-filter')];
@@ -1121,6 +1139,11 @@ class CodeMaker {
       bindValueRange(maker, o);
       bindUpperExcept(maker, o);
       bindContain(maker, o);
+      
+      bindUniqueDigitInput(
+        '.fixed-input input[boxNumber], .match-input input[boxNumber], .remain-fixed-filter-item input[type="text"], input[name="budinghe"], .contain-filter-item',
+        () => apply(maker)
+      );
       
       // 如果是数组模式，把数组作为白名单
       const isArrayMode = ${isArrayMode};
