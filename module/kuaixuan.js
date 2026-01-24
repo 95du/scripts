@@ -842,7 +842,6 @@ class CodeMaker {
         hideAll();
         if (positionType === 0) fixedRow.classList.remove('hide');
         else peiRow.classList.remove('hide');
-        apply(maker);
       };
     
       filters.forEach(cb => {
