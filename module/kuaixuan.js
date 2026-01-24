@@ -1093,7 +1093,7 @@ class CodeMaker {
       const btn = document.getElementById(btnId);
       if (!btn) return;
       btn.onclick = () => {
-        btn.style.color = '#000';
+        btn.style.color = '#333';
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         if (!list.length) {
           btn.style.color = '';
