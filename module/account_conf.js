@@ -251,9 +251,6 @@ const processDataText = (data, selected) => {
   const accounts = data.filter(acc => acc.member_account === selected.member_account);
   return (accounts || []).map(acc => {
     const bets = acc.settings?.custom?.fastPick;
-    if (!bets || !bets.length) {
-      return { title: `账号: ${acc.member_account}`, content: `暂无投注规则，请点击写入规则或已被暂停` };
-    }
     const title = `账号: ${acc.member_account} ( ${bets.length} )`;
     let text = '';
     bets.forEach((body, i) => {
@@ -310,8 +307,7 @@ const buildMessage = (acc, conf) => {
 赔率  ${section.water}
 盈利上限  ${section.profitLimit || 0}
 亏损下限  ${section.lossLimit || 0}
-强制投注  ${section.missLimit}
-全局倍数  ${section.globalMultiplier}
+强制投注  ${section.missLimit}   全局倍数  ${section.globalMultiplier}
 时间区间  ${section.start ?? '08:00'} ~ ${section.end ?? '05:00'}`;
 };
 
@@ -769,21 +765,7 @@ const splitBetBody = (body, n = 2) => {
 };
 
 // ✅ 切分规则
-const splitRuleHandle = async (betData, selected, conf) => {
-  const list = conf.custom?.fastPick;
-  if (!list?.length) return;
-  const message = list
-    .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
-    .join('\n');
-    
-  const idx = await presentSheetMenu(
-    message,
-    list.map((b, i) => `规则 ${i + 1} - ${parseBetBody(b).numCount}组`)
-  );
-  if (idx === -1) return;
-  const rule = list[idx];
-  const info = parseBetBody(rule);
-
+const splitRuleHandle = async (betData, selected, conf, { idx, rule, info }) => {
   const res = await collectInputs(
     '切分规则',
     `当前 ${info.numCount} 组\n请输入要切成几份`,
@@ -831,12 +813,15 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText, mode
     list.map((b, i) => `规则 ${i + 1} - ${parseBetBody(b).numCount}组`)
   );
   if (idx === -1) return;
-
   let rule = list[idx];
   const info = parseBetBody(rule);
 
   if (mode === 'editLog') {
     await editRuleLogHandle(betData, selected, conf, { from, idx, rule });
+    return;
+  }
+  if (mode === 'splitRule') {
+    await splitRuleHandle(betData, selected, conf, { idx, rule, info });
     return;
   }
 
@@ -861,8 +846,13 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText, mode
 const editRuleLog = (betData, selected, conf) => handleRule(betData, selected, conf, {
   from: 'fastPick',
   to: null,
-  confirmText: '修改该规则日志',
   mode: 'editLog'
+});
+
+const splitRule = (betData, selected, conf) => handleRule(betData, selected, conf, {
+  from: 'fastPick',
+  to: null,
+  mode: 'splitRule'
 });
 
 const removeRule = (betData, selected, conf) => handleRule(betData, selected, conf, {
@@ -897,7 +887,7 @@ const setTaskType = async (betData, selected, conf) => {
     opts.push(
       { name: '查看规则', id: 'viewRule' },
       { name: '修改日志', action: editRuleLog },
-      { name: '切分规则', action: splitRuleHandle },
+      { name: '切分规则', action: splitRule },
       { name: '删除规则', action: removeRule },
       { name: '暂停规则', action: cutRuleAction },
       { name: '反转规则', action: reverseRule }
