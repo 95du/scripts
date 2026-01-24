@@ -210,7 +210,7 @@ const replaySimulate = (rows, rule, lastRow) => {
   let unbet = 0;
 
   const cost = parseBetNumbers(rule.body).length;
-  const prize = 9920 - cost;
+  const prize = water - cost;
   const ordered = rows.slice().reverse();
   const records = [];
 
@@ -295,13 +295,14 @@ const getRuleList = async (bodies, statTotal) => {
   return bodies.map((b, i) => {
     const info = parseBetBody(b);
     if (info.number_type !== '40') return null;
-    const { normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
+    const { bet_log, normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
+    console.log(bet_log)
     return { 
       index: i, 
       body: b, 
       normalTotal, 
       simulateTotal,
-      title: info.bet_log, 
+      title: bet_log ?? info.bet_log, 
       label: `${i + 1}， ${info.numCount} 组`
     };
   }).filter(Boolean);
@@ -370,6 +371,7 @@ const mergeStatTotal = (betData) => {
       }
       result[guid].normalTotal += Number(row.normalTotal) || 0;
       result[guid].simulateTotal += Number(row.simulateTotal) || 0;
+      result[guid].bet_log = row.bet_log;
     }
   }
   return result;
@@ -592,7 +594,7 @@ const createWidget = async (data) => {
   const titleText =
     data.bet_log.length <= 20
       ? rawText
-      : data.bet_log.length <= 40
+      : data.bet_log.length <= 80
         ? rawText.replace(/：.*$/, '').replace(/操作.*$/, '')
         : `隔 ${missLimit} 期未中强制投`;
   
