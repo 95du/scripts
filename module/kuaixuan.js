@@ -2,7 +2,7 @@
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-green; icon-glyph: superscript;
 class CodeMaker {
-  constructor(codeMaker, sel) {
+  constructor(codeMaker, sel = {}) {
     this.codeMaker = codeMaker;
     this.Data = sel.Data || {};
     this.drawRows = sel.drawRows;
