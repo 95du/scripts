@@ -1134,7 +1134,7 @@ const presentMenu = async () => {
     await saveBoxJsData(betData);
     await viewRule({
       title: `设置规则步骤`,
-      content: '写入规则、日志规则、反转规则等操作完成后\n‼️ 最后再修改日志，最后再修改日志 ‼️'
+      content: '写入规则、日志规则、反转规则等操作完成后\n‼️ 准备投注前，再修改日志 ‼️'
     })
   }
   const alert = new Alert();
