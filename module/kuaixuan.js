@@ -799,7 +799,8 @@ class CodeMaker {
     
     // 校验输入
     const bindUniqueDigitInput = (selector, onChange) => {
-      document.querySelectorAll(selector).forEach(input => {
+      const selected = document.querySelectorAll(selector);
+      selected.forEach(input => {
         input.addEventListener('input', () => {
           let val = input.value.replace(/\D/g, '');
           let map = {}, out = '';
