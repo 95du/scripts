@@ -280,7 +280,7 @@ const updateHistoryStat = async (records, force = false) => {
         body,
         custom.water,
         custom.missLimit,
-        old.bet_log ?? bet_log
+        old?.bet_log ?? bet_log
       );
 
       $.msg(`账号 ${acc.member_account}，历史记录汇总 ✅`, '', bet_log);
