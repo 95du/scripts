@@ -380,7 +380,7 @@ const mergeStatTotal = (betData) => {
 const mergeFastPickArr = (betData) => {
   const map = {};
 
-  betData.flatMap(x => x?.settings?.custom?.fastPick || [])
+  betData?.flatMap(x => x?.settings?.custom?.fastPick || [])
     .forEach(raw => {
       if (!raw) return;
       const parsed = parseBetBody(raw);
@@ -408,7 +408,7 @@ const statMenu = async () => {
   const statTotal = mergeStatTotal(betData);
   const bodies = mergeFastPickArr(betData);
   
-  const kx = await getModule(betData[0]);
+  const kx = await getModule(betData?.[0]);
   const today = new Date().toISOString().slice(0, 10);
   const drawRows = sliceByTime(agentData.drawRows || [], "08:05");
   const statData = await getReplayData(today, 0, bodies, drawRows, statTotal);
@@ -663,11 +663,11 @@ await (async () => {
   if (config.runsInApp) {
     await statMenu();
   } else {
-    const finalResults = await collectAllRecords();
-    if (!finalResults.results.length) {
+    const final = await collectAllRecords();
+    if (!final?.results?.length) {
       return await createErrorWidget();
     }
-    const widget = await createWidget(finalResults);
+    const widget = await createWidget(final);
     if (config.runsInApp) {
       widget.presentMedium();
     } else {
