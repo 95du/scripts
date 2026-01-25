@@ -246,7 +246,7 @@ const replaySimulateFast = (rows, body, lastRow, water, missLimit = 1) => {
   return totalProfit;
 };
 
-const calcHistoryTotal = (records, body, bet_log, water, missLimit) => {
+const calcHistoryTotal = (records, body, water, missLimit, bet_log) => {
   let normalTotal = 0;
   let simulateTotal = 0;
 
@@ -280,7 +280,7 @@ const updateHistoryStat = async (records, force = false) => {
         body,
         custom.water,
         custom.missLimit,
-        bet_log: old.bet_log ?? bet_log
+        old.bet_log ?? bet_log
       );
 
       $.msg(`账号 ${acc.member_account}，历史记录汇总 ✅`, '', bet_log);
