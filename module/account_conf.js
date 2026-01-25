@@ -1132,6 +1132,10 @@ const presentMenu = async () => {
   if (betData?.length && !hasTestAccount) {
     betData.push(defaultData);
     await saveBoxJsData(betData);
+    await viewRule({
+      title: `设置规则步骤`,
+      content: '写入规则、日志规则、反转规则等操作完成后\n‼️ 最后再修改日志，最后再修改日志 ‼️'
+    })
   }
   const alert = new Alert();
   alert.message = '【 账号配置 】\n首次使用请先登录再设置投注规则';
