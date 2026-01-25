@@ -296,7 +296,6 @@ const getRuleList = async (bodies, statTotal) => {
     const info = parseBetBody(b);
     if (info.number_type !== '40') return null;
     const { bet_log, normalTotal, simulateTotal } = statTotal?.[info.guidPart] || {};
-    console.log(bet_log)
     return { 
       index: i, 
       body: b, 
@@ -453,14 +452,6 @@ const writeCollectCache = (data) => {
   fm.writeString(collectPath, JSON.stringify(data));
 };
 
-const buildRuleKey = (guidPart) => {
-  return JSON.stringify({
-    guid: guidPart,
-    missLimit,
-    water
-  });
-};
-
 const buildHistoryResults = async (records, rule) => {
   const tasks = records.map((record, idx) => {
     const lastRow = records[idx + 1]?.data?.[0] || null;
@@ -486,9 +477,7 @@ const collectAllRecords = async () => {
   if (!bodies.length) return null;
   const fastPick = bodies[Math.floor(Math.random() * bodies.length)];
   const rule = { body: fastPick };
-
   const { numCount, bet_log, guidPart } = parseBetBody(fastPick);
-  const ruleKey = buildRuleKey(guidPart);
 
   const records = list.slice(0, 20);
   const today = new Date().toISOString().slice(0, 10);
@@ -496,7 +485,7 @@ const collectAllRecords = async () => {
 
   let cache = readCollectCache();
   if (!cache) cache = { ruleMap: {} };
-  const hitCache = cache?.ruleMap[ruleKey];
+  const hitCache = cache?.ruleMap[guidPart];
 
   let historyResults = [];
   let historyTotal = 0;
@@ -509,10 +498,10 @@ const collectAllRecords = async () => {
     historyResults = await buildHistoryResults(records, rule);
     historyTotal = historyResults.reduce((s, r) => s + (r.profit || 0), 0);
 
-    cache.ruleMap[ruleKey] = {
+    cache.ruleMap[guidPart] = {
       lastDate: lastHistoryDate,
-      results: historyResults,
-      total: historyTotal
+      total: historyTotal,
+      results: historyResults
     };
     writeCollectCache(cache);
   }
