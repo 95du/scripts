@@ -295,13 +295,13 @@ const updateConfig = async (betData, selected, updater) => {
 // ✅ 显示对应子配置信息
 const buildMessage = (acc, conf) => {
   const section = conf.custom || {};
-  const taskStatus = section?.runTask ? '已开启' : '已关闭';
+  const taskStatus = section?.runTask ? '已开启' : '已停止';
   const hasRule = section.hasRule ? '已设置' : '未设置';
   const isReversed = section.fastPick.some(b => parseBetBody(b).bet_money === '02') ? '已反转' : '未反转';
   const changeLog = section.changeLog ? '已修改' : '未修改';
   return `账号 ${acc.member_account}，可用 ${acc.Data.credit_balance}
-任务状态 【 ${taskStatus} 】
-任务规则 【 ${hasRule} 】
+投注状态 【 ${taskStatus} 】
+投注规则 【 ${hasRule} 】
 反转规则 【 ${isReversed} 】
 日志内容 【 ${changeLog} 】
 赔率  ${section.water}
@@ -768,7 +768,7 @@ const splitBetBody = (body, n = 2) => {
 const splitRuleHandle = async (betData, selected, conf, { idx, rule, info }) => {
   const res = await collectInputs(
     '切分规则',
-    `当前 ${info.numCount} 组\n请输入要切成几份`,
+    `当前 ${info.numCount} 组，请输入要切成几份`,
     [{ hint: '切分份数', value: 2 }]
   );
   if (!res.length) return;
@@ -1014,7 +1014,7 @@ const accountManage = async (betData, selected, conf) => {
       await manageAccount(betData, selected);
       break;
     case 'water': {
-      const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9700 )', [{ hint: '赔率', value: conf.custom.water ?? 9700 }] );
+      const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9800 )', [{ hint: '赔率', value: conf.custom.water ?? 9800 }] );
       const waterValue = getSafeInt(water, conf.custom.water);
       await updateConfig(betData, selected, c => { c.custom.water = waterValue });
       break;
@@ -1073,7 +1073,7 @@ const configMenu = async (betData, selected, conf) => {
 
   const opts = [
     { name: '管理账号', id: 'accountManage' },
-    { name: conf.custom.runTask ? '关闭任务' : '开启任务', id: 'runTask', specify: true },
+    { name: conf.custom.runTask ? '停止投注' : '开启投注', id: 'runTask', specify: true },
     { name: '时间区间', id: 'time' },
     { name: '设置倍数', id: 'multiplierMenu' },
     { name: '投注控制', id: 'betControl' },
@@ -1132,10 +1132,9 @@ const presentMenu = async () => {
   if (betData?.length && !hasTestAccount) {
     betData.push(defaultData);
     await saveBoxJsData(betData);
-    await viewRule({
-      title: `设置规则步骤`,
-      content: '写入规则、日志规则、反转规则等操作完成后\n‼️ 准备投注前，再修改日志 ‼️'
-    })
+    await generateAlert(
+      `‼️ 设置规则步骤 ‼️`, '写入规则、日志规则、反转规则等操作完成后，准备投注前，再修改日志', ['确定']
+    );
   }
   const alert = new Alert();
   alert.message = '【 账号配置 】\n首次使用请先登录再设置投注规则';
