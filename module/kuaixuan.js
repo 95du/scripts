@@ -1921,7 +1921,7 @@ class CodeMaker {
   };
   
   // 注入拦截 js
-  intercept = async () => {
+  intercept = () => {
     const rows = this.drawRows;
     const drawRows = {
       Status: 1,
@@ -2334,14 +2334,14 @@ class CodeMaker {
   };
   
   // 返回完整 HTML
-  html = async (account) => {
+  html = (account) => {
     const { 
       member_account, 
       previous_draw_no, 
       credit_balance 
     } = account.Data;
     const previous_no = previous_draw_no.replace(/,/g, " ");
-    const js = await this.intercept();
+    const js = this.intercept();
     
     return `
     <html>
