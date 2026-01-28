@@ -44,6 +44,33 @@ const autoUpdate = async () => {
 };
 autoUpdate();
 
+// ✅ 请求接口
+const getMemberApi = async (selected, path, options = {}) => {
+  try {
+    const req = new Request(`${selected.baseUrl}${path}`);
+    const {
+      method = "GET",
+      body = null,
+      headers = {}
+    } = options;
+    req.method = method.toUpperCase();
+    req.headers = {
+      'User-Agent': 'Mozilla/5.0',
+      'X-Requested-With': 'XMLHttpRequest',
+      Cookie: selected.cookie,
+      ...headers
+    };
+
+    if (body) req.body = body;
+    const res = await req.loadJSON();
+    const { Status, Data } = res;
+    return Status === 1 ? Data : null;
+  } catch (err) {
+    console.log(`\n⭕️ ${selected.member_account}，${path}，请求失败: ${err}`);
+    return null;
+  }
+};
+
 // ✅ 缓存文件
 const getCacheData = async (name, url, type = 'json', cacheHours = 4) => {
   const path = fm.joinPath(basePath, name);
@@ -344,7 +371,7 @@ const sliceByTime = (rows, targetTime, field = "draw_datetime") => {
 };
 
 // ✅ 普通回放
-const replayNormal = (rows, rule, water = 9700) => {
+const replayNormal = (rows, rule, water = 9800) => {
   const bodies = [rule.body];
   let totalProfit = 0;
   let win = 0, lose = 0, score = 0;
@@ -398,7 +425,7 @@ const replayNormal = (rows, rule, water = 9700) => {
 };
 
 // ✅ 模拟投注回放
-const replaySimulate = (rows, rule, lastRow, water = 9700, missLimit) => {
+const replaySimulate = (rows, rule, lastRow, water = 9800, missLimit) => {
   const bodies = [rule.body];
   let canBet = lastRow ? isHit(lastRow, bodies) : false;
   let totalProfit = 0;
@@ -965,6 +992,43 @@ const manageAccount = async (betData, selected) => {
   await generateAlert(`保存成功 ✅\n账号：${acc.account}\n密码：${acc.password}`, null, ['完成']);
 };
 
+// ✅ 整单退码
+const serialNo = async (selected) => {
+  const data = await getMemberApi(selected, '/Member/GetMemberBetList');
+  const rows = data?.Rows || [];
+  if (!rows.length) return;
+  
+  const alert = new Alert();
+  alert.message = '选择退码 ( 红色表示已退码 )';
+  const target = rows.filter(item => item.lottery !== '-1');
+  target.forEach((item, idx) => {
+    const action = item.is_cancel === '0' ? 'addAction' : 'addDestructiveAction';
+    alert[action](`${idx + 1}，共 ${item.BetCount} 组 - 金额 ${item.bet_money}`);
+  });
+  alert.addCancelAction('返回');
+  const idx = await alert.presentSheet();
+  if (idx === -1) return;
+  const choice = target[idx];
+  
+  const raw = `{${choice.serial_no}}|${choice.BetCount || 1}`;
+  const ids = encodeURIComponent(raw);
+  const periodNo = data?.Extra?.Period?.period_number;
+  const form = `ids=${ids}&period_no=${periodNo}`;
+
+  const res = await getMemberApi(selected, '/Member/CancelMemberBet', {
+    method: 'POST',
+    body: form,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  });
+
+  const msg = new Alert();
+  msg.message = `退码结果 ✅\n${res}`;
+  msg.addAction('完成');
+  await msg.presentAlert();
+};
+
 // ✅ 账号管理菜单
 const accountManage = async (betData, selected, conf) => {
   const alert = new Alert();
@@ -975,6 +1039,7 @@ const accountManage = async (betData, selected, conf) => {
     { name: '重置规则', id: 'reset', specify: true },
     { name: '账号密码', id: 'account' },
     { name: '设置赔率', id: 'water' },
+    { name: '整单退码', id: 'serialNumber' },
   ];
 
   opts.forEach(item => {
@@ -1019,6 +1084,9 @@ const accountManage = async (betData, selected, conf) => {
       await updateConfig(betData, selected, c => { c.custom.water = waterValue });
       break;
     }
+    case 'serialNumber':
+      await serialNo(selected);
+      break;
   }
   await refreshReopen(betData, selected, conf, accountManage);
 };
