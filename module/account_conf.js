@@ -993,12 +993,32 @@ const manageAccount = async (betData, selected) => {
 };
 
 // ✅ 整单退码
+const findLogBetCount = (selected, bet_datetime) => {
+  const logRows = selected.log?.Data?.Rows || [];
+  if (!logRows.length) return null;
+
+  const betTime = new Date(bet_datetime.replace(/-/g, '/')).getTime();
+  let closest = null;
+  let minDiff = Infinity;
+
+  for (const item of logRows) {
+    if (!item.operation_datetime) continue;
+    const logTime = new Date(item.operation_datetime.replace(/-/g, '/')).getTime();
+    const diff = Math.abs(logTime - betTime);
+    if (diff < minDiff && diff <= 7000) { // 容忍 5 秒以内
+      minDiff = diff;
+      closest = item;
+    }
+  }
+
+  return closest ? Number(closest.bet_count) : null;
+};
+
 const serialNo = async (selected) => {
   const data = await getMemberApi(selected, '/Member/GetMemberBetList');
   const rows = data?.Rows || [];
   if (!rows.length) return;
 
-  // 只要有效未退的
   const valid = rows.filter(item => item.lottery !== '-1');
   if (!valid.length) return;
   const map = {};
@@ -1022,13 +1042,14 @@ const serialNo = async (selected) => {
 
   const choiceGroup = groups[idx];
   const serial_no = choiceGroup[0].serial_no;
-  const betCount = choiceGroup.length;
+  let betCount = findLogBetCount(selected, choiceGroup[0].bet_datetime);
+  if (!betCount) betCount = choiceGroup.length;
 
   const raw = `{${serial_no}}|${betCount}`;
   const ids = encodeURIComponent(raw);
   const form = `ids=${ids}&period_no=${data?.Extra?.Period?.period_number}`;
 
-  const confirm = await generateAlert('是否确定退码❓', null, ['取消', '确定'], true);
+  const confirm = await generateAlert('是否确定整单退码❓', null, ['取消', '确定'], true);
   if (confirm !== 1) return;
 
   const res = await getMemberApi(selected, '/Member/CancelMemberBet', {
