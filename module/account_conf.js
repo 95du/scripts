@@ -997,23 +997,39 @@ const serialNo = async (selected) => {
   const data = await getMemberApi(selected, '/Member/GetMemberBetList');
   const rows = data?.Rows || [];
   if (!rows.length) return;
-  
+
+  // 只要有效未退的
+  const valid = rows.filter(item => item.lottery !== '-1');
+  if (!valid.length) return;
+  const map = {};
+  valid.forEach(item => {
+    if (!map[item.serial_no]) map[item.serial_no] = [];
+    map[item.serial_no].push(item);
+  });
+
+  const groups = Object.values(map);
+  if (!groups.length) return;
+
   const alert = new Alert();
-  alert.message = '选择退码 ( 红色表示已退码 )';
-  const target = rows.filter(item => item.lottery !== '-1');
-  target.forEach((item, idx) => {
-    const action = item.is_cancel === '0' ? 'addAction' : 'addDestructiveAction';
-    alert[action](`${idx + 1}，共 ${item.BetCount} 组 - 金额 ${item.bet_money}`);
+  alert.message = '红色表示已退码';
+  groups.forEach((group, idx) => {
+    const action = group[0].is_cancel === '0' ? 'addAction' : 'addDestructiveAction';
+    alert[action](`${idx + 1}，${group[0].bet_datetime}`);
   });
   alert.addCancelAction('返回');
   const idx = await alert.presentSheet();
   if (idx === -1) return;
-  const choice = target[idx];
-  
-  const raw = `{${choice.serial_no}}|${choice.BetCount || 1}`;
+
+  const choiceGroup = groups[idx];
+  const serial_no = choiceGroup[0].serial_no;
+  const betCount = choiceGroup.length;
+
+  const raw = `{${serial_no}}|${betCount}`;
   const ids = encodeURIComponent(raw);
-  const periodNo = data?.Extra?.Period?.period_number;
-  const form = `ids=${ids}&period_no=${periodNo}`;
+  const form = `ids=${ids}&period_no=${data?.Extra?.Period?.period_number}`;
+
+  const confirm = await generateAlert('是否确定退码❓', null, ['取消', '确定'], true);
+  if (confirm !== 1) return;
 
   const res = await getMemberApi(selected, '/Member/CancelMemberBet', {
     method: 'POST',
@@ -1201,7 +1217,7 @@ const presentMenu = async () => {
     betData.push(defaultData);
     await saveBoxJsData(betData);
     await generateAlert(
-      `‼️ 设置规则步骤 ‼️`, '写入规则、日志规则、反转规则等操作完成后，准备投注前，再修改日志', ['确定']
+      `‼️ 设置规则步骤 ‼️`, '写入规则、根据日志生成规则、反转规则等操作完成后，投注前再修改日志', ['确定']
     );
   }
   const alert = new Alert();
