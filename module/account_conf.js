@@ -1049,7 +1049,7 @@ const serialNo = async (selected) => {
   const ids = encodeURIComponent(raw);
   const form = `ids=${ids}&period_no=${data?.Extra?.Period?.period_number}`;
 
-  const confirm = await generateAlert('是否确定整单退码❓', null, ['取消', '确定'], true);
+  const confirm = await generateAlert(`整单退码共【${betCount}】个号码\n您确定全部退掉吗❓`, null, ['取消', '确定'], true);
   if (confirm !== 1) return;
 
   const res = await getMemberApi(selected, '/Member/CancelMemberBet', {
