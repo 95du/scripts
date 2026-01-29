@@ -98,7 +98,8 @@ const getDrawNoTable = async (pageIndex, maxRetry = 3) => {
   }
 
   const finalResults = results.map(r => r || []).flat();
-  console.log(`\n✅ 共 ${pageIndex} 页，已成功获取 ${results.filter(Boolean).length} 页`);
+  const resLength = results.filter(Boolean).length;
+  if (resLength > 0) console.log(`\n✅ 共 ${pageIndex} 页，已成功获取 ${resLength} 页`);
   return finalResults;
 };
 
@@ -434,7 +435,7 @@ const fetchDrawRows = async (page, retries = 2, delay = 1000) => {
     if (drawRows.length) {
       await shouldNotify();
       const records = $.getjson($.recordRows_key) || [];
-      if (!records?.length) records = await initRecords();
+      if (!records?.length < 20) records = await initRecords();
       if (records?.length) await updateHistoryStat(records);
     }
     
