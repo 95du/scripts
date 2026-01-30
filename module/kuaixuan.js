@@ -2347,7 +2347,7 @@ class CodeMaker {
     <html>
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <link href="/Styles/style-FiveMinutes.css?v=20250912115700000" type="text/css" rel="stylesheet" />
       <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
       <style>
