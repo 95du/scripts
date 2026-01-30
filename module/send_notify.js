@@ -105,13 +105,6 @@ const getDrawNoTable = async (pageIndex, maxRetry = 3) => {
 
 /** =========💜 通知 💜========= */
 
-/** 判断当前是否已投注 */
-const checkBetStatus = (memberData = {}, bills = []) => {
-  const { period_no } = memberData;
-  const last = Math.max(...bills.map(b => Number(b.period_no)));
-  return bills.some(b => b.period_no === period_no) || (Number(period_no) - last < 2);
-};
-
 const fetchMemberAndBill = async (account) => {
   try {
     const [memberData, bill, log] = await Promise.all([
@@ -147,7 +140,8 @@ const shouldNotify = async () => {
         $.setjson(bet_data, $.bet_data_key);
       }
       
-      const isBetting = checkBetStatus(memberData, bill);
+      if (!bill.length) continue;
+      const isBetting = bill[0].show_frontend === '0';
       if (!isBetting) {
         console.log(`\n🈯️ 账号 ${memberData?.member_account}，可用 ${memberData?.credit_balance || 0}，已停止投注 ⛔️`);
         continue;
