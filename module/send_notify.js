@@ -59,6 +59,10 @@ const getHistoryBill = (account) =>
 const getQuickSelectLog = (account) =>
   getMemberApi(account, "/Member/GetQuickSelectLog", null);
 
+// 赔率
+const getRetriveMember = (account) =>
+  getMemberApi(account, "/Member/RetriveMember", null);
+
 /** 
  * 代理开奖结果 ( 共 11 页 / 25条 )
  * 会员开奖结果 ( 共 17 页 / 15条 )
@@ -120,14 +124,15 @@ const recoveryTask = () => {
 
 /** =========💜 通知 💜========= */
 
-const fetchMemberAndBill = async (account) => {
+const fetchMember = async (account) => {
   try {
-    const [memberData, bill, log] = await Promise.all([
+    const [memberData, bill, log, retrive] = await Promise.all([
       getMemberPrint(account),
       getHistoryBill(account),
-      getQuickSelectLog(account)
+      getQuickSelectLog(account),
+      getRetriveMember(account)
     ]);
-    return { memberData, bill, log };
+    return { memberData, bill, log, retrive };
   } catch (err) {
     console.log(`❗ 请求失败, 账号 ${account.member_account}: ${formatError(err)}`);
     return { 
@@ -137,6 +142,27 @@ const fetchMemberAndBill = async (account) => {
   }
 };
 
+/**
+ * 检测赔率变化
+ * @returns {Array} changes
+ */
+const detectOddsChange = (oldList = [], newList = []) => {
+  const oldMap = Object.fromEntries(
+    oldList.map(i => [i.fix_num, i])
+  );
+  const changes = [];
+  newList.forEach(n => {
+    const o = oldMap[n.fix_num];
+    if (!o) return;
+    const oldOdds = Number(o.self_current_odds1);
+    const newOdds = Number(n.self_current_odds1);
+    if (oldOdds !== newOdds) {
+      changes.push(`${n.no_type_name}：${oldOdds} → ${newOdds}`);
+    }
+  });
+  return changes;
+};
+
 // 推送通知
 const shouldNotify = async () => {
   try {
@@ -144,7 +170,7 @@ const shouldNotify = async () => {
       const account = acc;
       if (account?.drawRows) delete account.drawRows;
       if (!account?.cookie) continue;
-      const { memberData, bill, log } = await fetchMemberAndBill(account);
+      const { memberData, bill, log, retrive } = await fetchMember(account);
       if (!memberData) continue;
       if (memberData) {
         account.Data = memberData;
@@ -152,6 +178,8 @@ const shouldNotify = async () => {
         account.bill.Data = bill;
         account.log = {};
         account.log.Data = log;
+        account.retrive = {};
+        account.retrive.Data = retrive;
         $.setjson(bet_data, $.bet_data_key);
       }
       
@@ -175,6 +203,14 @@ const shouldNotify = async () => {
       const summaryText = nextItems.map(item => `${item.profit_loss_money > 0 ? '✅' : '🅾️'} 投注 ${item.bet_money} - 中奖 ${item.win_money} - 盈亏 ${item.profit_loss_money}`).join('\n');
 
       $.msg(title, medium, summaryText);
+      
+      // 监控赔率异常
+      const oldSetting = account?.retrive?.Data?.Setting || [];
+      const newSetting = retrive?.Setting || [];
+      const changes = detectOddsChange(oldSetting, newSetting);
+      if (changes.length) {
+        $.msg('赔率异常 ‼️', ``, changes.join('\n'));
+      }
     }
   } catch (err) {
     console.log(`\n❌ shouldNotify 执行错误: ${formatError(err)}`);
