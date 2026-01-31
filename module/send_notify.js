@@ -103,6 +103,21 @@ const getDrawNoTable = async (pageIndex, maxRetry = 3) => {
   return finalResults;
 };
 
+/** =======❤️ 重启任务 ❤️======= */
+
+const recoveryTask = () => {
+  bet_data.forEach(acc => {
+    const cfg = acc?.settings?.custom;
+    if (!cfg) return;
+    if (!cfg.runTask) {
+      cfg.runTask = true;
+      $.msg('重启完成 ✅', `账号 ${acc.member_account} 任务已开启`);
+      $.setjson(bet_data, $.bet_data_key);
+    }
+  });
+  $.done();
+};
+
 /** =========💜 通知 💜========= */
 
 const fetchMemberAndBill = async (account) => {
@@ -148,14 +163,14 @@ const shouldNotify = async () => {
       }
       
       const { profit_loss_money, bet_money, win_money } = bill[0];
-      const nextItems = bill.length > 1 ? bill.slice(1, 3) : [];
+      const nextItems = bill.length > 1 ? bill.slice(1, 4) : [];
       const target = bill.find(item => item.draw_datetime === "-1");
       const profit = target?.profit_loss_money ?? 0;
 
       const profit_Text = profit > 0 ? `盈利 ${profit}` : profit < 0 ? `亏损 ${-profit}` : '持平 0';
       const emoji = profit_loss_money > 0 ? '✅' :  (profit_loss_money == 0 && win_money == 0) ? '✴️' : '🅾️';
       
-      const title = `可用分 ${memberData?.credit_balance || 0}  ${profit_Text}`;
+      const title = `可用分 ${memberData?.credit_balance || 0}，${profit_Text}`;
       const medium = `${emoji} 投注 ${bet_money} - 中奖 ${win_money} - 盈亏 ${profit_loss_money}`;
       const summaryText = nextItems.map(item => `${item.profit_loss_money > 0 ? '✅' : '🅾️'} 投注 ${item.bet_money} - 中奖 ${item.win_money} - 盈亏 ${item.profit_loss_money}`).join('\n');
 
@@ -289,8 +304,6 @@ const updateHistoryStat = async (records, force = false) => {
 
   if (updated) {
     $.setjson(bet_data, $.bet_data_key);
-  } else {
-    console.log('\n🟡 无新增规则，跳过统计');
   }
 };
 
@@ -397,7 +410,7 @@ const initRecords = async () => {
 // 限制时间段不执行
 const isBetweenLimit = (now = new Date()) => {
   const minutes = now.getHours() * 60 + now.getMinutes();
-  return minutes >= 300 && minutes <= 310; // 05:00 - 05:10
+  return minutes >= 300 && minutes <= 305; // 05:00 - 05:05
 };
 
 const fetchDrawRows = async (page, retries = 2, delay = 1000) => {
@@ -428,15 +441,15 @@ const fetchDrawRows = async (page, retries = 2, delay = 1000) => {
     
     if (drawRows.length) {
       await shouldNotify();
-      const records = $.getjson($.recordRows_key) || [];
+      let records = $.getjson($.recordRows_key) || [];
       if (!records?.length < 20) records = await initRecords();
       if (records?.length) await updateHistoryStat(records);
     }
     
     if (isBetweenLimit()) {
       const records = saveRecordRows(drawRows);
-      await syncDrawRows(records);
       if (records?.length) await updateHistoryStat(records, true);
+      recoveryTask();
     }
   } catch (error) {
     $.msg(`${$.name}脚本运行错误 🚫`, ``, error?.message || String(error));
