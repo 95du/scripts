@@ -1074,6 +1074,7 @@ const accountManage = async (betData, selected, conf) => {
   const opts = [
     { name: '删除账号', id: 'delAccount', specify: true },
     { name: '重置规则', id: 'reset', specify: true },
+    { name: '重置记录', id: 'resetRecord', specify: true },
     { name: '账号密码', id: 'account' },
     { name: '设置赔率', id: 'water' },
     { name: '整单退码', id: 'serialNumber' },
@@ -1102,7 +1103,6 @@ const accountManage = async (betData, selected, conf) => {
     case 'reset': {
       const confirm = await generateAlert(`是否${choice.name}配置❓`, null, ['取消', '确定'], true);
       if (confirm === 1) {
-        fm.remove(basePath);
         await updateConfig(betData, selected, c => { 
           c.custom = defaultConfig.custom;
           selected.body = [];
@@ -1112,11 +1112,16 @@ const accountManage = async (betData, selected, conf) => {
       }
       break;
     }
+    case 'resetRecord': {
+      const output = await generateAlert(`是否重置记录❓`, `将重新获取最近 20 天的记录`, ['取消', '重置'], true);
+      if (output === 1) await saveBoxJsData(null, 'record_rows');
+      break;
+    }
     case 'account':
       await manageAccount(betData, selected);
       break;
     case 'water': {
-      const water = await collectInputs( '设置赔率', '盘口水位 ( 例如: 9800 )', [{ hint: '赔率', value: conf.custom.water ?? 9800 }] );
+      const water = await collectInputs( '设置赔率', `当前赔率  1 : ${conf.custom.water}`, [{ hint: '赔率', value: conf.custom.water ?? 9800 }] );
       const waterValue = getSafeInt(water, conf.custom.water);
       await updateConfig(betData, selected, c => { c.custom.water = waterValue });
       break;
