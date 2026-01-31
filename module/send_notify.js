@@ -242,7 +242,7 @@ const isHit = (row, bodies) => {
   return bodies.some(b => parseBetCore(b).numbers.includes(num));
 };
 
-const replayNormalFast = (rows, body, water = 9700) => {
+const replayNormalFast = (rows, body, water = 9800) => {
   const { numbers, len } = parseBetCore(body);
   if (!len) return 0;
   const prize = water - len;
@@ -346,10 +346,6 @@ const updateHistoryStat = async (records, force = false) => {
 /** ======💜 保存记录 💜====== */
 
 const saveRecordRows = (drawRows) => {
-  const now = new Date();
-  const min = now.getHours() * 60 + now.getMinutes();
-  if (min < 300 || min > 305) return;
-  
   const today = new Date().toISOString().slice(0, 10);
   let records = $.getjson($.recordRows_key) || [];
   const idx = records.findIndex(r => r.date === today);
@@ -443,10 +439,10 @@ const initRecords = async () => {
   }
 };
 
-// 限制时间段不执行
+// 限制时间段不执行 05:00 - 05:05
 const isBetweenLimit = (now = new Date()) => {
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  return minutes >= 300 && minutes <= 305; // 05:00 - 05:05
+  const min = now.getHours() * 60 + now.getMinutes();
+  return min >= 300 && min <= 305;
 };
 
 const fetchDrawRows = async (page, retries = 2, delay = 1000) => {
