@@ -172,14 +172,16 @@ const shouldNotify = async () => {
       if (!account?.cookie) continue;
       const { memberData, bill, log, retrive } = await fetchMember(account);
       if (!memberData) continue;
+      if (!account?.retrive) {
+        account.retrive = {};
+        account.retrive.Data = retrive;
+      }
       if (memberData) {
         account.Data = memberData;
         account.bill = {};
         account.bill.Data = bill;
         account.log = {};
         account.log.Data = log;
-        account.retrive = {};
-        account.retrive.Data = retrive;
         $.setjson(bet_data, $.bet_data_key);
       }
       
@@ -209,7 +211,7 @@ const shouldNotify = async () => {
       const newSetting = retrive?.Setting || [];
       const changes = detectOddsChange(oldSetting, newSetting);
       if (changes.length) {
-        $.msg('赔率异常 ‼️', ``, changes.join('\n'));
+        $.msg('赔率异常 ‼️', `检测到赔率被后台篡改`, changes.join('\n'));
       }
     }
   } catch (err) {
