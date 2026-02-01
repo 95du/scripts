@@ -242,7 +242,7 @@ async function main(family) {
     
     let sameYear = true;
     const isBilling = await queryBillOverview(checkYear, checkMonth);
-    if (isBilling) {
+    if (!isBilling) {
       year = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
       sameYear = checkYear !== year;
     }
