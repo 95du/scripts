@@ -53,7 +53,7 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 
 // 🈯️ 获取记录数据
 const getRecordRows = async () => {
-  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 2);
   if (!Array.isArray(list) || !list.length) {
     list = await new Request(`${github}/records.json`).loadJSON();
     await saveBoxJsData(list, 'record_rows');
@@ -158,6 +158,7 @@ const replayNormal = (rows, rule) => {
 
   ordered.forEach(r => {
     const open_code = drawNumber(r);
+    const sum = [...open_code].reduce((a,b)=>a+ +b,0);
     const time = r.draw_datetime?.slice(11, 16);
     const period_no = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
@@ -176,6 +177,7 @@ const replayNormal = (rows, rule) => {
       time,
       period_no,
       open_code,
+      sum,
       action: '投',
       profit: totalProfit,
       forced: false
