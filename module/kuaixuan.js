@@ -331,7 +331,7 @@ class CodeMaker {
                 <td>开奖</td>
                 <td>动作</td>
                 <td>盈亏</td>
-                <td>常规</td>
+                <td>和值</td>
               </tr>
             </thead>
             <tbody id="normal_tbody" class="fn-hover tc"></tbody>
@@ -388,7 +388,7 @@ class CodeMaker {
                 <td style='color:#008DFF'>
                   {{item.profit}}
                 </td>
-                <td></td>
+                <td>{{item.sum}}</td>
               </tr>
             {{/each}}
           {{/if}}
