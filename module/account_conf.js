@@ -131,7 +131,7 @@ const saveBoxJsData = async (value, key = 'bet_data') => {
 
 // 🈯️ 获取记录数据
 const getRecordRows = async () => {
-  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 4);
+  let list = await getCacheData('records_rows.json', `${boxjsApi}/record_rows`, 'json', 2);
   if (!list?.length) {
     list = await new Request(`${github}/records.json`).loadJSON();
     await saveBoxJsData(list, 'record_rows');
@@ -383,6 +383,7 @@ const replayNormal = (rows, rule, water = 9800) => {
 
   ordered.forEach(r => {
     const open_code = drawNumber(r);
+    const sum = [...open_code].reduce((a,b)=>a+ +b,0);
     const time = r.draw_datetime?.slice(11, 16);
     const period_no = r.period_no.slice(-3);
     const hit = isHit(r, bodies);
@@ -401,6 +402,7 @@ const replayNormal = (rows, rule, water = 9800) => {
       time,
       period_no,
       open_code,
+      sum,
       action: '投',
       profit: totalProfit,
       forced: false
@@ -1059,11 +1061,7 @@ const serialNo = async (selected) => {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
   });
-
-  const msg = new Alert();
-  msg.message = `退码结果 ✅\n${res}`;
-  msg.addAction('完成');
-  await msg.presentAlert();
+  if (res) await generateAlert(`退码结果 ✅\n${res}`, null, ['完成']);
 };
 
 // ✅ 账号管理菜单
