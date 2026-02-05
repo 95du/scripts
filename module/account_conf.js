@@ -605,7 +605,9 @@ const statMenu = async (selected, conf) => {
           completion(e.detail);
           controller.abort();
         };
-      window.addEventListener('JBridge', listener, { signal: controller.signal });
+        window.addEventListener(
+          'JBridge', listener, { signal: controller.signal }
+        );
       })()`, true
     ).catch(err => console.error(err));
     if (event.type === 'query') {
