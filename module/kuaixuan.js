@@ -363,7 +363,7 @@ class CodeMaker {
           </div>
           <div class="summary-row summary-pair">
             <span style="{{summary.profit > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">今日盈亏：{{summary.profit}}</span>
-            <span style="{{summary.total > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">记录汇总：{{summary.total || 0}}</span>
+            <span style="{{summary.total > 0 ? 'color:#008DFF' : 'color:#FF0000'}}">记录盈亏：{{summary.total || 0}}</span>
           </div>
           <div class="summary-row summary-pair"><span>命中：{{summary.win}}</span><span>未中：{{summary.lose}}</span>
           </div>
