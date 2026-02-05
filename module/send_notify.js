@@ -124,20 +124,29 @@ const recoveryTask = () => {
 
 /** =========💜 通知 💜========= */
 
-const fetchMember = async (account) => {
+/** 判断当前是否在投注 */
+const checkBetStatus = (memberData, bill = []) => {
+  const { period_no } = memberData;
+  const last = Number(bill[0].period_no);
+  return Number(period_no) - last >= 2;
+};
+
+const fetchMember = async (acc) => {
   try {
     const [memberData, bill, log, retrive] = await Promise.all([
-      getMemberPrint(account),
-      getHistoryBill(account),
-      getQuickSelectLog(account),
-      getRetriveMember(account)
+      getMemberPrint(acc),
+      getHistoryBill(acc),
+      getQuickSelectLog(acc),
+      getRetriveMember(acc)
     ]);
     return { memberData, bill, log, retrive };
   } catch (err) {
     console.log(`❗ 请求失败, 账号 ${account.member_account}: ${formatError(err)}`);
     return { 
       memberData: null, 
-      bill: [] 
+      bill: [],
+      log: null, 
+      retrive: null
     };
   }
 };
@@ -185,9 +194,17 @@ const shouldNotify = async () => {
         $.setjson(bet_data, $.bet_data_key);
       }
       
+      // 监控赔率异常
+      const oldSetting = account?.retrive?.Data?.Setting || [];
+      const newSetting = retrive?.Setting || [];
+      const changes = detectOddsChange(oldSetting, newSetting);
+      if (changes.length) {
+        $.msg(`${retrive.Member[0].account} 赔率异常 ‼️`, `检测到赔率被篡改，${memberData.period_no} 期`, changes.join('\n'));
+      }
+      
       if (!bill.length) continue;
-      const isBetting = bill[0].show_frontend === '0';
-      if (!isBetting) {
+      const isBetting = checkBetStatus(memberData, bill);
+      if (isBetting) {
         console.log(`\n🈯️ 账号 ${memberData?.member_account}，可用 ${memberData?.credit_balance || 0}，已停止投注 ⛔️`);
         continue;
       }
@@ -202,17 +219,8 @@ const shouldNotify = async () => {
       
       const title = `可用分 ${memberData?.credit_balance || 0}，${profit_Text}`;
       const medium = `${emoji} 投注 ${bet_money} - 中奖 ${win_money} - 盈亏 ${profit_loss_money}`;
-      const summaryText = nextItems.map(item => `${item.profit_loss_money > 0 ? '✅' : '🅾️'} 投注 ${item.bet_money} - 中奖 ${item.win_money} - 盈亏 ${item.profit_loss_money}`).join('\n');
-
-      $.msg(title, medium, summaryText);
-      
-      // 监控赔率异常
-      const oldSetting = account?.retrive?.Data?.Setting || [];
-      const newSetting = retrive?.Setting || [];
-      const changes = detectOddsChange(oldSetting, newSetting);
-      if (changes.length) {
-        $.msg('赔率异常 ‼️', `检测到赔率被后台篡改`, changes.join('\n'));
-      }
+      const summary = nextItems.map(item => `${item.profit_loss_money > 0 ? '✅' : '🅾️'} 投注 ${item.bet_money} - 中奖 ${item.win_money} - 盈亏 ${item.profit_loss_money}`).join('\n');
+      $.msg(title, medium, summary);
     }
   } catch (err) {
     console.log(`\n❌ shouldNotify 执行错误: ${formatError(err)}`);
