@@ -499,7 +499,11 @@ const replaySimulate = (rows, rule, lastRow, water = 9800, missLimit) => {
     });
   });
   
-  const ruleText = missLimit === 0 ? '不中即停，中则继续' : missLimit === 1 ? '每期都投' : `连续 ${missLimit} 期未中强制投`;
+  const ruleText = missLimit === 0 
+    ? '不中即停，中则继续' 
+    : missLimit === 1 
+      ? '每期都投' 
+      : `连续 ${missLimit} 期未中强制投`;
   
   return {
     mode: 'simulate',
@@ -726,14 +730,14 @@ const reverseRule = async (betData, selected, conf) => {
   const list = conf.custom?.fastPick;
   if (!list?.length) return;
   const alert = new Alert();
-  alert.title = '【 请选择要反转的规则 】';
+  alert.title = '【 红色表示已经反转过的规则 】';
   alert.message = list
     .map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`)
     .join('\n');
 
   list.forEach((b, i) => {
     const parsed = parseBetBody(b);
-    const action = `规则 ${i + 1} - ${parsed.numCount}组`;
+    const action = `${i + 1}，${parsed.numCount}组`;
     parsed.bet_money === '02' ? alert.addDestructiveAction(action) : alert.addAction(action);
   });
   alert.addCancelAction('返回');
@@ -841,7 +845,7 @@ const handleRule = async (betData, selected, conf, { from, to, confirmText, mode
 
   const idx = await presentSheetMenu(
     list.map((b, i) => `${i + 1}、${parseBetBody(b).bet_log}`).join('\n'),
-    list.map((b, i) => `规则 ${i + 1} - ${parseBetBody(b).numCount}组`)
+    list.map((b, i) => `${i + 1}，${parseBetBody(b).numCount}组`)
   );
   if (idx === -1) return;
   let rule = list[idx];
