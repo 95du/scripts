@@ -1,3 +1,5 @@
 # 南网在线 Token
-^https:\/\/95598\.csg\.cn\/ucs\/ma\/zt\/user url script-request-header https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_95598_token.js
+
+^https:\/\/95598\.csg\.cn url script-request-header https://raw.githubusercontent.com/95du/scripts/main/rewrite/get_95598_token.js
+
 hostname = 95598.csg.cn
