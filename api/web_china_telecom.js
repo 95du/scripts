@@ -140,7 +140,7 @@ async function main(family) {
   };
   
   const bal = await fetchBalance();
-  const balanceAvailable = (bal?.totalBalanceAvailable / 100).toFixed(2) || '0.00';
+  const balanceAvailable = (Number(bal?.totalBalanceAvailable ?? 0) / 100).toFixed(2);
   
   // 用量通知
   const formatFlow = (isFlowBalance, isFlow) => {
