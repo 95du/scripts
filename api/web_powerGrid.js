@@ -62,7 +62,7 @@ async function main(family) {
   const getTotalPower = (data) => {
     const total = Array(12).fill(0);
     data.forEach(({ startMonthDate, totalElectricity }) => {
-      const month = parseInt(startMonthDate.split('.')[0], 10);  // 提取月份
+      const month = parseInt(startMonthDate.split('.')[1], 10);  // 提取月份
       if (month >= 1 && month <= 12) total[month - 1] = parseFloat(totalElectricity);
     });
     return total;
@@ -242,7 +242,7 @@ async function main(family) {
     
     let sameYear = true;
     const isBilling = await queryBillOverview(checkYear, checkMonth);
-    if (!isBilling) {
+    if (isBilling) {
       year = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
       sameYear = checkYear !== year;
     }
