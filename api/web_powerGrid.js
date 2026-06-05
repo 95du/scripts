@@ -246,7 +246,6 @@ async function main(family) {
       year = month <= 2 ? year - 1 : year; // 1月和2月时，切换到上一年
       sameYear = checkYear !== year;
     }
-
     const [response, balance] = await Promise.all([
       getCacheString(
         `selectElecBill_${count}.json`,
@@ -262,7 +261,7 @@ async function main(family) {
       const lsEleBill = totalArray[0];
       const lastMonth = lsEleBill.electricityBillYearMonth.replace(/^(\d{4})(\d{2})$/, '$1-$2'); 
       const _lastMonth = lsEleBill.readingDate.replace(/^(\d{4})\/(\d{2})\/\d{2}$/, '$1-$2');
-      const convertYearMonth = (isBilling && sameYear || lsEleBill.isArrears === '0' ? _lastMonth : lastMonth).replace('-', '');
+      const convertYearMonth = (isBilling || sameYear || lsEleBill.isArrears === '1' ? _lastMonth : lastMonth).replace('-', '');
       return {
         ...lsEleBill,
         year,
