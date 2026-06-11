@@ -328,7 +328,7 @@ async function main(family) {
     try {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('赛程')}&request__node__params=1`;
       const { tplData } = await module.getCacheData(url, 2, `${chooseSports}.json`);
-      let tabsData = tplData.data.tabsList[0].data;
+      let tabsData = tplData.data.tabsList[0].data || tplData.data.tabsList[0].all.data;
       // 如果总长度小于等于15，添加对象到data的最后
       tabsData = await ensureMinimumMatches(tabsData, 30);
       
