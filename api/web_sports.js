@@ -188,54 +188,6 @@ async function main(family) {
     return categoryList;
   };
   
-  /**
-   * 根据队伍名称和分类信息获取比赛直播链接。
-   * @param {Object} result - 分类信息对象，包含 `type` 和 `id`。
-   * @param {string} ateam - 客队名称。
-   * @param {string} hteam - 主队名称。
-   * @returns {Promise<string>} - 返回直播链接，如果未找到比赛则返回默认链接。
-   */
-  const fetchMatchAndUrl = async (hteam, ateam, status) => {
-    let result;
-    if (chooseSports === '欧冠') {
-      result = {
-        name: '欧冠',
-        id: 0,
-        type: 1
-      }
-    } else {
-      result = await getCategoryList();
-    }
-    const currentDate = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-    if (!result) return null;
-    const url = `https://sqb3.com/prod-api/match/list/new?isfanye=1&type=${result.type}&cid=${result.id}&ishot=-1&pn=1&ps=20&level=&name=&langtype=zh&starttime=${currentDate}&pid=5&zoneId=Asia%2FShanghai&zhuboType=0`;
-    const { data } = await module.httpRequest(url, 'json');
-    if (!data) return null;
-    const dataList = chooseSports === '欧冠' ? data.topList : data.dataList;
-    const match = dataList.find(item =>
-      item.name === result.name &&
-      item.status === 0 &&
-      (item.ateam_name.includes(ateam) || item.hteam_name.includes(hteam) || ateam.includes(item.ateam_name) || hteam.includes(item.hteam_name) || item.ateam_name.includes(hteam))
-    );
-    
-    if (match && status === '1') {
-      console.log(`${match.hteam_name} ${match.score} ${match.ateam_name}`)
-      const sportUrl = `https://e761dszb.com/prod-api/match/detail?mid=${match.id}&type=1&pid=5`;
-      const { data } = await module.httpRequest(sportUrl, 'json');
-      const team = data.matchinfo;
-      const liveUrls = [
-        ...team.live_urls,
-        ...team.global_live_urls,
-        ...team.mirror_live_urls
-      ];
-      
-      const target = liveUrls.find(item => item.status === 1 && ['中文', '腾讯', '高清', '标清'].includes(item.name));
-      return target?.url;
-    } else {
-      return data.dataList[0].video_url || 'https://sqb3.com';
-    };
-  };
-  
   // 进球事件/技术统计
   const getGoalsEvents = async (matchId, live) => {
     try {
@@ -302,7 +254,7 @@ async function main(family) {
       if (family === 'large') {
         const filename = `${chooseSports}_${nextTime}.json`;
         const { data } = await module.getCacheData(url, 24, filename);
-        return data[0];
+        return data?.[0];
       }
     } catch (e) {
       console.log(e);
@@ -702,7 +654,7 @@ async function main(family) {
   };
   
   // 比分栏
-  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, liveUrl) => {
+  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText) => {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
@@ -722,10 +674,10 @@ async function main(family) {
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
-    barStack.setPadding(2, liveUrl ? 12 : 15, 2, liveUrl ? 12 : 15);
+    barStack.setPadding(2, 15, 2, 15);
     barStack.cornerRadius = 8;
-    barStack.backgroundColor = matchStatus === '2' ? barBgColor : liveUrl ? new Color('#8226DC') : new Color('#FF4800');
-    const statusText = barStack.addText(liveUrl && matchStatus === '1' ? '免费直播' : matchStatusText);
+    barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF4800');
+    const statusText = barStack.addText(matchStatus === '1' ? '正在比赛' : matchStatusText);
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
@@ -749,7 +701,7 @@ async function main(family) {
   };
   
   // 顶部组件
-  const createTopStack = async (widget, matchId, liveUrl, pageUrl) => {
+  const createTopStack = async (widget, matchId, pageUrl) => {
     const { header, percentage } = await getRaceSchedule(matchId);
     const { total, homeWin, draw, awayWin } = percentage || {};
     
@@ -775,7 +727,6 @@ async function main(family) {
         : liveStageText;
     const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
     const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
-    scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     
     const infoStack = widget.addStack();
     createHeading(infoStack, headerLiveStageText);
@@ -784,12 +735,12 @@ async function main(family) {
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    mainStack.url = liveUrl || pageUrl;
+    mainStack.url = pageUrl;
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, liveUrl);
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText);
     }
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
@@ -798,6 +749,8 @@ async function main(family) {
     const imageStack = widget.addStack();
     imageStack.size = new Size(0, 28);
     imageStack.addImage(progressChart);
+    
+    //scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     return widget;
   };
   
@@ -896,12 +849,9 @@ async function main(family) {
   const createLiveWidget = async ({ matchId, matchType, matchStatus, leftLogo, rightLogo } = matches) => {
     const widget = new ListWidget();
     widget.setPadding(...lay.padding);
-    const [events, liveUrl] = await Promise.all([
-      getGoalsEvents(matchId, true),
-      fetchMatchAndUrl(leftLogo.name, rightLogo.name, matchStatus)
-    ]);
+    const events = await getGoalsEvents(matchId, true);
     const { pageUrl, stat } = events;
-    await createTopStack(widget, matchId, liveUrl, pageUrl);
+    await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
       if (stat?.list.length >= 10 && setting.statistics) {
