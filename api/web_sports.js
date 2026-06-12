@@ -193,9 +193,9 @@ async function main(family) {
     try {
       const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
       const html = await module.httpRequest(url, 'string');
-      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+      const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const value = JSON.parse(match);
-      const tabsList = value.data.data.tabsList;
+      const tabsList = value.data?.data?.tabsList || value.data?.tabsList;
       
       if (live) {
         const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
