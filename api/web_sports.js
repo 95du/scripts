@@ -196,7 +196,6 @@ async function main(family) {
       const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const value = JSON.parse(match);
       const tabsList = value.data?.data?.tabsList || value.data?.tabsList;
-      
       if (live) {
         const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
         return {
@@ -674,7 +673,7 @@ async function main(family) {
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
-    barStack.setPadding(2, 15, 2, 15);
+    barStack.setPadding(3, 15, 3, 15);
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF4800');
     const statusText = barStack.addText(matchStatus === '1' ? '正在比赛' : matchStatusText);
