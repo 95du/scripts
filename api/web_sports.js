@@ -750,7 +750,7 @@ async function main(family) {
     imageStack.size = new Size(0, 28);
     imageStack.addImage(progressChart);
     
-    //scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
+    scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     return widget;
   };
   
