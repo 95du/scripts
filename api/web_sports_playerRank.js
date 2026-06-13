@@ -104,7 +104,7 @@ async function main(family) {
     leagueStack.addSpacer(12);
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
+    createText(leagueStack, header.info.replace(/北京时间：|赛季/g, ''), lay.titleSize);
     widget.addSpacer();
   };
   
