@@ -686,7 +686,7 @@ async function main(family) {
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
     const barStack = statusStack.addStack();
-    barStack.setPadding(2, live ? 12 : 15, 2, live ? 12 : 15);
+    barStack.setPadding(3, live ? 12 : 15, 3, live ? 12 : 15);
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : live ? new Color('#8226DC') : new Color('#FF4800');
     const statusText = barStack.addText(live?.category || matchStatusText);
