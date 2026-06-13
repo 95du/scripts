@@ -57,6 +57,7 @@ async function main(family) {
   const videoColor = Color.dynamic(Color.green(), Color.white());
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
+  
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -402,9 +403,7 @@ async function main(family) {
     leagueStack.addSpacer(12);
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    const dateFormat = setting.dateFormat 
-      ? module.formatDate(Date.now(), 'hourMin')
-      : header.info.replace('赛季', '')
+    const dateFormat = setting.dateFormat ? module.formatDate(Date.now(), 'hourMin') : header.info.replace(/北京时间：|赛季/g, '')
     createText(leagueStack, dateFormat, lay.titleSize);
     if (setting.dateFormat) {
       leagueStack.addSpacer(6);
