@@ -673,7 +673,11 @@ async function main(family) {
     const barStack = statusStack.addStack();
     barStack.setPadding(3, 15, 3, 15);
     barStack.cornerRadius = 8;
-    barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF4800');
+    barStack.backgroundColor = matchStatus === '2' 
+      ? barBgColor 
+      : liveStage === '中场' 
+        ? new Color('#8226DC') 
+        : new Color('#FF4800');
     const statusText = barStack.addText(matchStatus === '1' && liveStage === '中场' ? '中场休息' : matchStatusText);
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
