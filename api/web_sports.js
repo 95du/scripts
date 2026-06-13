@@ -56,8 +56,7 @@ async function main(family) {
   const barBgColor = Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const videoColor = Color.dynamic(Color.green(), Color.white());
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
-  const raceScheduleUrl = `https://tiyu.baidu.com/match/${chooseSports}/tab/赛程`;;
-  
+  const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -653,7 +652,7 @@ async function main(family) {
   };
   
   // 比分栏
-  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText) => {
+  const createScoreStack = (mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, liveStage) => {
     const mediumStack = mainStack.addStack();
     mediumStack.layoutVertically();
     const scoreLength = leftGoal.length >= 2 || rightGoal.length >= 2;
@@ -676,7 +675,7 @@ async function main(family) {
     barStack.setPadding(3, 15, 3, 15);
     barStack.cornerRadius = 8;
     barStack.backgroundColor = matchStatus === '2' ? barBgColor : new Color('#FF4800');
-    const statusText = barStack.addText(matchStatus === '1' ? '正在比赛' : matchStatusText);
+    const statusText = barStack.addText(matchStatus === '1' && liveStage === '中场' ? '中场休息' : matchStatusText);
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
@@ -739,7 +738,7 @@ async function main(family) {
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
     } else {
-      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText);
+      createScoreStack(mainStack, leftGoal, rightGoal, matchStatus, matchStatusText, liveStage);
     }
     await createStack(mainStack, rightLogo.logo, lay.imgSize, rightLogo.name);
     widget.addSpacer();
