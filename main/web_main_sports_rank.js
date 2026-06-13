@@ -52,7 +52,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏超", "葡超", "澳超", "荷甲", "瑞士超", "沙特超"];
+  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "葡超", "澳超", "荷甲", "瑞士超", "沙特超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
