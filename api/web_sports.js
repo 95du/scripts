@@ -30,7 +30,7 @@ async function main(family) {
   let chooseSports = setting.selected;
   const param = args.widgetParameter?.trim();
   if (param) {
-    chooseSports = setting.values.some(item => item.value === param) ? param : chooseSports;
+    chooseSports = setting.values.some(item => item.value == param) ? param : chooseSports;
   } else if (chooseSports === 'randomSports') {
     const values = setting.values.map(item => item.value);
     chooseSports = module.getRandomItem(values);
