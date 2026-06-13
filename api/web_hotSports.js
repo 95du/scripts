@@ -179,20 +179,20 @@ async function main(family) {
   // 进球事件
   const getGoalsEvents = async (matchId, live) => {
     try {
-      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
+      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('统计')}`;
       const html = await module.httpRequest(url, 'string');
-      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+      const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const value = JSON.parse(match);
-      const tabsList = value.data.data.tabsList;
+      const tabsList = value.data?.data?.tabsList || value.data?.tabsList;
       
       if (live) {
         const getFreeLive = (data) => data.wiseLiveList?.find(match => match.free) || null;
-        const freeLive = getFreeLive(value.data.data);
-        const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
+        const freeLive = getFreeLive(value.data || value.data.data);
+        const statistics = tabsList.find((tab) => tab.title === '统计') || null;
         return { 
           live: freeLive, 
           pageUrl: value.data.pageUrl,
-          stat: statistics
+          stat: statistics.data?.["line-statistics"]
         }
       }
       // 如果找到结果，则处理 events
@@ -270,7 +270,8 @@ async function main(family) {
   const fetchScheduleData = async (url, cacheName) => {
     const response = await module.getCacheData(url, 2, cacheName);
     if (chooseSports === 'hot') {
-      return JSON.parse(response.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1]).data.data.liveList[0].data;
+      const value = JSON.parse(response.match(/<!--s-data:([\s\S]*?)-->/)?.[1]);
+      return value?.data.liveList[0].data;
     } else {
       return response.data.liveList.find(item => item.title === '全部' && item.data)?.data;
     }
