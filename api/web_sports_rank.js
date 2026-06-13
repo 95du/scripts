@@ -142,14 +142,12 @@ async function main(family) {
     leagueStack.size = new Size(0, lay.imgSize);
     const leagueImg = await module.getCacheData(header.logoimg, 240, `${header.name}.png`);
     const icon = leagueStack.addImage(leagueImg)
-    if (header.name.includes('法国')) {
-      icon.tintColor = textColor;
-    };
+    if (header.name.includes('法国')) icon.tintColor = textColor;
     leagueStack.addSpacer(12);
-    
+
     createText(leagueStack, setting.type || header.name, lay.titleSize);
     leagueStack.addSpacer();
-    createText(leagueStack, header.info.replace('赛季', ''), lay.titleSize);
+    createText(leagueStack, header.info.replace(/北京时间：|赛季/g, ''), lay.titleSize);
     widget.addSpacer();
   };
   
