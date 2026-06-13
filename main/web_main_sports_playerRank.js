@@ -473,9 +473,9 @@ async function main() {
     const addSport = async ({ name, sta } = data) => {
       const url = `https://tiyu.baidu.com/al/matchlist`;
       const html = await module.getCacheData(url, 240, 'matchlist.html');
-      const match = html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
-      const value = JSON.parse(match);
-      const subList = value.data.tplData;
+      const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
+      const data = JSON.parse(match);
+      const subList = data.tplData;
       while (subList.length > 0) {
         const menuId = await presentSubListMenu(subList);
         if (menuId === -1) break;
