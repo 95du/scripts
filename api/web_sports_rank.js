@@ -193,7 +193,7 @@ async function main(family) {
         barStack.layoutHorizontally();
         barStack.setPadding(0.5, 5, 0.5, 5)
         barStack.cornerRadius = 5
-        barStack.backgroundColor = Color.blue();
+        barStack.backgroundColor = new Color(team.bgColor);
         const fillText = barStack.addText(team.fillsName);
         fillText.font = Font.boldSystemFont(11);
         fillText.textColor = Color.white();
