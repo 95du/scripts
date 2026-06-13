@@ -191,7 +191,7 @@ async function main(family) {
   // 进球事件/技术统计
   const getGoalsEvents = async (matchId, live) => {
     try {
-      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('赛况')}`;
+      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('统计')}`;
       const html = await module.httpRequest(url, 'string');
       const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const value = JSON.parse(match);
