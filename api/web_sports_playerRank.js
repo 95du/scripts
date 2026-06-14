@@ -142,6 +142,7 @@ async function main(family) {
       } catch (error) {
         teamLogo = await module.getCacheData(fallbackLogo, 240, `${team.playerName}.png`);
       }
+      
       const logoImg = teamStack.addImage(teamLogo).imageSize = new Size(lay.iconSize, lay.iconSize);
       teamStack.addSpacer(8);
       const infoStack = teamStack.addStack();
@@ -155,6 +156,7 @@ async function main(family) {
       if (i !== maxCol - 1) {
         widget.addSpacer(3);
       }
+      teamStack.url = `https://tiyu.baidu.com/al/player?id=${team.playerId}&tab=${encodeURIComponent('资料')}`;
     };
     return widget;
   };
