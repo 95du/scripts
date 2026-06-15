@@ -53,7 +53,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "苏格兰超", "葡超", "澳超", "荷甲", "英冠", "美职业", "沙特超", "瑞士超"];
+  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "葡超", "澳超", "荷甲", "英冠", "美职业", "沙特超", "瑞士超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
@@ -424,7 +424,8 @@ async function main() {
       const alert = new Alert();
       alert.message = message || null;
       menus.forEach((item, index) => {
-        alert.addAction(`${index + 1}，${item.label || item.name}`);
+        const label = `${index + 1}，${item.label || item.name}`;
+        item.status ? alert.addDestructiveAction(label+ ` - ${item.text}`) : alert.addAction(label);
       });
       alert.addCancelAction('取消');
       return await alert.presentSheet();
@@ -467,25 +468,37 @@ async function main() {
       writeSettings(settings);
     };
     
-    // 增加赛事
-    const addSport = async ({ name, sta } = data) => {
+    // 请求返回 shortName
+    const getShortName = async (name) => {
       const url = `https://tiyu.baidu.com/al/matchlist`;
-      const html = await module.getCacheData(url, 240, 'matchlist.html');
+      const html = await module.getCacheData(url, 24, 'matchlist_old.html');
       const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const data = JSON.parse(match);
       const subList = data.tplData;
-      while (subList.length > 0) {
-        const menuId = await presentSubListMenu(subList);
+      return subList.find(item => item.short_name === name)?.name || '';
+    };
+    
+    // 增加赛事
+    const addSport = async ({ name, sta } = data) => {
+      const url = `https://tiyu.baidu.com/al/match/list`;
+      const html = await module.getCacheData(url, 4, 'matchlist.html');
+      const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+      const data = JSON.parse(match);
+      const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || null;
+      while (subList) {
+        const matchList = subList?.children[0]?.list || [];
+        const menuId = await presentSubListMenu(matchList);
         if (menuId === -1) break;
-        const { short_name, name: fullName } = subList[menuId];
-        const action = await module.generateAlert(
-          null, `${fullName}\n( ${short_name} )`,
+        const { name } = matchList[menuId];
+        const fullName = await getShortName(name);
+        const action = await module.generateAlert(null, 
+          `${fullName}\n( ${name} )`,
           options = ['取消', '添加']
         );
         if (action === 1) {
-          const isSportAdded = settings.values.some(item => item.value === short_name);
+          const isSportAdded = settings.values.some(item => item.value === name || ['NBA', 'nba', 'CBA'].includes(name))
           if (!isSportAdded) {
-            setSport(short_name);
+            setSport(name);
             module.updateSelect(webView, selectOpts);
             innerTextElementById(sta, settings.values.length);
           } else {
