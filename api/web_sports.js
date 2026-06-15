@@ -150,34 +150,18 @@ async function main(family) {
   
   //===== 🔔 比分通知 🔔 =====//
   const sendNotice = (match, type = 'live') => {
-    if (type === 'live') {
-      const { 
-        matchId, 
-        matchName, 
-        liveStageText, 
-        leftLogo, 
-        rightLogo 
-      } = match;
-      scoreNotice(
-        matchId, 
-        match.matchStatus, 
-        `${matchName} ${liveStageText}`, 
-        leftLogo.name, 
-        leftLogo.score, 
-        rightLogo.name, 
-        rightLogo.score
-      );
-    } else if (type === 'end') {
-      scoreNotice(
-        null, 
-        match.matchStatus, 
-        null, 
-        match.leftLogo.name, 
-        match.leftLogo.score, 
-        match.rightLogo.name, 
-        match.rightLogo.score
-      );
-    }
+    const left = match.leftLogo;
+    const right = match.rightLogo;
+    const isLive = type === 'live';
+    scoreNotice(
+      isLive ? match.matchId : null,
+      match.matchStatus,
+      isLive ? `${match.matchName} ${match.liveStageText}` : null,
+      left.name,
+      left.score,
+      right.name,
+      right.score
+    );
   };
   
   // 获取新的赛事列表
@@ -443,6 +427,7 @@ async function main(family) {
     dateStack.addSpacer();
     createColumnText(dateStack, `${totalMatches}场比赛`);
     widget.addSpacer(5);
+    return dateStack;
   };
   
   const createTextStack = (stack, text, width, textOpacity = 1, right, left, matchStatus) => {
@@ -648,6 +633,7 @@ async function main(family) {
       titleText.textColor = textColor;
       titleStack.addSpacer();
     }
+    return verticalStack;
   };
   
   // 比分栏
@@ -684,6 +670,7 @@ async function main(family) {
     if (matchStatus === '2') statusText.textOpacity = 0.8;
     statusStack.addSpacer();
     mediumStack.addSpacer(0.5);
+    return mediumStack;
   };
   
   /**
