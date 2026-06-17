@@ -884,14 +884,14 @@ async function main(family) {
   const runWidget = async () => {
     let { widget, isMatches } = await createWidget();
     
+    if (family === 'small') {
+      widget = createErrorWidget();
+    }
+    
     if (setting.matchFollow && isMatches[0]?.status !== '1') {
       const liveName = await getLiveMatch();
       setting.selected = liveName;
       writeSettings(setting);
-    }
-    
-    if (family === 'small') {
-      widget = createErrorWidget();
     }
     
     if (isMatches && Object.keys(isMatches).length) {
