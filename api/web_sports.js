@@ -31,9 +31,8 @@ async function main(family) {
   const param = args.widgetParameter?.trim();
   if (param) {
     chooseSports = setting.values.some(item => item.value == param) ? param : chooseSports;
-  } else if (chooseSports === 'randomSports') {
-    const values = setting.values.map(item => item.value);
-    chooseSports = module.getRandomItem(values);
+  } else {
+    chooseSports = setting.selected;
   }
   
   const isSmall = Device.screenSize().height < 926;
@@ -131,9 +130,10 @@ async function main(family) {
         const events = await getGoalsEvents(matchId, '赛况');
         if (events) {
           const team = events.left || events.right || {};
+          const homeAway = events?.left ? '主' : '客';
           team.goal.forEach(goal => {
             const assist = goal.assistPlayerName ? `\n${goal.assistPlayerName} ( 助攻 )` : '';
-            module.notify(liveScore, `${goal.playerName || team.teamName}  ( ${events.passedTime} 分钟 ) ${events.goaltype}❗️${assist}`);
+            module.notify(liveScore, `${homeAway} - ${goal.playerName || team.teamName}  ( ${events.passedTime} 分钟 ) ${events.goaltype}❗️${assist}`);
           });
         } else {
           module.notify(liveScore, liveStageText);
@@ -162,6 +162,17 @@ async function main(family) {
       right.name,
       right.score
     );
+  };
+  
+  // 智能跟赛
+  const getLiveMatch = async () => {
+    const url = `https://tiyu.baidu.com/al/match/list`;
+    const html = await module.getCacheData(url, 1, 'matchlist.html');
+    const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+    const data = JSON.parse(match);
+    const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || {};
+    const liveMatch = subList.children[0].list.find((sub) => sub.status === '1') || null;
+    return liveMatch?.name || chooseSports;
   };
   
   // 获取新的赛事列表
@@ -375,6 +386,7 @@ async function main(family) {
     rowText.font = Font.mediumSystemFont(textSize);
   };
   
+  // 顶部模块
   const addHeaderStack = async (widget, header) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
@@ -519,7 +531,7 @@ async function main(family) {
     return { isMatches };
   };
   
-  // 三段进度条 🇩🇪🇩🇪
+  // 三段进度条 🇩🇪🇩🇪🇩🇪
   const createThreeStageBar = (total, homeWin, draw, awayWin) => {
     const width = 200;
     const height = 4;
@@ -743,7 +755,7 @@ async function main(family) {
     return widget;
   };
   
-  // 创建单独的进度条💥
+  // 创建单独的进度条🧡🧡🧡
   const createSingleProgressBar = (value, total, width, height, fillColor, reverse = false) => {
     const ctx = new DrawContext();
     ctx.size = new Size(width, height);
@@ -871,6 +883,12 @@ async function main(family) {
   
   const runWidget = async () => {
     let { widget, isMatches } = await createWidget();
+    
+    if (setting.matchFollow && isMatches[0]?.status !== '1') {
+      const liveName = await getLiveMatch();
+      setting.selected = liveName;
+      writeSettings(setting);
+    }
     
     if (family === 'small') {
       widget = createErrorWidget();
