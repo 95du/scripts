@@ -425,7 +425,7 @@ async function main() {
       alert.message = message || null;
       menus.forEach((item, index) => {
         const label = `${index + 1}，${item.label || item.name}`;
-        item.status ? alert.addDestructiveAction(label+ ` - ${item.text}`) : alert.addAction(label);
+        alert.addAction(item.status ? (label + ` - ${item.text}`) : label);
       });
       alert.addCancelAction('取消');
       return await alert.presentSheet();
