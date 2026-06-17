@@ -128,7 +128,7 @@ async function main(family) {
         setting[matchNames] = { leftScore, rightScore };
         writeSettings(setting);
         // 进球事件
-        const events = await getGoalsEvents(matchId);
+        const events = await getGoalsEvents(matchId, '赛况');
         if (events) {
           const team = events.left || events.right || {};
           team.goal.forEach(goal => {
@@ -173,9 +173,9 @@ async function main(family) {
   };
   
   // 进球事件/技术统计
-  const getGoalsEvents = async (matchId, live) => {
+  const getGoalsEvents = async (matchId, tabText, live) => {
     try {
-      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent('统计')}`;
+      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent(tabText)}`;
       const html = await module.httpRequest(url, 'string');
       const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
       const value = JSON.parse(match);
@@ -188,17 +188,17 @@ async function main(family) {
         }
       }
       // 如果找到结果，则处理 events
-      const result = tabsList.find(tab => tab.data && tab.data.events);
+      const result = tabsList.find(tab => tab.hasTabData);
       if (result) {
-        const { list } = result.data.events;
+        const { incidents } = result.data.graphic_incidents;
         const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
-        const events = list.filter(event => goalEvents.includes(event.goaltype));
+        const events = incidents.filter(event => goalEvents.includes(event.goaltype));
         if (events) {
           return events[0] || null;
         }
       }
     } catch (e) {
-      console.log(e);
+      console.log('赛况统计错误' + e);
     }
   };
   
@@ -357,6 +357,7 @@ async function main(family) {
           matches = match;
           nextTime = minutesUntilStart;
           module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
+          break;
         }
       }
     };
@@ -837,7 +838,7 @@ async function main(family) {
   const createLiveWidget = async ({ matchId, matchType, matchStatus, leftLogo, rightLogo } = matches) => {
     const widget = new ListWidget();
     widget.setPadding(...lay.padding);
-    const events = await getGoalsEvents(matchId, true);
+    const events = await getGoalsEvents(matchId, '统计', true);
     const { pageUrl, stat } = events;
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
@@ -869,13 +870,10 @@ async function main(family) {
   };
   
   const runWidget = async () => {
-    let widget = null;
-    let isMatches = {};
+    let { widget, isMatches } = await createWidget();
     
     if (family === 'small') {
       widget = createErrorWidget();
-    } else {
-      ({ widget, isMatches } = await createWidget());
     }
     
     if (isMatches && Object.keys(isMatches).length) {
