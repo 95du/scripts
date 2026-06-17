@@ -171,7 +171,9 @@ async function main(family) {
     const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
     const data = JSON.parse(match);
     const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || {};
-    const liveMatch = subList.children[0].list.find((sub) => sub.status === '1') || null;
+    const liveMatch = subList.children[0].list.find(
+  sub => sub.status === '1' && sub.name !== '球会友谊') || null;
+  console.log(liveMatch)
     return liveMatch?.name || chooseSports;
   };
   
