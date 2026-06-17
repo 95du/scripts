@@ -53,7 +53,7 @@ async function main() {
    * @returns {object} - JSON
    */
 
-  const tabs = ["NBA", "CBA", "英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "葡超", "澳超", "荷甲", "英冠", "美职业", "沙特超", "瑞士超"];
+  const tabs = ["英超", "西甲", "德甲", "意甲", "法甲", "欧冠", "葡超", "澳超", "荷甲", "英冠", "美职业", "沙特超", "瑞士超"];
   const values = tabs.map(tab => ({ label: tab, value: tab }));
   
   const DEFAULT = {
@@ -657,16 +657,25 @@ async function main() {
         {
           header: true,
           label: '循环场次',
-          type: 'switch',
           name: 'loopEvent',
+          type: 'switch',
           icon: {
             name: 'hand.draw.fill',
             color: '#FF7800'
           }
         },
         {
-          name: "autoSwitch",
+          label: '智能跟赛',
+          name: 'matchFollow',
+          type: 'switch',
+          icon: {
+            name: 'basketball.fill',
+            color: '#00C400'
+          }
+        },
+        {
           label: "中号赛况",
+          name: "autoSwitch",
           type: "switch",
           icon: {
             name: 'repeat',
@@ -774,16 +783,20 @@ async function main() {
           },
           options: [
             {
-              label: '随机已添加的赛事',
+              label: '蓝球赛事',
               values: [
                 {
-                  label: '随机赛事',
-                  value: 'randomSports'
+                  label: 'NBA',
+                  value: 'NBA'
+                },
+                {
+                  label: 'CBA',
+                  value: 'CBA'
                 }
               ]
             },
             {
-              label: '足球篮球',
+              label: '足球赛事',
               values: settings.values
             }
           ]
