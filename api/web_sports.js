@@ -378,7 +378,7 @@ async function main(family) {
     if (matches && nextTime > -125) {
       return { matches };
     }
-    return { matches: null };
+    return {};
   };
   
   // 创建文本
