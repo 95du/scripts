@@ -167,7 +167,7 @@ async function main(family) {
   // 智能跟赛
   const getLiveMatch = async () => {
     const url = `https://tiyu.baidu.com/al/match/list`;
-    const html = await module.getCacheData(url, 1, 'matchlist.html');
+    const html = await module.getCacheData(url, 0.5, 'matchlist.html');
     const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
     const data = JSON.parse(match);
     const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || {};
