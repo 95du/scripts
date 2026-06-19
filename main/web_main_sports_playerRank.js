@@ -427,7 +427,7 @@ async function main() {
       alert.message = message || null;
       menus.forEach((item, index) => {
         const label = `${index + 1}，${item.label || item.name}`;
-        alert.addAction(item.status ? (label + ` - ${item.text}`) : label);
+        alert.addAction(label);
       });
       alert.addCancelAction('取消');
       return await alert.presentSheet();
