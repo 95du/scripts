@@ -173,7 +173,6 @@ async function main(family) {
     const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || {};
     const liveMatch = subList.children[0].list.find(
   sub => sub.status === '1' && sub.name !== '球会友谊') || null;
-  console.log(liveMatch)
     return liveMatch?.name || chooseSports;
   };
   
@@ -374,7 +373,6 @@ async function main(family) {
         }
       }
     };
-    
     if (matches && nextTime > -125) {
       return { matches };
     }
@@ -854,6 +852,7 @@ async function main(family) {
     widget.setPadding(...lay.padding);
     const events = await getGoalsEvents(matchId, '统计', true);
     const { pageUrl, stat } = events;
+    if (matchStatus !== 2) 
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
@@ -885,7 +884,6 @@ async function main(family) {
   
   const runWidget = async () => {
     let { widget, isMatches } = await createWidget();
-    
     if (family === 'small') {
       widget = createErrorWidget();
     }
