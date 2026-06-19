@@ -51,7 +51,9 @@ async function main(family) {
   };
   
   const textColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.darkColor));
-  const columnColor = Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
+  const columnColor = setting.alwaysDark 
+    ? new Color(setting.dateColor) 
+    : lColor.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
   const barBgColor = Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const videoColor = Color.dynamic(Color.green(), Color.white());
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
