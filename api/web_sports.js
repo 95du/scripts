@@ -896,7 +896,7 @@ async function main(family) {
       writeSettings(setting);
     }
     
-    if (isMatches && Object.keys(isMatches).length) {
+    if (isMatches.find((item) => item.status !== '2')) {
       const { matches } = processMatches(isMatches);
       const isFootballOrBasketball = matches?.matchType === 'football' || matches?.matchType === 'basketball';
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
