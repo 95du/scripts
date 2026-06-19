@@ -198,7 +198,7 @@ async function main(family) {
         const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
         return {
           stat: statistics,
-          pageUrl: value.data.pageUrl
+          pageUrl: value.data.headLive.iframeUrl
         }
       }
       // 如果找到结果，则处理 events
@@ -388,7 +388,7 @@ async function main(family) {
     rowText.font = Font.mediumSystemFont(textSize);
   };
   
-  // 顶部模块
+  // 顶部标题
   const addHeaderStack = async (widget, header) => {
     const leagueStack = widget.addStack();
     leagueStack.layoutHorizontally();
