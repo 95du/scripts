@@ -198,7 +198,7 @@ async function main(family) {
         const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
         return {
           stat: statistics,
-          pageUrl: value.data.headLive.iframeUrl
+          pageUrl: value.data?.headLive?.iframeUrl
         }
       }
       // 如果找到结果，则处理 events
