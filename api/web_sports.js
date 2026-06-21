@@ -345,9 +345,6 @@ async function main(family) {
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const processMatches = (data) => {
-    let nextTime = null;
-    let matches = null;
-    
     const isMatchesStatus = data.filter(match => match.matchStatus === '1'); // 收集 1 的对象并循环
     if (isMatchesStatus.length > 0 && setting.loopEvent) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
@@ -363,18 +360,17 @@ async function main(family) {
       if (matchStatus === 1) {
         return { matches: match };
       } else if (matchStatus === 2) {
-        matches = match;
-        nextTime = minutesUntilStart;
+        if (minutesUntilStart > -125) {
+          return { matches: match };
+        }
       } else if (matchStatus === 0) {
         if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
-          matches = match;
-          nextTime = minutesUntilStart;
-          module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
-          break;
+          module.notify(`${match.matchName} ${match.time}`, `${match.leftLogo.name} - ${match.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
+          return { matches: match };
         }
       }
     };
-    return matches && nextTime > -125 ? { matches } : '';
+    return {};
   };
   
   // 创建文本
