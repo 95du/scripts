@@ -360,16 +360,20 @@ async function main(family) {
       if (matchStatus === 1) {
         return { matches: match };
       } else if (matchStatus === 2) {
-        if (minutesUntilStart > -125) {
-          return { matches: match };
-        }
+        matches = match;
+        nextTime = minutesUntilStart;
       } else if (matchStatus === 0) {
         if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
-          module.notify(`${match.matchName} ${match.time}`, `${match.leftLogo.name} - ${match.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
-          return { matches: match };
+          matches = match;
+          nextTime = minutesUntilStart;
+          module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
+          break;
         }
       }
     };
+    if (matches && nextTime > -125) {
+      return { matches };
+    }
     return {};
   };
   
