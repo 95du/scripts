@@ -58,7 +58,10 @@ async function main(family) {
   const videoColor = Color.dynamic(Color.green(), Color.white());
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
-  
+  const cornerIcon = await module.getCacheData(`${rootUrl}/img/football/corner.png`, 240, `corner.png`);
+  const redIcon = await module.getCacheData(`${rootUrl}/img/football/red.png`, 240, `red.png`);
+  const yellowIcon = await module.getCacheData(`${rootUrl}/img/football/yellow.png`, 240, `yellow.png`);
+    
   /**
    * 存储当前设置
    * @param { JSON } string
@@ -371,7 +374,7 @@ async function main(family) {
         }
       }
     };
-    if (matches && nextTime > -125) {
+    if (matches && nextTime > -1255) {
       return { matches };
     }
     return {};
@@ -793,7 +796,55 @@ async function main(family) {
     rowText.textColor = textColor;
     if (right) rowStack.addSpacer();
   };
-
+  
+  // 角球红牌黄牌事件 ❤️💛
+  const parseStats = (data) => {
+    const list = data?.list || [];
+    const map = new Map(list.map(i => [i.title, i]));
+    const get = (title, side) => map.get(title)?.[side] ?? 0;
+    return {
+      left: {
+        corner: get('角球', 'left'),
+        yellow: get('黄牌', 'left'),
+        red: get('红牌', 'left')
+      },
+      right: {
+        corner: get('角球', 'right'),
+        yellow: get('黄牌', 'right'),
+        red: get('红牌', 'right')
+      }
+    };
+  };
+  
+  const matchEventsList = (stack, event, eventIcon) => {
+    const icon = stack.addImage(eventIcon);
+    icon.imageSize = new Size(18, 18);
+    stack.addSpacer(1);
+    const eventText = stack.addText(String(event));
+    eventText.font = Font.mediumSystemFont(14);
+    eventText.textColor = textColor;
+  };
+  
+  const matchEventsStack = async (widget, stat) => {
+    const events = parseStats(stat);
+    const stack = widget.addStack();
+    stack.layoutHorizontally();
+    stack.bottomAlignContent();
+    matchEventsList(stack, events.left.corner, cornerIcon);
+    stack.addSpacer(5);
+    matchEventsList(stack, events.left.red, redIcon);
+    stack.addSpacer(5);
+    matchEventsList(stack, events.left.yellow, yellowIcon);
+    stack.addSpacer();
+    matchEventsList(stack, events.right.yellow, yellowIcon);
+    stack.addSpacer(5);
+    matchEventsList(stack, events.right.red, redIcon);
+    stack.addSpacer(5);
+    matchEventsList(stack, events.right.corner, cornerIcon);
+    widget.addSpacer();
+    return stack;
+  };
+  
   // 创建技术统计列表
   const createStatisticsWidget = (widget, list, matchType, matchId) => {
     const barWidth = lay.sportWidth;
@@ -854,10 +905,11 @@ async function main(family) {
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
+      if (matchStatus !== 0 && setting.events && !setting.statistics) await matchEventsStack(widget, stat);
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, 8);
+        await createMatches(widget, setting.events ? 7 : 8);
       }
     };
     return widget;
