@@ -360,12 +360,12 @@ async function main(family) {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
       const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      if (matchStatus === 1) {
+      if (matchStatus === '1') {
         return { matches: match };
-      } else if (matchStatus === 2) {
+      } else if (matchStatus === '2') {
         matches = match;
         nextTime = minutesUntilStart;
-      } else if (matchStatus === 0) {
+      } else if (matchStatus === '0') {
         if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
           matches = match;
           nextTime = minutesUntilStart;
@@ -900,18 +900,17 @@ async function main(family) {
     widget.setPadding(...lay.padding);
     const events = await getGoalsEvents(matchId, '统计', true);
     const { pageUrl, stat } = events;
-    if (matchStatus !== 2) 
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
-      if (stat?.list.length && matchStatus !== 0 && setting.events && !setting.statistics) {
+      if (stat?.list.length && matchStatus !== '0' && setting.events && !setting.statistics) {
         const { left, right } = parseStats(stat);
         await matchEventsStack(widget, left, right);
       } 
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, setting.events ? 7 : 8);
+        await createMatches(widget, setting.events && matchStatus === '1' ? 7 : 8);
       }
     };
     return widget;
