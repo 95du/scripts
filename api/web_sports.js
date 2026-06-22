@@ -819,28 +819,27 @@ async function main(family) {
   const matchEventsList = (stack, event, eventIcon) => {
     const icon = stack.addImage(eventIcon);
     icon.imageSize = new Size(18, 18);
-    stack.addSpacer(1);
+    stack.addSpacer(2);
     const eventText = stack.addText(String(event));
     eventText.font = Font.mediumSystemFont(14);
     eventText.textColor = textColor;
   };
   
-  const matchEventsStack = async (widget, stat) => {
-    const events = parseStats(stat);
+  const matchEventsStack = async (widget, left, right) => {
     const stack = widget.addStack();
     stack.layoutHorizontally();
     stack.bottomAlignContent();
-    matchEventsList(stack, events.left.corner, cornerIcon);
+    matchEventsList(stack, left.corner, cornerIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, events.left.red, redIcon);
+    matchEventsList(stack, left.red, redIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, events.left.yellow, yellowIcon);
+    matchEventsList(stack, left.yellow, yellowIcon);
     stack.addSpacer();
-    matchEventsList(stack, events.right.yellow, yellowIcon);
+    matchEventsList(stack, right.yellow, yellowIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, events.right.red, redIcon);
+    matchEventsList(stack, right.red, redIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, events.right.corner, cornerIcon);
+    matchEventsList(stack, right.corner, cornerIcon);
     widget.addSpacer();
     return stack;
   };
@@ -905,7 +904,10 @@ async function main(family) {
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
-      if (matchStatus !== 0 && setting.events && !setting.statistics) await matchEventsStack(widget, stat);
+      if (stat?.list.length && matchStatus !== 0 && setting.events && !setting.statistics) {
+        const { left, right } = parseStats(stat);
+        await matchEventsStack(widget, left, right);
+      } 
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
