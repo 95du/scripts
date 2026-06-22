@@ -31,8 +31,6 @@ async function main(family) {
   const param = args.widgetParameter?.trim();
   if (param) {
     chooseSports = setting.values.some(item => item.value == param) ? param : chooseSports;
-  } else {
-    chooseSports = setting.selected;
   }
   
   const isSmall = Device.screenSize().height < 926;
@@ -356,28 +354,18 @@ async function main(family) {
       return { matches: isMatchesStatus[setting.count] };
     }
     
+    let matches = null;
     for (const match of data) {
+      matches = match;
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
       const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      if (matchStatus === 1) {
-        return { matches: match };
-      } else if (matchStatus === 2) {
-        matches = match;
-        nextTime = minutesUntilStart;
-      } else if (matchStatus === 0) {
-        if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
-          matches = match;
-          nextTime = minutesUntilStart;
-          module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
-          break;
-        }
+      if (matchStatus === 0 && minutesUntilStart <= 25 && minutesUntilStart > 0) {
+        module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
+        break;
       }
     };
-    if (matches && nextTime > -1255) {
-      return { matches };
-    }
-    return {};
+    return { matches };
   };
   
   // 创建文本
