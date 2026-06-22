@@ -816,7 +816,7 @@ async function main(family) {
     };
   };
   
-  const matchEventsList = (stack, event, eventIcon) => {
+  const matchEventsLeft = (stack, event, eventIcon) => {
     const icon = stack.addImage(eventIcon);
     icon.imageSize = new Size(18, 18);
     stack.addSpacer(2);
@@ -825,21 +825,30 @@ async function main(family) {
     eventText.textColor = textColor;
   };
   
+  const matchEventsRight = (stack, event, eventIcon) => {
+    const eventText = stack.addText(String(event));
+    eventText.font = Font.mediumSystemFont(14);
+    eventText.textColor = textColor;
+    stack.addSpacer(2);
+    const icon = stack.addImage(eventIcon);
+    icon.imageSize = new Size(18, 18);
+  };
+  
   const matchEventsStack = async (widget, left, right) => {
     const stack = widget.addStack();
     stack.layoutHorizontally();
     stack.bottomAlignContent();
-    matchEventsList(stack, left.corner, cornerIcon);
+    matchEventsLeft(stack, left.corner, cornerIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, left.red, redIcon);
+    matchEventsLeft(stack, left.red, redIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, left.yellow, yellowIcon);
+    matchEventsLeft(stack, left.yellow, yellowIcon);
     stack.addSpacer();
-    matchEventsList(stack, right.yellow, yellowIcon);
+    matchEventsRight(stack, right.yellow, yellowIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, right.red, redIcon);
+    matchEventsRight(stack, right.red, redIcon);
     stack.addSpacer(5);
-    matchEventsList(stack, right.corner, cornerIcon);
+    matchEventsRight(stack, right.corner, cornerIcon);
     widget.addSpacer();
     return stack;
   };
@@ -910,7 +919,7 @@ async function main(family) {
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, setting.events && matchStatus === '1' ? 7 : 8);
+        await createMatches(widget, (setting.events && matchStatus === '1' ? 7 : 8));
       }
     };
     return widget;
