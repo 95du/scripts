@@ -701,6 +701,15 @@ async function main() {
           }
         },
         {
+          label: '重要事件',
+          name: 'events',
+          type: "switch",
+          icon: {
+            name: 'doc.text.image',
+            color: '#00C400'
+          }
+        },
+        {
           label: '比分通知',
           name: 'notify',
           type: 'switch',
