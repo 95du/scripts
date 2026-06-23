@@ -170,11 +170,20 @@ async function main(family) {
   // 智能跟赛
   const getLiveMatch = async () => {
     const url = `https://tiyu.baidu.com/al/match/list`;
-    const html = await module.getCacheData(url, 0.5, 'matchlist.html');
-    const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
+    const html = await module.getCacheData(url, 0.2, 'matchlist.html');
+    const match =html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
     const data = JSON.parse(match);
-    const subList = data?.tplData?.tabList.find((tab) => tab.title === '足球') || {};
-    const liveMatch = subList.children[0].list.find(sub => sub.status === '1' && sub.Order !== 1580) || null;
+    const findLive = (tabName) => {
+      const tabs = data?.tplData?.tabList || [];
+      const tab = tabs.find(t => t.title === tabName);
+      const list = tab?.children?.[0]?.list || [];
+      return list.find(sub => sub.status === '1');
+    };
+    let liveMatch = findLive('热门');
+    console.log(liveMatch)
+    if (!liveMatch) {
+      liveMatch = findLive('足球');
+    }
     return liveMatch?.name || chooseSports;
   };
   
@@ -666,7 +675,6 @@ async function main(family) {
     scoreText.textColor = textColor;
     scoreStack.addSpacer();
     mediumStack.addSpacer();
-    
     const statusStack = mediumStack.addStack();
     statusStack.layoutHorizontally();
     statusStack.addSpacer();
@@ -931,7 +939,13 @@ async function main(family) {
     widget.setPadding(15, 17, 15, 17);
     const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
     const { isMatches } = await createMatches(widget, maxRows, true);
-    return { widget, isMatches }; 
+    const { matches } = processMatches(isMatches);
+    if (setting.matchFollow && isMatches[0]?.status !== '1') {
+      const liveName = await getLiveMatch();
+      setting.selected = liveName;
+      writeSettings(setting);
+    }
+    return { widget, matches }; 
   };
   
   const createErrorWidget = () => {
@@ -944,18 +958,11 @@ async function main(family) {
   };
   
   const runWidget = async () => {
-    let { widget, isMatches } = await createWidget();
+    let { widget, matches } = await createWidget();
     if (family === 'small') {
       widget = createErrorWidget();
     }
     
-    if (setting.matchFollow && isMatches[0]?.status !== '1') {
-      const liveName = await getLiveMatch();
-      setting.selected = liveName;
-      writeSettings(setting);
-    }
-    
-    const { matches } = processMatches(isMatches);
     if (matches) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
