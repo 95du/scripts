@@ -834,7 +834,7 @@ async function main(family) {
     icon.imageSize = new Size(18, 18);
   };
   
-  const matchEventsStack = async (widget, left, right) => {
+  const matchEventsColumnStack = (widget, left, right) => {
     const stack = widget.addStack();
     stack.layoutHorizontally();
     stack.bottomAlignContent();
@@ -909,12 +909,13 @@ async function main(family) {
     widget.setPadding(...lay.padding);
     const events = await getGoalsEvents(matchId, '统计', true);
     const { pageUrl, stat } = events;
+    if (matchStatus !== '2') 
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
       if (stat?.list.length && matchStatus !== '0' && setting.events && !setting.statistics) {
         const { left, right } = parseStats(stat);
-        await matchEventsStack(widget, left, right);
+        matchEventsColumnStack(widget, left, right);
       } 
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
@@ -955,7 +956,7 @@ async function main(family) {
       writeSettings(setting);
     }
     
-    if (isMatches.find((item) => item.status !== '2')) {
+    if (isMatches) {
       const { matches } = processMatches(isMatches);
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
