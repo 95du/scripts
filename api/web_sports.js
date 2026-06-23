@@ -360,12 +360,12 @@ async function main(family) {
       const matchStatus = parseInt(match.matchStatus);
       const matchStartTime = new Date(match.startTime);
       const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      if (matchStatus === '1') {
+      if (matchStatus === 1) {
         return { matches: match };
-      } else if (matchStatus === '2') {
+      } else if (matchStatus === 2) {
         matches = match;
         nextTime = minutesUntilStart;
-      } else if (matchStatus === '0') {
+      } else if (matchStatus === 0) {
         if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
           matches = match;
           nextTime = minutesUntilStart;
@@ -909,7 +909,6 @@ async function main(family) {
     widget.setPadding(...lay.padding);
     const events = await getGoalsEvents(matchId, '统计', true);
     const { pageUrl, stat } = events;
-    if (matchStatus !== '2') 
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
@@ -956,8 +955,8 @@ async function main(family) {
       writeSettings(setting);
     }
     
-    if (isMatches) {
-      const { matches } = processMatches(isMatches);
+    const { matches } = processMatches(isMatches);
+    if (matches) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
       if (matches && (isMediumSwitch || isLargeSwitch)) {
