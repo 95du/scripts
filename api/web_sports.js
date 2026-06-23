@@ -377,7 +377,7 @@ async function main(family) {
     if (matches && nextTime > -125) {
       return { matches };
     }
-    return {};
+    return null;
   };
   
   // 创建文本
@@ -959,7 +959,7 @@ async function main(family) {
     if (matches) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
-      if (matches && (isMediumSwitch || isLargeSwitch)) {
+      if (isMediumSwitch || isLargeSwitch) {
         widget = await createLiveWidget(matches);
       }
     }
