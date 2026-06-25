@@ -87,7 +87,7 @@ async function main(family) {
           .find((tab) => tab?.data?.some((item) => !type || item.title === type))
           ?.data?.find((item) => !type || item.title === type)?.list;
       // 处理 record 数据
-      const rankList = list.map((item) => {
+      const rankList = list?.map((item) => {
         const [teamInfo, rounds, winDrawLoss, goals, points] = item.record;
         return {
           ...item,
@@ -154,7 +154,7 @@ async function main(family) {
   const createWidget = async () => {
     const { header, rankList } = await getMatchRankings(chooseSports, setting.type);
     const stackSize = ['CBA', 'NBA'].includes(chooseSports) ? 160 : 200;
-    const maxCol = family === 'medium' ? 6 : rankList.length >= setting.lines ? setting.lines : rankList.length;
+    const maxCol = family === 'medium' ? 6 : rankList?.length >= setting.lines ? setting.lines : rankList?.length;
     
     const widget = new ListWidget();
     widget.setPadding(15, 18, 15, 18);
