@@ -53,7 +53,7 @@ async function main(family) {
       const url = `https://tiyu.baidu.com/al/match?match=${encodeURIComponent(chooseSports)}&tab=${encodeURIComponent('球员榜')}&current=0&&async_source=h5&tab_type=single&from=baidu_shoubai_na&request__node__params=1&getAll=1`;
       const { tplData } = await module.getCacheData(url, 6, `${chooseSports}.json`);
       const { tabsList, header } = tplData.data;
-      const rankList = tabsList[0].data[0].data;
+      const rankList = tabsList?.[0]?.data?.[0]?.data;
       return { rankList, header }
     } catch (error) {
       console.error(error.message);
