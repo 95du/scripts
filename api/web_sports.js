@@ -54,6 +54,7 @@ async function main(family) {
     : Color.dynamic(new Color(setting.lightColor), new Color(setting.dateColor));
   const barBgColor = setting.alwaysDark ? new Color('#666666') : Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const videoColor = Color.dynamic(Color.green(), Color.white());
+  
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
   const cornerIcon = await module.getCacheData(`https://gips2.baidu.com/it/u=1181162153,2900628859&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `corner.png`);
@@ -180,7 +181,6 @@ async function main(family) {
       return list.find(sub => sub.status === '1');
     };
     let liveMatch = findLive('热门');
-    console.log(liveMatch)
     if (!liveMatch) {
       liveMatch = findLive('足球');
     }
@@ -334,6 +334,7 @@ async function main(family) {
           return { ...item, list: filteredList };
         }).filter(item => item.list.length > 0);
       }
+
       // 输出结果
       return { 
         data, 
@@ -355,38 +356,26 @@ async function main(family) {
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const processMatches = (data) => {
+    let matches = null;
+    for (const match of data) {
+      const matchStartTime = new Date(match.startTime);
+      const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
+      if (match.matchStatus === '0' && minutesUntilStart <= 30 && minutesUntilStart > 0) {
+        matches = match;
+        module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
+        return { matches };
+      }
+    };
+    
     const isMatchesStatus = data.filter(match => match.matchStatus === '1'); // 收集 1 的对象并循环
-    if (isMatchesStatus.length > 0 && setting.loopEvent) {
+    if (isMatchesStatus.length && setting.loopEvent) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
       setting.count = optNextIndex(setting.count || 0, isMatchesStatus);
       writeSettings(setting);
       return { matches: isMatchesStatus[setting.count] };
     }
     
-    let matches = null;
-    let nextTime = null;
-    for (const match of data) {
-      const matchStatus = parseInt(match.matchStatus);
-      const matchStartTime = new Date(match.startTime);
-      const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      if (matchStatus === 1) {
-        return { matches: match };
-      } else if (matchStatus === 2) {
-        matches = match;
-        nextTime = minutesUntilStart;
-      } else if (matchStatus === 0) {
-        if (minutesUntilStart <= 25 && minutesUntilStart > 0) {
-          matches = match;
-          nextTime = minutesUntilStart;
-          module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${nextTime} 分钟开赛`);
-          break;
-        }
-      }
-    };
-    if (matches && nextTime > -125) {
-      return { matches };
-    }
-    return '';
+    return {};
   };
   
   // 创建文本
@@ -927,7 +916,7 @@ async function main(family) {
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, (setting.events && matchStatus !== '0' ? 7 : 8));
+        await createMatches(widget, (setting.events && events.stat && matchStatus !== '0' ? 7 : 8));
       }
     };
     return widget;
