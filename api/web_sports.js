@@ -363,7 +363,6 @@ async function main(family) {
       if (match.matchStatus === '0' && minutesUntilStart <= 30 && minutesUntilStart > 0) {
         matches = match;
         module.notify(`${matches.matchName} ${matches.time}`, `${matches.leftLogo.name} - ${matches.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
-        return { matches };
       }
     };
     
@@ -371,11 +370,12 @@ async function main(family) {
     if (isMatchesStatus.length && setting.loopEvent) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
       setting.count = optNextIndex(setting.count || 0, isMatchesStatus);
+      setting.matchId = isMatchesStatus[setting.count].matchId;
       writeSettings(setting);
       return { matches: isMatchesStatus[setting.count] };
     }
     
-    return {};
+    return { matches }
   };
   
   // 创建文本
@@ -722,8 +722,8 @@ async function main(family) {
     const liveStageSuffix = liveStage === '中场' || matchStatus !== '1' 
       ? dateFormat 
       : liveStage.includes('完')
-        ? `${liveStageText} ${liveStageTime}`
-        : liveStageText;
+      ? `${liveStageText} ${liveStageTime}`
+      : liveStageText;
     const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
     const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
     
@@ -734,7 +734,7 @@ async function main(family) {
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    mainStack.url = pageUrl;
+    mainStack.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=赛况`;
     await createStack(mainStack, leftLogo.logo, lay.imgSize, leftLogo.name);
     if (matchStatus === '0') {
       await createStack(mainStack, vsLogo, lay.vsLogoSize, null, 65);
@@ -831,7 +831,7 @@ async function main(family) {
     icon.imageSize = new Size(18, 18);
   };
   
-  const matchEventsColumnStack = (widget, left, right) => {
+  const matchEventsColumnStack = async (widget, left, right) => {
     const stack = widget.addStack();
     stack.layoutHorizontally();
     stack.bottomAlignContent();
@@ -840,6 +840,10 @@ async function main(family) {
     matchEventsLeft(stack, left.red, redIcon);
     stack.addSpacer(5);
     matchEventsLeft(stack, left.yellow, yellowIcon);
+    stack.addSpacer();
+    const vsIcon = await module.getCacheData(vsLogo, 240, `vsLogo.png`);
+    const icon = stack.addImage(vsIcon);
+    icon.imageSize = new Size(18, 18);
     stack.addSpacer();
     matchEventsRight(stack, right.yellow, yellowIcon);
     stack.addSpacer(5);
@@ -880,7 +884,6 @@ async function main(family) {
       );
       
       const statStack = widget.addStack();
-      statStack.url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=赛况`;
       statStack.layoutHorizontally();
       statStack.centerAlignContent();
       statStack.size = new Size(0, 12);
@@ -948,6 +951,7 @@ async function main(family) {
   
   const runWidget = async () => {
     let { widget, matches } = await createWidget();
+    
     if (family === 'small') {
       widget = createErrorWidget();
     }
