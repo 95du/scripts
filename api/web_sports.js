@@ -356,6 +356,15 @@ async function main(family) {
    * 3. 如果没有满足上述条件的比赛，返回距离当前时间最近且即将开赛的比赛（未开赛）
    */
   const processMatches = (data) => {
+    for (const match of data) {
+      const matchStartTime = new Date(match.startTime);
+      const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
+      if (match.matchStatus === '0' && minutesUntilStart <= 30 && minutesUntilStart > 0) {
+        module.notify(`${match.matchName} ${match.time}`, `${match.leftLogo.name} - ${match.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
+        return { matches: match };
+      }
+    };
+    
     const isMatchesStatus = data.filter(match => match.matchStatus === '1'); // 收集 1 的对象并循环
     if (isMatchesStatus.length && setting.loopEvent) {
       const optNextIndex = (num, data) => (num + 1) % data.length;
@@ -364,7 +373,6 @@ async function main(family) {
       writeSettings(setting);
       return { matches: isMatchesStatus[setting.count] };
     }
-    return {};
   };
   
   // 创建文本
@@ -908,7 +916,7 @@ async function main(family) {
     widget.setPadding(15, 17, 15, 17);
     const maxRows = family === 'medium' ? 6 : family === 'large' ? 15 : 6;
     const { isMatches } = await createMatches(widget, maxRows, true);
-    const { matches } = processMatches(isMatches);
+    const { matches } = processMatches(isMatches) || {};
     if (setting.matchFollow && isMatches[0]?.status !== '1') {
       const liveName = await getLiveMatch();
       setting.selected = liveName;
