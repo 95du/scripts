@@ -669,10 +669,13 @@ async function main(family) {
   const rankStack = (groupStack, column, isFirstGroup) => {
     const isCurrentMonth = column == 0 ? isFirstGroup : !isFirstGroup;
     if (isCurrentMonth) {
-      return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex));
+      const textColor = setting.alwaysDark 
+      ? Color.white() 
+      : Color.dynamic(Color.black(), Color.white());
+      return addStack(groupStack, yearMonth, totalPower, totalPower > 0 ? cost : '0.00', tierIndex, getTierColor(tierIndex),  getTierColor(tierIndex), textColor);
     } else {
       const billColor = new Color(isArrears === '1' ? '#FD4A67' : '#00B388');
-      return addStack(groupStack, lastMonth, ls_totalPower, ls_totalElectricity, ls_tierIndex, getTierColor(ls_tierIndex),  '#8C7CFF', billColor);
+      return addStack(groupStack, lastMonth, ls_totalPower, ls_totalElectricity, ls_tierIndex, getTierColor(ls_tierIndex), '#8C7CFF', billColor);
     }
   };
   
@@ -718,7 +721,6 @@ async function main(family) {
     
     // 第二组
     rankStack(groupStack, column);
-    widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     if (isArrears === '1') {
       widget.url = alipayUrl;
     }
