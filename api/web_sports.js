@@ -693,21 +693,8 @@ async function main(family) {
     const { header, percentage } = await getRaceSchedule(matchId);
     const { total, homeWin, draw, awayWin } = percentage || {};
     
-    const {
-      matchStatus,
-      matchStatusText,
-      matchDesc,
-      dateFormat,
-      liveStageTime,
-      liveStage,
-      liveStageText,
-      leftLogo,
-      leftGoal,
-      rightLogo,
-      rightGoal,
-    } = header || {};
+    const { matchStatus, matchStatusText, matchDesc, dateFormat, liveStageTime, liveStage, liveStageText, leftLogo, leftGoal, rightLogo, rightGoal } = header || {};
     
-    // ===== 🔔 比分通知 🔔 ===== //
     const liveStageSuffix = liveStage === '中场' || matchStatus !== '1' 
       ? dateFormat 
       : liveStage.includes('完')
@@ -738,6 +725,7 @@ async function main(family) {
     imageStack.size = new Size(0, 28);
     imageStack.addImage(progressChart);
     
+    // ===== 🔔 比分通知 🔔 ===== //
     scoreNotice(matchId, matchStatus, headerLiveStageText, leftLogo.name, leftGoal, rightLogo.name, rightGoal);
     return widget;
   };
