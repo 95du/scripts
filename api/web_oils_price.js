@@ -52,7 +52,7 @@ async function main() {
   const screenSize = Device.screenSize().height < 926;
   const height = screenSize ? 75 : 83
   const gap = screenSize ? 73 : 75;
-  const font = screenSize ? 12 : 13;
+  const font = screenSize ? 13 : 14;
   const [value, wide] = [6, 8].map(num => num - interval);
 
   /**
@@ -61,14 +61,15 @@ async function main() {
    */
   const provinces = [
     { title: '广东' },
+    { title: '广西' },
     { title: '海南' },
     { title: '福建' },
-    { title: '北京市' },
+    { title: '北京' },
     { title: '安徽' },
-    { title: '天津市' },
+    { title: '天津' },
     { title: '河北' },
     { title: '山西' },
-    { title: '上海市' },
+    { title: '上海' },
     { title: '江苏' },
     { title: '浙江' },
     { title: '江西' },
@@ -76,7 +77,7 @@ async function main() {
     { title: '河南' },
     { title: '湖北' },
     { title: '湖南' },
-    { title: '重庆市' },
+    { title: '重庆' },
     { title: '四川' },
     { title: '贵州' },
     { title: '云南' },
@@ -85,12 +86,11 @@ async function main() {
     { title: '青海' },
     { title: '辽宁' },
     { title: '吉林' },
+    { title: '宁夏' },
+    { title: '新疆' },
+    { title: '西藏' },
+    { title: '内蒙古' },
     { title: '黑龙江' },
-    { title: '西藏自治区' },
-    { title: '内蒙古自治区' },
-    { title: '广西壮族自治区' },
-    { title: '宁夏回族自治区' },
-    { title: '新疆维吾尔自治区' }
   ];
   
   const findTitle = () => {
@@ -100,7 +100,7 @@ async function main() {
   
   const getOilsPrices = async () => {
     const province = findTitle();
-    const url = `https://youjia.15qs.com/index.php?c=api&a=getprice&province=${encodeURIComponent(province)}`;  
+    const url = `https://you.qswpt.com/index.php?c=api&a=getprice&province=${encodeURIComponent(province)}`;  
     const oil = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'oil.json');
     return oil ? [setting.province, oil.hao92, oil.hao95, oil.hao98, oil.hao0] : null;
   };
@@ -118,13 +118,14 @@ async function main() {
   // 获取油价预警
   const getOilTips = async () => {
     try {
-      const url = 'https://20121212.cn/ci/index.php/tips/get';  
-      const [data] = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
-      const tips = data.tips.match(/([\s\S]*?油价调整时间为：\d{1,2}月\d{1,2}日(?:24时)?)/);
+      const date = await new Request('https://you.qswpt.com/index.php?c=api&a=getcountdown').loadJSON();
+      const url = `https://you.qswpt.com/index.php?c=api&a=getcity3&id=2&province=${encodeURIComponent(province)}`;
+      const data = await module.getCacheData(url, (province !== array[0] ? 0 : 5), 'tips.json');
+      const tips = data.info2.news.match(/([\s\S]*?油价调整时间为：\d{1,2}月\d{1,2}日(?:24时)?)/);
       const cleanText = (text) => text.replace(/\s+/g, ' ');
       return {
-        date: Math.floor((new Date(data.timedown) - new Date()) / 86400000),
-        oilsTips: cleanText(tips ? tips[1] : data.tips)
+        date: Math.floor((new Date(date.target_time) - new Date()) / 86400000),
+        oilsTips: cleanText(tips ? tips[1] : data.info2.news)
       };
     } catch (e) {
       console.error('⚠️ 无法更新数据，可能节点冲突，请关闭 VPN 后重试。');
@@ -132,7 +133,7 @@ async function main() {
   };
   
   const { oilsTips, date } = await getOilTips() || setting;
-  const tipsGap = oilsTips && oilsTips.length >= 78;
+  const tipsGap = oilsTips && oilsTips.length >= 76;
   
   // 设置组件背景
   const setBackground = async (widget) => {
@@ -188,7 +189,7 @@ async function main() {
     statusStack.addSpacer();
     
     const columnStack = statusStack.addStack();
-    columnStack.size = new Size(6, tipsGap ? 60 : 50);
+    columnStack.size = new Size(6, tipsGap ? 65 : 55);
     columnStack.cornerRadius = 50;
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
@@ -197,7 +198,7 @@ async function main() {
     oilTipsText.textColor = textColor
     oilTipsText.font = Font.mediumSystemFont(tipsGap ? font : 14);
     oilTipsText.leftAlignText();
-    oilTipsText.textOpacity = isDark ? 0.88 : 0.8;
+    oilTipsText.textOpacity = isDark ? 0.9 : 0.95;
     statusStack.addSpacer();
       
     const dataStack = mainStack.addStack();
