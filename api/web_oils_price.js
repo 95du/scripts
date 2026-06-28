@@ -52,7 +52,6 @@ async function main() {
   const screenSize = Device.screenSize().height < 926;
   const height = screenSize ? 75 : 83
   const gap = screenSize ? 73 : 75;
-  const font = screenSize ? 13 : 14;
   const [value, wide] = [6, 8].map(num => num - interval);
 
   /**
@@ -194,9 +193,9 @@ async function main() {
     columnStack.backgroundColor = Color.red();
     statusStack.addSpacer();
     
-    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 95 || date < 1 ? '' : ` 【 剩余 ${date || 0} 天 】`));
+    const oilTipsText = statusStack.addText(oilsTips + (oilsTips.length >= 95 || date < 1 ? '' : ` 【 距离下次调价剩余 ${date || 0} 天 】`));
     oilTipsText.textColor = textColor
-    oilTipsText.font = Font.mediumSystemFont(tipsGap ? font : 14);
+    oilTipsText.font = Font.mediumSystemFont(14);
     oilTipsText.leftAlignText();
     oilTipsText.textOpacity = isDark ? 0.9 : 0.95;
     statusStack.addSpacer();
