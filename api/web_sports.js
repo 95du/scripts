@@ -55,7 +55,8 @@ async function main(family) {
   const barBgColor = setting.alwaysDark ? new Color('#666666') : Color.dynamic(new Color('#dddddd'), new Color('#666666'));
   const videoColor = Color.dynamic(Color.green(), Color.white());
   
-  const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/img/e0d7f6f1bd51a47082dcc0e260a0a7c3.png';
+  const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/san/img/vs.e0d7f6f1.png';
+  const goalDecision = 'https://ms.bdstatic.com/se/tiyu-wise/static/san/img/var.d2f870ba.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
   const cornerIcon = await module.getCacheData(`https://gips2.baidu.com/it/u=1181162153,2900628859&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `corner.png`);
   const redIcon = await module.getCacheData(`https://gips3.baidu.com/it/u=2891018693,3576086173&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `red.png`);
@@ -131,7 +132,7 @@ async function main(family) {
         setting[matchNames] = { leftScore, rightScore };
         writeSettings(setting);
         // 进球事件
-        const events = await getGoalsEvents(matchId, '赛况');
+        const events = await getGoalsEvents(matchId);
         if (events) {
           const team = events.left || events.right || {};
           const homeAway = events?.left ? '主' : '客';
@@ -171,7 +172,7 @@ async function main(family) {
   // 智能跟赛
   const getLiveMatch = async () => {
     const url = `https://tiyu.baidu.com/al/match/list`;
-    const html = await module.getCacheData(url, 0.2, 'matchlist.html');
+    const html = await module.httpRequest(url, 'string');
     const match =html.match(/<!--s-data:([\s\S]*?)-->/)?.[1] || html.match(/json"\>([\s\S]*?)\n<\/script\>/)?.[1];
     const data = JSON.parse(match);
     const findLive = (tabName) => {
@@ -195,30 +196,33 @@ async function main(family) {
     return categoryList;
   };
   
-  // 进球事件/技术统计
-  const getGoalsEvents = async (matchId, tabText, live) => {
+  // 赛况/技术统计
+  const getGoalsEvents = async (matchId, live) => {
     try {
-      const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent(tabText)}`;
-      const html = await module.httpRequest(url, 'string');
-      const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
-      const value = JSON.parse(match);
-      const tabsList = value.data?.data?.tabsList || value.data?.tabsList;
+      const fetchMatchTab = async (tabText) => {
+        const url = `https://tiyu.baidu.com/al/live/detail?matchId=${matchId}&tab=${encodeURIComponent(tabText)}`;
+        const html = await module.httpRequest(url, 'string');
+        const match = html.match(/<!--s-data:([\s\S]*?)-->/)?.[1];
+        const value = JSON.parse(match);
+        const tabsList = value.data?.data?.tabsList || value.data?.tabsList;
+        return { tabsList, pageUrl: value.data?.headLive?.iframeUrl };
+      };
+      
+      const [liveData, statData] = await Promise.all([fetchMatchTab('赛况'), fetchMatchTab('统计')]);
       if (live) {
-        const statistics = tabsList.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
+        const getStatistics = (tabsList) => tabsList?.find((tab) => tab.data?.["line-statistics"])?.data?.["line-statistics"] || null;
         return {
-          stat: statistics,
-          pageUrl: value.data?.headLive?.iframeUrl
-        }
+          stat: getStatistics(liveData.tabsList) || getStatistics(statData.tabsList),
+          pageUrl: liveData.pageUrl
+        };
       }
-      // 如果找到结果，则处理 events
-      const result = tabsList.find(tab => tab.hasTabData);
+  
+      const result = liveData.tabsList?.find(tab => tab.hasTabData);
       if (result) {
         const { incidents } = result.data.graphic_incidents;
         const goalEvents = ['进球', '点球', '点球未进', '乌龙球'];
         const events = incidents.filter(event => goalEvents.includes(event.goaltype));
-        if (events) {
-          return events[0] || null;
-        }
+        return events[0] || null;
       }
     } catch (e) {
       console.log('赛况统计错误' + e);
@@ -396,7 +400,7 @@ async function main(family) {
     leagueStack.addSpacer(12);
     createText(leagueStack, header.name, lay.titleSize);
     leagueStack.addSpacer();
-    const dateFormat = setting.dateFormat ? module.formatDate(Date.now(), 'hourMin') : header.info.replace(/北京时间：|赛季/g, '')
+    const dateFormat = setting.dateFormat ? module.formatDate(Date.now(), 'hourMin') : header.info.replace(/北京时间：|赛季/g, '');
     createText(leagueStack, dateFormat, lay.titleSize);
     if (setting.dateFormat) {
       leagueStack.addSpacer(6);
@@ -445,7 +449,8 @@ async function main(family) {
     rowStack.centerAlignContent();
     if (width) rowStack.size = new Size(width, lay.stackSize);
     if (left) rowStack.addSpacer();
-    const rowText = rowStack.addText(text);
+    const newName = text.replace(/足球队/g, '');
+    const rowText = rowStack.addText(newName);
     rowText.font = Font.mediumSystemFont(lay.textSize);
     rowText.textOpacity = textOpacity === true || text === '全明星' ? 0.5 : 1;
     rowText.textColor = matchStatus === '1' ? Color.red() : textColor;
@@ -637,7 +642,8 @@ async function main(family) {
       titleStack.centerAlignContent();
       titleStack.size = new Size(0, 14)
       titleStack.addSpacer();
-      const titleText = titleStack.addText(teamName);
+      const newName = teamName.replace(/足球队/g, '');
+      const titleText = titleStack.addText(newName);
       titleText.font = Font.mediumSystemFont(13.5);
       titleText.textColor = textColor;
       titleStack.addSpacer();
@@ -892,7 +898,7 @@ async function main(family) {
   const createLiveWidget = async ({ matchId, matchType, matchStatus, leftLogo, rightLogo } = matches) => {
     const widget = new ListWidget();
     widget.setPadding(...lay.padding);
-    const events = await getGoalsEvents(matchId, '统计', true);
+    const events = await getGoalsEvents(matchId, true);
     const { pageUrl, stat } = events;
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
