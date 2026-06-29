@@ -31,6 +31,8 @@ async function main(family) {
   const param = args.widgetParameter?.trim();
   if (param) {
     chooseSports = setting.values.some(item => item.value == param) ? param : chooseSports;
+  } else {
+    chooseSports = '欧冠';
   }
   
   const isSmall = Device.screenSize().height < 926;
