@@ -128,10 +128,8 @@ async function main(family) {
       if (!setting[matchNames]) {
         setting[matchNames] = { leftScore: 0, rightScore: 0 };
       }
-      if (
-        (leftScore > 0 && leftScore !== setting[matchNames].leftScore) || 
-        (rightScore > 0 && rightScore !== setting[matchNames].rightScore)
-      ) {
+      if (leftScore !== setting[matchNames].leftScore || 
+rightScore !== setting[matchNames].rightScore) {
         setting[matchNames] = { leftScore, rightScore };
         writeSettings(setting);
         // 进球事件
