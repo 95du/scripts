@@ -363,7 +363,7 @@ async function main(family) {
     for (const match of data) {
       const matchStartTime = new Date(match.startTime);
       const minutesUntilStart = Math.ceil((matchStartTime - new Date()) / (60 * 1000));
-      if (minutesUntilStart > -2220 && minutesUntilStart <= 33330) {
+      if (minutesUntilStart > 0 && minutesUntilStart <= 30) {
         module.notify(`${match.matchName} ${match.time}`, `${match.leftLogo.name} - ${match.rightLogo.name}，还剩 ${minutesUntilStart} 分钟开赛`);
         return { matches: match };
       }
