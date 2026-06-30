@@ -128,8 +128,9 @@ async function main(family) {
       if (!setting[matchNames]) {
         setting[matchNames] = { leftScore: 0, rightScore: 0 };
       }
-      if (leftScore !== setting[matchNames].leftScore || 
-rightScore !== setting[matchNames].rightScore) {
+      if ((leftScore > 0 || rightScore > 0 ) && leftScore !== setting[matchNames].leftScore || 
+        rightScore !== setting[matchNames].rightScore
+      ) {
         setting[matchNames] = { leftScore, rightScore };
         writeSettings(setting);
         // 进球事件
@@ -149,7 +150,7 @@ rightScore !== setting[matchNames].rightScore) {
       if (setting[matchNames]) {
         delete setting[matchNames];
         writeSettings(setting);
-        module.notify('比赛结束❗️', liveScore);
+        module.notify(`${liveStageText}比赛结束❗️`, liveScore);
       }
     }
   };
@@ -678,8 +679,15 @@ rightScore !== setting[matchNames].rightScore) {
       ? barBgColor 
       : liveStage === '中场' 
         ? new Color('#8226DC') 
-        : new Color('#FF4800');
-    const statusText = barStack.addText(matchStatus === '1' && liveStage === '中场' ? '中场休息' : matchStatusText);
+        : liveStage === '点球决战' 
+          ? new Color('#FF0000')
+          : new Color('#FF4800');
+    const statusText = barStack.addText(matchStatus === '1' && liveStage === '中场' 
+      ? '中场休息' 
+      : liveStage === '点球决战' 
+        ? liveStage
+        : matchStatusText);
+        
     statusText.font = Font.boldSystemFont(12.5);
     statusText.textColor = matchStatus === '2' ? textColor : Color.white();
     if (matchStatus === '2') statusText.textOpacity = 0.8;
@@ -710,12 +718,12 @@ rightScore !== setting[matchNames].rightScore) {
     
     const { matchStatus, matchStatusText, matchDesc, dateFormat, liveStageTime, liveStage, liveStageText, leftLogo, leftGoal, rightLogo, rightGoal } = header || {};
     
+    const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
     const liveStageSuffix = liveStage === '中场' || matchStatus !== '1' 
       ? dateFormat 
       : liveStage.includes('完')
       ? `${liveStageText} ${liveStageTime}`
       : liveStageText;
-    const safeMatchDesc = (matchDesc || '').replace(/nba/gi, 'NBA');
     const headerLiveStageText = `${safeMatchDesc}  ${liveStageSuffix}`;
     
     const infoStack = widget.addStack();
