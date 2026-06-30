@@ -150,7 +150,7 @@ async function main(family) {
       if (setting[matchNames]) {
         delete setting[matchNames];
         writeSettings(setting);
-        module.notify(`${liveStageText}比赛结束❗️`, liveScore);
+        module.notify(`比赛结束❗️`, liveScore);
       }
     }
   };
