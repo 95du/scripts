@@ -128,7 +128,8 @@ async function main(family) {
       if (!setting[matchNames]) {
         setting[matchNames] = { leftScore: 0, rightScore: 0 };
       }
-      if ((leftScore > 0 || rightScore > 0 ) && leftScore !== setting[matchNames].leftScore || 
+      if ((Number(leftScore) > 0 || Number(rightScore) > 0 ) && 
+        leftScore !== setting[matchNames].leftScore || 
         rightScore !== setting[matchNames].rightScore
       ) {
         setting[matchNames] = { leftScore, rightScore };
