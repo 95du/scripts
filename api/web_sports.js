@@ -423,7 +423,7 @@ async function main(family) {
     rowText.textOpacity = 0.8;
   };
   
-  const addDateColumn = (widget, totalMatches, item) => {
+  const addDateColumn = (widget, item) => {
     const dateStack = widget.addStack();
     dateStack.layoutHorizontally();
     dateStack.centerAlignContent();
@@ -441,7 +441,7 @@ async function main(family) {
     timeStack.addSpacer();
     createColumnText(dateStack, dateTexts[1]);
     dateStack.addSpacer();
-    createColumnText(dateStack, `${totalMatches}场比赛`);
+    createColumnText(dateStack, `${item.totalMatches}场比赛`);
     widget.addSpacer(5);
     return dateStack;
   };
@@ -477,7 +477,7 @@ async function main(family) {
       const targetRow = liveMatches.length > 4 ? -1 : liveMatches.length > 0 ? 1 : 2;
       
       if (rowCount + 1 < maxRows && (rowCount === targetRow || family !== 'medium')) {
-        addDateColumn(widget, item.totalMatches, item);
+        addDateColumn(widget, item);
         rowCount++;
       }
       
@@ -920,7 +920,7 @@ async function main(family) {
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, (setting.events && events.stat && matchStatus !== '0' ? 7 : 8));
+        await createMatches(widget, (setting.events && stat?.list.length >= 9 && matchStatus !== '0' ? 7 : 8));
       }
     };
     return widget;
