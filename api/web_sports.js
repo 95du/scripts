@@ -920,7 +920,7 @@ async function main(family) {
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, (setting.events && stat?.list.length >= 9 && matchStatus !== '0' ? 7 : 8));
+        await createMatches(widget, (setting.events && stat && matchStatus !== '0' ? 7 : 8));
       }
     };
     return widget;
