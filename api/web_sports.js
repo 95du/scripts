@@ -511,7 +511,8 @@ async function main(family) {
         // 比赛时间
         createTextStack(stack, time, 46, textOpacity, 'right');
         // 主队图标
-        const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogo.name}.png`);
+        const leftLogoName = leftLogo.name.replace('/', '_');
+        const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogoName}.png`);
         const homeIcon = stack.addImage(homeImg);
         homeIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         stack.addSpacer(8);
@@ -525,7 +526,8 @@ async function main(family) {
         createTextStack(stack, rightLogo.name, null, textOpacity, null, 'left');
         stack.addSpacer(6);
         // 客队图标
-        const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogo.name}.png`);
+        const rightLogoName = rightLogo.name.replace('/', '_');
+        const awayImg = await module.getCacheData(rightLogo.logo, 240, `${rightLogoName}.png`);
         const awayIcon = stack.addImage(awayImg);
         awayIcon.imageSize = new Size(lay.stackSize, lay.stackSize);
         rowCount++;
