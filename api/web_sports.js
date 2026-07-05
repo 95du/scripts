@@ -58,9 +58,10 @@ async function main(family) {
   const vsLogo = 'https://ms.bdstatic.com/se/tiyu-wise/static/san/img/vs.e0d7f6f1.png';
   const goalDecision = 'https://ms.bdstatic.com/se/tiyu-wise/static/san/img/var.d2f870ba.png';
   const raceScheduleUrl = `https://tiyu.baidu.com/al/match?match=${chooseSports}`;
-  const cornerIcon = await module.getCacheData(`https://gips2.baidu.com/it/u=1181162153,2900628859&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `corner.png`);
-  const redIcon = await module.getCacheData(`https://gips3.baidu.com/it/u=2891018693,3576086173&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `red.png`);
-  const yellowIcon = await module.getCacheData(`https://gips3.baidu.com/it/u=3015608131,3478480768&fm=3028&app=3028&f=PNG&fmt=auto&q=96&size=f42_42`, 240, `yellow.png`);
+  const cornerIcon = await module.getCacheData(`https://raw.githubusercontent.com/95du/scripts/master/img/football/corner.png`, 240, `corner.png`);
+  const rightCornerIcon = await module.getCacheData(`https://raw.githubusercontent.com/95du/scripts/master/img/football/rightCorner.png`, 240, `rightCorner.png`);
+  const redIcon = await module.getCacheData(`https://raw.githubusercontent.com/95du/scripts/master/img/football/red.png`, 240, `red.png`);
+  const yellowIcon = await module.getCacheData(`https://raw.githubusercontent.com/95du/scripts/master/img/football/yellow.png`, 240, `yellow.png`);
     
   /**
    * 存储当前设置
@@ -851,7 +852,7 @@ async function main(family) {
     stack.addSpacer(5);
     matchEventsRight(stack, right.red, redIcon);
     stack.addSpacer(5);
-    matchEventsRight(stack, right.corner, cornerIcon);
+    matchEventsRight(stack, right.corner, rightCornerIcon);
     widget.addSpacer();
     return stack;
   };
