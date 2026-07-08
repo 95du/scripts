@@ -192,6 +192,47 @@ const generateItem = (typhoon, land, newest) => {
   ];
 };
 
+const levelAgency = () => {
+  return [
+    { 
+      label: '热带低压 (TD)', 
+      agency: '中国', 
+      iconColor: '#00C400',
+      textColor: '#FF0000',
+    },
+    { 
+      label: '热带风暴 (TS)', 
+      agency: '日本', 
+      iconColor: '#39A7F8',
+      textColor: '#F55BF9',
+    },
+    { 
+      label: '强热带风暴 (STS)', 
+      agency: '韩国', 
+      iconColor: '#FFD83A',
+      textColor: '#FF7800',
+    },
+    { 
+      label: '台风 (TY)', 
+      agency: '美国', 
+      iconColor: '#FF7800',
+      textColor: '#FFD83A',
+    },
+    { 
+      label: '强台风 (STY)', 
+      agency: '中国台湾', 
+      iconColor: '#F55BF9',
+      textColor: '#39A7F8',
+    },
+    { 
+      label: '超强台风 (SuperTY)', 
+      agency: '中国香港', 
+      iconColor: '#FF0000',
+      textColor: '#00C400',
+    },
+  ];
+};
+
 const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   const barStack = topStack.addStack();
   barStack.layoutHorizontally();
@@ -249,47 +290,6 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
     }
   });
   return widget;
-};
-
-const levelAgency = () => {
-  return [
-    { 
-      label: '热带低压 (TD)', 
-      agency: '中国', 
-      iconColor: '#00C400',
-      textColor: '#FF0000',
-    },
-    { 
-      label: '热带风暴 (TS)', 
-      agency: '日本', 
-      iconColor: '#39A7F8',
-      textColor: '#F55BF9',
-    },
-    { 
-      label: '强热带风暴 (STS)', 
-      agency: '韩国', 
-      iconColor: '#FFD83A',
-      textColor: '#FF7800',
-    },
-    { 
-      label: '台风 (TY)', 
-      agency: '美国', 
-      iconColor: '#FF7800',
-      textColor: '#FFD83A',
-    },
-    { 
-      label: '强台风 (STY)', 
-      agency: '中国台湾', 
-      iconColor: '#F55BF9',
-      textColor: '#39A7F8',
-    },
-    { 
-      label: '超强台风 (SuperTY)', 
-      agency: '中国香港', 
-      iconColor: '#FF0000',
-      textColor: '#00C400',
-    },
-  ];
 };
 
 const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
