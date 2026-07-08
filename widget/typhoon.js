@@ -1,6 +1,12 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: red; icon-glyph: random;
+/**
+ * 组件作者: 95du茅台
+ * 组件版本: Version 1.0.0
+ * https://t.me/+CpAbO_q_SGo2ZWE1
+ */
+
 const fm = FileManager.local();
 const mainPath = fm.joinPath(fm.documentsDirectory(), 'typhoon');
 if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
