@@ -5,6 +5,10 @@
  * 组件作者: 95du茅台
  * 组件版本: Version 1.0.0
  * https://t.me/+CpAbO_q_SGo2ZWE1
+ *
+ * https://typhoon.slt.zj.gov.cn
+ * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
+ * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202609
  */
 
 const fm = FileManager.local();
@@ -57,6 +61,7 @@ const loopdisplay = (arr) => {
   const optNextIndex = (num, data) => (num + 1) % data.length;
   setting.count = optNextIndex(setting.count || 0, arr);
   writeSettings(setting);
+  return arr[setting.count];
 };
 
 const autoUpdate = async () => {
@@ -90,9 +95,8 @@ const getTyphoonData = async () => {
     const match = html.match(/typhoons_data = ([\s\S]*?);/)?.[1];
     const arr = JSON.parse(match);
     if (!arr.length) return null;
-    loopdisplay(arr);
     typhoonNotice(html);
-    const tf = arr[setting.count];
+    const tf = loopdisplay(arr);
     const typhoon = tf.points[tf.points.length - 1];
     // 热带扰动，位置/趋势
     const { tc, latest } = await currMergerTC(tf) || {};
@@ -177,12 +181,12 @@ const generateItem = (typhoon, land, newest) => {
     },
     { 
       label: "参考位置", 
-      value: newest.location, 
+      value: newest.location,
       color: new Color('#8C7CFF') 
     },
     { 
       label: "未来趋势", 
-      value: newest.trend, 
+      value: newest.trend,
       color: Color.green() 
     }
   ];
