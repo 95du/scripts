@@ -88,28 +88,30 @@ const currMergerTC = async (tf) => {
   }
 };
 
+// https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
 const getTyphoonData = async () => {
   try {
     const url = `https://tf02.istrongcloud.com/member/v1.2/home`
     const html = await new Request(url).loadString();
-    const match = html.match(/typhoons_data = ([\s\S]*?);/)?.[1];
+    const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
     if (!arr.length) return null;
     typhoonNotice(html);
     const tf = loopdisplay(arr);
     const typhoon = tf.points[tf.points.length - 1];
-    // 热带扰动，位置/趋势
-    const { tc, latest } = await currMergerTC(tf) || {};
-    return { 
-      tf, typhoon, arr,
-      tc, latest
-    }
+    return { arr, tf, typhoon }
   } catch (e) {
     console.log(e);
     return null;
   }
 };
 
+/*
+ * const notice = https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json
+ * 
+const home = notice.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
+console.log(home.data.common.title)
+ */
 const typhoonNotice = (html) => {
   const block = html.match(/typhoonNotice\s*:\s*({[\s\S]*?})\s*,/)?.[1];
   const tips = block?.match(/text\s*:\s*["']([^"']+)["']/)?.[1];
@@ -164,7 +166,7 @@ const generateItem = (typhoon, land, newest) => {
   return [
     { 
       label: "中心位置", 
-      value: `东经${typhoon.lng}°　北纬${typhoon.lat}°`, 
+      value: `东经${newest.lon}°　北纬${newest.lat}°`, 
       color: Color.blue() 
     },
     { 
@@ -362,7 +364,9 @@ const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
   
-  const { tf, typhoon, arr, tc, latest  } = await getTyphoonData() || {};
+  const { arr, tf, typhoon } = await getTyphoonData() || {};
+  // 热带扰动，位置/趋势
+  const { tc, latest } = await currMergerTC(tf) || {};
   
   let widget;
   if (!tf) {
