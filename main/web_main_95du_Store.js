@@ -29,7 +29,6 @@ async function main() {
   
   const pathName = '95du_Store';
   const module = new _95du(pathName);  
-  
   const {
     mainPath,
     settingPath,
@@ -427,6 +426,14 @@ async function main() {
       label: '新版组件',
       type: 'group',
       items: [
+        {
+          label: '台风路径',
+          desc: '风速风力、位置、趋势等',
+          version: '1.0.0',
+          type: 'button',
+          scrUrl: `${rootUrl}/widget/typhoon.js`,
+          icon: `${rootUrl}/img/icon/typhoon.jpeg`
+        },
         {
           label: '黄金时价',
           desc: '十大珠宝品牌黄金价格',
