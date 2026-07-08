@@ -61,7 +61,7 @@ const loopdisplay = (arr) => {
 
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
-  fm.writeString(module.filename, script);
+  if (script.includes('組件')) fm.writeString(module.filename, script);
 };
 
 /** 
