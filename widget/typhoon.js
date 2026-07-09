@@ -158,7 +158,7 @@ const formatDate = (time, showMin) => {
 
 const getTyphoonColor = (speed) => {
   if (speed >= 51) return new Color('#FF0000');
-  if (speed >= 42) return new Color('#F55BF9');
+  if (speed >= 42) return new Color('#FA5EFF');
   if (speed >= 33) return new Color('#FF7800');
   if (speed >= 25) return new Color('#FFD83A');
   if (speed >= 17) return new Color('#39A7F8');
@@ -258,9 +258,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
 const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, family) => {
   const widget = new ListWidget();
   widget.setPadding(family ? 15 : 13, 20, family ? 15 : 13, 20);
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
-  const topStack = mainStack.addStack();
+  const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   createButtonStack(topStack, tyIcon, tf, typhoon);
@@ -281,11 +279,13 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
   });
   
   if (family) {
-    mainStack.addSpacer();
+    widget.addSpacer();
   } else {
-    mainStack.addSpacer(8);
+    widget.addSpacer(8);
   }
   
+  const mainStack = widget.addStack();
+  mainStack.layoutVertically();
   info.forEach((item, i) => {
     const listStack = mainStack.addStack();
     listStack.layoutHorizontally();
@@ -306,9 +306,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
 const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
-  const topStack = mainStack.addStack();
+  const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   
@@ -345,11 +343,13 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
   }
   
   if (family) {
-    mainStack.addSpacer();
+    widget.addSpacer();
   } else {
-    mainStack.addSpacer(5);
+    widget.addSpacer(5);
   }
-    
+  
+  const mainStack = widget.addStack();
+  mainStack.layoutVertically();
   levels.forEach((item, i) => {
     const listStack = mainStack.addStack();
     listStack.layoutHorizontally();
@@ -387,10 +387,11 @@ const createSmallWidget = (tf, typhoon, newest, tyIcon, textColor) => {
   createButtonStack(widget, tyIcon, tf, typhoon);
   widget.addSpacer();
   const speedText = widget.addText(`风速 ${typhoon.speed}米/秒`);
-  speedText.font = Font.mediumSystemFont(14);
+  speedText.font = Font.mediumSystemFont(13.5);
   speedText.textColor = textColor;
-  const strongText = widget.addText(`${typhoon.power}级 ( ${newest.strong} )`);
-  strongText.font = Font.mediumSystemFont(14);
+  widget.addSpacer(1);
+  const strongText = widget.addText(`${typhoon.power}级，${newest.strong}`);
+  strongText.font = Font.mediumSystemFont(13.5);
   strongText.textColor = textColor;
   return widget;
 };
