@@ -88,7 +88,10 @@ const currMergerTC = async (tf) => {
   }
 };
 
-// https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
+/** 
+ * https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
+ * https://tf.istrongcloud.com/release/index-hrtt.html
+ */
 const getTyphoonData = async () => {
   try {
     const url = `https://tf02.istrongcloud.com/member/v1.2/home`
@@ -167,29 +170,29 @@ const generateItem = (typhoon, land, newest) => {
     { 
       label: "中心位置", 
       value: `东经${newest.lon}°　北纬${newest.lat}°`, 
-      color: Color.blue() 
+      color: new Color('#00C400')
     },
     { 
       label: "风速风力", 
       value: `${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} )`, 
-      color: Color.red() 
+      color: new Color('#39A7F8')
     },
     { 
       label: typhoon.radius7 > 0 ? "风圈半径" : "登陆信息",
       value: typhoon.radius7 > 0
         ? `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`
         : `${formatDate(land.land_time)}，在${land.position}登陆`,
-      color: Color.orange()
+      color: new Color('#FFD83A')
     },
     { 
       label: "参考位置", 
       value: newest.location,
-      color: new Color('#8C7CFF') 
+      color: new Color('#FF7800')
     },
     { 
       label: "未来趋势", 
       value: newest.trend,
-      color: Color.green() 
+      color: new Color('#8C7CFF')
     }
   ];
 };
@@ -252,9 +255,9 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
+const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, family) => {
   const widget = new ListWidget();
-  widget.setPadding(13, 20, 13, 20);
+  widget.setPadding(family ? 15 : 13, 20, family ? 15 : 13, 20);
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   const topStack = mainStack.addStack();
@@ -264,6 +267,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(15);
+  dateText.textColor = textColor;
   topStack.addSpacer();
   
   arr.forEach((tf, i) => {
@@ -276,7 +280,11 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
     }
   });
   
-  mainStack.addSpacer(8);
+  if (family) {
+    mainStack.addSpacer();
+  } else {
+    mainStack.addSpacer(8);
+  }
   
   info.forEach((item, i) => {
     const listStack = mainStack.addStack();
@@ -287,6 +295,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
     listStack.addSpacer(15);
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
+    valueText.textColor = textColor;
     if (i < info.length - 1) {
       mainStack.addSpacer(3);
     }
@@ -294,7 +303,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info) => {
   return widget;
 };
 
-const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
+const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const mainStack = widget.addStack();
@@ -302,22 +311,28 @@ const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
   const topStack = mainStack.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.addSpacer(4.5);
-  const bar = topStack.addStack();
-  bar.size = new Size(8, 20);
-  bar.backgroundColor = new Color('#8C7CFF');
-  bar.cornerRadius = 50;
-  topStack.addSpacer(19);
-  const levelText = topStack.addText('热带气旋等级、预报机构');
+  
+  if (!family) {
+    topStack.addSpacer(4.5);
+    const bar = topStack.addStack();
+    bar.size = new Size(8, 20);
+    bar.backgroundColor = new Color('#8C7CFF');
+    bar.cornerRadius = 50;
+    topStack.addSpacer(19);
+  }
+  
+  const levelText = topStack.addText(family && !tc.length 
+    ? '西北太平洋无活跃台风' 
+    : '热带气旋等级、预报机构');
   levelText.font = Font.mediumSystemFont(15);
-  levelText.textColor = new Color('#FF9800');
+  levelText.textColor = new Color(family && !tc.length ? '#FF0000' : '#FF9800');
   topStack.addSpacer();
   
   if (tc.length) {
     tc.forEach((item, i) => {
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
-      icon.tintColor = Color.green()
+      if (!family) icon.tintColor = new Color('#00C400');
       if (i < tc.length - 1) {
         topStack.addSpacer(3);
       }
@@ -326,12 +341,16 @@ const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
   } else {
     const timeText = topStack.addText(getFormattedTime());
     timeText.font = Font.mediumSystemFont(16);
-    timeText.textColor = Color.green();
+    timeText.textColor = textColor;
   }
   
-  mainStack.addSpacer(5);
-  
-  level.forEach((item, i) => {
+  if (family) {
+    mainStack.addSpacer();
+  } else {
+    mainStack.addSpacer(5);
+  }
+    
+  levels.forEach((item, i) => {
     const listStack = mainStack.addStack();
     listStack.layoutHorizontally();
     listStack.centerAlignContent();
@@ -341,7 +360,8 @@ const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
     listStack.addSpacer(15);
     
     const labelText = listStack.addText(item.label);
-    labelText.font = Font.boldSystemFont(13.5);
+    labelText.font = Font.mediumSystemFont(13.5);
+    labelText.textColor = textColor;
     listStack.addSpacer();
     const symbolText = listStack.addText('---');
     symbolText.font = Font.mediumSystemFont(13.5);
@@ -353,16 +373,20 @@ const createLevelWidget = (level, tc = [], tcIcon, tyIcon) => {
     agencyStack.addSpacer();
     const agencyText = agencyStack.addText(item.agency);
     agencyText.font = Font.mediumSystemFont(13.5);
-    if (i < level.length - 1) {
+    agencyText.textColor = textColor;
+    if (i < levels.length - 1) {
       mainStack.addSpacer(3);
     }
   });
   return widget;
 };
 
+// const url = `https://tf02.istrongcloud.com/3d/wxmp-poster/result.png?r=${Date.now()}`;
 const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
+  const family = config.widgetFamily === 'large';
+  const textColor = family ? Color.black() : Color.dynamic(Color.black(), Color.white());
   
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   // 热带扰动，位置/趋势
@@ -370,20 +394,26 @@ const runWidget = async () => {
   
   let widget;
   if (!tf) {
-    const level = levelAgency();
-    widget = createLevelWidget(level, tc, tcIcon, tyIcon);
+    const levels = levelAgency();
+    widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, family);
   } else {
     const newest = latest.find(item => item.tfbh === tf.tfbh);
     const date = formatDate(newest.update_time);
     const land = tf.land?.[tf.land?.length - 1] ?? {};
     const info = generateItem(typhoon, land, newest);
     speedChangeNotice(typhoon, newest);
-    widget = await createWidget(tyIcon, tf, typhoon, arr, date, info);
+    widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, family);
   }
   
   widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-  widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
+  
+  if (family) {
+    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
+    widget.backgroundImage = await new Request(url).loadImage();
+  } else {
+    widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
+  }
   
   if (config.runsInApp) {
     await widget.presentMedium();
