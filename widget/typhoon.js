@@ -5,10 +5,7 @@
  * 组件作者: 95du茅台
  * 组件版本: Version 1.0.0
  * https://t.me/+CpAbO_q_SGo2ZWE1
- *
- * https://typhoon.slt.zj.gov.cn
- * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
- * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202609
+ * 支持大中小号组件 ‼️
  */
 
 const fm = FileManager.local();
@@ -51,6 +48,8 @@ const notify = (title, body, url, sound = 'event') => {
   n.schedule();
 };
 
+const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
+
 const getFormattedTime = () => {
   const df = new DateFormatter();
   df.dateFormat = 'HH:mm';
@@ -70,7 +69,7 @@ const autoUpdate = async () => {
 };
 
 /** 
- * 位置/趋势
+ * 热带扰动，位置/趋势
  * const locUrl = `https://tf02.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
  */
 const currMergerTC = async (tf) => {
@@ -89,6 +88,9 @@ const currMergerTC = async (tf) => {
 };
 
 /** 
+ * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
+ * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202609
+ *
  * https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
  * https://tf.istrongcloud.com/release/index-hrtt.html
  */
@@ -110,8 +112,7 @@ const getTyphoonData = async () => {
 };
 
 /*
- * const notice = https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json
- * 
+const notice = https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json
 const home = notice.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
 console.log(home.data.common.title)
  */
@@ -157,12 +158,12 @@ const formatDate = (time, showMin) => {
 };
 
 const getTyphoonColor = (speed) => {
-  if (speed >= 51) return new Color('#FF0000');
-  if (speed >= 42) return new Color('#FA5EFF');
-  if (speed >= 33) return new Color('#FF7800');
-  if (speed >= 25) return new Color('#FFD83A');
-  if (speed >= 17) return new Color('#39A7F8');
-  return new Color('#00C400');
+  const colors = [
+    [51, '#FF0000'], [42, '#FA5EFF'],
+    [33, '#FF7800'], [25, '#FFD83A'],
+    [17, '#39A7F8'], [0, '#00C400']
+  ];
+  return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
 
 const generateItem = (typhoon, land, newest) => {
@@ -284,10 +285,8 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
     widget.addSpacer(8);
   }
   
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
   info.forEach((item, i) => {
-    const listStack = mainStack.addStack();
+    const listStack = widget.addStack();
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
     labelText.font = Font.boldSystemFont(13.5);
@@ -297,7 +296,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
     if (i < info.length - 1) {
-      mainStack.addSpacer(3);
+      widget.addSpacer(3);
     }
   });
   return widget;
@@ -348,10 +347,8 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
     widget.addSpacer(5);
   }
   
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
   levels.forEach((item, i) => {
-    const listStack = mainStack.addStack();
+    const listStack = widget.addStack();
     listStack.layoutHorizontally();
     listStack.centerAlignContent();
     const icon = listStack.addImage(tyIcon);
@@ -375,7 +372,7 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
     agencyText.font = Font.mediumSystemFont(13.5);
     agencyText.textColor = textColor;
     if (i < levels.length - 1) {
-      mainStack.addSpacer(3);
+      widget.addSpacer(3);
     }
   });
   return widget;
@@ -396,7 +393,6 @@ const createSmallWidget = (tf, typhoon, newest, tyIcon, textColor) => {
   return widget;
 };
 
-// const url = `https://tf02.istrongcloud.com/3d/wxmp-poster/result.png?r=${Date.now()}`;
 const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
@@ -409,7 +405,6 @@ const runWidget = async () => {
     : Color.dynamic(Color.black(), Color.white());
   
   const { arr, tf, typhoon } = await getTyphoonData() || {};
-  // 热带扰动，位置/趋势
   const { tc, latest } = await currMergerTC(tf) || {};
   
   let widget;
@@ -433,8 +428,12 @@ const runWidget = async () => {
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   
   if (family || small) {
-    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
-    widget.backgroundImage = await new Request(url).loadImage();
+    const url = getRandomItem([
+      `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png`,
+      `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png`
+    ]);
+    const tyImg = await new Request(`${url}?r=${Date.now()}`).loadImage();
+    widget.backgroundImage = tyImg;
   } else {
     widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
   }
