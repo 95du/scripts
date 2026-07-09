@@ -127,7 +127,7 @@ const typhoonNotice = (html) => {
 
 const speedChangeNotice = (typhoon, newest) => {
   if (typhoon && setting.speed !== typhoon.speed) {
-    notify(`⚠️ 台风风速变化`, `风速${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀\n${newest.location}`);
+    notify(`⚠️ 台风风速变化`, `风速 ${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀\n${newest.location}`);
     setting.speed = typhoon.speed;
     writeSettings(setting);
   }
@@ -143,7 +143,7 @@ const currMergerTCNotice = (tc) => {
   if (oldSpeed !== point.speed) {
     notify(
       `⚠️ ${tc.name} ${tc.ename}`,
-      `${tc.ident} ${point.strong}\n风速${point.speed}米/秒，${point.power}级，${point.pressure}百帕\n更新时间: ${formatTime(point.time)}`
+      `${tc.ident} ${point.strong}\n风速 ${point.speed}米/秒，${point.power}级，${point.pressure}百帕\n更新时间: ${formatTime(point.time)}`
     );
     setting.tc[id] = point.speed;
     writeSettings(setting);
@@ -248,7 +248,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   const icon = barStack.addImage(tyIcon);
   icon.imageSize = new Size(17, 17);
   icon.tintColor = Color.white();
-  barStack.addSpacer(8);
+  barStack.addSpacer(6);
   const statusText = barStack.addText(tf.tfbh + tf.name);
   statusText.textColor = Color.white();
   statusText.font = Font.boldSystemFont(14);
@@ -381,12 +381,31 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
   return widget;
 };
 
+const createSmallWidget = (tf, typhoon, newest, tyIcon, textColor) => {
+  const widget = new ListWidget();
+  widget.setPadding(15, 15, 15, 15);
+  createButtonStack(widget, tyIcon, tf, typhoon);
+  widget.addSpacer();
+  const speedText = widget.addText(`风速 ${typhoon.speed}米/秒`);
+  speedText.font = Font.mediumSystemFont(14);
+  speedText.textColor = textColor;
+  const strongText = widget.addText(`${typhoon.power}级 ( ${newest.strong} )`);
+  strongText.font = Font.mediumSystemFont(14);
+  strongText.textColor = textColor;
+  return widget;
+};
+
 // const url = `https://tf02.istrongcloud.com/3d/wxmp-poster/result.png?r=${Date.now()}`;
 const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
-  const family = config.widgetFamily === 'large';
-  const textColor = family ? Color.black() : Color.dynamic(Color.black(), Color.white());
+  
+  const configs = config.widgetFamily;
+  const family = configs === 'large';
+  const small = configs === 'small';
+  const textColor = family || small 
+    ? Color.black() 
+    : Color.dynamic(Color.black(), Color.white());
   
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   // 热带扰动，位置/趋势
@@ -399,16 +418,20 @@ const runWidget = async () => {
   } else {
     const newest = latest.find(item => item.tfbh === tf.tfbh);
     const date = formatDate(newest.update_time);
-    const land = tf.land?.[tf.land?.length - 1] ?? {};
+    const land = tf.land?.at(-1) ?? {};
     const info = generateItem(typhoon, land, newest);
     speedChangeNotice(typhoon, newest);
-    widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, family);
+    if (small) {
+      widget = createSmallWidget(tf, typhoon, newest, tyIcon, textColor);
+    } else {
+      widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, family);
+    }
   }
   
   widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   
-  if (family) {
+  if (family || small) {
     const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
     widget.backgroundImage = await new Request(url).loadImage();
   } else {
