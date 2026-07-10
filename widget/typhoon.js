@@ -431,7 +431,7 @@ const runWidget = async () => {
     const url = getRandomItem([
       `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png`,
       `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png`,
-      `https://tf02.istrongcloud.com/3d/wxmp-poster/result.png`
+      //`https://tf02.istrongcloud.com/3d/wxmp-poster/result.png`
     ]);
     const tyImg = await new Request(`${url}?r=${Date.now()}`).loadImage();
     widget.backgroundImage = tyImg;
