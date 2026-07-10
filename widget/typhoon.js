@@ -327,13 +327,13 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
   
   if (tc.length) {
     tc.forEach((item, i) => {
+      currMergerTCNotice(item);
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
       if (!family) icon.tintColor = new Color('#00C400');
       if (i < tc.length - 1) {
         topStack.addSpacer(3);
       }
-      currMergerTCNotice(item);
     });
   } else {
     const timeText = topStack.addText(getFormattedTime());
@@ -430,8 +430,7 @@ const runWidget = async () => {
   if (family || small) {
     const url = getRandomItem([
       `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png`,
-      `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png`,
-      //`https://tf02.istrongcloud.com/3d/wxmp-poster/result.png`
+      `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png`
     ]);
     const tyImg = await new Request(`${url}?r=${Date.now()}`).loadImage();
     widget.backgroundImage = tyImg;
