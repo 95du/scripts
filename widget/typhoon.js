@@ -48,8 +48,6 @@ const notify = (title, body, url, sound = 'event') => {
   n.schedule();
 };
 
-const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)] || null;
-
 const getFormattedTime = () => {
   const df = new DateFormatter();
   df.dateFormat = 'HH:mm';
@@ -256,9 +254,9 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, family) => {
+const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) => {
   const widget = new ListWidget();
-  widget.setPadding(family ? 15 : 13, 20, family ? 15 : 13, 20);
+  widget.setPadding(isLarge ? 15 : 13, 20, isLarge ? 15 : 13, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
@@ -279,7 +277,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
     }
   });
   
-  if (family) {
+  if (isLarge) {
     widget.addSpacer();
   } else {
     widget.addSpacer(8);
@@ -302,14 +300,14 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, fam
   return widget;
 };
 
-const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) => {
+const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   
-  if (!family) {
+  if (!isLarge) {
     topStack.addSpacer(4.5);
     const bar = topStack.addStack();
     bar.size = new Size(8, 20);
@@ -318,11 +316,11 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
     topStack.addSpacer(19);
   }
   
-  const levelText = topStack.addText(family && !tc.length 
+  const levelText = topStack.addText(isLarge && !tc.length 
     ? '西北太平洋无活跃台风' 
     : '热带气旋等级、预报机构');
   levelText.font = Font.mediumSystemFont(15);
-  levelText.textColor = new Color(family && !tc.length ? '#FF0000' : '#FF9800');
+  levelText.textColor = new Color(isLarge && !tc.length ? '#FF0000' : '#FF9800');
   topStack.addSpacer();
   
   if (tc.length) {
@@ -330,7 +328,7 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
       currMergerTCNotice(item);
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
-      if (!family) icon.tintColor = new Color('#00C400');
+      if (!isLarge) icon.tintColor = new Color('#00C400');
       if (i < tc.length - 1) {
         topStack.addSpacer(3);
       }
@@ -341,7 +339,7 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, family) =
     timeText.textColor = textColor;
   }
   
-  if (family) {
+  if (isLarge) {
     widget.addSpacer();
   } else {
     widget.addSpacer(5);
@@ -397,49 +395,48 @@ const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
   
-  const configs = config.widgetFamily;
-  const family = configs === 'large';
-  const small = configs === 'small';
-  const textColor = family || small 
-    ? Color.black() 
-    : Color.dynamic(Color.black(), Color.white());
-  
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const { tc, latest } = await currMergerTC(tf) || {};
+  
+  const family = config.runsInApp 
+    ? (tf ? 'large' : 'medium') 
+    : config.widgetFamily;
+  const isLarge = family === 'large';
+  const isSmall = family === 'small';
+
+  const textColor = isLarge || isSmall 
+    ? Color.black() 
+    : Color.dynamic(Color.black(), Color.white());
   
   let widget;
   if (!tf) {
     const levels = levelAgency();
-    widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, family);
+    widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
   } else {
     const newest = latest.find(item => item.tfbh === tf.tfbh);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? {};
     const info = generateItem(typhoon, land, newest);
     speedChangeNotice(typhoon, newest);
-    if (small) {
+    if (isSmall) {
       widget = createSmallWidget(tf, typhoon, newest, tyIcon, textColor);
     } else {
-      widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, family);
+      widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, isLarge);
     }
   }
   
   widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   
-  if (family || small) {
-    const url = getRandomItem([
-      `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png`,
-      `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png`
-    ]);
-    const tyImg = await new Request(`${url}?r=${Date.now()}`).loadImage();
-    widget.backgroundImage = tyImg;
+  if (isLarge || isSmall) {
+    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
+    widget.backgroundImage = await new Request(url).loadImage();
   } else {
     widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
   }
   
   if (config.runsInApp) {
-    await widget.presentMedium();
+    await widget[tf ? 'presentLarge' : 'presentMedium']();
   } else {
     autoUpdate();
     Script.setWidget(widget);
