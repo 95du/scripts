@@ -54,13 +54,6 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
-const loopdisplay = (arr) => {
-  const optNextIndex = (num, data) => (num + 1) % data.length;
-  setting.count = optNextIndex(setting.count || 0, arr);
-  writeSettings(setting);
-  return arr[setting.count];
-};
-
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
   if (script.includes('組件')) fm.writeString(module.filename, script);
@@ -70,17 +63,30 @@ const autoUpdate = async () => {
  * 热带扰动，位置/趋势
  * const locUrl = `https://tf02.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
  */
+const complementLocTrend = (tf, latest, typhoonInfo) => {
+  const newest = latest.find(item => item.tfbh === tf.tfbh);
+  const point = typhoonInfo.points.at(-1) ?? {};
+  if (!newest.location) {
+    newest.location = point.ckposition.trim();
+    newest.trend = point.jl.trim();
+  }
+  return newest;
+};
+
 const currMergerTC = async (tf) => {
   try {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
     const latestUrl = `https://data.istrongcloud.com/data/latest.json`;
-    const [tc, message, latest] = await Promise.all([
+    const sltUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${tf.tfbh}`;
+    const [tc, message, typhoonInfo, latest] = await Promise.all([
       new Request(tcUrl).loadJSON(),
       new Request(msgUrl).loadJSON(),
+      new Request(sltUrl).loadJSON(),
       new Request(latestUrl).loadJSON()
     ]);
-    return { tc, message, latest };
+    const newest = complementLocTrend(tf, latest, typhoonInfo);
+    return { tc, message, newest };
   } catch (e) {
     console.log(e);
     return null;
@@ -94,6 +100,13 @@ const currMergerTC = async (tf) => {
  * https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
  * https://tf.istrongcloud.com/release/index-hrtt.html
  */
+const loopdisplay = (arr) => {
+  const optNextIndex = (num, data) => (num + 1) % data.length;
+  setting.count = optNextIndex(setting.count || 0, arr);
+  writeSettings(setting);
+  return arr[setting.count];
+};
+
 const getTyphoonData = async () => {
   try {
     const url = `https://tf02.istrongcloud.com/member/v1.2/home`
@@ -136,7 +149,8 @@ const messageNotice = (msg) => {
 
 const speedChangeNotice = (typhoon, newest) => {
   if (typhoon && setting.speed !== typhoon.speed) {
-    notify(`⚠️ 台风风速变化`, `风速 ${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀\n${newest.location}`);
+    const body = `风速 ${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
+    notify(`⚠️ 台风风速变化`, body);
     setting.speed = typhoon.speed;
     writeSettings(setting);
   }
@@ -161,8 +175,9 @@ const currMergerTCNotice = (tc) => {
 
 const formatDate = (time, showMin) => {
   const date = new Date(time);
-  const hour = String(date.getHours());
-  return `${date.getMonth() + 1}月${date.getDate()}日${hour.padStart(2, '0')}时`;
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = date.getMinutes();
+  return `${date.getMonth() + 1}月${date.getDate()}日${hour}时` + (showMin && minute ? `${minute}分` : '');
 };
 
 const getTyphoonColor = (speed) => {
@@ -189,7 +204,7 @@ const generateItem = (typhoon, land, newest) => {
     { 
       label: land ? "登陆信息" : "风圈半径",
       value: land
-        ? `${formatDate(land.land_time)}，在${land.position}登陆`
+        ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
         : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
       color: new Color('#FFD83A')
     },
@@ -391,7 +406,7 @@ const runWidget = async () => {
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
   
   const { arr, tf, typhoon } = await getTyphoonData() || {};
-  const { tc, message, latest } = await currMergerTC(tf) || {};
+  const { tc, message, newest } = await currMergerTC(tf) || {};
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
     : config.widgetFamily;
@@ -407,8 +422,7 @@ const runWidget = async () => {
     const levels = levelAgency();
     widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
   } else {
-    messageNotice(message[0]);
-    const newest = latest.find(item => item.tfbh === tf.tfbh);
+    messageNotice(message?.[0]);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? {};
     const info = generateItem(typhoon, land, newest);
