@@ -23,7 +23,7 @@ $.is_debug = $.getdata('is_debug');
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
-      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
+      $.api = $.rest_body.api === 'biz.vio.unhandledVioCount.query';
       
       if ($.api && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
