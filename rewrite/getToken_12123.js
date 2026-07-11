@@ -23,7 +23,9 @@ $.is_debug = $.getdata('is_debug');
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
-      if ($.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
+      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
+      
+      if ($.api && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg(
           $.name,
