@@ -318,7 +318,7 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) 
   
   const levelText = topStack.addText(isLarge && !tc.length 
     ? '西北太平洋无活跃台风' 
-    : '热带气旋等级、预报机构');
+    : '台风等级、预报机构');
   levelText.font = Font.mediumSystemFont(15);
   levelText.textColor = new Color(isLarge && !tc.length ? '#FF0000' : '#FF9800');
   topStack.addSpacer();
@@ -376,21 +376,6 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) 
   return widget;
 };
 
-const createSmallWidget = (tf, typhoon, newest, tyIcon, textColor) => {
-  const widget = new ListWidget();
-  widget.setPadding(15, 15, 15, 15);
-  createButtonStack(widget, tyIcon, tf, typhoon);
-  widget.addSpacer();
-  const speedText = widget.addText(`风速 ${typhoon.speed}米/秒`);
-  speedText.font = Font.mediumSystemFont(13.5);
-  speedText.textColor = textColor;
-  widget.addSpacer(1);
-  const strongText = widget.addText(`${typhoon.power}级，${newest.strong}`);
-  strongText.font = Font.mediumSystemFont(13.5);
-  strongText.textColor = textColor;
-  return widget;
-};
-
 const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
@@ -419,7 +404,7 @@ const runWidget = async () => {
     const info = generateItem(typhoon, land, newest);
     speedChangeNotice(typhoon, newest);
     if (isSmall) {
-      widget = createSmallWidget(tf, typhoon, newest, tyIcon, textColor);
+      widget = new ListWidget();
     } else {
       widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, isLarge);
     }
