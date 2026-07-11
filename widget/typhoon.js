@@ -66,7 +66,7 @@ const autoUpdate = async () => {
 const complementLocTrend = (tf, latest, typhoonInfo) => {
   const newest = latest.find(item => item.tfbh === tf.tfbh);
   const point = typhoonInfo.points.at(-1) ?? {};
-  if (!newest.location) {
+  if (!newest.location && point) {
     newest.location = point.ckposition.trim();
     newest.trend = point.jl.trim();
   }
@@ -130,7 +130,7 @@ const home = notice.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
 console.log(home.data.common.title)
  */
 const typhoonNotice = (html) => {
-  const block = html.match(/typhoonNotice\s*:\s*({[\s\S]*?})\s*,/)?.[1];
+  const block = html.match(/config\s*:\s*(\[[\s\S]*?\])\s*,/)?.[1];
   const tips = block?.match(/text\s*:\s*["']([^"']+)["']/)?.[1];
   if (tips && setting.tips !== tips) {
     notify(`⚠️ 台风信息通告`, tips);
@@ -175,7 +175,7 @@ const currMergerTCNotice = (tc) => {
 
 const formatDate = (time, showMin) => {
   const date = new Date(time);
-  const hour = String(date.getHours()).padStart(2, '0');
+  const hour = `${date.getHours()}`.padStart(2, '0');
   const minute = date.getMinutes();
   return `${date.getMonth() + 1}月${date.getDate()}日${hour}时` + (showMin && minute ? `${minute}分` : '');
 };
