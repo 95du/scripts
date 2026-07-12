@@ -61,14 +61,12 @@ const autoUpdate = async () => {
 
 /** 
  * 热带扰动，位置/趋势
- * const locUrl = `https://tf02.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
  */
-const complementLocTrend = (tf, latest, typhoonInfo) => {
+const complementLocTrend = (tf, latest, loc) => {
   const newest = latest.find(item => item.tfbh === tf.tfbh);
-  const point = typhoonInfo.points.at(-1) ?? {};
-  if (!newest.location && point) {
-    newest.location = point.ckposition.trim();
-    newest.trend = point.jl.trim();
+  if (!newest.location && loc.completion) {
+    newest.location = loc.location;
+    newest.trend = loc.completion;
   }
   return newest;
 };
@@ -78,14 +76,14 @@ const currMergerTC = async (tf) => {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
     const latestUrl = `https://data.istrongcloud.com/data/latest.json`;
-    const sltUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${tf.tfbh}`;
-    const [tc, message, typhoonInfo, latest] = await Promise.all([
+    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
+    const [tc, message, loc, latest] = await Promise.all([
       new Request(tcUrl).loadJSON(),
       new Request(msgUrl).loadJSON(),
-      new Request(sltUrl).loadJSON(),
+      new Request(locUrl).loadJSON(),
       new Request(latestUrl).loadJSON()
     ]);
-    const newest = complementLocTrend(tf, latest, typhoonInfo);
+    const newest = complementLocTrend(tf, latest, loc);
     return { tc, message, newest };
   } catch (e) {
     console.log(e);
@@ -275,20 +273,21 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   barStack.addSpacer(6);
   const statusText = barStack.addText(tf.tfbh + tf.name);
   statusText.textColor = Color.white();
-  statusText.font = Font.boldSystemFont(14);
+  statusText.font = Font.boldSystemFont(14.5);
   return barStack;
 };
 
 const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) => {
   const widget = new ListWidget();
-  widget.setPadding(isLarge ? 15 : 13, 20, isLarge ? 15 : 13, 20);
+  widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
+  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 15 : 4, 20);
   createButtonStack(topStack, tyIcon, tf, typhoon);
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
-  dateText.font = Font.mediumSystemFont(15);
+  dateText.font = Font.mediumSystemFont(14.5);
   dateText.textColor = textColor;
   topStack.addSpacer();
   
@@ -302,24 +301,27 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isL
     }
   });
   
-  if (isLarge) {
-    widget.addSpacer();
-  } else {
-    widget.addSpacer(8);
+  if (isLarge) widget.addSpacer();
+  const mainStack = widget.addStack();
+  mainStack.layoutVertically();
+  mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
+  if (isLarge && !typhoon.radius7) {
+    mainStack.backgroundColor = new Color('#00C400', 0.18);
   }
   
   info.forEach((item, i) => {
-    const listStack = widget.addStack();
+    const listStack = mainStack.addStack();
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
     labelText.font = Font.boldSystemFont(13.5);
     labelText.textColor = item.color;
-    listStack.addSpacer(15);
+    listStack.addSpacer(13);
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
+    if (isLarge && !typhoon.radius7) listStack.addSpacer();
     if (i < info.length - 1) {
-      widget.addSpacer(3);
+      mainStack.addSpacer(3);
     }
   });
   return widget;
@@ -423,10 +425,10 @@ const runWidget = async () => {
     widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
   } else {
     messageNotice(message?.[0]);
+    speedChangeNotice(typhoon, newest);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? {};
     const info = generateItem(typhoon, land, newest);
-    speedChangeNotice(typhoon, newest);
     if (isSmall) {
       widget = new ListWidget();
     } else {
