@@ -23,14 +23,14 @@ $.is_debug = $.getdata('is_debug');
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
       
-      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
+      $.api = $.rest_body.api === 'biz.user.integration.query';
       
       if ($.api && $.rest_body.accessTime && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg(
           $.name,
           `验证令牌/签名获取成功。`, 
-          $.rest_body.authToken,
+          $.rest_body.sign,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
             'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
