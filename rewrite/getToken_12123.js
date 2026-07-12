@@ -6,6 +6,7 @@
  * author: 95du茅台
  * 更新日期: 2024-04-29
  */
+
 const $ = new Env('交管12123');
 $.body_key = 'body_12123';
 $.body = $.getdata($.body_key);
@@ -22,14 +23,14 @@ $.is_debug = $.getdata('is_debug');
       $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
-      $.api = $.rest_body.api === 'biz.learn.preCheck.query';
+      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
       
       if ($.api && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
         $.msg(
           $.name,
           `验证令牌/签名获取成功。`, 
-          $.rest_body.sign,
+          $.rest_body.authToken,
           {
             'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
             'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
