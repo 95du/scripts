@@ -54,19 +54,19 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
+const loopdisplay = (arr, name) => {
+  const optNextIndex = (num, data) => (num + 1) % data.length;
+  setting[name] = optNextIndex(setting[name] || 0, arr);
+  writeSettings(setting);
+  return arr[setting[name]];
+};
+
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
   if (script.includes('組件')) fm.writeString(module.filename, script);
 };
 
 //.热带扰动
-const loopdisplayTC = (arr) => {
-  const optNextIndex = (num, data) => (num + 1) % data.length;
-  setting.TC = optNextIndex(setting.TC || 0, arr);
-  writeSettings(setting);
-  return arr[setting.TC];
-};
-
 const currMergerTC = async (tf) => {
   try {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
@@ -115,13 +115,6 @@ const getLatestData = async (tf) => {
  * https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
  * https://tf.istrongcloud.com/release/index-hrtt.html
  */
-const loopdisplay = (arr) => {
-  const optNextIndex = (num, data) => (num + 1) % data.length;
-  setting.count = optNextIndex(setting.count || 0, arr);
-  writeSettings(setting);
-  return arr[setting.count];
-};
-
 const getTyphoonData = async () => {
   try {
     const url = `https://tf02.istrongcloud.com/member/v1.2/home`
@@ -130,7 +123,7 @@ const getTyphoonData = async () => {
     const arr = JSON.parse(match);
     if (!arr.length) return null;
     typhoonNotice(html);
-    const tf = loopdisplay(arr);
+    const tf = loopdisplay(arr, 'count');
     const typhoon = tf.points[tf.points.length - 1];
     return { arr, tf, typhoon }
   } catch (e) {
@@ -347,6 +340,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isL
   return widget;
 };
 
+// 无台风时
 const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
@@ -363,7 +357,7 @@ const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
     topStack.addSpacer(19);
   }
   
-  const tf = loopdisplayTC(tc);
+  const tf = loopdisplay(tc, 'TC');
   const levelText = topStack.addText(isLarge && !tc.length 
     ? '西北太平洋无活跃台风' 
     : tc.length
@@ -427,6 +421,7 @@ const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
   return widget;
 };
 
+// 整合数据
 const runWidget = async () => {
   const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
