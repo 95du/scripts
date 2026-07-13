@@ -308,7 +308,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isL
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
-  if (isLarge && arr.length < 2 && !typhoon.radius7) {
+  if (isLarge && !typhoon.radius7) {
     mainStack.backgroundColor = new Color('#00C400', 0.18);
   }
   
