@@ -59,8 +59,27 @@ const autoUpdate = async () => {
   if (script.includes('組件')) fm.writeString(module.filename, script);
 };
 
+//.热带扰动
+const loopdisplayTC = (arr) => {
+  const optNextIndex = (num, data) => (num + 1) % data.length;
+  setting.TC = optNextIndex(setting.TC || 0, arr);
+  writeSettings(setting);
+  return arr[setting.TC];
+};
+
+const currMergerTC = async (tf) => {
+  try {
+    const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
+    const tc = await new Request(tcUrl).loadJSON();
+    return tc || [];
+  } catch (e) {
+    console.log(e);
+    return [];
+  }
+};
+
 /** 
- * 热带扰动，位置/趋势
+ * 经纬度/位置/趋势/台风动态
  */
 const complementLocTrend = (tf, latest, loc) => {
   const newest = latest.find(item => item.tfbh === tf.tfbh);
@@ -71,20 +90,18 @@ const complementLocTrend = (tf, latest, loc) => {
   return newest;
 };
 
-const currMergerTC = async (tf) => {
+const getLatestData = async (tf) => {
   try {
-    const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
     const latestUrl = `https://data.istrongcloud.com/data/latest.json`;
     const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
-    const [tc, message, loc, latest] = await Promise.all([
-      new Request(tcUrl).loadJSON(),
+    const [message, loc, latest] = await Promise.all([
       new Request(msgUrl).loadJSON(),
       new Request(locUrl).loadJSON(),
       new Request(latestUrl).loadJSON()
     ]);
     const newest = complementLocTrend(tf, latest, loc);
-    return { tc, message, newest };
+    return { message, newest };
   } catch (e) {
     console.log(e);
     return null;
@@ -330,7 +347,7 @@ const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isL
   return widget;
 };
 
-const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) => {
+const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -346,11 +363,15 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) 
     topStack.addSpacer(19);
   }
   
+  const tf = loopdisplayTC(tc);
   const levelText = topStack.addText(isLarge && !tc.length 
     ? '西北太平洋无活跃台风' 
-    : '台风等级、预报机构');
-  levelText.font = Font.mediumSystemFont(15);
-  levelText.textColor = new Color(isLarge && !tc.length ? '#FF0000' : '#FF9800');
+    : tc.length
+      ? `${tf.name} - ${tf.ename} [${setting.TC + 1}]`
+      : '台风等级、预报机构'
+  );
+  levelText.font = Font.boldSystemFont(15);
+  levelText.textColor = new Color(isLarge && !tc.length ? '#FF0000' : tc.length ? '#00B388' : '#FF8800');
   topStack.addSpacer();
   
   if (tc.length) {
@@ -358,7 +379,7 @@ const createLevelWidget = (levels, tc = [], tcIcon, tyIcon, textColor, isLarge) 
       currMergerTCNotice(item);
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
-      if (!isLarge) icon.tintColor = new Color('#00C400');
+      if (!isLarge) icon.tintColor = new Color('#00B388');
       if (i < tc.length - 1) {
         topStack.addSpacer(3);
       }
@@ -411,7 +432,7 @@ const runWidget = async () => {
   const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
   
   const { arr, tf, typhoon } = await getTyphoonData() || {};
-  const { tc, message, newest } = await currMergerTC(tf) || {};
+  const { message, newest } = await getLatestData(tf) || {};
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
     : config.widgetFamily;
@@ -425,6 +446,7 @@ const runWidget = async () => {
   let widget;
   if (!tf) {
     const levels = levelAgency();
+    const tc = await currMergerTC();
     widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
   } else {
     messageNotice(message?.[0]);
