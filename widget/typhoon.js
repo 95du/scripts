@@ -63,8 +63,11 @@ const loopdisplay = (arr, name) => {
 
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
-  if (script.includes('組件')) fm.writeString(module.filename, script);
+  if (script.includes('組件')) fm.writeString(module.filename, script)
 };
+
+const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
+const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
 //.热带扰动
 const currMergerTC = async (tf) => {
@@ -304,7 +307,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) => {
+const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -355,7 +358,7 @@ const createWidget = (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) 
 };
 
 // 无台风时
-const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
+const createLevelWidget = (levels, tc, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -437,9 +440,6 @@ const createLevelWidget = (levels, tc, tcIcon, tyIcon, textColor, isLarge) => {
 
 // 整合数据
 const runWidget = async () => {
-  const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
-  const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
-  
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const { message, newest } = await getLatestData(tf) || {};
   const family = config.runsInApp 
@@ -456,7 +456,7 @@ const runWidget = async () => {
   if (!tf) {
     const levels = levelAgency();
     const tc = await currMergerTC();
-    widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
+    widget = createLevelWidget(levels, tc, textColor, isLarge)
   } else {
     messageNotice(message?.[0]);
     speedChangeNotice(tf, typhoon, newest);
@@ -466,7 +466,7 @@ const runWidget = async () => {
     if (isSmall) {
       widget = new ListWidget();
     } else {
-      widget = createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, isLarge);
+      widget = createWidget(arr, tf, typhoon, date, info, textColor, isLarge);
     }
   }
   
