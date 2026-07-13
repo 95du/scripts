@@ -145,11 +145,14 @@ const messageNotice = (msg) => {
   }
 };
 
-const speedChangeNotice = (typhoon, newest) => {
-  if (typhoon && setting.speed !== typhoon.speed) {
+const speedChangeNotice = (tf, typhoon, newest) => {
+  setting.tf = setting.tf || {};
+  setting.tf[tf.ename] = setting.tf[tf.ename] || {};
+  const oldSpeed = setting.tf[tf.ename].speed;
+  if (oldSpeed !== typhoon.speed) {
     const body = `风速 ${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
-    notify(`⚠️ 台风风速变化`, body);
-    setting.speed = typhoon.speed;
+    notify(`⚠️ 台风 [${tf.name}] 风速变化`, body);
+    setting.tf[tf.ename].speed = typhoon.speed;
     writeSettings(setting);
   }
 };
@@ -418,14 +421,14 @@ const runWidget = async () => {
   const textColor = isLarge || isSmall 
     ? Color.black() 
     : Color.dynamic(Color.black(), Color.white());
-  
+
   let widget;
   if (!tf) {
     const levels = levelAgency();
     widget = createLevelWidget(levels, tc, tcIcon, tyIcon, textColor, isLarge)
   } else {
     messageNotice(message?.[0]);
-    speedChangeNotice(typhoon, newest);
+    speedChangeNotice(tf, typhoon, newest);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? {};
     const info = generateItem(typhoon, land, newest);
