@@ -200,6 +200,20 @@ const getTyphoonColor = (speed) => {
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
 
+const setBackground = async (widget, tf, isLarge, isSmall) => {
+  widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
+  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
+  if (isLarge) {
+    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
+    widget.backgroundImage = await new Request(url).loadImage();
+  } else if (isSmall) {
+    const url = `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`;
+    widget.backgroundImage = await new Request(url).loadImage();
+  } else {
+    widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
+  }
+};
+
 const generateItem = (typhoon, land, newest) => {
   return [
     { 
@@ -290,7 +304,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = async (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) => {
+const createWidget = (tyIcon, tf, typhoon, arr, date, info, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -452,19 +466,11 @@ const runWidget = async () => {
     if (isSmall) {
       widget = new ListWidget();
     } else {
-      widget = await createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, isLarge);
+      widget = createWidget(tyIcon, tf, typhoon, arr, date, info, textColor, isLarge);
     }
   }
   
-  widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
-  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-  
-  if (isLarge || isSmall) {
-    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
-    widget.backgroundImage = await new Request(url).loadImage();
-  } else {
-    widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
-  }
+  await setBackground(widget, tf, isLarge, isSmall);
   
   if (config.runsInApp) {
     await widget[tf ? 'presentLarge' : 'presentMedium']();
