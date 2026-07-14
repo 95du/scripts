@@ -335,7 +335,7 @@ const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
-  if (isLarge && !typhoon.radius7) {
+  if (isLarge && !typhoon.radius10) {
     mainStack.backgroundColor = new Color('#00C400', 0.18);
   }
   
@@ -349,7 +349,7 @@ const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
-    if (isLarge && !typhoon.radius7) listStack.addSpacer();
+    if (isLarge && !typhoon.radius10) listStack.addSpacer();
     if (i < info.length - 1) {
       mainStack.addSpacer(3);
     }
