@@ -159,6 +159,7 @@ const messageNotice = (msg) => {
 };
 
 const speedChangeNotice = (tf, typhoon, newest) => {
+  if (!tf) return;
   setting.tf = setting.tf || {};
   setting.tf[tf.ename] = setting.tf[tf.ename] || {};
   const oldSpeed = setting.tf[tf.ename].speed;
@@ -203,14 +204,12 @@ const getTyphoonColor = (speed) => {
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
 
-const setBackground = async (widget, tf, isLarge, isSmall) => {
+// `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`
+const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
   widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   if (isLarge) {
     const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
-    widget.backgroundImage = await new Request(url).loadImage();
-  } else if (isSmall) {
-    const url = `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`;
     widget.backgroundImage = await new Request(url).loadImage();
   } else {
     widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
@@ -438,6 +437,14 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
   return widget;
 };
 
+const errorWidget = () => {
+  const widget = new ListWidget();
+  const text = widget.addText('仅支持中大号');
+  text.font = Font.systemFont(16);
+  text.centerAlignText();
+  return widget;
+};
+
 // 整合数据
 const runWidget = async () => {
   const { arr, tf, typhoon } = await getTyphoonData() || {};
@@ -451,26 +458,24 @@ const runWidget = async () => {
   const textColor = isLarge || isSmall 
     ? Color.black() 
     : Color.dynamic(Color.black(), Color.white());
-
+  
   let widget;
-  if (!tf) {
+  if (isSmall) {
+    widget = errorWidget();
+  } else if (!tf) {
     const levels = levelAgency();
     const tc = await currMergerTC();
-    widget = createLevelWidget(levels, tc, textColor, isLarge)
+    widget = createLevelWidget(levels, tc, textColor, isLarge);
   } else {
     messageNotice(message?.[0]);
     speedChangeNotice(tf, typhoon, newest);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
     const info = generateItem(typhoon, land, newest);
-    if (isSmall) {
-      widget = new ListWidget();
-    } else {
-      widget = createWidget(arr, tf, typhoon, date, info, textColor, isLarge);
-    }
+    widget = createWidget(arr, tf, typhoon, date, info, textColor, isLarge);
   }
   
-  await setBackground(widget, tf, isLarge, isSmall);
+  if (!isSmall) await setBackground(widget, tf, isLarge);
   
   if (config.runsInApp) {
     await widget[tf ? 'presentLarge' : 'presentMedium']();
