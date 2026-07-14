@@ -23,7 +23,7 @@ $.is_debug = $.getdata('is_debug');
       $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
-      $.api = $.rest_body.api === 'biz.user.integration.query';
+      $.api = $.rest_body.api === 'biz.user.msg.subscribe';
       
       if ($.api && $.rest_body.sign !== $.boxjs_body.sign) {
         $.setdata($.new_body, $.body_key);
