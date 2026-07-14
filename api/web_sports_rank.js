@@ -166,6 +166,7 @@ async function main(family) {
       const teamStack = widget.addStack();
       teamStack.layoutHorizontally();
       teamStack.centerAlignContent();
+      teamStack.url = team.naTabInfo.shareUrl;
       const indexStack = teamStack.addStack();
       indexStack.size = new Size(20, 0);
       const indexText = indexStack.addText(team.rank);
