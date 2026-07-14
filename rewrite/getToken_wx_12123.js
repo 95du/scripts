@@ -10,6 +10,7 @@
 const $ = new Env('交管12123');
 $.body_key = 'body_12123';
 $.body = $.getdata($.body_key);
+$.is_debug = $.getdata('is_debug');
 
 !(async () => {
   if (isGetCookie = typeof $request !== `undefined`) {
@@ -18,6 +19,7 @@ $.body = $.getdata($.body_key);
 
   function GetCookie(request) {
     if (request && request.body && request.body.includes("sign")) {
+      debug(request.body);
       $.rest_body = JSON.parse(decodeURIComponent(request.body).replace("params=", ""));  
       $.new_body = JSON.stringify($.rest_body, null, 2);
       $.boxjs_body = $.body ? JSON.parse($.body) : {};
@@ -37,7 +39,14 @@ $.body = $.getdata($.body_key);
         console.log($.new_body);
       }
     }
+  };
+
+  function debug(text) {
+    if ($.is_debug === 'true') {
+      console.log(text);
+    }
   }
+
 })()
   .catch((e) => $.logErr(e))
   .finally(() => $.done());
