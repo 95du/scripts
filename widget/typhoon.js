@@ -104,7 +104,8 @@ const getLatestData = async (tf) => {
       new Request(latestUrl).loadJSON()
     ]);
     const newest = complementLocTrend(tf, latest, loc);
-    return { message, newest };
+    messageNotice(message?.[0]);
+    return newest;
   } catch (e) {
     console.log(e);
     return null;
@@ -374,14 +375,9 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
   }
   
   const tf = loopdisplay(tc, 'TC');
-  const levelText = topStack.addText(isLarge && !tc.length 
-    ? '西北太平洋无活跃台风' 
-    : tc.length
-      ? `${tf.name} - ${tf.ename} [${setting.TC + 1}]`
-      : '台风等级、预报机构'
-  );
+  const levelText = topStack.addText(tc.length ? `${tf.name} - ${tf.ename} [${setting.TC + 1}]` : '台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
-  levelText.textColor = new Color(isLarge && !tc.length ? '#FF0000' : tc.length ? '#00B388' : '#FF8800');
+  levelText.textColor = new Color(tc.length ? '#00B388' : '#FF8800');
   topStack.addSpacer();
   
   if (tc.length) {
@@ -448,7 +444,7 @@ const errorWidget = () => {
 // 整合数据
 const runWidget = async () => {
   const { arr, tf, typhoon } = await getTyphoonData() || {};
-  const { message, newest } = await getLatestData(tf) || {};
+  const newest = await getLatestData(tf) || {};
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
     : config.widgetFamily;
@@ -467,12 +463,14 @@ const runWidget = async () => {
     const tc = await currMergerTC();
     widget = createLevelWidget(levels, tc, textColor, isLarge);
   } else {
-    messageNotice(message?.[0]);
     speedChangeNotice(tf, typhoon, newest);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
     const info = generateItem(typhoon, land, newest);
-    widget = createWidget(arr, tf, typhoon, date, info, textColor, isLarge);
+    widget = createWidget(
+      arr, tf, typhoon, 
+      date, info, textColor, isLarge
+    );
   }
   
   if (!isSmall) await setBackground(widget, tf, isLarge);
