@@ -1,6 +1,6 @@
 {
   "productId": "p10000000000000000001",
-  "businessPrincipalId": '00000000000000002',
+  "businessPrincipalId": "00000000000000002",
   "version": "1.0.1",
   "api0": "biz.user.integration.query",
   "api1": "biz.vio.unhandledVioCount.query",
