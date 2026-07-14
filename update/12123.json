@@ -1,15 +1,20 @@
 {
   "productId": "p10000000000000000001",
-  "api5": "biz.com.otherveh.history",
-  "apiUrl": "https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz",
-  "api1": "biz.vio.unhandledVioCount.query",
+  "businessPrincipalId": '00000000000000002',
   "version": "1.0.1",
-  "api4": "biz.vio.detail.query",
   "api0": "biz.user.integration.query",
+  "api1": "biz.vio.unhandledVioCount.query",
+  "api2": "biz.vio.peccancyChannelList.query",
+  "api3": "biz.vio.peccancyUnhandleInfoList.query",
+  "api4": "biz.vio.detail.query",
+  "api5": "biz.com.otherveh.history",
+  "wxApiUrl": "https://miniappwx.122.gov.cn:8553/openapi/invokeApi/business/biz",
+  "apiUrl": "https://miniappcsfw.122.gov.cn:8443/openapi/invokeApi/business/biz",
+  "wechatUrl": "https://wxmpurl.cn/lAhji0QfD4c",
   "alipayUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/index/index",
   "statusUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/license/license",
-  "api3": "biz.vio.peccancyUnhandleInfoList.query",
   "detailsUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/vehicle-illegal-detail/index?__appxPageId%3D12%26",
+  "queryDetailUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/vehicle-illegal-querydetail/index?__appxPageId%3D2%26",
   "maybach": [
     "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-0.png",
     "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-1.png",
@@ -20,7 +25,5 @@
     "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-6.png",
     "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-7.png",
     "https://raw.githubusercontent.com/95du/scripts/master/img/car/Maybach-8.png"
-  ],
-  "api2": "biz.vio.peccancyChannelList.query",
-  "queryDetailUrl": "alipays://platformapi/startapp?appId=2019050964403523&page=pages/vehicle-illegal-querydetail/index?__appxPageId%3D2%26"
+  ]
 }
