@@ -915,14 +915,24 @@ async function main(family) {
     await createTopStack(widget, matchId, pageUrl);
     if (family === 'large') {
       widget.addSpacer();
-      if (stat?.list.length && matchStatus !== '0' && setting.events && !setting.statistics && matchType === 'football') {
+      if (
+        stat?.list.length && 
+        matchStatus !== '0' && 
+        matchType === 'football' && 
+        setting.events && !
+        setting.statistics
+      ) {
         const { left, right } = parseStats(stat);
         matchEventsColumnStack(widget, left, right);
       } 
       if (stat?.list.length >= 10 && setting.statistics) {
         createStatisticsWidget(widget, stat.list, matchType, matchId);
       } else {
-        await createMatches(widget, (matchType === 'football' && setting.events && stat && matchStatus !== '0' ? 7 : 8));
+        await createMatches(widget, 
+          (matchType === 'football' && 
+          setting.events && stat && 
+          matchStatus !== '0' ? 7 : 8)
+        );
       }
     };
     return widget;
