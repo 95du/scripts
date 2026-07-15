@@ -5,7 +5,7 @@
  * 组件作者: 95du茅台
  * 组件版本: Version 1.0.0
  * https://t.me/+CpAbO_q_SGo2ZWE1
- * 支持大中小号组件 ‼️
+ * 中大号组件 ‼️
  */
 
 const fm = FileManager.local();
@@ -206,13 +206,13 @@ const getTyphoonColor = (speed) => {
 };
 
 // `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`
-const setBackground = async (widget, tf, isLarge) => {
+const setBackground = async (widget, isLarge) => {
   widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
-  widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
   if (isLarge) {
     const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
     widget.backgroundImage = await new Request(url).loadImage();
   } else {
+    widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
   }
 };
@@ -230,7 +230,7 @@ const generateItem = (typhoon, land, newest) => {
       color: new Color('#39A7F8')
     },
     { 
-      label: land ? "登陆信息" : "风圈半径",
+      label: land ? "登陆位置" : "风圈半径",
       value: land
         ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
         : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
@@ -377,7 +377,7 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
   const tf = loopdisplay(tc, 'TC');
   const levelText = topStack.addText(tc.length ? `${tf.name} - ${tf.ename} [${setting.TC + 1}]` : '台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
-  levelText.textColor = new Color(tc.length ? '#00B388' : '#FF8800');
+  levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
   
   if (tc.length) {
@@ -451,7 +451,7 @@ const runWidget = async () => {
   const isLarge = family === 'large';
   const isSmall = family === 'small';
 
-  const textColor = isLarge || isSmall 
+  const textColor = isLarge  
     ? Color.black() 
     : Color.dynamic(Color.black(), Color.white());
   
@@ -473,7 +473,7 @@ const runWidget = async () => {
     );
   }
   
-  if (!isSmall) await setBackground(widget, tf, isLarge);
+  if (!isSmall) await setBackground(widget, isLarge);
   
   if (config.runsInApp) {
     await widget[tf ? 'presentLarge' : 'presentMedium']();
