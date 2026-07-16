@@ -385,9 +385,8 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
       currMergerTCNotice(item);
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
-      if (!isLarge) icon.tintColor = new Color('#00B388');
       if (i < tc.length - 1) {
-        topStack.addSpacer(3);
+        topStack.addSpacer(2);
       }
     });
   } else {
@@ -415,9 +414,9 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
     labelText.font = Font.mediumSystemFont(13.5);
     labelText.textColor = textColor;
     listStack.addSpacer();
-    const symbolText = listStack.addText('---');
-    symbolText.font = Font.mediumSystemFont(13.5);
-    symbolText.textColor = new Color(item.textColor);
+    const lineText = listStack.addText('---');
+    lineText.font = Font.mediumSystemFont(13.5);
+    lineText.textColor = new Color(item.textColor);
     
     const agencyStack = listStack.addStack();
     agencyStack.layoutHorizontally();
