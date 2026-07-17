@@ -54,7 +54,7 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
-const loopdisplay = (arr, name) => {
+const loopdNextIdx = (arr, name) => {
   const optNextIndex = (num, data) => (num + 1) % data.length;
   setting[name] = optNextIndex(setting[name] || 0, arr);
   writeSettings(setting);
@@ -69,24 +69,68 @@ const autoUpdate = async () => {
 const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
+const getLocation = async () => {
+  if (setting.updateTime) {
+    const diff = Date.now() - setting.updateTime;
+    const hours = Math.floor(diff / (3600 * 1000));
+    if (hours <= 3) return setting;
+  }
+
+  try {
+    const location = await Location.current();
+    setting.lon = location.longitude;
+    setting.lat = location.latitude;
+    setting.updateTime = Date.now();
+    writeSettings(setting);
+  } catch (e) {
+    console.log(e);
+    return setting || null;
+  }
+};
+
+// 和风天气分钟降雨
+const getMinRain = async () => {
+  try {
+    const url = `https://api.qweather.com/v7/minutely/5m?key=73ca4f214b9241fb98f6d291345d9d84&location=${setting.lon},${setting.lat}`
+    const rain = await new Request(url).loadJSON();
+    if (rain.code !== '200') {
+      getLocation();
+      return '';
+    }
+    if (setting.summary !== rain.summary) {
+      notify('降雨提示 ⛈️', rain.summary);
+      setting.summary = rain.summary;
+      writeSettings(setting);
+    }
+    return rain.summary;
+  } catch (e) {
+    console.log(e);
+    return '';
+  }
+};
+
 //.热带扰动
 const currMergerTC = async (tf) => {
   try {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const tc = await new Request(tcUrl).loadJSON();
-    return tc || [];
+    const p = loopdNextIdx(tc, 'TC');
+    return { tc, p };
   } catch (e) {
     console.log(e);
-    return [];
+    return {};
   }
 };
 
 /** 
  * 经纬度/位置/趋势/台风动态
  */
-const complementLocTrend = (tf, latest, loc) => {
+const complementLocTrend = async (tf, latest) => {
+  if (!tf) return;
   const newest = latest.find(item => item.tfbh === tf.tfbh);
-  if (!newest.location && loc.completion) {
+  if (!newest.location) {
+    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
+    const loc = await new Request(locUrl).loadJSON();
     newest.location = loc.location;
     newest.trend = loc.completion;
   }
@@ -97,14 +141,12 @@ const getLatestData = async (tf) => {
   try {
     const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
     const latestUrl = `https://data.istrongcloud.com/data/latest.json`;
-    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
-    const [message, loc, latest] = await Promise.all([
+    const [message, latest] = await Promise.all([
       new Request(msgUrl).loadJSON(),
-      new Request(locUrl).loadJSON(),
       new Request(latestUrl).loadJSON()
     ]);
-    const newest = complementLocTrend(tf, latest, loc);
     messageNotice(message?.[0]);
+    const newest = await complementLocTrend(tf, latest);
     return newest;
   } catch (e) {
     console.log(e);
@@ -127,7 +169,7 @@ const getTyphoonData = async () => {
     const arr = JSON.parse(match);
     if (!arr.length) return null;
     typhoonNotice(html);
-    const tf = loopdisplay(arr, 'count');
+    const tf = loopdNextIdx(arr, 'TF');
     const typhoon = tf.points[tf.points.length - 1];
     return { arr, tf, typhoon }
   } catch (e) {
@@ -165,9 +207,9 @@ const speedChangeNotice = (tf, typhoon, newest) => {
   setting.tf[tf.ename] = setting.tf[tf.ename] || {};
   const oldSpeed = setting.tf[tf.ename].speed;
   if (oldSpeed !== typhoon.speed) {
-    const body = `风速 ${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
+    const body = `风速 ${typhoon.speed || 0}米/秒，${typhoon.power || 0}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
     notify(`⚠️ 台风 [${tf.name}] 风速变化`, body);
-    setting.tf[tf.ename].speed = typhoon.speed;
+    setting.tf[tf.ename].speed = typhoon.speed || 0;
     writeSettings(setting);
   }
 };
@@ -182,9 +224,9 @@ const currMergerTCNotice = (tc) => {
   if (oldSpeed !== point.speed) {
     notify(
       `⚠️ ${tc.name} ${tc.ename}`,
-      `${tc.ident} ${point.strong}\n风速 ${point.speed}米/秒，${point.power}级，${point.pressure}百帕\n更新时间: ${formatTime(point.time)}`
+      `${tc.ident} ${point.strong}\n风速 ${point.speed || 0}米/秒，${point.power || 0}级，${point.pressure || 0}百帕\n更新时间: ${formatTime(point.time)}`
     );
-    setting.tc[id] = point.speed;
+    setting.tc[id] = point.speed || 0;
     writeSettings(setting);
   }
 };
@@ -290,13 +332,19 @@ const levelAgency = () => {
   ];
 };
 
-const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
-  const barStack = topStack.addStack();
+const createBarStack = (stack, color, radius = 7, padding) => {
+  const barStack = stack.addStack();
   barStack.layoutHorizontally();
   barStack.centerAlignContent();
-  barStack.setPadding(3, 10, 3, 10);
-  barStack.cornerRadius = 7;
-  barStack.backgroundColor = getTyphoonColor(typhoon.speed);
+  barStack.setPadding(padding ? 5 : 3, 10, padding ? 5 : 3, 10);
+  barStack.cornerRadius = radius;
+  barStack.backgroundColor = color;
+  return barStack;
+};
+
+const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
+  const color = getTyphoonColor(typhoon.speed);
+  const barStack = createBarStack(topStack, color);
   const icon = barStack.addImage(tyIcon);
   icon.imageSize = new Size(17, 17);
   icon.tintColor = Color.white();
@@ -358,7 +406,7 @@ const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
 };
 
 // 无台风时
-const createLevelWidget = (levels, tc, textColor, isLarge) => {
+const createLevelWidget = (levels, tc, p, textColor, isLarge, summary) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -374,8 +422,7 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
     topStack.addSpacer(19);
   }
   
-  const tf = loopdisplay(tc, 'TC');
-  const levelText = topStack.addText(tc.length ? `${tf.name} - ${tf.ename} [${setting.TC + 1}]` : '台风等级、预报机构');
+  const levelText = topStack.addText(tc.length ? `${p.name} - ${p.ename} [${setting.TC + 1}]` : '台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
   levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
@@ -397,6 +444,17 @@ const createLevelWidget = (levels, tc, textColor, isLarge) => {
   
   if (isLarge) {
     widget.addSpacer();
+    if (summary && summary !== '未来两小时无降水') {
+      const stack = widget.addStack();
+      stack.layoutHorizontally();
+      stack.addSpacer();
+      const barStack = createBarStack(stack, new Color('#0041C9'), 12, true);
+      const statusText = barStack.addText(summary);
+      statusText.textColor = Color.white();
+      statusText.font = Font.mediumSystemFont(14.5);
+      stack.addSpacer();
+      widget.addSpacer();
+    }
   } else {
     widget.addSpacer(5);
   }
@@ -458,9 +516,10 @@ const runWidget = async () => {
   if (isSmall) {
     widget = errorWidget();
   } else if (!tf) {
+    const summary = await getMinRain();
     const levels = levelAgency();
-    const tc = await currMergerTC();
-    widget = createLevelWidget(levels, tc, textColor, isLarge);
+    const { tc, p } = await currMergerTC();
+    widget = createLevelWidget(levels, tc, p, textColor, isLarge, summary);
   } else {
     speedChangeNotice(tf, typhoon, newest);
     const date = formatDate(newest.update_time);
