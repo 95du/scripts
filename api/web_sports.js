@@ -539,7 +539,7 @@ async function main(family) {
   
   // 三段进度条 🇩🇪🇩🇪🇩🇪
   const createThreeStageBar = (total, homeWin, draw, awayWin) => {
-    const width = 200;
+    const width = 204;
     const height = 4;
     const radius = height / 2;
     // 初始间隔宽度
@@ -588,8 +588,7 @@ async function main(family) {
     ctx.fillPath();
     // 绘制客场获胜阶段（蓝色）
     const awayWinPath = new Path();
-    awayWinPath.addRoundedRect(
-      new Rect(homeWinWidth + drawWidth + interval * 2, 0, awayWinWidth, height), radius, radius);
+    awayWinPath.addRoundedRect(new Rect(homeWinWidth + drawWidth + interval * 2, 0, awayWinWidth, height), radius, radius);
     ctx.addPath(awayWinPath);
     ctx.setFillColor(Color.blue());
     ctx.fillPath();
@@ -797,7 +796,7 @@ async function main(family) {
     if (right) rowStack.addSpacer();
   };
   
-  // 角球红牌黄牌事件 ❤️💛
+  // 角球红牌黄牌事件 ❤️⛳️💛
   const parseStats = (data) => {
     const list = data?.list || [];
     const map = new Map(list.map(i => [i.title, i]));
