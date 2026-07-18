@@ -758,47 +758,6 @@ async function main(family) {
     return widget;
   };
   
-  // 创建单独的进度条🧡🧡🧡
-  const createSingleProgressBar = (value, total, width, height, fillColor, reverse = false) => {
-    const ctx = new DrawContext();
-    ctx.size = new Size(width, height);
-    ctx.opaque = false;
-    ctx.respectScreenScale = true;
-    const totalWidth = width;
-    const radius = height / 2;
-    
-    // 绘制背景条
-    const basePath = new Path();
-    basePath.addRoundedRect(new Rect(0, 0, totalWidth, height), radius, radius);
-    ctx.addPath(basePath);
-    ctx.setFillColor(new Color('#cccccc', 0.5));
-    ctx.fillPath();
-    // 绘制前景进度条
-    const progressPath = new Path();
-    const progressWidth = (totalWidth * value) / total;
-    if (reverse) {
-      progressPath.addRoundedRect(new Rect(totalWidth - progressWidth, 0, progressWidth, height), radius, radius);
-    } else {
-      progressPath.addRoundedRect(new Rect(0, 0, progressWidth, height), radius, radius);
-    }
-    ctx.addPath(progressPath);
-    ctx.setFillColor(fillColor);
-    ctx.fillPath();
-    return ctx.getImage();
-  };
-  
-  // 添加技术统计结果
-  const createStatText = (stack, text, width, right, left) => {
-    const rowStack = stack.addStack();
-    rowStack.centerAlignContent();
-    if (width) rowStack.size = new Size(width, 12);
-    if (left) rowStack.addSpacer();
-    const rowText = rowStack.addText(`${text}`);
-    rowText.font = Font.mediumSystemFont(12);
-    rowText.textColor = textColor;
-    if (right) rowStack.addSpacer();
-  };
-  
   // 角球红牌黄牌事件 ❤️⛳️💛
   const parseStats = (data) => {
     const list = data?.list || [];
@@ -857,6 +816,47 @@ async function main(family) {
     matchEventsRight(stack, right.corner, rightCornerIcon);
     widget.addSpacer();
     return stack;
+  };
+  
+  // 创建单独的进度条🧡🧡🧡
+  const createSingleProgressBar = (value, total, width, height, fillColor, reverse = false) => {
+    const ctx = new DrawContext();
+    ctx.size = new Size(width, height);
+    ctx.opaque = false;
+    ctx.respectScreenScale = true;
+    const totalWidth = width;
+    const radius = height / 2;
+    
+    // 绘制背景条
+    const basePath = new Path();
+    basePath.addRoundedRect(new Rect(0, 0, totalWidth, height), radius, radius);
+    ctx.addPath(basePath);
+    ctx.setFillColor(new Color('#cccccc', 0.5));
+    ctx.fillPath();
+    // 绘制前景进度条
+    const progressPath = new Path();
+    const progressWidth = (totalWidth * value) / total;
+    if (reverse) {
+      progressPath.addRoundedRect(new Rect(totalWidth - progressWidth, 0, progressWidth, height), radius, radius);
+    } else {
+      progressPath.addRoundedRect(new Rect(0, 0, progressWidth, height), radius, radius);
+    }
+    ctx.addPath(progressPath);
+    ctx.setFillColor(fillColor);
+    ctx.fillPath();
+    return ctx.getImage();
+  };
+  
+  // 添加技术统计结果
+  const createStatText = (stack, text, width, right, left) => {
+    const rowStack = stack.addStack();
+    rowStack.centerAlignContent();
+    if (width) rowStack.size = new Size(width, 12);
+    if (left) rowStack.addSpacer();
+    const rowText = rowStack.addText(`${text}`);
+    rowText.font = Font.mediumSystemFont(12);
+    rowText.textColor = textColor;
+    if (right) rowStack.addSpacer();
   };
   
   // 创建技术统计列表
@@ -969,9 +969,7 @@ async function main(family) {
     
     if (family === 'small') {
       widget = createErrorWidget();
-    }
-    
-    if (matches) {
+    } else if (matches) {
       const isMediumSwitch = family === 'medium' && setting.autoSwitch;
       const isLargeSwitch = family === 'large' && setting.largeSwitch;
       if (isMediumSwitch || isLargeSwitch) {
