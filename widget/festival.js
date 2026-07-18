@@ -13,6 +13,7 @@
 const fm = FileManager.local();
 const cache = fm.joinPath(fm.documentsDirectory(), '95du_festival');
 if (!fm.fileExists(cache)) fm.createDirectory(cache);
+const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
   
 const useFileManager = ({ cacheTime, type } = {}) => {
   return {
@@ -211,7 +212,7 @@ const setupWidget = async () => {
   
   const surplusStack = generateStack(widget);
   surplusStack.addSpacer();
-  const calendarIcon = await getCacheData('calendar.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/symbol/calendar.png');
+  const calendarIcon = await getCacheData('calendar.png', `${rootUrl}/img/symbol/calendar.png`);
   const icon = surplusStack.addImage(calendarIcon);
   icon.imageSize = new Size(16, 16);
   icon.tintColor = Color.yellow();
@@ -239,7 +240,7 @@ const setupWidget = async () => {
   createText(weekStack, (`${gzYear}年 · ${lMonth}月${lDate}`), 13, '#FFFFFF', 'bold');
   dateStack.addSpacer();
   
-  const img = await getCacheData('holidays.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/picture/holidays_1.png');
+  const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
   widget.backgroundColor = Color.black();
   widget.backgroundImage = img;
   widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
