@@ -510,7 +510,10 @@ async function main(family) {
           widget.addSpacer(3);
         }
         // 比赛时间
-        createTextStack(stack, time, 46, textOpacity, 'right');
+        const timeText = createTextStack(stack, time, 46, textOpacity, 'right');
+        if (matchStatus !== '2') {
+          timeText.textColor = Color.dynamic(Color.black(), new Color('#62EECD')); // 后补充时间颜色
+        }
         // 主队图标
         const leftLogoName = leftLogo.name.replace('/', '_');
         const homeImg = await module.getCacheData(leftLogo.logo, 240, `${leftLogoName}.png`);
