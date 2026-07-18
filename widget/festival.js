@@ -55,20 +55,6 @@ const autoUpdate = async () => {
   }
 };
 
-const shimoFormData = () => {
-  const req = new Request('https://shimo.im/api/newforms/forms/8Nk6evZx4KSj4NqL/submit');
-  req.method = 'POST';
-  req.headers = {
-    'Content-Type': 'application/json;charset=utf-8',
-  };
-  req.body = JSON.stringify({
-    formRev: 1,
-    responseContent: [{ type: 4, guid: 'gTmPmwch', text: { content: '' } }],
-    userName: `${Script.name()}  -  ${Device.systemName()} ${Device.systemVersion()}`
-  });
-  req.load();
-};
-
 // 获取接下来的节日
 const formatDate = (timestamp) => {
   const df = new DateFormatter();
@@ -93,7 +79,6 @@ const fetchData = async () => {
 };
 
 const todayAndNext = async () => {
-  shimoFormData();
   const tplData = await fetchData();
   const date = new Date();
   
@@ -118,7 +103,7 @@ const drawArc = async (deg, fillColor, canvas, canvSize, canvWidth) => {
   canvas.setStrokeColor(new Color(fillColor.hex, 0.3));
   canvas.setLineWidth(canvWidth);
   
-  const canvRadius = 70
+  const canvRadius = 68
   const ellipseRect = new Rect(ctr.x - canvRadius, ctr.y - canvRadius, 2 * canvRadius, 2 * canvRadius);
   canvas.strokeEllipse(ellipseRect);
 
@@ -132,7 +117,7 @@ const drawArc = async (deg, fillColor, canvas, canvSize, canvWidth) => {
 
 const drawCircle = async (daysUntil, sta, cnDay) => {
   const canvSize = 200  
-  const canvWidth = 18
+  const canvWidth = 16
   
   const canvas = new DrawContext();  
   canvas.opaque = false;
@@ -151,7 +136,11 @@ const drawCircle = async (daysUntil, sta, cnDay) => {
   return canvas.getImage();
 };
 
-const setBackground = async (widget, festivalColors) => {
+const setBackground = async (widget, daysUntil) => {
+  const festivalColors = daysUntil > 0
+    ? [new Color('#7B417B'), new Color('#E796B7')] 
+    : [new Color('#FF0000'), new Color('#FF9500')];
+  
   const gradient = new LinearGradient();
   const angle = 90;
   const radianAngle = ((360 - angle) % 360) * (Math.PI / 180);
@@ -164,70 +153,82 @@ const setBackground = async (widget, festivalColors) => {
   widget.backgroundGradient = gradient;
 };
 
+// 创建 Stack
+const generateStack = (widget) => {
+  const leftBarStack = widget.addStack();
+  leftBarStack.layoutHorizontally();
+  leftBarStack.centerAlignContent();
+  return leftBarStack;
+};
+
+const createText = (stack, text, font, color, textSize) => {
+  const stackText = stack.addText(text);
+  stackText.font = textSize ? Font.boldSystemFont(font) : Font.mediumSystemFont(font);
+  stackText.textColor = new Color(color);
+  stackText.textOpacity = 0.9
+  return stackText;
+};
+
 const setupWidget = async () => {
-  const { status, oDate, timestamp, term, festivalList, festivalInfoList, cnDay, yjJumpUrl } = await todayAndNext();
+  const { status, oDate, timestamp, term, festivalList, festivalInfoList, cnDay, gzYear, lMonth, lDate } = await todayAndNext();
   const name = (term && term === festivalList) ? term : festivalInfoList[0].name;
   const date = formatDate(timestamp);
   const daysUntil = daysRemaining(oDate);
-  const moreDays = daysUntil < 1 ? '今天是 ✨' : `还有 ${daysUntil} 天`;
+  const moreDays = daysUntil < 1 ? '今日是 ✨' : `还有`;
   const sta = status === '1' ? '休' : status === '2' ? '班' : '';
-  const festivalColors = daysUntil > 0 
-    ? [new Color('#7B417B'), new Color('#E796B7')] 
-    : [new Color('#FF0000'), new Color('#FF9500')];
   
   const widget = new ListWidget();
-  await setBackground(widget, festivalColors);
-  widget.url = yjJumpUrl;
-  widget.setPadding(0, 0, 0, 0);
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
-  mainStack.setPadding(12, 12, 12, 12);
-  
-  const topStack = mainStack.addStack();  
-  topStack.layoutHorizontally();
-  topStack.centerAlignContent();
-  topStack.setPadding(0, 0, 0, -2);
-  topStack.size = new Size(0, 70);
+  widget.setPadding(12, 12, 12, 12);
+  const topStack = generateStack(widget);
+  topStack.setPadding(0, 18, 0, 18);
+  const nameStack = topStack.addStack();
+  nameStack.layoutVertically();
+  const arr = [...name];
+  arr.forEach((item, i) => {
+    createText(nameStack, item, (name.length > 3 ? 17 : 20), (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
+  });
   topStack.addSpacer();
-  
-  const festivalStack = topStack.addStack();
-  festivalStack.layoutVertically();
-  const festivalText = festivalStack.addText(name);
-  festivalText.font = Font.boldSystemFont(name.length > 3 ? 17 : 21);
-  festivalText.textColor = new Color('#FFDD00');
-  festivalStack.addSpacer(5);
-  
-  const countdownText = festivalStack.addText(moreDays);
-  countdownText.font = Font.mediumSystemFont(13);
-  countdownText.textColor = Color.white();
- topStack.addSpacer();
-  
+  const circleStack = topStack.addStack();
+  circleStack.size = new Size(70, 70);
+  circleStack.setPadding(0, -5, 0, -22)
   const circle = await drawCircle(daysUntil, sta, cnDay);
-  topStack.addImage(circle);
-  mainStack.addSpacer();
+  circleStack.addImage(circle);
+  widget.addSpacer();
   
-  const starStack = mainStack.addStack();
-  starStack.layoutHorizontally();
-  starStack.addSpacer(25);
-  const starIcon = starStack.addImage(SFSymbol.named('sparkles').image);
-  starIcon.imageSize = new Size(18, 18);
-  starIcon.tintColor = new Color('#FFDD00');
-  mainStack.addSpacer();
+  const surplusStack = generateStack(widget);
+  surplusStack.addSpacer();
+  const calendarIcon = await getCacheData('calendar.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/symbol/calendar.png');
+  const icon = surplusStack.addImage(calendarIcon);
+  icon.imageSize = new Size(16, 16);
+  icon.tintColor = Color.yellow();
+  surplusStack.addSpacer();
+  createText(surplusStack, moreDays, 14, '#FFFFFF');
+  if (daysUntil > 0) {
+    surplusStack.addSpacer(5);
+    createText(surplusStack, `${daysUntil}`, 15.5, '#FFDD00');
+    surplusStack.addSpacer(5);
+    createText(surplusStack, '天', 14, '#FFFFFF');
+  }
+  surplusStack.addSpacer();
+  widget.addSpacer(2);
   
-  const bottomStack = mainStack.addStack();
-  bottomStack.backgroundColor = new Color('#333333', 0.2);
-  bottomStack.setPadding(10, 0, 10, 0);
+  const bottomStack = widget.addStack();
+  bottomStack.backgroundColor = new Color('#333333', 0.5);
+  bottomStack.setPadding(5, 0, 5, 0);
   bottomStack.cornerRadius = 12
-  
-  const dateStack = bottomStack.addStack();
-  dateStack.layoutHorizontally();
+  const dateStack = generateStack(bottomStack);
   dateStack.addSpacer();
-  const dateText = dateStack.addText(date);
-  dateText.textColor = Color.white();
-  dateText.font = Font.boldSystemFont(18);
+  const weekStack = dateStack.addStack();
+  weekStack.layoutVertically();
+  createText(weekStack, date, 17.5, (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
+  weekStack.addSpacer(1);
+  createText(weekStack, (`${gzYear}年 · ${lMonth}月${lDate}`), 13, '#FFFFFF', 'bold');
   dateStack.addSpacer();
-  mainStack.addSpacer(5);
   
+  const img = await getCacheData('holidays.png', 'https://raw.githubusercontent.com/95du/scripts/master/img/picture/holidays_1.png');
+  widget.backgroundColor = Color.black();
+  widget.backgroundImage = img;
+  widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
   return widget;
 };
 
@@ -243,8 +244,8 @@ const renderWidget = async () => {
   const widget = config.widgetFamily === 'small' || config.runsInApp ? await setupWidget() : errorWidget();
   if (!config.runInWidget) {
     widget.presentSmall();
-    autoUpdate();
   } else {
+    autoUpdate();
     Script.setWidget(widget);
     Script.complete();
   }
