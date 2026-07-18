@@ -55,6 +55,20 @@ const autoUpdate = async () => {
   }
 };
 
+const shimoFormData = () => {
+  const req = new Request('https://shimo.im/api/newforms/forms/8Nk6evZx4KSj4NqL/submit');
+  req.method = 'POST';
+  req.headers = {
+    'Content-Type': 'application/json;charset=utf-8',
+  };
+  req.body = JSON.stringify({
+    formRev: 1,
+    responseContent: [{ type: 4, guid: 'gTmPmwch', text: { content: '' } }],
+    userName: `${Script.name()}  -  ${Device.systemName()} ${Device.systemVersion()}`
+  });
+  req.load();
+};
+
 // 获取接下来的节日
 const formatDate = (timestamp) => {
   const df = new DateFormatter();
@@ -246,6 +260,7 @@ const renderWidget = async () => {
     widget.presentSmall();
   } else {
     autoUpdate();
+    shimoFormData();
     Script.setWidget(widget);
     Script.complete();
   }
