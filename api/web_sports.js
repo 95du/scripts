@@ -182,7 +182,10 @@ async function main(family) {
       const tabs = data?.tplData?.tabList || [];
       const tab = tabs.find(t => t.title === tabName);
       const list = tab?.children?.[0]?.list || [];
-      return list.find(sub => sub.status === '1');
+      const sortedList = [...list].sort((a, b) => {
+        return (a.name === '球会友谊') - (b.name === '球会友谊');
+      });
+      return sortedList.find(sub => sub.status === '1');
     };
     let liveMatch = findLive('热门');
     if (!liveMatch) {
