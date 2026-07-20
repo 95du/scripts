@@ -72,8 +72,8 @@ const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typh
 const getLocation = async () => {
   if (setting.updateTime) {
     const diff = Date.now() - setting.updateTime;
-    const hours = Math.floor(diff / (3600 * 1000));
-    if (hours <= 3) return setting;
+    const hours = diff / (3600 * 1000);
+    if (hours < 3) return setting;
   }
 
   try {
@@ -319,13 +319,13 @@ const levelAgency = () => {
     },
     { 
       label: '强台风 (STY)', 
-      agency: '中国台湾', 
+      agency: '欧洲', 
       iconColor: '#F55BF9',
       textColor: '#39A7F8',
     },
     { 
       label: '超强台风 (SuperTY)', 
-      agency: '中国香港', 
+      agency: '香港', 
       iconColor: '#FF0000',
       textColor: '#00C400',
     },
@@ -336,7 +336,7 @@ const createBarStack = (stack, color, radius = 7, padding) => {
   const barStack = stack.addStack();
   barStack.layoutHorizontally();
   barStack.centerAlignContent();
-  barStack.setPadding(padding ? 5 : 3, 10, padding ? 5 : 3, 10);
+  barStack.setPadding(padding ? 4 : 3, 10, padding ? 4 : 3, 10);
   barStack.cornerRadius = radius;
   barStack.backgroundColor = color;
   return barStack;
