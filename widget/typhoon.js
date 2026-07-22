@@ -249,7 +249,7 @@ const getTyphoonColor = (speed) => {
 
 // `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`
 const setBackground = async (widget, isLarge) => {
-  widget.url = 'https://wxmpurl.cn/Pu9lL4aagIk';
+  widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
     const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
     widget.backgroundImage = await new Request(url).loadImage();
@@ -421,8 +421,8 @@ const createLevelWidget = (levels, tc, p, textColor, isLarge, summary) => {
     bar.cornerRadius = 50;
     topStack.addSpacer(19);
   }
-  
-  const levelText = topStack.addText(tc.length ? `${p.name} - ${p.ename} [${setting.TC + 1}]` : '台风等级、预报机构');
+  const point = p.points?.at(-1);
+  const levelText = topStack.addText(tc.length ? `${p.name}  ( ${p.ename} )  ${point.power}级` : '台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
   levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
