@@ -422,7 +422,7 @@ const createLevelWidget = (levels, tc, p, textColor, isLarge, summary) => {
     topStack.addSpacer(19);
   }
   const point = p.points?.at(-1);
-  const levelText = topStack.addText(tc.length ? `${p.name}  ( ${p.ename} )  ${point.power}级` : '台风等级、预报机构');
+  const levelText = topStack.addText(tc.length ? `${p.name}  「 ${p.ename} 」  ${point.power}级` : '台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
   levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
