@@ -21,10 +21,9 @@ $.body_key = 'body_12123';
     const boxjsBody = $.getjson($.body_key, {});
     if (restBody.api === 'biz.user.msg.subscribe' && restBody.sign !== boxjsBody.sign) {
       $.setjson(restBody, $.body_key);
-      $.msg(
-        $.name,
-        '验证令牌/签名获取成功。',
-        restBody.authToken,
+      $.msg($.name,
+        '验证令牌/签名获取成功 ✅',
+        restBody.verifyToken,
         {
           'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
           'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
