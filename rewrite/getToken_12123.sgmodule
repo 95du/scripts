@@ -2,7 +2,7 @@
 
 # Request Header
 [Script]
-^https:\/\/miniappcsfw\.122\.gov\.cn:8443\/api\/electronic\/showDriverLicense url script-request-header-https://raw.githubusercontent.com/95du/scripts/main/rewrite/getToken_12123.js
+^https:\/\/miniappcsfw\.122\.gov\.cn:8443\/api\/electronic\/showDriverLicense url script-request-header https://raw.githubusercontent.com/95du/scripts/main/rewrite/getToken_12123.js
 
 # Request Body
 [Script]
