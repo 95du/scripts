@@ -6,7 +6,7 @@
   "repo": "https://raw.githubusercontent.com/95du/scripts/master",
   "apps": [
     {
-      "id": "body_12123",
+      "id": "Traffic_Management_12123",
       "name": "交管12123",
       "author": "@95du",
       "script": "https://raw.githubusercontent.com/95du/scripts/master/rewrite/getToken_12123.js",
@@ -20,12 +20,20 @@
         "https://raw.githubusercontent.com/FoKit/Scripts/main/images/12123.png"
       ],
       "keys": [
-        "body_12123"
+        "body_12123",
+        "ele_body_12123"
       ],
       "settings": [
         {
           "id": "body_12123",
-          "name": "Body",
+          "name": "车辆信息",
+          "val": "",
+          "type": "textarea",
+          "desc": ""
+        },
+        {
+          "id": "ele_body_12123",
+          "name": "电子驾驶证",
           "val": "",
           "type": "textarea",
           "desc": ""
@@ -64,8 +72,8 @@
         "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>GitCode Cookie</font></h2>"
       ],
       "icons": [
-        "https://sweixinfile.hisense.com/media/M00/7C/CE/Ch4FyGUgg2OAC7hRAAQod2sIdzI493.png",
-        "https://sweixinfile.hisense.com/media/M00/7C/CE/Ch4FyGUgg2OAC7hRAAQod2sIdzI493.png"
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/logo_10.png",
+        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/logo_10.png"
       ],
       "keys": [
         "gitcode_cookie"
@@ -78,31 +86,6 @@
           "rows": 3,
           "autoGrow": true,
           "type": "textarea",
-          "desc": ""
-        }
-      ]
-    },
-    {
-      "id": "taobao_cookie",
-      "name": "淘宝",
-      "author": "@95du",
-      "descs_html": [
-        "<h2 align=\"center\"><font color='#FF6800', font-weight: bold>淘宝 Cookie</font></h2>"
-      ],
-      "icons": [
-        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/taobao.png",
-        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/taobao.png"
-      ],
-      "keys": [
-        "taobao_cookie"
-      ],
-      "settings": [
-        {
-          "id": "taobao_cookie",
-          "name": "Cookie",
-          "val": "",
-          "type": "textarea",
-          "rows": 1,
           "desc": ""
         }
       ]
@@ -125,31 +108,6 @@
         {
           "id": "guanCha_token",
           "name": "token",
-          "val": "",
-          "type": "textarea",
-          "rows": 1,
-          "desc": ""
-        }
-      ]
-    },
-    {
-      "id": "laohu8_Authorization",
-      "name": "市值股票",
-      "author": "@95du",
-      "descs_html": [
-        "市值股票Authorization"
-      ],
-      "icons": [
-        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/marketCap.png",
-        "https://raw.githubusercontent.com/95du/scripts/master/img/icon/marketCap.png"
-      ],
-      "keys": [
-        "laohu8_Authorization"
-      ],
-      "settings": [
-        {
-          "id": "laohu8_Authorization",
-          "name": "Authorization",
           "val": "",
           "type": "textarea",
           "rows": 1,
