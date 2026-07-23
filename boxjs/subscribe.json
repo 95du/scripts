@@ -36,7 +36,7 @@
           "id": "ele_cookie_12123",
           "name": "电子驾驶证 cookie",
           "val": "",
-          "type": "text",
+          "type": "textarea",
           "desc": ""
         },
         {
