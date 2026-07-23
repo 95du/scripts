@@ -49,7 +49,7 @@ const notifyParam = {
       
       const oldBody = $.getdata($.ele_body_key);
       if (request?.body !== oldBody) {
-        $.setdata(body, $.ele_body_key);
+        $.setdata(request.body, $.ele_body_key);
         $.msg($.name, ``,
           '电子驾驶证数据获取成功 ✅',
           notifyParam
