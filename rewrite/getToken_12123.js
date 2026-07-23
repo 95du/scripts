@@ -9,26 +9,52 @@
 
 const $ = new Env('交管12123');
 $.body_key = 'body_12123';
+$.ele_cookie_key = 'ele_cookie_12123';
+$.ele_body_key = 'ele_body_12123';
+
+const notifyParam = {
+  'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
+  'media-url':
+    'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
+}
 
 !(async () => {
   if (typeof $request !== 'undefined') {
-    await getCookie($request);
+    await getBody($request);
   }
 
-  async function getCookie(request) {
-    if (!request?.body?.includes('sign')) return;
-    const restBody = JSON.parse(decodeURIComponent(request.body).replace('params=', ''));
-    const boxjsBody = $.getjson($.body_key, {});
-    if (restBody.api === 'biz.user.msg.subscribe' && restBody.sign !== boxjsBody.sign) {
-      $.setjson(restBody, $.body_key);
-      $.msg($.name,
-        '验证令牌/签名获取成功 ✅',
-        restBody.verifyToken,
-        {
-          'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
-          'media-url': 'https://raw.githubusercontent.com/95du/scripts/master/img/icon/12123.png'
-        }
-      );
+  async function getBody(request) {
+    if (!request?.body) return;
+    // 车辆信息 
+    if (body.includes('sign')) {
+      const restBody = JSON.parse(decodeURIComponent(request?.body).replace(/^params=/, ''));
+      const boxjsBody = $.getjson($.body_key, {});
+      if (restBody.api === 'biz.user.msg.subscribe' && restBody.sign !== boxjsBody.sign) {
+        $.setjson(restBody, $.body_key);
+        $.msg($.name,
+          '验证令牌/签名获取成功 ✅',
+          restBody.verifyToken,
+          notifyParam
+        );
+      }
+      return;
+    }
+
+    // 电子驾驶证
+    if (request.url.includes('/api/electronic/showDriverLicense.json')) {
+      const cookie = request.headers?.Cookie || request.headers?.cookie;
+      if (cookie) {
+        $.setdata(cookie, $.ele_cookie_key);
+      }
+      
+      const oldBody = $.getdata($.ele_body_key);
+      if (request?.body !== oldBody) {
+        $.setdata(body, $.ele_body_key);
+        $.msg($.name, ``,
+          '电子驾驶证数据获取成功 ✅',
+          notifyParam
+        );
+      }
     }
   }
 })()
