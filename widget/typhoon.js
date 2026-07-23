@@ -204,12 +204,12 @@ const messageNotice = (msg) => {
 const speedChangeNotice = (tf, typhoon, newest) => {
   if (!tf) return;
   setting.tf = setting.tf || {};
-  setting.tf[tf.ename] = setting.tf[tf.ename] || {};
-  const oldSpeed = setting.tf[tf.ename].speed;
+  const id = tf.tfbh || tf.ident;
+  const oldSpeed = setting.tf[id];
   if (oldSpeed !== typhoon.speed) {
     const body = `风速 ${typhoon.speed || 0}米/秒，${typhoon.power || 0}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
     notify(`⚠️ 台风 [${tf.name}] 风速变化`, body);
-    setting.tf[tf.ename].speed = typhoon.speed || 0;
+    setting.tf[id] = typhoon.speed || 0
     writeSettings(setting);
   }
 };
@@ -219,7 +219,7 @@ const currMergerTCNotice = (tc) => {
   if (!point) return;
   const formatTime = (time) => time.slice(0, 16).replace('T', ' ');
   setting.tc = setting.tc || {};
-  const id = tc.ident;
+  const id = tc.tfbh || tc.ident;
   const oldSpeed = setting.tc[id];
   if (oldSpeed !== point.speed) {
     notify(
@@ -247,6 +247,28 @@ const getTyphoonColor = (speed) => {
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
 
+// 查找最大风速的 Point
+const getMaxForecast = (tf) => {
+  if (
+    tf.land?.length &&
+    tf.points?.every(p =>
+      p.radius7 !== 0 &&
+      p.radius10 !== 0 &&
+      p.radius12 !== 0
+    )
+  ) return null;
+  
+  return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
+    for (const point of points) {
+      const item = { ...point, sets };
+      if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
+        max = item;
+      }
+    }
+    return max;
+  }, null);
+};
+
 // `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`
 const setBackground = async (widget, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
@@ -259,7 +281,7 @@ const setBackground = async (widget, isLarge) => {
   }
 };
 
-const generateItem = (typhoon, land, newest) => {
+const generateItem = (typhoon, newest, land, maxSpeed) => {
   return [
     { 
       label: "中心位置", 
@@ -272,10 +294,12 @@ const generateItem = (typhoon, land, newest) => {
       color: new Color('#39A7F8')
     },
     { 
-      label: land ? "登陆位置" : "风圈半径",
+      label: land ? "登陆位置" : maxSpeed ? '最大等级' : "风圈半径",
       value: land
         ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
-        : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
+        : maxSpeed 
+          ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级，${maxSpeed.strong}，${maxSpeed.sets}预测`
+          : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
       color: new Color('#FFD83A')
     },
     { 
@@ -524,7 +548,8 @@ const runWidget = async () => {
     speedChangeNotice(tf, typhoon, newest);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
-    const info = generateItem(typhoon, land, newest);
+    const maxSpeed = getMaxForecast(tf);
+    const info = generateItem(typhoon, newest, land, maxSpeed);
     widget = createWidget(
       arr, tf, typhoon, 
       date, info, textColor, isLarge
