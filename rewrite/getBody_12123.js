@@ -35,7 +35,6 @@ const notifyParam = {
           notifyParam
         );
       }
-      return;
     }
 
     // 电子驾驶证
