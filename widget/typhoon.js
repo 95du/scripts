@@ -379,7 +379,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
+const createWidget = (arr, tf, typhoon, maxSpeed, date, info, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -407,7 +407,7 @@ const createWidget = (arr, tf, typhoon, date, info, textColor, isLarge) => {
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
-  if (isLarge && !typhoon.radius10) {
+  if (isLarge && tf.land.length) {
     mainStack.backgroundColor = new Color('#00C400', 0.18);
   }
   
@@ -551,7 +551,7 @@ const runWidget = async () => {
     const maxSpeed = getMaxForecast(tf);
     const info = generateItem(typhoon, newest, land, maxSpeed);
     widget = createWidget(
-      arr, tf, typhoon, 
+      arr, tf, typhoon, maxSpeed,
       date, info, textColor, isLarge
     );
   }
