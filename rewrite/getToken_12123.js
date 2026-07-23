@@ -26,8 +26,8 @@ const notifyParam = {
   async function getBody(request) {
     if (!request?.body) return;
     // 车辆信息 
-    if (body.includes('sign')) {
-      const restBody = JSON.parse(decodeURIComponent(request?.body).replace(/^params=/, ''));
+    if (request.body.includes('sign')) {
+      const restBody = JSON.parse(decodeURIComponent(request.body).replace(/^params=/, ''));
       const boxjsBody = $.getjson($.body_key, {});
       if (restBody.api === 'biz.user.msg.subscribe' && restBody.sign !== boxjsBody.sign) {
         $.setjson(restBody, $.body_key);
