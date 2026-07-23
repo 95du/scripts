@@ -110,7 +110,7 @@ const getMinRain = async () => {
 };
 
 //.热带扰动
-const currMergerTC = async (tf) => {
+const currMergerTC = async () => {
   try {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const tc = await new Request(tcUrl).loadJSON();
@@ -129,7 +129,7 @@ const complementLocTrend = async (tf, latest) => {
   if (!tf) return;
   const newest = latest.find(item => item.tfbh === tf.tfbh);
   if (!newest.location) {
-    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.ident || tf.tfbh}.json`;
+    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.tfbh}.json`;
     const loc = await new Request(locUrl).loadJSON();
     newest.location = loc.location;
     newest.trend = loc.completion;
@@ -349,7 +349,7 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   icon.imageSize = new Size(17, 17);
   icon.tintColor = Color.white();
   barStack.addSpacer(6);
-  const statusText = barStack.addText(tf.tfbh + tf.name);
+  const statusText = barStack.addText(tf.ident + tf.name);
   statusText.textColor = Color.white();
   statusText.font = Font.boldSystemFont(14.5);
   return barStack;
