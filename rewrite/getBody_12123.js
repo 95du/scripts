@@ -9,6 +9,7 @@
 
 const $ = new Env('交管12123');
 $.body_key = 'body_12123';
+$.ele_cookie_key = 'ele_cookie_12123';
 $.ele_body_key = 'ele_body_12123';
 
 const notifyParam = {
@@ -38,7 +39,11 @@ const notifyParam = {
     }
 
     // 电子驾驶证
-    if (request.url.includes('/api/electronic/showDriverLicense.json')) {
+    if (request.url.includes('/api/electronic/showDriverLicense')) {
+      const cookie = request.headers?.Cookie || request.headers?.cookie;
+      if (cookie) {
+        $.setdata(cookie, $.ele_cookie_key);
+      }
       const oldBody = $.getdata($.ele_body_key);
       if (request?.body !== oldBody) {
         $.setdata(request.body, $.ele_body_key);
