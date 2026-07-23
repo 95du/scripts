@@ -46,7 +46,8 @@ const notifyParam = {
       if (cookie) {
         $.setdata(cookie, $.ele_cookie_key);
       }
-      
+      console.log(request.url);
+      console.log(request.body);
       const oldBody = $.getdata($.ele_body_key);
       if (request?.body !== oldBody) {
         $.setdata(request.body, $.ele_body_key);
