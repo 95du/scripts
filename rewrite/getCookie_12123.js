@@ -22,7 +22,7 @@ const notifyParam = {
   }
 
   function getCookie(request) {
-    if (!request.url.includes('/api/electronic/showDriverLicense.json')) {
+    if (request.url.includes('/api/electronic/showDriverLicense.json')) {
       const cookie =
         request.headers?.Cookie ||
         request.headers?.cookie;
