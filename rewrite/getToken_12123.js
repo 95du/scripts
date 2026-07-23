@@ -24,7 +24,6 @@ const notifyParam = {
   }
 
   async function getBody(request) {
-    if (!request?.body) return;
     // 车辆信息 
     if (request.body.includes('sign')) {
       const restBody = JSON.parse(decodeURIComponent(request.body).replace(/^params=/, ''));
