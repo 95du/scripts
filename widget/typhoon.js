@@ -269,11 +269,12 @@ const getMaxForecast = (tf) => {
   }, null);
 };
 
-// `https://tf.istrongcloud.com/tcScreenshot/active/${tf.ident}.png`
-const setBackground = async (widget, isLarge) => {
+// 设置背景
+const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
-    const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
+    // const url = `https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png?r=${Date.now()}`;
+    const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png?r=${Date.now()}`;
     widget.backgroundImage = await new Request(url).loadImage();
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -556,7 +557,7 @@ const runWidget = async () => {
     );
   }
   
-  if (!isSmall) await setBackground(widget, isLarge);
+  if (!isSmall) await setBackground(widget, tf, isLarge);
   
   if (config.runsInApp) {
     await widget[tf ? 'presentLarge' : 'presentMedium']();
