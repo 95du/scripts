@@ -37,19 +37,16 @@ const notifyParam = {
         );
       }
     }
-
+    
     // 电子驾驶证
     if (request.url.includes('/api/electronic/showDriverLicense')) {
-      const cookie = request.headers?.Cookie || request.headers?.cookie;
-      if (cookie) {
+      const headers = request.headers;
+      const cookie = headers?.Cookie || eaders?.cookie;
+      if (headers.Host && cookie) {
         $.setdata(cookie, $.ele_cookie_key);
-      }
-      const oldBody = $.getdata($.ele_body_key);
-      if (request?.body !== oldBody) {
-        $.setdata(request.body, $.ele_body_key);
         $.msg($.name, 
-          '电子驾驶证数据获取成功 ✅',
-          '包含 Cookie Body 两个参数',
+          '电子驾驶证 Cookie 获取成功 ✅',
+          headers.Host,
           notifyParam
         );
       }
