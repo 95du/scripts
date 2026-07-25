@@ -4,7 +4,7 @@
 
 async function main() {
   const scriptName = '交管 12123'
-  const version = '1.2.3'
+  const version = '1.3.0'
   const updateDate = '2024年12月05日'
   const pathName = '95du_12123';
   
@@ -143,7 +143,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重修复已知问题。`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加大号组件电子驾驶证`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -252,7 +252,7 @@ async function main() {
      */
     const listItems = [
       `<li>${updateDate}</li>`,
-      `<li>点击违章信息跳转到支付宝详情页面 ( Sign有效期内 )，可在设置中打开或关闭 ‼️</li>`,
+      `<li>增加大号组件电子驾驶证，进入该页面自动抓取 Cookie</li>`,
       `<li>性能优化，改进用户体验</li>`
     ].join('\n');
     
@@ -323,7 +323,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-7%' : '-4%') : (avatarInfo ? '-6%' : '-4%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-7%' : '-4%') : (avatarInfo ? '-10%' : '-7%')};
     }
 
     ${settings.animation ? `
@@ -994,6 +994,13 @@ async function main() {
     {
       type: 'group',
       items: [
+        {
+          label: '大号组件',
+          name: 'preview',
+          type: 'cell',
+          family: 'large',
+          icon: `${rootUrl}/img/symbol/preview.png`
+        },
         {
           label: '中号组件',
           name: 'preview',
