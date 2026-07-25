@@ -10,7 +10,6 @@
 const $ = new Env('交管12123');
 $.body_key = 'body_12123';
 $.ele_cookie_key = 'ele_cookie_12123';
-$.ele_body_key = 'ele_body_12123';
 
 const notifyParam = {
   'open-url': 'scriptable:///run/' + encodeURIComponent('交管12123'),
