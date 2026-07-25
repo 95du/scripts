@@ -249,15 +249,11 @@ const getTyphoonColor = (speed) => {
 
 // 查找最大风速的 Point
 const getMaxForecast = (tf) => {
-  if (
-    tf.land?.length &&
-    tf.points?.every(p =>
-      p.radius7 !== 0 &&
-      p.radius10 !== 0 &&
-      p.radius12 !== 0
-    )
-  ) return null;
-  
+  const lastPoint = tf.points?.at(-1);
+  if (lastPoint.radius7 !== 0 && lastPoint.radius10 !== 0 && lastPoint.radius12 !== 0) {
+    return null;
+  }
+
   return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
     for (const point of points) {
       const item = { ...point, sets };
