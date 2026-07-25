@@ -71,8 +71,22 @@ async function main(family) {
     const cache = module.useFileManager({ cacheTime: setting.cacheTime, type });
     const json = cache.read(name);
     if (json) return json;
-    const response = await requestInfo(api, params);
+    const response = api 
+      ? await requestInfo(api, params) 
+      : await getDriLicense();
     if (response.success) cache.write(name, response);
+    return response;
+  };
+  
+  // 请求电子驾驶证
+  const getDriLicense = async () => {
+    const url = `https://miniappcsfw.122.gov.cn:8443/api/electronic/showDriverLicense.json?t=${Date.now()}`;
+    const boxjs = await module.httpRequest(`http://boxjs.com/query/data/ele_cookie_12123`, 'json');
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+      'Cookie': boxjs?.val
+    };
+    const response = await module.apiRequest(url, headers, 'POST')
     return response;
   };
   
@@ -294,13 +308,11 @@ async function main(family) {
     const iconStack = stack.addStack();
     iconStack.layoutHorizontally();
     iconStack.centerAlignContent();
-    
     if (iconName) addIcon(iconStack, iconName, iconColor, 15, iconGap);
-    
     const dataText = iconStack.addText(text);
     dataText.font = Font.mediumSystemFont(11.5);
     dataText.textColor = textColor;
-    dataText.textOpacity = 0.78;
+    //dataText.textOpacity = 0.9;
     if (!gap) stack.addSpacer(3);
   };
   
@@ -316,7 +328,6 @@ async function main(family) {
     barStack.borderWidth = 2;
     
     if (iconName) addIcon(barStack, iconName, iconColor, 16, 4);
-    
     const statusText = barStack.addText(text);
     statusText.font = Font.mediumSystemFont(14);
     statusText.textColor = textColor;
@@ -335,7 +346,6 @@ async function main(family) {
     const widget = new ListWidget();
     await setBackground(widget);
     widget.setPadding(setPadding, 15, setPadding, 15);
-    
     const topStack = widget.addStack();
     topStack.setPadding(0, 0, 3, 0);
     topStack.layoutHorizontally();
@@ -355,7 +365,6 @@ async function main(family) {
     const mainStack = widget.addStack();
     mainStack.layoutHorizontally();
     mainStack.centerAlignContent();
-    
     const leftStack = mainStack.addStack();
     leftStack.size = new Size(setting.lrfeStackWidth, 0);
     leftStack.setPadding(0, 0, 3, 0);
@@ -455,10 +464,10 @@ async function main(family) {
   });
   
   const generateStack = (widget) => {
-    const leftBarStack = widget.addStack();
-    leftBarStack.layoutHorizontally();
-    leftBarStack.centerAlignContent();
-    return leftBarStack;
+    const stack = widget.addStack();
+    stack.layoutHorizontally();
+    stack.centerAlignContent();
+    return stack;
   }
   
   const createBarStack = (stack, width, height, color, gap) => {
@@ -564,9 +573,126 @@ async function main(family) {
     return widget;
   };
   
+  /**----- ☣️ 大号组件 ☣️ ------**/
+  const createGradient = () => {
+    const g = new LinearGradient();
+    g.startPoint = new Point(0, 0.5);
+    g.endPoint = new Point(1, 0.5);
+    g.locations = [0, 1];
+    g.colors = [
+      new Color('#29B6F6'),
+      new Color('#2CD889') 
+    ];
+    return g;
+  };
+
+  const base64ToImage = (base64) => {
+    const data = Data.fromBase64String(base64);
+    return Image.fromData(data);
+  };
+  
+  const addLargeText = (stack, title, text, gap) => {
+    const infoStack = generateStack(stack);
+    const titleText = infoStack.addText(title);
+    titleText.font = Font.mediumSystemFont(16);
+    titleText.textColor = new Color('#003EC9', 0.6);
+    infoStack.addSpacer(10);
+    const valueText = infoStack.addText(text);
+    valueText.font = Font.mediumSystemFont(16);
+    valueText.textColor = Color.black();
+    if (!gap) stack.addSpacer();
+  };
+  
+  const largeWidget = async () => {
+    const userImg = await module.getCacheData(`${rootUrl}/img/background/Ronaldo.png`, 500, `Ronaldo.png`);
+    const codeImg = await module.getCacheData(`${rootUrl}/img/background/barCode.png`, 500, `barCode.png`);
+    const blackboardImage = await module.getCacheData(`${rootUrl}/img/background/electricDriver.png`, 500, `driverLicense.png`);
+    
+    const { success, data } = await getCacheString('driverLicense.json');
+    const { drvElectronicInfo, drvElectronicPhoto } = data || {};
+    const image = !success ? userImg : base64ToImage(drvElectronicPhoto.photo)
+    const ywmImg = !success ? codeImg : base64ToImage(drvElectronicInfo.ywmImg)
+    
+    const {
+      xm = '克里斯蒂亚诺',
+      zjcx = 'A1',
+      ljjf = '3',
+      cclzrq = '2011-03-03',
+      ztDesc = '正常',
+      sfzmhm = '460104198511170013',
+      dabh = '460112769109',
+      yxqs = '2017-03-03',
+      yxqz = '2027-03-03',
+      zxbh = '4620004025809'
+    } = drvElectronicInfo || {};
+    
+    const widget = new ListWidget();
+    widget.setPadding(-5, 20, 12, 20);
+    const mainStack = generateStack(widget);
+    const topStack = mainStack.addStack();
+    topStack.size = new Size(90, 130);
+    const avatar = topStack.addImage(image);
+    mainStack.addSpacer(20);
+    
+    const infoStack = mainStack.addStack();
+    infoStack.layoutVertically();
+    infoStack.size = new Size(0, 130);
+    infoStack.addSpacer(25);
+    const infoArr = [{ label: '姓        名', val: xm }, { label: '准驾车型', val: zjcx }, { label: '累积计分', val: `${ljjf } 分`},{ label: '初次领证', val: cclzrq, flag: true }];
+    infoArr.forEach(item => {
+      addLargeText(infoStack, item.label, item.val, item.flag);
+    });
+    widget.addSpacer();
+    
+    const barStack = generateStack(widget);
+    barStack.setPadding(3, 0, 3, 0);
+    if (ztDesc === '正常') {
+      barStack.backgroundGradient = createGradient();
+    } else {
+      barStack.backgroundColor = new Color('#FF7800');
+    }
+    barStack.addSpacer();
+    const statusStrText = barStack.addText(ztDesc);
+    statusStrText.font = Font.mediumSystemFont(16);
+    statusStrText.textColor = Color.white()
+    barStack.addSpacer();
+    widget.addSpacer();
+    
+    addLargeText(widget, '证件号码', sfzmhm, true);
+    widget.addSpacer(5);
+    addLargeText(widget, '档案编号', dabh, true);
+    widget.addSpacer(5);
+    addLargeText(widget, '车辆年检', validPeriodEnd, true);
+    widget.addSpacer(5);
+    addLargeText(widget, '有效期限', `${yxqs }  至  ${yxqz}`, true);
+    widget.addSpacer();
+    
+    const bottomStack = widget.addStack();
+    bottomStack.addImage(ywmImg);
+    const codeStack = generateStack(widget);
+    const leftPointText = codeStack.addText('·');
+    leftPointText.font = Font.boldSystemFont(25);
+    leftPointText.textColor = new Color('#000000', 0.7);
+    codeStack.addSpacer();
+    
+    [...zxbh].forEach((item, i) => {
+      const barCodeText = codeStack.addText(item);
+      barCodeText.font = Font.mediumSystemFont(17);
+      barCodeText.textColor = new Color('#000000', 0.6);
+      codeStack.addSpacer();
+    });
+  
+    const rightPointText = codeStack.addText('·');
+    rightPointText.font = Font.boldSystemFont(25);
+    rightPointText.textColor = new Color('#000000', 0.7);
+    
+    widget.backgroundImage = blackboardImage;
+    return widget;
+  };
+  
   // 渲染组件
   const runWidget = async () => {
-    const widget = await (family === 'medium' || family === 'large' ? createWidget() : smallWidget());
+    const widget = await (family === 'medium' ? createWidget() : family === 'large' ? largeWidget() : smallWidget());
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
