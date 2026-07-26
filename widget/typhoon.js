@@ -373,19 +373,18 @@ const levelAgency = () => {
   ];
 };
 
-const createBarStack = (stack, color, radius = 7, padding) => {
+const createBarStack = (stack, barColor, radius = 7, padding) => {
   const barStack = stack.addStack();
   barStack.layoutHorizontally();
   barStack.centerAlignContent();
   barStack.setPadding(padding ? 4 : 3, 10, padding ? 4 : 3, 10);
   barStack.cornerRadius = radius;
-  barStack.backgroundColor = color;
+  barStack.backgroundColor = barColor;
   return barStack;
 };
 
-const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
-  const color = getTyphoonColor(typhoon.speed);
-  const barStack = createBarStack(topStack, color);
+const createButtonStack = (topStack, tyIcon, tf, barColor) => {
+  const barStack = createBarStack(topStack, barColor);
   const icon = barStack.addImage(tyIcon);
   icon.imageSize = new Size(17, 17);
   icon.tintColor = Color.white();
@@ -396,14 +395,14 @@ const createButtonStack = (topStack, tyIcon, tf, typhoon) => {
   return barStack;
 };
 
-const createWidget = (arr, tf, typhoon, maxSpeed, date, info, textColor, isLarge) => {
+const createWidget = (arr, tf, typhoon, maxSpeed, date, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 15 : 4, 20);
-  createButtonStack(topStack, tyIcon, tf, typhoon);
+  createButtonStack(topStack, tyIcon, tf, barColor);
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
@@ -425,7 +424,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, info, textColor, isLarge
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
   if (isLarge && tf.land.length) {
-    mainStack.backgroundColor = new Color('#00C400', 0.18);
+    mainStack.backgroundColor = new Color(barColor.hex, .25);
   }
   
   info.forEach((item, i) => {
@@ -563,14 +562,12 @@ const runWidget = async () => {
     widget = createLevelWidget(levels, tc, p, textColor, isLarge, summary);
   } else {
     speedChangeNotice(tf, typhoon, newest);
+    const barColor = getTyphoonColor(typhoon.speed);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
     const maxSpeed = getMaxForecast(tf);
     const info = generateItem(typhoon, newest, land, maxSpeed);
-    widget = createWidget(
-      arr, tf, typhoon, maxSpeed,
-      date, info, textColor, isLarge
-    );
+    widget = createWidget(arr, tf, typhoon, maxSpeed, date, info, barColor, textColor, isLarge);
   }
   
   if (!isSmall) await setBackground(widget, tf, isLarge);
