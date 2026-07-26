@@ -49,16 +49,6 @@ async function main(family) {
     const randomImg = module.getRandomItem(maybach);
     return await module.getCacheData(randomImg);
   };
-  
-  /**
-   * Get boxjs Data
-   * 依赖：Quantumult-X / Surge
-   */
-  const getBoxjsData = async () => {
-    const { verifyToken, sign } = await module.boxjsData('body_12123') || {};
-    if (setting.sign !== sign) module.writeSettings({ ...setting, sign, verifyToken });
-    return { verifyToken, sign };
-  };
     
   /**
    * 获取缓存字符串
@@ -78,18 +68,6 @@ async function main(family) {
     return response;
   };
   
-  // 请求电子驾驶证
-  const getDriLicense = async () => {
-    const url = `https://miniappcsfw.122.gov.cn:8443/api/electronic/showDriverLicense.json?t=${Date.now()}`;
-    const boxjs = await module.httpRequest(`http://boxjs.com/query/data/ele_cookie_12123`, 'json');
-    const headers = {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
-      'Cookie': boxjs?.val
-    };
-    const response = await module.apiRequest(url, headers, 'POST')
-    return response;
-  };
-  
   /**
    * 发送请求获取信息
    *
@@ -99,9 +77,21 @@ async function main(family) {
    * @returns {object} 响应结果对象
    */
   const requestInfo = async (api, params) => {
-    const { verifyToken, sign } = setting.sign ? setting : await getBoxjsData();
+    const { verifyToken, sign } = await module.boxjsData('body_12123') || {};
     const formBody = 'params=' + encodeURIComponent(JSON.stringify({ productId, api, sign, version, verifyToken, params }));
     const response = await module.apiRequest(apiUrl, {}, 'POST', null, formBody);
+    return response;
+  };
+  
+  // 请求电子驾驶证
+  const getDriLicense = async () => {
+    const url = `https://miniappcsfw.122.gov.cn:8443/api/electronic/showDriverLicense.json?t=${Date.now()}`;
+    const boxjs = await module.httpRequest(`http://boxjs.com/query/data/ele_cookie_12123`, 'json');
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+      'Cookie': boxjs?.val
+    };
+    const response = await module.apiRequest(url, headers, 'POST')
     return response;
   };
   
@@ -163,16 +153,10 @@ async function main(family) {
   const handleError = async (response) => {
     const { errorCode, resultCode, resultMsg } = response;
     const code = ['B100501', 'AUTHENTICATION_CREDENTIALS_NOT_EXIST', 'SECURITY_INFO_ABNORMAL', 'SYSTEM_ERROR'];
-  
     if (code.includes(resultCode) || code.includes(errorCode)) {
       module.notify(`${resultMsg} ⚠️`, '点击【通知框】或【车图】跳转到支付宝12123页面重新获取，请确保已打开辅助工具', alipayUrl);
     } else {
       module.notify(resultCode, resultMsg);
-    };
-    
-    if (setting.sign) {
-      delete setting.sign;
-      module.writeSettings(setting);
     }
   };
   
@@ -692,7 +676,13 @@ async function main(family) {
   
   // 渲染组件
   const runWidget = async () => {
-    const widget = await (family === 'medium' ? createWidget() : family === 'large' ? largeWidget() : smallWidget());
+    const widget = await (
+      family === 'medium' 
+      ? createWidget() 
+      : family === 'large' 
+      ? largeWidget() 
+      : smallWidget()
+    );
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
