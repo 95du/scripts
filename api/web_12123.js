@@ -590,7 +590,7 @@ async function main(family) {
   const largeWidget = async () => {
     const userImg = await module.getCacheData(`${rootUrl}/img/background/Ronaldo.png`, 500, `Ronaldo.png`);
     const codeImg = await module.getCacheData(`${rootUrl}/img/background/barCode.png`, 500, `barCode.png`);
-    const blackboardImage = await module.getCacheData(`${rootUrl}/img/background/electricDriver.png`, 500, `driverLicense.png`);
+    const bgImage = await module.getCacheData(`${rootUrl}/img/background/electricDriver_2.png`, 500, `driverLicense_2.png`);
     
     const { success, data } = await getCacheString('driverLicense.json');
     const { drvElectronicInfo, drvElectronicPhoto } = data || {};
@@ -670,7 +670,7 @@ async function main(family) {
     rightPointText.font = Font.boldSystemFont(25);
     rightPointText.textColor = new Color('#000000', 0.7);
     
-    widget.backgroundImage = blackboardImage;
+    widget.backgroundImage = bgImage;
     return widget;
   };
   
