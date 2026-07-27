@@ -258,6 +258,8 @@ const getMaxForecast = (tf) => {
     for (const point of points) {
       const item = { ...point, sets };
       if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
+        const strong = item.strong.split('(')[0].trim();
+        item.strong = strong;
         max = item;
       }
     }
