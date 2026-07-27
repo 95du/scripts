@@ -160,11 +160,11 @@ const generateStack = (widget) => {
   return leftBarStack;
 };
 
-const createText = (stack, text, font, color, textSize) => {
+const createText = (stack, text, font = 13, color = '#FFFFFF', textSize) => {
   const stackText = stack.addText(text);
   stackText.font = textSize ? Font.boldSystemFont(font) : Font.mediumSystemFont(font);
   stackText.textColor = new Color(color);
-  stackText.textOpacity = 0.9
+  stackText.textOpacity = 0.99
   return stackText;
 };
 
@@ -173,18 +173,21 @@ const setupWidget = async () => {
   const name = (term && term === festivalList) ? term : festivalInfoList[0].name;
   const date = formatDate(timestamp);
   const daysUntil = daysRemaining(oDate);
-  const moreDays = daysUntil < 1 ? '今日是 ✨' : `还有`;
+  const moreDays = daysUntil < 1 ? '今日是 ✨' : `还有  `;
   const sta = status === '1' ? '休' : status === '2' ? '班' : '';
+  const getOffset = (value) => [9, 7, 5, 4, 3].includes(value) ? -5 : 3;
+  const padd = getOffset(daysUntil);
   
   const widget = new ListWidget();
   widget.setPadding(15, 15, 15, 15);
   const topStack = generateStack(widget);
-  topStack.setPadding(0, 16, 0, 16);
+  topStack.setPadding(0, 17, 0, 17);
+  topStack.size = new Size(0, 70);
   const nameStack = topStack.addStack();
   nameStack.layoutVertically();
   const arr = [...name];
   arr.forEach((item, i) => {
-    createText(nameStack, item, (name.length > 3 ? 17 : 20), (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
+    createText(nameStack, item, (name.length >= 3 ? 16.5 : 20), (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
   });
   topStack.addSpacer();
   const circle = await drawCircle(daysUntil, sta, cnDay);
@@ -195,37 +198,29 @@ const setupWidget = async () => {
   surplusStack.setPadding(0, 18, 0, 18)
   const calendarIcon = await getCacheData('calendar.png', `${rootUrl}/img/symbol/calendar.png`);
   const icon = surplusStack.addImage(calendarIcon);
-  icon.imageSize = new Size(16, 16);
-  //icon.tintColor = Color.yellow();
+  icon.imageSize = new Size(17, 17);
   surplusStack.addSpacer();
-  createText(surplusStack, moreDays, 14, '#FFFFFF');
+  createText(surplusStack, moreDays);
   if (daysUntil > 0) {
-    surplusStack.addSpacer(5);
-    createText(surplusStack, `${daysUntil}`, 15.5, '#FFDD00');
-    surplusStack.addSpacer(5);
-    createText(surplusStack, '天', 14, '#FFFFFF');
+    const dayStack = surplusStack.addStack();
+    dayStack.layoutVertically();
+    dayStack.size = new Size(0, 24);
+    dayStack.setPadding(padd, 0, 0, 0)
+    const dayText = createText(dayStack, `${daysUntil}`, 16, '#FFDD00');
+    dayText.font = new Font("Georgia-Bold", 24);
+    dayStack.addSpacer();
+    createText(surplusStack, '  天');
   }
-  widget.addSpacer(3);
-  
-  const bottomStack = widget.addStack();
-  bottomStack.backgroundColor = new Color('#000000', 0.5);
-  bottomStack.setPadding(5, 0, 6, 0);
-  bottomStack.cornerRadius = 10;
-  const dateStack = generateStack(bottomStack);
+
+  const dateStack = generateStack(widget);
   dateStack.addSpacer();
   const weekStack = dateStack.addStack();
   weekStack.layoutVertically();
-  createText(weekStack, date, 18.5, (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
+  createText(weekStack, date, 18.5, '#FFFFFF', 'bold');
   weekStack.addSpacer(1);
-  createText(weekStack, (`${gzYear}年 · ${lMonth}月${lDate}`), 14, '#FFFFFF', 'bold');
+  createText(weekStack, (`${gzYear}年 · ${lMonth}月${lDate}`), 13.8, '#FFFFFF', 'bold');
   dateStack.addSpacer();
   
-  const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
-  widget.backgroundColor = Color.black();
-  widget.backgroundImage = img;
-  widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
-  autoUpdate();
-  shimoFormData();
   return widget;
 };
 
@@ -239,9 +234,15 @@ const errorWidget = () => {
 
 const renderWidget = async () => {
   const widget = config.widgetFamily === 'small' || config.runsInApp ? await setupWidget() : errorWidget();
+  const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
+  widget.backgroundImage = img;
+  widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
+  
   if (!config.runInWidget) {
     widget.presentSmall();
   } else {
+    autoUpdate();
+    shimoFormData();
     Script.setWidget(widget);
     Script.complete();
   }
