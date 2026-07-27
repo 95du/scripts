@@ -259,7 +259,7 @@ const getMaxForecast = (tf) => {
       const item = { ...point, sets };
       if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
         const strong = item.strong.split('(')[0].trim();
-        item.strong = strong;
+        item.strong = `( ${strong} )`;
         max = item;
       }
     }
@@ -317,7 +317,7 @@ const generateItem = (typhoon, newest, land, maxSpeed) => {
       value: land
         ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
         : maxSpeed 
-          ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级，${maxSpeed.strong}，${maxSpeed.sets}预测`
+          ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`
           : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
       color: new Color('#FFD83A')
     },
