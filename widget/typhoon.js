@@ -207,7 +207,7 @@ const speedChangeNotice = (tf, typhoon, newest) => {
   const id = tf.tfbh || tf.ident;
   const oldSpeed = setting.tf[id];
   if (oldSpeed !== typhoon.speed) {
-    const body = `风速 ${typhoon.speed || 0}米/秒，${typhoon.power || 0}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '');
+    const body = `风速 ${typhoon.speed || 0}米/秒，${typhoon.power || 0}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '') + (`\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`);
     notify(`⚠️ 台风 [${tf.name}] 风速变化`, body);
     setting.tf[id] = typhoon.speed || 0
     writeSettings(setting);
@@ -249,11 +249,6 @@ const getTyphoonColor = (speed) => {
 
 // 查找最大风速的 Point
 const getMaxForecast = (tf) => {
-  const lastPoint = tf.points?.at(-1);
-  if (lastPoint && [lastPoint.radius7, lastPoint.radius10, lastPoint.radius12].every(v => v != null && v !== 0)) {
-    return null;
-  }
-
   return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
     for (const point of points) {
       const item = { ...point, sets };
