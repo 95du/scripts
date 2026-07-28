@@ -240,7 +240,7 @@ const formatDate = (time, showMin) => {
 
 const getTyphoonColor = (speed) => {
   const colors = [
-    [51, '#FF0000'], [42, '#FA5EFF'],
+    [51, '#FF0000'], [42, '#F95BF9'],
     [33, '#FF7800'], [25, '#FFD83A'],
     [17, '#39A7F8'], [0, '#00C400']
   ];
@@ -250,22 +250,22 @@ const getTyphoonColor = (speed) => {
 // 查找最大风速的 Point
 const getMaxForecast = (tf) => {
   return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
-    for (const point of points) {
-      const item = { ...point, sets };
-      if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
-        const strong = item.strong.split('(')[0].trim();
-        item.strong = `( ${strong} )`;
-        max = item;
-      }
+    const point = points.at(-1);
+    if (!point) return max;
+    const item = { ...point, sets };
+    if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
+      const strong = item.strong.split('(')[0].trim();
+      item.strong = `( ${strong} )`;
+      max = item;
     }
     return max;
   }, null);
 };
-
+// https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png
 // 获取最晚发布的台风路径图片
 const getLatestTyImage = async () => {
   const urls = [
-    'https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png',
+    'https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png',
     'https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png'
   ];
 
@@ -273,7 +273,6 @@ const getLatestTyImage = async () => {
     const r = new Request(url);
     const data = await r.load();
     return {
-      url,
       image: Image.fromData(data),
       time: Date.parse(r.response.headers['Last-Modified'] || r.response.headers['last-modified'] || 0)
     }
@@ -286,8 +285,7 @@ const getLatestTyImage = async () => {
 const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
-    const { url, image } = await getLatestTyImage();
-    console.log(url);
+    const { image } = await getLatestTyImage();
     widget.backgroundImage = image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -341,7 +339,7 @@ const levelAgency = () => {
       label: '热带风暴 (TS)', 
       agency: '日本', 
       iconColor: '#39A7F8',
-      textColor: '#F55BF9',
+      textColor: '#F95BF9',
     },
     { 
       label: '强热带风暴 (STS)', 
@@ -358,7 +356,7 @@ const levelAgency = () => {
     { 
       label: '强台风 (STY)', 
       agency: '欧洲', 
-      iconColor: '#F55BF9',
+      iconColor: '#F95BF9',
       textColor: '#39A7F8',
     },
     { 
