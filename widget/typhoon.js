@@ -263,9 +263,10 @@ const getMaxForecast = (tf) => {
 };
 
 // 获取最晚发布的台风路径图片
+// https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png
 const getLatestTyImage = async () => {
   const urls = [
-    'https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png',
+    `https://upy.istrongcloud.com/applet/typhoon/screenshot/posterMulti.png?r=${Date.now()}`,
     'https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png'
   ];
 
@@ -274,6 +275,7 @@ const getLatestTyImage = async () => {
       const r = new Request(url);
       const data = await r.load();
       return {
+        url,
         image: Image.fromData(data),
         time: Date.parse(r.response.headers['Last-Modified'] || r.response.headers['last-modified'] || 0)
       };
@@ -288,7 +290,8 @@ const getLatestTyImage = async () => {
 const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
-    const { image } = await getLatestTyImage() || {};
+    const { url, image } = await getLatestTyImage() || {};
+    console.log(url)
     widget.backgroundImage = image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
