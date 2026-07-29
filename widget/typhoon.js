@@ -247,6 +247,18 @@ const getTyphoonColor = (speed) => {
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
 
+// 剩余登陆时间
+const getTyphoonRemainTime = (isLarge, distance, speed) => {
+  if (!isLarge) return null;
+  const hours = distance / speed;
+  if (hours < 24) {
+    return `${Math.ceil(hours)} 小时`;
+  }
+  const days = Math.floor(hours / 24);
+  const remains = Math.ceil(hours % 24)
+  return `${days} 天 ${remains} 小时`
+};
+
 // 查找最大风速的 Point
 const getMaxForecast = (tf) => {
   return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
@@ -295,7 +307,7 @@ const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
     const latestTy = await getLatestTyImage() || {};
-    console.log(latestTy)
+    //console.log(latestTy)
     widget.backgroundImage = latestTy.image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -303,7 +315,7 @@ const setBackground = async (widget, tf, isLarge) => {
   }
 };
 
-const generateItem = (typhoon, newest, land, maxSpeed) => {
+const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
   return [
     { 
       label: "中心位置", 
@@ -329,6 +341,11 @@ const generateItem = (typhoon, newest, land, maxSpeed) => {
       value: newest.location,
       color: new Color('#FF7800')
     },
+    ...(!land && remainTime ? [{
+      label: "登陆时间",
+      value: `预计 ${remainTime} 后到达`,
+      color: new Color('#F95BF9')
+    }] : []),
     { 
       label: "未来趋势", 
       value: newest.trend,
@@ -451,7 +468,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, info, barColor, textColo
 };
 
 // 无台风时
-const createLevelWidget = (levels, tc, p, textColor, isLarge, summary) => {
+const createLevelWidget = (levels, tc, p, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -487,22 +504,7 @@ const createLevelWidget = (levels, tc, p, textColor, isLarge, summary) => {
     timeText.textColor = textColor;
   }
   
-  if (isLarge) {
-    widget.addSpacer();
-    if (summary && summary !== '未来两小时无降水') {
-      const stack = widget.addStack();
-      stack.layoutHorizontally();
-      stack.addSpacer();
-      const barStack = createBarStack(stack, new Color('#0041C9'), 12, true);
-      const statusText = barStack.addText(summary);
-      statusText.textColor = Color.white();
-      statusText.font = Font.mediumSystemFont(14.5);
-      stack.addSpacer();
-      widget.addSpacer();
-    }
-  } else {
-    widget.addSpacer(5);
-  }
+  widget.addSpacer(isLarge ? null: 5);
   
   levels.forEach((item, i) => {
     const listStack = widget.addStack();
@@ -561,17 +563,19 @@ const runWidget = async () => {
   if (isSmall) {
     widget = errorWidget();
   } else if (!tf) {
-    const summary = await getMinRain();
+    await getMinRain();
     const levels = levelAgency();
     const { tc, p } = await currMergerTC();
-    widget = createLevelWidget(levels, tc, p, textColor, isLarge, summary);
+    widget = createLevelWidget(levels, tc, p, textColor, isLarge);
   } else {
     speedChangeNotice(tf, typhoon, newest);
     const barColor = getTyphoonColor(typhoon.speed);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
+    const distance = newest.location.match(/\d+/)?.[0];
+    const remainTime = getTyphoonRemainTime(isLarge, distance, typhoon.move_speed);
     const maxSpeed = getMaxForecast(tf);
-    const info = generateItem(typhoon, newest, land, maxSpeed);
+    const info = generateItem(typhoon, newest, land, maxSpeed, remainTime);
     widget = createWidget(arr, tf, typhoon, maxSpeed, date, info, barColor, textColor, isLarge);
   }
   
