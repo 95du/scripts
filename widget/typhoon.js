@@ -163,7 +163,7 @@ const getLatestData = async (tf) => {
  */
 const getTyphoonData = async () => {
   try {
-    const url = `https://tf02.istrongcloud.com/member/v1.2/home`
+    const url = `https://tf02.istrongcloud.com/typhoonVisual/home?theme=light`;
     const html = await new Request(url).loadString();
     const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
@@ -261,31 +261,34 @@ const getMaxForecast = (tf) => {
     return max;
   }, null);
 };
-// https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png
+
 // 获取最晚发布的台风路径图片
 const getLatestTyImage = async () => {
   const urls = [
     'https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png',
-    'https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png'
+    'https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png'
   ];
 
-  const list = await Promise.all(urls.map(async url => {
-    const r = new Request(url);
-    const data = await r.load();
-    return {
-      image: Image.fromData(data),
-      time: Date.parse(r.response.headers['Last-Modified'] || r.response.headers['last-modified'] || 0)
-    }
-  }));
-  
-  return list.reduce((a, b) => a.time > b.time ? a : b);
+  try {
+    const list = await Promise.all(urls.map(async url => {
+      const r = new Request(url);
+      const data = await r.load();
+      return {
+        image: Image.fromData(data),
+        time: Date.parse(r.response.headers['Last-Modified'] || r.response.headers['last-modified'] || 0)
+      };
+    }));
+    return list.reduce((a, b) => a.time > b.time ? a : b);
+  } catch (e) {
+    console.log(`台风图片获取失败: ${e}`)
+  }
 };
 
 // 设置背景
 const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
-    const { image } = await getLatestTyImage();
+    const { image } = await getLatestTyImage() || {};
     widget.backgroundImage = image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
