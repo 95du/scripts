@@ -60,20 +60,19 @@ const getFormattedTime = () => {
  * @param {number|string} lng1 我的经度
  * @param {number|string} lat2 点2纬度
  * @param {number|string} lng2 点2经度
- * @param {number} [decimals=1] 保留小数位数
  * @returns {number} 距离 (km)
  */
-const getDistance = (lat1, lng1, lat2, lng2, decimals = 1, R = 6371) => {
+const getDistance = (lat1, lng1, lat2, lng2, R = 6371) => {
   const toRad = (deg) => (Number(deg) * Math.PI) / 180;
   const dLat = toRad(lat2) - toRad(lat1);
   const dLng = toRad(lng2) - toRad(lng1);
-  const a = 
-    Math.sin(dLat / 2) ** 2 + 
+  const a =
+    Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) * 
     Math.cos(toRad(lat2)) * 
     Math.sin(dLng / 2) ** 2;
   const distance = 2 * R * Math.asin(Math.sqrt(a));
-  return decimals >= 0 ? Number(distance.toFixed(decimals)) : distance;
+  return Math.round(distance);
 };
 
 // 经纬度编码解密
@@ -118,6 +117,7 @@ const autoUpdate = async () => {
   if (script.includes('組件')) fm.writeString(module.filename, script)
 };
 
+const noticeIcon = await getCacheImage('notice.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/notice.png`);
 const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
@@ -140,45 +140,22 @@ const getLocation = async () => {
   }
 };
 
-// 和风天气分钟降雨
-const getMinRain = async () => {
-  try {
-    const url = `https://api.qweather.com/v7/minutely/5m?key=73ca4f214b9241fb98f6d291345d9d84&location=${setting.lon},${setting.lat}`
-    const rain = await new Request(url).loadJSON();
-    if (rain.code !== '200') {
-      getLocation();
-      return '';
-    }
-    if (setting.summary !== rain.summary) {
-      notify('天气提示 ⛈️', rain.summary);
-      setting.summary = rain.summary;
-      writeSettings(setting);
-    }
-    return rain.summary;
-  } catch (e) {
-    console.log(e);
-    return '';
-  }
-};
-
 //.热带扰动
 const currMergerTC = async () => {
   try {
-    const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
-    const tc = await new Request(tcUrl).loadJSON();
+    const url = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
+    const tc = await new Request(url).loadJSON();
     const p = loopdNextIdx(tc, 'TC');
     const ls = p.points?.at(-1) ?? '';
-    const decrypt = await decryptTyphoonData(ls) || {};
-    return { tc, p, decrypt};
+    const decrypt = await decryptTyphoonData(ls);
+    return { tc, p, decrypt };
   } catch (e) {
     console.log(e);
     return {};
   }
 };
 
-/** 
- * 经纬度/位置/趋势/台风动态
- */
+// 经纬度/位置/趋势/台风动态
 const complementLocTrend = async (tf, latest) => {
   if (!tf) return;
   const newest = latest.find(item => item.tfbh === tf.tfbh);
@@ -209,6 +186,8 @@ const getLatestData = async (tf) => {
 };
 
 /** 
+ * https://tf02.istrongcloud.com/data/event/20261401.json 演变过程
+ *
  * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
  * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202609
  *
@@ -217,7 +196,7 @@ const getLatestData = async (tf) => {
  */
 const getTyphoonData = async () => {
   try {
-    const url = `https://tf02.istrongcloud.com/typhoonVisual/home?theme=light`;
+    const url = `https://tf03.istrongcloud.com/typhoonVisual/home`;
     const html = await new Request(url).loadString();
     const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
@@ -344,7 +323,6 @@ const getLatestTyImage = async () => {
       const data = await r.load();
       const timestamp = Date.parse(r.response.headers['Last-Modified'] || 0);
       return {
-        url,
         image: Image.fromData(data),
         time: timestamp,
         timeText: formatTime(timestamp)
@@ -361,7 +339,6 @@ const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
     const latestTy = await getLatestTyImage() || {};
-    // console.log(latestTy)
     widget.backgroundImage = latestTy.image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -374,12 +351,12 @@ const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
     { 
       label: "中心位置", 
       value: `东经${newest.lon}°　北纬${newest.lat}°`, 
-      color: new Color('#00C400')
+      color: '#00C400'
     },
     { 
       label: "风速风力", 
       value: `${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} )`, 
-      color: new Color('#39A7F8')
+      color: '#39A7F8'
     },
     { 
       label: land ? "登陆位置" : maxSpeed ? '最大等级' : "风圈半径",
@@ -388,22 +365,22 @@ const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
         : maxSpeed 
           ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`
           : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
-      color: new Color('#FFD83A')
+      color: '#FFD83A'
     },
     { 
       label: "参考位置", 
       value: newest.location,
-      color: new Color('#FF7800')
+      color: '#FF7800'
     },
     ...(!land && remainTime ? [{
       label: "登陆时间",
       value: `预计 ${remainTime}后到达`,
-      color: new Color('#F95BF9')
+      color: '#F95BF9'
     }] : []),
     { 
       label: "未来趋势", 
       value: newest.trend,
-      color: new Color('#8C7CFF')
+      color: '#8C7CFF'
     }
   ];
 };
@@ -472,7 +449,14 @@ const createButtonStack = (topStack, tyIcon, tf, barColor) => {
 };
 
 const createDiatText = (widget, dist) => {
-  const distText = widget.addText(`     距离台风中心 ${dist} 公里`);
+  const distStack = widget.addStack();
+  distStack.layoutHorizontally();
+  distStack.centerAlignContent();
+  distStack.addSpacer(20);
+  const icon = distStack.addImage(noticeIcon);
+  icon.imageSize = new Size(22, 22);
+  distStack.addSpacer(5);
+  const distText = distStack.addText(dist > 0 ? `距离你的位置 ${dist} 公里` : '');
   distText.font = Font.mediumSystemFont(15);
   distText.textColor = new Color('#FF0000', 0.85);
 };
@@ -483,7 +467,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 6 : 4, 20);
+  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 5 : 4, 20);
   createButtonStack(topStack, tyIcon, tf, barColor);
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
@@ -518,7 +502,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
     labelText.font = Font.boldSystemFont(13.5);
-    labelText.textColor = item.color;
+    labelText.textColor = new Color(item.color);
     listStack.addSpacer(13);
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
@@ -568,7 +552,7 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
     timeText.textColor = textColor;
   }
   
-  if (isLarge && tc.length && dist) {
+  if (isLarge && tc.length) {
     widget.addSpacer(1);
     createDiatText(widget, dist);
   }
@@ -615,9 +599,10 @@ const errorWidget = () => {
 
 // 整合数据
 const runWidget = async () => {
-  getMinRain();
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
+  const loc = getLocation();
+  
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
     : config.widgetFamily;
@@ -633,8 +618,8 @@ const runWidget = async () => {
     widget = errorWidget();
   } else if (!tf) {
     const levels = levelAgency();
-    const { tc, p, decrypt } = await currMergerTC();
-    const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng) || null;
+    const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
+    const dist = getDistance(loc.lat, loc.lon, decrypt.lat, decrypt.lng);
     widget = createLevelWidget(levels, tc, p, dist, textColor, isLarge);
   } else {
     speedChangeNotice(tf, typhoon, newest);
