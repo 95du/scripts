@@ -140,7 +140,7 @@ const getLocation = async () => {
   }
 };
 
-//.热带扰动
+// 热带扰动
 const currMergerTC = async () => {
   try {
     const url = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
@@ -339,6 +339,7 @@ const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
     const latestTy = await getLatestTyImage() || {};
+    widget.backgroundColor = new Color('#A3CCFF');
     widget.backgroundImage = latestTy.image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
