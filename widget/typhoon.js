@@ -602,7 +602,7 @@ const errorWidget = () => {
 const runWidget = async () => {
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
-  const loc = getLocation();
+  const loc = !setting.lat ? getLocation() : await getLocation();
   
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
@@ -627,7 +627,7 @@ const runWidget = async () => {
     const barColor = getTyphoonColor(typhoon.speed);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
-    const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon) || null;
+    const dist = getDistance(loc.lat, loc.lon, newest.lat, newest.lon) || 0;
     const distance = newest.location.match(/\d+/)?.[0];
     const remainTime = getTyphoonRemainTime(isLarge, distance, typhoon.move_speed);
     const maxSpeed = getMaxForecast(tf);
