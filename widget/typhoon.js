@@ -54,6 +54,58 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
+/**
+ * 计算两个经纬度坐标之间的距离
+ * @param {number|string} lat1 我的纬度
+ * @param {number|string} lng1 我的经度
+ * @param {number|string} lat2 点2纬度
+ * @param {number|string} lng2 点2经度
+ * @param {number} [decimals=1] 保留小数位数
+ * @returns {number} 距离 (km)
+ */
+const getDistance = (lat1, lng1, lat2, lng2, decimals = 1, R = 6371) => {
+  const toRad = (deg) => (Number(deg) * Math.PI) / 180;
+  const dLat = toRad(lat2) - toRad(lat1);
+  const dLng = toRad(lng2) - toRad(lng1);
+  const a = 
+    Math.sin(dLat / 2) ** 2 + 
+    Math.cos(toRad(lat1)) * 
+    Math.cos(toRad(lat2)) * 
+    Math.sin(dLng / 2) ** 2;
+  const distance = 2 * R * Math.asin(Math.sqrt(a));
+  return decimals >= 0 ? Number(distance.toFixed(decimals)) : distance;
+};
+
+// 经纬度编码解密
+const getCryptoWeb = async () => {
+  const html = `
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+      const caesarDecrypt=(str,shift)=>{if(!str)return"";let result="";for(let i=0;i<str.length;i++){result+=String.fromCharCode(str.charCodeAt(i)+2*shift)}return result};const generateAESKey=(dateString,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=dateString.split("-");const combined=year.substring(0,2)+base.substring(0,10)+year.substring(2)+base.substring(10,20)+month+base.substring(20)+day;return CryptoJS.MD5(combined).toString().toUpperCase()};const aesDecrypt=(cipherText,key)=>{const keyBytes=CryptoJS.enc.Base64.parse(key);const encrypted=CryptoJS.enc.Base64.parse(cipherText);const encryptedBase64=CryptoJS.enc.Base64.stringify(encrypted);const decrypted=CryptoJS.AES.decrypt(encryptedBase64,keyBytes,{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7});return decrypted.toString(CryptoJS.enc.Utf8)};const formatDate=(date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return y+"-"+m+"-"+d};const tryDecrypt=(data,date,fixedKey)=>{try{const key=generateAESKey(formatDate(date),fixedKey);const result=aesDecrypt(data,key);return result||null}catch(e){return null}};window.decryptSingle=(data,fixedKey,dataTime)=>{let baseDate=dataTime?new Date(dataTime):new Date();if(isNaN(baseDate.getTime()))baseDate=new Date();let result=tryDecrypt(data,baseDate,fixedKey);if(result)return result;const yesterday=new Date(baseDate);yesterday.setDate(yesterday.getDate()-1);result=tryDecrypt(data,yesterday,fixedKey);if(result)return result;const tomorrow=new Date(baseDate);tomorrow.setDate(tomorrow.getDate()+1);return tryDecrypt(data,tomorrow,fixedKey)};window.decryptTcObject=(item,fixedKey)=>{if(!item)return null;const lat=parseFloat(window.decryptSingle(item.lat,fixedKey,item.time))||null;const lng=parseFloat(window.decryptSingle(item.lng,fixedKey,item.time))||null;return{...item,lat,lng}};
+    </script>
+  </head>
+  </html>`;
+  const webView = new WebView();
+  await webView.loadHTML(html);
+  return webView;
+};
+
+/**
+ * 解密单个台风对象
+ * @param {Object|Array} 原始台风数据对象
+ * @returns {Promise<Object|null>} 解密后的对象
+ */
+const decryptTyphoonData = async (rawData) => {
+  const webView = await getCryptoWeb();
+  const fixedKey = "3H4533HEH2C96283C;F458H25HFD2C64";
+  const code = `window.decryptTcObject(${JSON.stringify(rawData)}, ${JSON.stringify(fixedKey)})`;
+  return await webView.evaluateJavaScript(code);
+};
+
+// 循环数组中的对象
 const loopdNextIdx = (arr, name) => {
   const optNextIndex = (num, data) => (num + 1) % data.length;
   setting[name] = optNextIndex(setting[name] || 0, arr);
@@ -98,7 +150,7 @@ const getMinRain = async () => {
       return '';
     }
     if (setting.summary !== rain.summary) {
-      notify('降雨提示 ⛈️', rain.summary);
+      notify('天气提示 ⛈️', rain.summary);
       setting.summary = rain.summary;
       writeSettings(setting);
     }
@@ -115,7 +167,9 @@ const currMergerTC = async () => {
     const tcUrl = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const tc = await new Request(tcUrl).loadJSON();
     const p = loopdNextIdx(tc, 'TC');
-    return { tc, p };
+    const ls = p.points?.at(-1) ?? '';
+    const decrypt = await decryptTyphoonData(ls) || {};
+    return { tc, p, decrypt};
   } catch (e) {
     console.log(e);
     return {};
@@ -248,7 +302,7 @@ const getTyphoonColor = (speed) => {
 };
 
 // 剩余登陆时间
-const getTyphoonRemainTime = (isLarge, distance, speed) => {
+const getTyphoonRemainTime = (isLarge, distance, speed = 20) => {
   if (!isLarge) return null;
   const hours = distance / speed;
   if (hours < 24) {
@@ -307,7 +361,7 @@ const setBackground = async (widget, tf, isLarge) => {
   widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
   if (isLarge) {
     const latestTy = await getLatestTyImage() || {};
-    //console.log(latestTy)
+    // console.log(latestTy)
     widget.backgroundImage = latestTy.image;
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -343,7 +397,7 @@ const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
     },
     ...(!land && remainTime ? [{
       label: "登陆时间",
-      value: `预计 ${remainTime} 后到达`,
+      value: `预计 ${remainTime}后到达`,
       color: new Color('#F95BF9')
     }] : []),
     { 
@@ -417,13 +471,19 @@ const createButtonStack = (topStack, tyIcon, tf, barColor) => {
   return barStack;
 };
 
-const createWidget = (arr, tf, typhoon, maxSpeed, date, info, barColor, textColor, isLarge) => {
+const createDiatText = (widget, dist) => {
+  const distText = widget.addText(`     距离台风中心 ${dist} 公里`);
+  distText.font = Font.mediumSystemFont(15);
+  distText.textColor = new Color('#FF0000', 0.85);
+};
+
+const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 15 : 4, 20);
+  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 6 : 4, 20);
   createButtonStack(topStack, tyIcon, tf, barColor);
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
@@ -440,8 +500,12 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, info, barColor, textColo
       topStack.addSpacer(3);
     }
   });
+
+  if (isLarge) {
+    if (dist) createDiatText(widget, dist);
+    widget.addSpacer();
+  }
   
-  if (isLarge) widget.addSpacer();
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
@@ -468,7 +532,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, info, barColor, textColo
 };
 
 // 无台风时
-const createLevelWidget = (levels, tc, p, textColor, isLarge) => {
+const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -504,7 +568,11 @@ const createLevelWidget = (levels, tc, p, textColor, isLarge) => {
     timeText.textColor = textColor;
   }
   
-  widget.addSpacer(isLarge ? null: 5);
+  if (isLarge && tc.length && dist) {
+    widget.addSpacer(1);
+    createDiatText(widget, dist);
+  }
+  widget.addSpacer(isLarge ? null : 5);
   
   levels.forEach((item, i) => {
     const listStack = widget.addStack();
@@ -547,6 +615,7 @@ const errorWidget = () => {
 
 // 整合数据
 const runWidget = async () => {
+  getMinRain();
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
   const family = config.runsInApp 
@@ -558,25 +627,26 @@ const runWidget = async () => {
   const textColor = isLarge  
     ? Color.black() 
     : Color.dynamic(Color.black(), Color.white());
-  
+
   let widget;
   if (isSmall) {
     widget = errorWidget();
   } else if (!tf) {
-    await getMinRain();
     const levels = levelAgency();
-    const { tc, p } = await currMergerTC();
-    widget = createLevelWidget(levels, tc, p, textColor, isLarge);
+    const { tc, p, decrypt } = await currMergerTC();
+    const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng) || null;
+    widget = createLevelWidget(levels, tc, p, dist, textColor, isLarge);
   } else {
     speedChangeNotice(tf, typhoon, newest);
     const barColor = getTyphoonColor(typhoon.speed);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
+    const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon) || null;
     const distance = newest.location.match(/\d+/)?.[0];
     const remainTime = getTyphoonRemainTime(isLarge, distance, typhoon.move_speed);
     const maxSpeed = getMaxForecast(tf);
     const info = generateItem(typhoon, newest, land, maxSpeed, remainTime);
-    widget = createWidget(arr, tf, typhoon, maxSpeed, date, info, barColor, textColor, isLarge);
+    widget = createWidget(arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge);
   }
   
   if (!isSmall) await setBackground(widget, tf, isLarge);
