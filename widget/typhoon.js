@@ -281,14 +281,14 @@ const getTyphoonColor = (speed) => {
 };
 
 // 剩余登陆时间
-const getTyphoonRemainTime = (isLarge, distance, speed = 20) => {
+const getTyphoonRemainTime = (isLarge, distance, speed) => {
   if (!isLarge) return null;
-  const hours = distance / speed;
-  if (hours < 24) {
-    return `${Math.ceil(hours)} 小时`;
+  const h = distance / (speed || 25);
+  if (h < 24) {
+    return `${Math.ceil(h)} 小时`;
   }
-  const days = Math.floor(hours / 24);
-  const remains = Math.ceil(hours % 24)
+  const days = Math.floor(h / 24);
+  const remains = Math.ceil(h % 24)
   return `${days} 天 ${remains} 小时`
 };
 
@@ -373,7 +373,7 @@ const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
       value: newest.location,
       color: '#FF7800'
     },
-    ...(!land && remainTime ? [{
+    ...(!land && remainTime  ? [{
       label: "登陆时间",
       value: `预计 ${remainTime}后到达`,
       color: '#F95BF9'
@@ -487,7 +487,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   });
 
   if (isLarge) {
-    if (dist) createDiatText(widget, dist);
+    if (dist > 0) createDiatText(widget, dist);
     widget.addSpacer();
   }
   
@@ -495,7 +495,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
   if (isLarge && tf.land.length) {
-    mainStack.backgroundColor = new Color(barColor.hex, .25);
+    mainStack.backgroundColor = new Color(barColor.hex, .2);
   }
   
   info.forEach((item, i) => {
@@ -553,11 +553,11 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
     timeText.textColor = textColor;
   }
   
-  if (isLarge && tc.length) {
+  if (isLarge && tc.length && dist) {
     widget.addSpacer(1);
     createDiatText(widget, dist);
   }
-  widget.addSpacer(isLarge ? null : 5);
+  widget.addSpacer(isLarge ? '' : 5);
   
   levels.forEach((item, i) => {
     const listStack = widget.addStack();
@@ -602,14 +602,12 @@ const errorWidget = () => {
 const runWidget = async () => {
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
-  const loc = !setting.lat ? getLocation() : await getLocation();
-  
+  getLocation();
   const family = config.runsInApp 
     ? (tf ? 'large' : 'medium') 
     : config.widgetFamily;
   const isLarge = family === 'large';
   const isSmall = family === 'small';
-
   const textColor = isLarge  
     ? Color.black() 
     : Color.dynamic(Color.black(), Color.white());
@@ -620,14 +618,14 @@ const runWidget = async () => {
   } else if (!tf) {
     const levels = levelAgency();
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
-    const dist = getDistance(loc.lat, loc.lon, decrypt.lat, decrypt.lng);
+    const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
     widget = createLevelWidget(levels, tc, p, dist, textColor, isLarge);
   } else {
     speedChangeNotice(tf, typhoon, newest);
     const barColor = getTyphoonColor(typhoon.speed);
     const date = formatDate(newest.update_time);
     const land = tf.land?.at(-1) ?? '';
-    const dist = getDistance(loc.lat, loc.lon, newest.lat, newest.lon) || 0;
+    const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon) || 0;
     const distance = newest.location.match(/\d+/)?.[0];
     const remainTime = getTyphoonRemainTime(isLarge, distance, typhoon.move_speed);
     const maxSpeed = getMaxForecast(tf);
