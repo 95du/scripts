@@ -594,7 +594,7 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
     widget.addSpacer(2);
     createDiatText(widget, dist);
   }
-  widget.addSpacer(isLarge ? '' : 5);
+  widget.addSpacer(isLarge ? null : 5);
   
   levels.forEach((item, i) => {
     const listStack = widget.addStack();
