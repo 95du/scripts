@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: random;
+// icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
  * 组件版本: Version 1.0.0
@@ -63,30 +63,25 @@ const getFormattedTime = () => {
  * @returns {number} 距离 (km)
  */
 const getDistance = (lat1, lng1, lat2, lng2, R = 6371) => {
-  const toRad = (deg) => (Number(deg) * Math.PI) / 180;
+  const toRad = deg => Number(deg) * Math.PI / 180;
   const dLat = toRad(lat2) - toRad(lat1);
   const dLng = toRad(lng2) - toRad(lng1);
   const a =
     Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * 
-    Math.cos(toRad(lat2)) * 
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
     Math.sin(dLng / 2) ** 2;
   const distance = 2 * R * Math.asin(Math.sqrt(a));
-  return Math.round(distance);
+  return Number.isFinite(distance) ? Math.round(distance) : 0;
 };
 
 // 经纬度编码解密
 const getCryptoWeb = async () => {
   const html = `
-  <html>
-  <head>
-    <meta charset="UTF-8">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script>
-      const caesarDecrypt=(str,shift)=>{if(!str)return"";let result="";for(let i=0;i<str.length;i++){result+=String.fromCharCode(str.charCodeAt(i)+2*shift)}return result};const generateAESKey=(dateString,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=dateString.split("-");const combined=year.substring(0,2)+base.substring(0,10)+year.substring(2)+base.substring(10,20)+month+base.substring(20)+day;return CryptoJS.MD5(combined).toString().toUpperCase()};const aesDecrypt=(cipherText,key)=>{const keyBytes=CryptoJS.enc.Base64.parse(key);const encrypted=CryptoJS.enc.Base64.parse(cipherText);const encryptedBase64=CryptoJS.enc.Base64.stringify(encrypted);const decrypted=CryptoJS.AES.decrypt(encryptedBase64,keyBytes,{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7});return decrypted.toString(CryptoJS.enc.Utf8)};const formatDate=(date)=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return y+"-"+m+"-"+d};const tryDecrypt=(data,date,fixedKey)=>{try{const key=generateAESKey(formatDate(date),fixedKey);const result=aesDecrypt(data,key);return result||null}catch(e){return null}};window.decryptSingle=(data,fixedKey,dataTime)=>{let baseDate=dataTime?new Date(dataTime):new Date();if(isNaN(baseDate.getTime()))baseDate=new Date();let result=tryDecrypt(data,baseDate,fixedKey);if(result)return result;const yesterday=new Date(baseDate);yesterday.setDate(yesterday.getDate()-1);result=tryDecrypt(data,yesterday,fixedKey);if(result)return result;const tomorrow=new Date(baseDate);tomorrow.setDate(tomorrow.getDate()+1);return tryDecrypt(data,tomorrow,fixedKey)};window.decryptTcObject=(item,fixedKey)=>{if(!item)return null;const lat=parseFloat(window.decryptSingle(item.lat,fixedKey,item.time))||null;const lng=parseFloat(window.decryptSingle(item.lng,fixedKey,item.time))||null;return{...item,lat,lng}};
-    </script>
-  </head>
-  </html>`;
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+    const caesarDecrypt=(str,shift)=>[...str].map(c=>String.fromCharCode(c.charCodeAt(0)+2*shift)).join("");const generateAESKey=(date,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=date.split("-");const text=year.slice(0,2)+base.slice(0,10)+year.slice(2)+base.slice(10,20)+month+base.slice(20)+day;return CryptoJS.MD5(text).toString().toUpperCase()};const decryptAES=(cipher,key)=>{const data=CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(cipher));return CryptoJS.AES.decrypt(data,CryptoJS.enc.Base64.parse(key),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)};const formatDate=date=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return\`\${y}-\${m}-\${d}\`};const decryptField=(cipher,time,fixedKey)=>{if(typeof cipher!=="string"||!cipher)return null;const base=new Date(time);if(isNaN(base))return null;for(let i=-10;i<=10;i++){const date=new Date(base);date.setDate(date.getDate()+i);try{const result=decryptAES(cipher,generateAESKey(formatDate(date),fixedKey));if(result)return result}catch(e){}}return null};const parseItem=(item,key)=>item?({...item,lat:Number(decryptField(item.lat,item.time,key))||null,lng:Number(decryptField(item.lng,item.time,key))||null}):item;window.decryptTcObject=(data,key)=>Array.isArray(data)?data.map(item=>parseItem(item,key)):parseItem(data,key);
+  </script>`;
   const webView = new WebView();
   await webView.loadHTML(html);
   return webView;
@@ -97,21 +92,35 @@ const getCryptoWeb = async () => {
  * @param {Object|Array} 原始台风数据对象
  * @returns {Promise<Object|null>} 解密后的对象
  */
-const decryptTyphoonData = async (rawData) => {
+const decryptData = async (data) => {
   const webView = await getCryptoWeb();
-  const fixedKey = "3H4533HEH2C96283C;F458H25HFD2C64";
-  const code = `window.decryptTcObject(${JSON.stringify(rawData)}, ${JSON.stringify(fixedKey)})`;
-  return await webView.evaluateJavaScript(code);
+  const key = "3H4533HEH2C96283C;F458H25HFD2C64";
+  return await webView.evaluateJavaScript(
+    `decryptTcObject(${JSON.stringify(data)},${JSON.stringify(key)})`
+  );
 };
 
-// 循环数组中的对象
-const loopdNextIdx = (arr, name) => {
-  const optNextIndex = (num, data) => (num + 1) % data.length;
-  setting[name] = optNextIndex(setting[name] || 0, arr);
-  writeSettings(setting);
-  return arr[setting[name]];
+// 查找最后一个 Forecast 的测试点
+const findLatestForecast = (data = {}) => (data.points ?? [])
+  .flatMap(p => p.forecast ?? [])
+  .flatMap(f => (f.points ?? []).map(item => ({
+    ...item,
+    sets: f.sets
+  })))
+  .filter(({ time }) => time)
+  .sort((a, b) => new Date(b.time) - new Date(a.time))[0] ?? null;
+
+const getLastDistText = async (tf, newest, land) => {
+  const forecast = findLatestForecast(tf);
+  if (!forecast) return;
+  const decrypt = await decryptData(forecast);
+  const time = formatDate(decrypt.time);
+  const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
+  const distText = `${decrypt.sets}预报 ${time}，风速 ${decrypt.speed}米/秒，${decrypt.power}级\n${decrypt.strong}，距离你的位置 ${lastDist} 公里`;
+  return { lastDist, distText };
 };
 
+// 自动更新
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
   if (script.includes('組件')) fm.writeString(module.filename, script)
@@ -121,6 +130,7 @@ const noticeIcon = await getCacheImage('notice.png', `https://raw.githubusercont
 const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
+// 获取当前位置经纬度
 const getLocation = async () => {
   if (setting.updateTime) {
     const diff = Date.now() - setting.updateTime;
@@ -140,6 +150,14 @@ const getLocation = async () => {
   }
 };
 
+// 循环数组中的对象
+const loopdNextIdx = (arr, name) => {
+  const optNextIndex = (num, data) => (num + 1) % data.length;
+  setting[name] = optNextIndex(setting[name] || 0, arr);
+  writeSettings(setting);
+  return arr[setting[name]];
+};
+
 // 热带扰动
 const currMergerTC = async () => {
   try {
@@ -147,7 +165,7 @@ const currMergerTC = async () => {
     const tc = await new Request(url).loadJSON();
     const p = loopdNextIdx(tc, 'TC');
     const ls = p.points?.at(-1) ?? '';
-    const decrypt = await decryptTyphoonData(ls);
+    const decrypt = await decryptData(ls);
     return { tc, p, decrypt };
   } catch (e) {
     console.log(e);
@@ -220,7 +238,7 @@ const typhoonNotice = (html) => {
   const block = html.match(/config\s*:\s*(\[[\s\S]*?\])\s*,/)?.[1];
   const tips = block?.match(/text\s*:\s*["']([^"']+)["']/)?.[1];
   if (tips && setting.tips !== tips) {
-    notify(`⚠️ 台风信息通告`, tips);
+    notify(`⚠️ 台风信息通告 🌀`, tips);
     setting.tips = tips;
     writeSettings(setting);
   }
@@ -228,21 +246,39 @@ const typhoonNotice = (html) => {
 
 const messageNotice = (msg) => {
   if (msg && setting.message !== msg.message) {
-    notify(`⚠️ ${msg.title}`, msg.message);
+    notify(`⚠️ ${msg.title} 🌀`, msg.message);
     setting.message = msg.message;
     writeSettings(setting);
   }
 };
 
 const speedChangeNotice = (tf, typhoon, newest) => {
-  if (!tf) return;
   setting.tf = setting.tf || {};
   const id = tf.tfbh || tf.ident;
-  const oldSpeed = setting.tf[id];
-  if (oldSpeed !== typhoon.speed) {
-    const body = `风速 ${typhoon.speed || 0}米/秒，${typhoon.power || 0}级 ( ${newest.strong} ) 🌀` + (newest.location ? `\n${newest.location}` : '') + (`\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`);
-    notify(`⚠️ 台风 [${tf.name}] 风速变化`, body);
-    setting.tf[id] = typhoon.speed || 0
+  if (!id) return;
+  const oldData = setting.tf[id] || {};
+  const oldSpeed = oldData.speed;
+  const speed = typhoon.speed || 0;
+  if (oldSpeed !== speed) {
+    const body = `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || ""})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`;
+    notify(`⚠️ 台风 【${tf.name}】 风速变化 🌀`, body);
+    setting.tf[id] = {
+      ...oldData,
+      speed
+    };
+    writeSettings(setting);
+  }
+};
+
+const distChangeNotice = (tf, lastDistText) => {
+  const id = tf.tfbh || tf.ident;
+  const oldDist = setting.tf[id].dist
+  if (oldDist !== lastDistText) {
+    notify(`⚠️ 台风 【${tf.name}】 动态更新🌀`, lastDistText);
+    setting.tf[id] = {
+      ...(setting.tf[id] || {}),
+      dist: lastDistText
+    };
     writeSettings(setting);
   }
 };
@@ -453,13 +489,14 @@ const createDiatText = (widget, dist) => {
   const distStack = widget.addStack();
   distStack.layoutHorizontally();
   distStack.centerAlignContent();
-  distStack.addSpacer(20);
+  distStack.addSpacer();
   const icon = distStack.addImage(noticeIcon);
   icon.imageSize = new Size(22, 22);
   distStack.addSpacer(5);
   const distText = distStack.addText(dist > 0 ? `距离你的位置 ${dist} 公里` : '');
   distText.font = Font.mediumSystemFont(15);
   distText.textColor = new Color('#FF0000', 0.85);
+  distStack.addSpacer();
 };
 
 const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge) => {
@@ -516,7 +553,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   return widget;
 };
 
-// 无台风时
+// 无台风组件
 const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
@@ -554,7 +591,7 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
   }
   
   if (isLarge && tc.length && dist) {
-    widget.addSpacer(1);
+    widget.addSpacer(2);
     createDiatText(widget, dist);
   }
   widget.addSpacer(isLarge ? '' : 5);
@@ -599,44 +636,60 @@ const errorWidget = () => {
 };
 
 // 整合数据
+const createTyphoonWidget = async (arr, tf, typhoon, newest, textColor, isLarge) => {
+  speedChangeNotice(tf, typhoon, newest);
+  const barColor = getTyphoonColor(typhoon.speed);
+  const date = formatDate(newest.update_time);
+  const land = tf.land?.at(-1) ?? '';
+  const { lastDist, distText } = await getLastDistText(tf, newest, land);
+  if (!land && lastDist > 0) distChangeNotice(tf, distText);
+  const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon);
+  const distance = newest.location?.match(/\d+/)?.[0] || 0
+  const remainTime = getTyphoonRemainTime(isLarge,distance,typhoon.move_speed);
+  const maxSpeed = getMaxForecast(tf);
+  const info = generateItem(typhoon, newest, land, maxSpeed, remainTime);
+  return createWidget(arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge);
+};
+
 const runWidget = async () => {
+  getLocation();
   const { arr, tf, typhoon } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
-  getLocation();
-  const family = config.runsInApp 
-    ? (tf ? 'large' : 'medium') 
+  
+  const family = config.runsInApp
+    ? (tf ? 'large' : 'medium')
     : config.widgetFamily;
   const isLarge = family === 'large';
   const isSmall = family === 'small';
-  const textColor = isLarge  
-    ? Color.black() 
+  const textColor = isLarge
+    ? Color.black()
     : Color.dynamic(Color.black(), Color.white());
 
   let widget;
   if (isSmall) {
     widget = errorWidget();
-  } else if (!tf) {
+  } else if (tf) {
+    widget = await createTyphoonWidget(
+      arr, tf, typhoon, newest, 
+      textColor, isLarge
+    );
+  } else {
     const levels = levelAgency();
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
-    const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-    widget = createLevelWidget(levels, tc, p, dist, textColor, isLarge);
-  } else {
-    speedChangeNotice(tf, typhoon, newest);
-    const barColor = getTyphoonColor(typhoon.speed);
-    const date = formatDate(newest.update_time);
-    const land = tf.land?.at(-1) ?? '';
-    const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon) || 0;
-    const distance = newest.location.match(/\d+/)?.[0];
-    const remainTime = getTyphoonRemainTime(isLarge, distance, typhoon.move_speed);
-    const maxSpeed = getMaxForecast(tf);
-    const info = generateItem(typhoon, newest, land, maxSpeed, remainTime);
-    widget = createWidget(arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge);
+    const dist = getDistance(
+      setting.lat, setting.lon, 
+      decrypt.lat, decrypt.lng
+    );
+    widget = createLevelWidget(
+      levels, tc, p, dist, 
+      textColor, isLarge
+    );
   }
-  
+
   if (!isSmall) await setBackground(widget, tf, isLarge);
-  
+
   if (config.runsInApp) {
-    await widget[tf ? 'presentLarge' : 'presentMedium']();
+    await widget[isLarge ? 'presentLarge' : 'presentMedium']();
   } else {
     autoUpdate();
     Script.setWidget(widget);
