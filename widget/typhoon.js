@@ -116,7 +116,7 @@ const getLastDistText = async (tf, newest, land) => {
   const decrypt = await decryptData(forecast);
   const time = formatDate(decrypt.time);
   const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-  const distText = `${decrypt.sets}预报 ${time}，风速 ${decrypt.speed}米/秒，${decrypt.power}级\n${decrypt.strong}，距离你的位置 ${lastDist} 公里`;
+  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}，${decrypt.pressure}百帕\n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`
   return { lastDist, distText };
 };
 
