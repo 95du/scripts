@@ -485,11 +485,11 @@ const createButtonStack = (topStack, tyIcon, tf, barColor) => {
   return barStack;
 };
 
-const createDiatText = (widget, dist) => {
+const createDiatText = (widget, dist, tf) => {
   const distStack = widget.addStack();
   distStack.layoutHorizontally();
   distStack.centerAlignContent();
-  distStack.addSpacer();
+  if (tf) distStack.addSpacer();
   const icon = distStack.addImage(noticeIcon);
   icon.imageSize = new Size(22, 22);
   distStack.addSpacer(5);
@@ -524,7 +524,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   });
 
   if (isLarge) {
-    if (dist > 0) createDiatText(widget, dist);
+    if (dist > 0) createDiatText(widget, dist, tf);
     widget.addSpacer();
   }
   
