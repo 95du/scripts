@@ -80,7 +80,7 @@ const getCryptoWeb = async () => {
   const html = `
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
-    const caesarDecrypt=(str,shift)=>[...str].map(c=>String.fromCharCode(c.charCodeAt(0)+2*shift)).join("");const generateAESKey=(date,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=date.split("-");const text=year.slice(0,2)+base.slice(0,10)+year.slice(2)+base.slice(10,20)+month+base.slice(20)+day;return CryptoJS.MD5(text).toString().toUpperCase()};const decryptAES=(cipher,key)=>{const data=CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(cipher));return CryptoJS.AES.decrypt(data,CryptoJS.enc.Base64.parse(key),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)};const formatDate=date=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return\`\${y}-\${m}-\${d}\`};const decryptField=(cipher,time,fixedKey)=>{if(typeof cipher!=="string"||!cipher)return null;const base=new Date(time);if(isNaN(base))return null;for(let i=-10;i<=10;i++){const date=new Date(base);date.setDate(date.getDate()+i);try{const result=decryptAES(cipher,generateAESKey(formatDate(date),fixedKey));if(result)return result}catch(e){}}return null};const parseItem=(item,key)=>item?({...item,lat:Number(decryptField(item.lat,item.time,key))||null,lng:Number(decryptField(item.lng,item.time,key))||null}):item;window.decryptTcObject=(data,key)=>Array.isArray(data)?data.map(item=>parseItem(item,key)):parseItem(data,key);
+    const caesarDecrypt=(str,shift)=>[...str].map(c=>String.fromCharCode(c.charCodeAt(0)+2*shift)).join("");const generateAESKey=(date,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=date.split("-");const text=year.slice(0,2)+base.slice(0,10)+year.slice(2)+base.slice(10,20)+month+base.slice(20)+day;return CryptoJS.MD5(text).toString().toUpperCase()};const decryptAES=(cipher,key)=>{const data=CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(cipher));return CryptoJS.AES.decrypt(data,CryptoJS.enc.Base64.parse(key),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)};const formatDate=date=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return y+"-"+m+"-"+d};const decryptField=(cipher,time,fixedKey)=>{if(typeof cipher!=="string"||!cipher)return null;const base=new Date(time);if(isNaN(base.getTime()))return null;for(let i=-10;i<=10;i++){const date=new Date(base);date.setDate(date.getDate()+i);try{const result=decryptAES(cipher,generateAESKey(formatDate(date),fixedKey));if(result)return result}catch(e){}}return null};const parseField=(value,time,key)=>{if(value==null)return value;if(typeof value==="number"){return value}if(!isNaN(value)&&value.trim()!==""){return Number(value)}const result=decryptField(value,time,key);return result!==null&&!isNaN(result)?Number(result):value};const parseItem=(item,key)=>{if(!item)return item;return{...item,lat:parseField(item.lat,item.time,key),lng:parseField(item.lng,item.time,key)}};window.decryptTcObject=(data,key)=>Array.isArray(data)?data.map(item=>parseItem(item,key)):parseItem(data,key);
   </script>`;
   const webView = new WebView();
   await webView.loadHTML(html);
@@ -116,7 +116,7 @@ const getLastDistText = async (tf, newest, land) => {
   const decrypt = await decryptData(forecast);
   const time = formatDate(decrypt.time);
   const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}，${decrypt.pressure}百帕\n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`
+  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}，${decrypt.pressure}百帕 \n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`;
   return { lastDist, distText };
 };
 
@@ -207,21 +207,23 @@ const getLatestData = async (tf) => {
  * https://tf02.istrongcloud.com/data/event/20261401.json 演变过程
  *
  * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
- * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202609
+ * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202613
  *
- * https://tf02.istrongcloud.com/typhoonVisual/home?theme=light
+ * https://tf02.istrongcloud.com/typhoonVisual/home
+ * https://tf03.istrongcloud.com/typhoonVisual/home
  * https://tf.istrongcloud.com/release/index-hrtt.html
+ * https://tf.istrongcloud.com/sctyphoon/index.html#/home
  */
 const getTyphoonData = async () => {
   try {
-    const url = `https://tf03.istrongcloud.com/typhoonVisual/home`;
+    const url = `https://tf03.istrongcloud.com/member/v1.3/home?${Date.now()}`;
     const html = await new Request(url).loadString();
     const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
     if (!arr.length) return null;
     typhoonNotice(html);
     const tf = loopdNextIdx(arr, 'TF');
-    const typhoon = tf.points[tf.points.length - 1];
+    const typhoon = tf.points?.at(-1);
     return { arr, tf, typhoon }
   } catch (e) {
     console.log(e);
@@ -346,7 +348,6 @@ const getMaxForecast = (tf) => {
 const formatTime = (timestamp) => new Date(timestamp).toISOString().replace('T', ' ').slice(0, 16);
 
 // 获取最晚发布的台风路径图片
-// https://tf.istrongcloud.com/tcScreenshot/active/poster/result.png
 const getLatestTyImage = async () => {
   const urls = [
     `https://upy.istrongcloud.com/applet/typhoon/screenshot/posterMulti.png?r=${Date.now()}`,
@@ -489,14 +490,13 @@ const createDiatText = (widget, dist, tf) => {
   const distStack = widget.addStack();
   distStack.layoutHorizontally();
   distStack.centerAlignContent();
-  if (tf) distStack.addSpacer();
+  if (tf) distStack.addSpacer(20);
   const icon = distStack.addImage(noticeIcon);
-  icon.imageSize = new Size(22, 22);
+  icon.imageSize = new Size(21, 21);
   distStack.addSpacer(5);
   const distText = distStack.addText(dist > 0 ? `距离你的位置 ${dist} 公里` : '');
-  distText.font = Font.mediumSystemFont(15);
+  distText.font = Font.mediumSystemFont(14.5);
   distText.textColor = new Color('#FF0000', 0.85);
-  distStack.addSpacer();
 };
 
 const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge) => {
