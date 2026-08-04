@@ -112,13 +112,14 @@ const findLatestForecast = (data = {}) => (data.points ?? [])
 
 const getLastDistText = async (tf, newest, land) => {
   const forecast = findLatestForecast(tf);
-  if (!forecast) return;
+  if (!forecast) return { lastDist: 0, distText: '' };
   const decrypt = await decryptData(forecast);
   const time = formatDate(decrypt.time);
   const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}，${decrypt.pressure}百帕 \n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`;
+  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}\n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`;
   return { lastDist, distText };
 };
+
 
 // 自动更新
 const autoUpdate = async () => {
@@ -204,19 +205,20 @@ const getLatestData = async (tf) => {
 };
 
 /** 
- * https://tf02.istrongcloud.com/data/event/20261401.json 演变过程
+ * https://tf02.istrongcloud.com/data/event/202613.json 演变过程
  *
  * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
  * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202613
  *
  * https://tf02.istrongcloud.com/typhoonVisual/home
  * https://tf03.istrongcloud.com/typhoonVisual/home
+ * https://tf03.istrongcloud.com/member/v1.3/home
  * https://tf.istrongcloud.com/release/index-hrtt.html
  * https://tf.istrongcloud.com/sctyphoon/index.html#/home
  */
 const getTyphoonData = async () => {
   try {
-    const url = `https://tf03.istrongcloud.com/member/v1.3/home?${Date.now()}`;
+    const url = `https://tf03.istrongcloud.com/member/v1.3/home?r=${Date.now()}`;
     const html = await new Request(url).loadString();
     const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
@@ -248,7 +250,7 @@ const typhoonNotice = (html) => {
 
 const messageNotice = (msg) => {
   if (msg && setting.message !== msg.message) {
-    notify(`⚠️ ${msg.title} 🌀`, msg.message);
+    notify(`⚠️ ${msg.title}`, msg.message);
     setting.message = msg.message;
     writeSettings(setting);
   }
@@ -273,31 +275,28 @@ const speedChangeNotice = (tf, typhoon, newest) => {
 };
 
 const distChangeNotice = (tf, lastDistText) => {
+  if (!lastDistText) return;
   const id = tf.tfbh || tf.ident;
-  const oldDist = setting.tf[id].dist
+  setting.tf = setting.tf || {};
+  setting.tf[id] = setting.tf[id] || {}
+  const oldDist = setting.tf[id].dist;
   if (oldDist !== lastDistText) {
     notify(`⚠️ 台风 【${tf.name}】 动态更新🌀`, lastDistText);
-    setting.tf[id] = {
-      ...(setting.tf[id] || {}),
-      dist: lastDistText
-    };
+    setting.tf[id].dist = lastDistText;
     writeSettings(setting);
   }
 };
 
-const currMergerTCNotice = (tc) => {
-  const point = tc.points?.at(-1);
-  if (!point) return;
-  const formatTime = (time) => time.slice(0, 16).replace('T', ' ');
+const currMergerTCNotice = (p, decrypt) => {
   setting.tc = setting.tc || {};
-  const id = tc.tfbh || tc.ident;
+  const id = p.tfbh || p.ident;
   const oldSpeed = setting.tc[id];
-  if (oldSpeed !== point.speed) {
+  if (oldSpeed !== decrypt.speed) {
     notify(
-      `⚠️ ${tc.name} ${tc.ename}`,
-      `${tc.ident} ${point.strong}\n风速 ${point.speed || 0}米/秒，${point.power || 0}级，${point.pressure || 0}百帕\n更新时间: ${formatTime(point.time)}`
+      `⚠️ ${p.name} ${p.ename}`,
+      `${p.ident} ${decrypt.strong}\n东经${decrypt.lng}°，北纬${decrypt.lat}°\n风速 ${decrypt.speed || 0}米/秒，${decrypt.power || 0}级，${decrypt.pressure || 0}百帕`
     );
-    setting.tc[id] = point.speed || 0;
+    setting.tc[id] = decrypt.speed;
     writeSettings(setting);
   }
 };
@@ -577,7 +576,6 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
   
   if (tc.length) {
     tc.forEach((item, i) => {
-      currMergerTCNotice(item);
       const icon = topStack.addImage(tcIcon);
       icon.imageSize = new Size(20, 20)
       if (i < tc.length - 1) {
@@ -676,6 +674,7 @@ const runWidget = async () => {
   } else {
     const levels = levelAgency();
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
+    currMergerTCNotice(p, decrypt);
     const dist = getDistance(
       setting.lat, setting.lon, 
       decrypt.lat, decrypt.lng
