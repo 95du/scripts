@@ -56,13 +56,10 @@ const getFormattedTime = () => {
 
 /**
  * 计算两个经纬度坐标之间的距离
- * @param {number|string} lat1 我的纬度
- * @param {number|string} lng1 我的经度
- * @param {number|string} lat2 点2纬度
- * @param {number|string} lng2 点2经度
+ * @param {number} precision 取整精度，如 10 代表按 10 公里凑整
  * @returns {number} 距离 (km)
  */
-const getDistance = (lat1, lng1, lat2, lng2, R = 6371) => {
+const getDistance = (lat1, lng1, lat2, lng2, R = 6371, precision = 10) => {
   const toRad = deg => Number(deg) * Math.PI / 180;
   const dLat = toRad(lat2) - toRad(lat1);
   const dLng = toRad(lng2) - toRad(lng1);
@@ -72,7 +69,286 @@ const getDistance = (lat1, lng1, lat2, lng2, R = 6371) => {
     Math.cos(toRad(lat2)) *
     Math.sin(dLng / 2) ** 2;
   const distance = 2 * R * Math.asin(Math.sqrt(a));
-  return Number.isFinite(distance) ? Math.round(distance) : 0;
+  if (!Number.isFinite(distance)) return 0;
+  if (precision > 1) {
+    return Math.round(distance / precision) * precision;
+  }
+  return Math.round(distance);
+};
+
+const getDirection = (lat1, lng1, lat2, lng2) => {
+  const rad = deg => deg * Math.PI / 180;
+  const φ1 = rad(lat1);
+  const φ2 = rad(lat2);
+  const Δλ = rad(lng2 - lng1);
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  let angle = Math.atan2(y, x) * 180 / Math.PI;
+  if (!Number.isFinite(angle)) return "";
+  angle = (angle + 360) % 360;
+  const dirs = [
+    "北", "北偏东", "东北", "东偏北",
+    "东", "东偏南", "东南", "南偏东",
+    "南", "南偏西", "西南", "西偏南",
+    "西", "西偏北", "西北", "北偏西"
+  ];
+  return dirs[Math.round(angle / 22.5) % 16];
+};
+
+const typhoonPoints = [
+  // 城市 priority 越高越容易被播报
+  {
+    name: "菲律宾马尼拉",
+    lat: 14.5995,
+    lng: 120.9842,
+    type: "city",
+    priority: 10
+  },
+  {
+    name: "菲律宾佬沃",
+    lat: 18.197,
+    lng: 120.592,
+    type: "city",
+    priority: 3
+  },
+  {
+    name: "菲律宾卡加延",
+    lat: 17.613,
+    lng: 121.726,
+    type: "city",
+    priority: 3
+  },
+  {
+    name: "台湾省台东县",
+    lat: 22.755,
+    lng: 121.15,
+    type: "city",
+    priority: 10
+  },
+  {
+    name: "台湾省花莲市",
+    lat: 23.99,
+    lng: 121.61,
+    type: "city",
+    priority: 6
+  },
+  {
+    name: "台湾省高雄市",
+    lat: 22.627,
+    lng: 120.301,
+    type: "city",
+    priority: 6
+  },
+  {
+    name: "台湾省台北市",
+    lat: 25.033,
+    lng: 121.565,
+    type: "city",
+    priority: 5
+  },
+  {
+    name: "琉球群岛那霸",
+    lat: 26.212,
+    lng: 127.681,
+    type: "city",
+    priority: 10
+  },
+  {
+    name: "日本石垣市",
+    lat: 24.34,
+    lng: 124.16,
+    type: "city",
+    priority: 7
+  },
+  {
+    name: "日本宫古岛市",
+    lat: 24.8,
+    lng: 125.28,
+    type: "city",
+    priority: 7
+  },
+  {
+    name: "日本鹿儿岛",
+    lat: 31.596,
+    lng: 130.557,
+    type: "city",
+    priority: 8
+  },
+  {
+    name: "日本福冈",
+    lat: 33.59,
+    lng: 130.4,
+    type: "city",
+    priority: 6
+  },
+  // 岛屿
+  {
+    name: "菲律宾吕宋岛",
+    lat: 16.5,
+    lng: 121,
+    type: "island"
+  },
+  {
+    name: "菲律宾巴丹群岛",
+    lat: 20.5,
+    lng: 121.9,
+    type: "island"
+  },
+  {
+    name: "中国台湾岛",
+    lat: 23.7,
+    lng: 121,
+    type: "island"
+  },
+  {
+    name: "日本冲绳岛",
+    lat: 26.5,
+    lng: 127.9,
+    type: "island"
+  },
+  {
+    name: "日本石垣岛",
+    lat: 24.4,
+    lng: 124.2,
+    type: "island"
+  },
+  {
+    name: "日本宫古岛",
+    lat: 24.8,
+    lng: 125.3,
+    type: "island"
+  },
+  // 海域
+  {
+    name: "菲律宾吕宋岛西北部海域",
+    lat: 18.5,
+    lng: 118.5,
+    type: "sea"
+  },
+  {
+    name: "菲律宾吕宋岛东北海域",
+    lat: 18.5,
+    lng: 125,
+    type: "sea"
+  },
+  {
+    name: "菲律宾吕宋岛东部海域",
+    lat: 16.5,
+    lng: 124,
+    type: "sea"
+  },
+  {
+    name: "菲律宾以东洋面",
+    lat: 15,
+    lng: 140,
+    type: "sea"
+  },
+  {
+    name: "马里亚纳群岛附近海域",
+    lat: 15,
+    lng: 146,
+    type: "sea"
+  },
+  {
+    name: "台湾东南海域",
+    lat: 22,
+    lng: 123,
+    type: "sea"
+  },
+  {
+    name: "台湾东北海域",
+    lat: 25,
+    lng: 124,
+    type: "sea"
+  },
+  {
+    name: "南海北部海域",
+    lat: 19.5,
+    lng: 114.5,
+    type: "sea"
+  },
+  {
+    name: "南海中部海域",
+    lat: 15,
+    lng: 115,
+    type: "sea"
+  },
+  {
+    name: "海南岛东部海域",
+    lat: 19,
+    lng: 112,
+    type: "sea"
+  }
+];
+
+const getCityList = (lat, lng) => {
+  return typhoonPoints.filter(point => point.type === "city")
+    .map(point => {
+      const distance = getDistance(lat, lng, point.lat, point.lng);
+      return {
+        ...point,
+        distance,
+        score: distance / (point.priority || 1)
+      };
+    })
+    .sort((a, b) => a.score - b.score);
+};
+
+const getSeaLocation = (lat, lng) => {
+  return typhoonPoints
+    .filter(p => p.type === "sea")
+    .map(p => ({
+      ...p,
+      distance: getDistance(lat, lng, p.lat, p.lng)
+    }))
+    .sort((a, b) => a.distance - b.distance)[0];
+};
+
+const getTyphoonLocationText = ({lat, lng}) => {
+  const cities=getCityList(lat,lng);
+  const result=[];
+  if (cities[0] && cities[0].distance < 1500) {
+    result.push(
+      `${cities[0].name}${getDirection(
+        cities[0].lat,
+        cities[0].lng,
+        lat,
+        lng
+      )}方向约${cities[0].distance}公里`
+    );
+  }
+  if (
+    cities[1] &&
+    cities[1].priority >= 5 &&
+    cities[1].distance < 1200 &&
+    cities[1].distance / cities[0].distance < 1.8
+  ) {
+    result.push(
+      `${cities[1].name}${getDirection(
+        cities[1].lat,
+        cities[1].lng,
+        lat,
+        lng
+      )}方向约${cities[1].distance}公里`
+    );
+  }
+  if (result.length===0) {
+    const sea=getSeaLocation(lat,lng);
+    if (sea) {
+      result.push(
+        `${sea.name}${getDirection(
+          sea.lat,
+          sea.lng,
+          lat,
+          lng
+        )}方向约${sea.distance}公里`
+      );
+    }
+  }
+  if (result.length >= 2) {
+    return `位于${result.join("，")}洋面上`;
+  }
+  return `距离${result[0]}`;
 };
 
 // 经纬度编码解密
@@ -100,34 +376,12 @@ const decryptData = async (data) => {
   );
 };
 
-// 查找最后一个 Forecast 的测试点
-const findLatestForecast = (data = {}) => (data.points ?? [])
-  .flatMap(p => p.forecast ?? [])
-  .flatMap(f => (f.points ?? []).map(item => ({
-    ...item,
-    sets: f.sets
-  })))
-  .filter(({ time }) => time)
-  .sort((a, b) => new Date(b.time) - new Date(a.time))[0] ?? null;
-
-const getLastDistText = async (tf, newest, land) => {
-  const forecast = findLatestForecast(tf);
-  if (!forecast) return { lastDist: 0, distText: '' };
-  const decrypt = await decryptData(forecast);
-  const time = formatDate(decrypt.time);
-  const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}\n东经${decrypt.lng}°，北纬${decrypt.lat}°，距离你 ${lastDist} 公里`;
-  return { lastDist, distText };
-};
-
-
 // 自动更新
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
   if (script.includes('組件')) fm.writeString(module.filename, script)
 };
 
-const noticeIcon = await getCacheImage('notice.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/notice.png`);
 const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
@@ -138,7 +392,6 @@ const getLocation = async () => {
     const hours = diff / (3600 * 1000);
     if (hours < 3) return setting;
   }
-
   try {
     const location = await Location.current();
     setting.lon = location.longitude;
@@ -301,11 +554,25 @@ const currMergerTCNotice = (p, decrypt) => {
   }
 };
 
+// 格式化日期
+const formatTime = (timestamp) => new Date(timestamp).toISOString().replace('T', ' ').slice(0, 16);
+
 const formatDate = (time, showMin) => {
   const date = new Date(time);
   const hour = `${date.getHours()}`.padStart(2, '0');
   const minute = date.getMinutes();
   return `${date.getMonth() + 1}月${date.getDate()}日${hour}时` + (showMin && minute ? `${minute}分` : '');
+};
+
+// 剩余登陆时间
+const getTyphoonRemainTime = (distance, speed) => {
+  const h = distance / (speed || 25);
+  if (h < 24) {
+    return `${Math.ceil(h)} 小时`;
+  }
+  const days = Math.floor(h / 24);
+  const remains = Math.ceil(h % 24)
+  return `${days} 天 ${remains} 小时`
 };
 
 const getTyphoonColor = (speed) => {
@@ -315,18 +582,6 @@ const getTyphoonColor = (speed) => {
     [17, '#39A7F8'], [0, '#00C400']
   ];
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
-};
-
-// 剩余登陆时间
-const getTyphoonRemainTime = (isLarge, distance, speed) => {
-  if (!isLarge) return null;
-  const h = distance / (speed || 25);
-  if (h < 24) {
-    return `${Math.ceil(h)} 小时`;
-  }
-  const days = Math.floor(h / 24);
-  const remains = Math.ceil(h % 24)
-  return `${days} 天 ${remains} 小时`
 };
 
 // 查找最大风速的 Point
@@ -344,7 +599,25 @@ const getMaxForecast = (tf) => {
   }, null);
 };
 
-const formatTime = (timestamp) => new Date(timestamp).toISOString().replace('T', ' ').slice(0, 16);
+// 查找最后一个 Forecast 的测试点
+const findLatestForecast = (data = {}) => (data.points ?? [])
+  .flatMap(p => p.forecast ?? [])
+  .flatMap(f => (f.points ?? []).map(item => ({
+    ...item,
+    sets: f.sets
+  })))
+  .filter(({ time }) => time)
+  .sort((a, b) => new Date(b.time) - new Date(a.time))[0] ?? null;
+
+const getLastDistText = async (tf, newest, land) => {
+  const forecast = findLatestForecast(tf);
+  if (!forecast) return { lastDist: 0, distText: '' };
+  const decrypt = await decryptData(forecast);
+  const time = formatDate(decrypt.time);
+  const lastDist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
+  const distText = `${decrypt.sets}预报 ${time}\n风速${decrypt.speed}米/秒，${decrypt.power}级${decrypt.strong}\n东经${decrypt.lng}°，北纬${decrypt.lat}°，届时距离你 ${lastDist} 公里`;
+  return { lastDist, distText };
+};
 
 // 获取最晚发布的台风路径图片
 const getLatestTyImage = async () => {
@@ -383,7 +656,7 @@ const setBackground = async (widget, tf, isLarge) => {
   }
 };
 
-const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
+const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime, hasNumber) => {
   return [
     { 
       label: "中心位置", 
@@ -409,9 +682,9 @@ const generateItem = (typhoon, newest, land, maxSpeed, remainTime) => {
       value: newest.location,
       color: '#FF7800'
     },
-    ...(!land && remainTime  ? [{
+    ...(!land && (isLarge || !hasNumber) ? [{
       label: "登陆时间",
-      value: `预计 ${remainTime}后到达`,
+      value: `预计 ${remainTime}后到达，离你 ${dist} 公里`,
       color: '#F95BF9'
     }] : []),
     { 
@@ -485,20 +758,23 @@ const createButtonStack = (topStack, tyIcon, tf, barColor) => {
   return barStack;
 };
 
-const createDiatText = (widget, dist, tf) => {
-  const distStack = widget.addStack();
-  distStack.layoutHorizontally();
-  distStack.centerAlignContent();
-  if (tf) distStack.addSpacer(20);
-  const icon = distStack.addImage(noticeIcon);
-  icon.imageSize = new Size(21, 21);
-  distStack.addSpacer(5);
-  const distText = distStack.addText(dist > 0 ? `距离你的位置 ${dist} 公里` : '');
-  distText.font = Font.mediumSystemFont(14.5);
-  distText.textColor = new Color('#FF0000', 0.85);
+const createDiatText = (widget, dist, tcLocation = '') => {
+  const list = [
+    `距离你的位置 ${dist} 公里`,
+    tcLocation
+  ].filter(Boolean);
+  
+  list.forEach((item, index) => {
+    const text = widget.addText(item);
+    text.font = Font.mediumSystemFont(14.5);
+    text.textColor = new Color('#FF3300');
+    if (index < list.length - 1) {
+      widget.addSpacer(2);
+    }
+  });
 };
 
-const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge) => {
+const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -523,7 +799,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
   });
 
   if (isLarge) {
-    if (dist > 0) createDiatText(widget, dist, tf);
+    if (land && dist > 0) createDiatText(widget, dist);
     widget.addSpacer();
   }
   
@@ -540,11 +816,11 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
     const labelText = listStack.addText(item.label);
     labelText.font = Font.boldSystemFont(13.5);
     labelText.textColor = new Color(item.color);
-    listStack.addSpacer(13);
+    listStack.addSpacer(12);
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
-    if (isLarge && !typhoon.radius10) listStack.addSpacer();
+    if (isLarge && land) listStack.addSpacer();
     if (i < info.length - 1) {
       mainStack.addSpacer(3);
     }
@@ -553,7 +829,7 @@ const createWidget = (arr, tf, typhoon, dist, maxSpeed, date, info, barColor, te
 };
 
 // 无台风组件
-const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
+const createLevelWidget = (levels, tc, p, dist, tcLocation, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -590,7 +866,7 @@ const createLevelWidget = (levels, tc, p, dist, textColor, isLarge) => {
   
   if (isLarge && tc.length && dist) {
     widget.addSpacer(2);
-    createDiatText(widget, dist);
+    createDiatText(widget, dist, tcLocation);
   }
   widget.addSpacer(isLarge ? null : 5);
   
@@ -643,10 +919,11 @@ const createTyphoonWidget = async (arr, tf, typhoon, newest, textColor, isLarge)
   if (!land && lastDist > 0) distChangeNotice(tf, distText);
   const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon);
   const distance = newest.location?.match(/\d+/)?.[0] || 0
-  const remainTime = getTyphoonRemainTime(isLarge,distance,typhoon.move_speed);
+  const hasNumber = /\d+/.test(newest.trend);
+  const remainTime = getTyphoonRemainTime(distance, typhoon.move_speed);
   const maxSpeed = getMaxForecast(tf);
-  const info = generateItem(typhoon, newest, land, maxSpeed, remainTime);
-  return createWidget(arr, tf, typhoon, dist, maxSpeed, date, info, barColor, textColor, isLarge);
+  const info = generateItem(isLarge, typhoon, newest, land, maxSpeed, dist, remainTime, hasNumber);
+  return createWidget(arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
 };
 
 const runWidget = async () => {
@@ -675,12 +952,13 @@ const runWidget = async () => {
     const levels = levelAgency();
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
     currMergerTCNotice(p, decrypt);
+    const tcLocation = getTyphoonLocationText(decrypt);
     const dist = getDistance(
       setting.lat, setting.lon, 
       decrypt.lat, decrypt.lng
     );
     widget = createLevelWidget(
-      levels, tc, p, dist, 
+      levels, tc, p, dist, tcLocation,
       textColor, isLarge
     );
   }
