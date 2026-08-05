@@ -55,32 +55,38 @@ const getFormattedTime = () => {
 };
 
 const typhoonPoints = [
-  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, type: "city", weight: 15, level: 1 },
-  { name: "菲律宾佬沃", lat: 18.197, lng: 120.592, type: "city", weight: 5, level: 3 },
-  { name: "菲律宾卡加延", lat: 17.613, lng: 121.726, type: "city", weight: 5, level: 3 },
-  { name: "台湾省台东县", lat: 22.755, lng: 121.15, type: "city", weight: 12, level: 2 },
-  { name: "台湾省花莲市", lat: 23.99, lng: 121.61, type: "city", weight: 8, level: 2 },
-  { name: "台湾省高雄市", lat: 22.627, lng: 120.301, type: "city", weight: 10, level: 2 },
-  { name: "琉球群岛那霸市", lat: 26.212, lng: 127.681, type: "city", weight: 15, level: 1 },
-  { name: "日本石垣市", lat: 24.34, lng: 124.16, type: "city", weight: 8, level: 3 },
-  { name: "日本宫古岛市", lat: 24.8, lng: 125.28, type: "city", weight: 8, level: 3 },
-  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, type: "city", weight: 10, level: 2 },
-  { name: "日本东京", lat: 35.676, lng: 139.65, type: "city", weight: 15, level: 1 },
-  { name: "美国关岛", lat: 13.444, lng: 144.793, type: "island", weight: 12, level: 2, region: "马里亚纳" },
-  { name: "美国塞班岛", lat: 15.177, lng: 145.75, type: "island", weight: 8, level: 3, region: "马里亚纳" },
-  { name: "日本小笠原群岛", lat: 27.1, lng: 142.2, type: "island", weight: 4, level: 3 },
-  { name: "日本冲绳岛", lat: 26.5, lng: 127.9, type: "island", weight: 8, level: 2 },
-  { name: "马里亚纳群岛附近海域", lat: 15, lng: 146, type: "sea", weight: 8, level: 2, region: "马里亚纳" },
-  { name: "菲律宾以东洋面", lat: 15, lng: 140, type: "sea", weight: 3, level: 3 },
-  { name: "台湾东南海域", lat: 22, lng: 123, type: "sea", weight: 3, level: 3 },
-  { name: "南海中部海域", lat: 15, lng: 115, type: "sea", weight: 3, level: 3 }
+  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, type: "city", priority: 15, level: 1 },
+  { name: "菲律宾佬沃", lat: 18.197, lng: 120.592, type: "city", priority: 5, level: 3 },
+  { name: "菲律宾卡加延", lat: 17.613, lng: 121.726, type: "city", priority: 5, level: 3 },
+  { name: "菲律宾宿务市", lat: 10.315, lng: 123.885, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾达沃市", lat: 7.073, lng: 125.612, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾东部海域", lat: 13, lng: 135, type: "sea", priority: 4, level: 3 },
+  { name: "台湾省台东县", lat: 22.755, lng: 121.15, type: "city", priority: 12, level: 2 },
+  { name: "台湾省花莲市", lat: 23.99, lng: 121.61, type: "city", priority: 8, level: 2 },
+  { name: "台湾省高雄市", lat: 22.627, lng: 120.301, type: "city", priority: 10, level: 2 },
+  { name: "琉球群岛那霸市", lat: 26.212, lng: 127.681, type: "city", priority: 15, level: 1 },
+  { name: "日本石垣市", lat: 24.34, lng: 124.16, type: "city", priority: 8, level: 3 },
+  { name: "日本宫古岛市", lat: 24.8, lng: 125.28, type: "city", priority: 8, level: 3 },
+  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, type: "city", priority: 10, level: 2 },
+  { name: "日本东京", lat: 35.676, lng: 139.65, type: "city", priority: 15, level: 1 },
+  { name: "美国关岛", lat: 13.444, lng: 144.793, type: "island", priority: 12, level: 2 },
+  { name: "美国塞班岛", lat: 15.177, lng: 145.75, type: "island", priority: 8, level: 3, region: "马里亚纳" },
+  { name: "日本小笠原群岛", lat: 27.1, lng: 142.2, type: "island", priority: 6, level: 2, region: "小笠原" },
+  { name: "日本硫黄岛", lat: 24.754, lng: 141.29, type: "island", priority: 5, level: 3, region: "小笠原" },
+  { name: "日本冲绳岛", lat: 26.5, lng: 127.9, type: "island", priority: 8, level: 2 },
+  { name: "帕劳科罗尔", lat: 7.34, lng: 134.48, type: "city", priority: 5, level: 3 },
+  { name: "雅浦岛", lat: 9.516, lng: 138.122, type: "island", priority: 4, level: 3 },
+  { name: "马绍尔群岛马朱罗", lat: 7.116, lng: 171.185, type: "city", priority: 3, level: 3, bias: { near: -500 } },
+  { name: "马里亚纳群岛附近海域", lat: 15, lng: 146, type: "sea", priority: 8, level: 2, region: "马里亚纳" },
+  { name: "菲律宾以东洋面", lat: 15, lng: 140, type: "sea", priority: 3, level: 3 },
+  { name: "台湾东南海域", lat: 22, lng: 123, type: "sea", priority: 3, level: 3 },
+  { name: "南海北部海域", lat: 18, lng: 118, type: "sea", priority: 5, level: 2 },
+  { name: "南海东部海域", lat: 15, lng: 120, type: "sea", priority: 5, level: 2 },
+  { name: "南海中部海域", lat: 15, lng: 115, type: "sea", priority: 3, level: 3 },
+  { name: "南海西部海域", lat: 12, lng: 112, type: "sea", priority: 3, level: 3 },
+  { name: "海南岛东南海域", lat: 18, lng: 112, type: "sea", priority: 5, level: 2 }
 ];
 
-/**
- * 计算两个经纬度坐标之间的距离
- * @param {number} precision 取整精度，如 10 代表按 10 公里凑整
- * @returns {number} 距离 (km)
- */
 const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
   const rad = d => d * Math.PI / 180;
   const dLat = rad(lat2 - lat1);
@@ -96,30 +102,39 @@ const getDirection = (lat1, lng1, lat2, lng2) => {
   const y = Math.sin(rad(lng2 - lng1)) * Math.cos(rad(lat2));
   const x = Math.cos(rad(lat1)) * Math.sin(rad(lat2)) - Math.sin(rad(lat1)) * Math.cos(rad(lat2)) * Math.cos(rad(lng2 - lng1));
   const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-
   if (angle >= 348.75 || angle < 11.25) return "偏北";
-  if (angle >= 11.25 && angle < 33.75) return "北偏东";
-  if (angle >= 33.75 && angle < 56.25) return "东北";
-  if (angle >= 56.25 && angle < 78.75) return "东北偏东";
-  if (angle >= 78.75 && angle < 101.25) return "偏东";
-  if (angle >= 101.25 && angle < 123.75) return "东偏南";
-  if (angle >= 123.75 && angle < 146.25) return "东南";
-  if (angle >= 146.25 && angle < 168.75) return "东南偏南";
-  if (angle >= 168.75 && angle < 191.25) return "偏南";
-  if (angle >= 191.25 && angle < 213.75) return "南偏西";
-  if (angle >= 213.75 && angle < 236.25) return "西南";
-  if (angle >= 236.25 && angle < 258.75) return "西南偏西";
-  if (angle >= 258.75 && angle < 281.25) return "偏西";
-  if (angle >= 281.25 && angle < 303.75) return "西偏北";
-  if (angle >= 303.75 && angle < 326.25) return "西北";
+  if (angle < 33.75) return "北偏东";
+  if (angle < 56.25) return "东北";
+  if (angle < 78.75) return "东北偏东";
+  if (angle < 101.25) return "偏东";
+  if (angle < 118) return "东偏南";
+  if (angle < 146.25) return "东南";
+  if (angle < 168.75) return "东南偏南";
+  if (angle < 191.25) return "偏南";
+  if (angle < 213.75) return "南偏西";
+  if (angle < 236.25) return "西南";
+  if (angle < 258.75) return "西南偏西";
+  if (angle < 281.25) return "偏西";
+  if (angle < 303.75) return "西偏北";
+  if (angle < 326.25) return "西北";
   return "北偏西";
 };
 
 const getPointScore = (p, dist) => {
   const levelBonus = { 1: 800, 2: 300, 3: 0 };
-  const islandBonus = dist > 2000 && p.type === "island" ? 800 : 0;
-  const seaBonus = p.type === "sea" ? 200 : 0;
-  return dist - p.weight * 100 - (levelBonus[p.level] || 0) - islandBonus - seaBonus;
+  const typeBonus = {
+    city: 0,
+    island: dist > 2000 ? 200 : 0,
+    sea: 200
+  };
+  const distancePenalty = p.type === "island" && dist > 3000 ? 500 : 0;
+  const bias = dist < 2500 ? (p.bias?.near || 0) : 0;
+  return dist
+    - p.priority * 100
+    - (levelBonus[p.level] || 0)
+    - (typeBonus[p.type] || 0)
+    + distancePenalty
+    - bias;
 };
 
 const getTyphoonLocationText = ({ lat, lng }) => {
@@ -161,6 +176,7 @@ const getTyphoonLocationText = ({ lat, lng }) => {
     Math.abs(p.distance - main.distance) > 500 &&
     p.distance / main.distance < 1.5
   );
+
   if (second) result.push(format(second));
   return `${result.length > 1 || main.type !== "city" ? "位于" : "距离"}${result.join("，")}${main.type !== "city" ? "洋面上" : ""}`;
 };
