@@ -466,10 +466,10 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
       color: '#39A7F8'
     },
     { 
-      label: land ? "登陆位置" : maxSpeed ? '最大等级' : "风圈半径",
+      label: land ? "登陆位置" : maxSpeed > 10 ? '最大等级' : "风圈半径",
       value: land
         ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
-        : maxSpeed 
+        : maxSpeed > 10
           ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`
           : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
       color: '#FFD83A'
