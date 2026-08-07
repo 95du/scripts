@@ -58,8 +58,12 @@ const typhoonPoints = [
   { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, type: "city", priority: 15, level: 1 },
   { name: "菲律宾佬沃", lat: 18.197, lng: 120.592, type: "city", priority: 5, level: 3 },
   { name: "菲律宾卡加延", lat: 17.613, lng: 121.726, type: "city", priority: 5, level: 3 },
+  { name: "菲律宾吕宋岛西北部", lat: 17.5, lng: 120.5, type: "island", priority: 8, level: 2 },
   { name: "菲律宾宿务市", lat: 10.315, lng: 123.885, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾中部群岛", lat: 11, lng: 124.5, type: "island", priority: 7, level: 2 },
   { name: "菲律宾达沃市", lat: 7.073, lng: 125.612, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾棉兰老岛", lat: 7.8, lng: 125, type: "island", priority: 5, level: 3 },
+  { name: "菲律宾以东洋面中部", lat: 13.5, lng: 130.5, type: "sea", priority: 6, level: 2 },
   { name: "菲律宾东部海域", lat: 13, lng: 135, type: "sea", priority: 4, level: 3 },
   { name: "台湾省台东县", lat: 22.755, lng: 121.15, type: "city", priority: 12, level: 2 },
   { name: "台湾省花莲市", lat: 23.99, lng: 121.61, type: "city", priority: 8, level: 2 },
@@ -84,7 +88,16 @@ const typhoonPoints = [
   { name: "南海东部海域", lat: 15, lng: 120, type: "sea", priority: 5, level: 2 },
   { name: "南海中部海域", lat: 15, lng: 115, type: "sea", priority: 3, level: 3 },
   { name: "南海西部海域", lat: 12, lng: 112, type: "sea", priority: 3, level: 3 },
-  { name: "海南岛东南海域", lat: 18, lng: 112, type: "sea", priority: 5, level: 2 }
+  { name:"海南岛西部海域", lat:19.7, lng:107.8, type:"sea", country:"中国", region:"海南西部", priority:12, level:1 },
+  { name:"海南省东方市", lat:19.09, lng:108.65, type:"city", country:"中国", region:"海南西部", priority:15, level:1 },
+  { name:"海南省昌江县", lat:19.26, lng:109.05, type:"city", country:"中国", region:"海南西部", priority:12, level:1 },
+  { name:"海南省儋州市", lat:19.52, lng:109.58, type:"city", country:"中国", region:"海南西部", priority:10, level:2 },
+  { name:"海南岛西北部海域", lat:20.3, lng:108.5, type:"sea", country:"中国", region:"海南西北", priority:8, level:2 },
+  { name:"海南岛南部海域", lat:18.3, lng:109.2, type:"sea", country:"中国", region:"海南南部", priority:8, level:3 },
+  { name:"海南岛东部海域", lat:19.5, lng:111.2, type:"sea", country:"中国", region:"海南东部", priority:8, level:3 },
+  { name:"海南岛", lat:19.2, lng:109.7, type:"island", country:"中国", region:"海南", priority:10, level:2 },
+  { name:"琼州海峡", lat:20.15, lng:110.25, type:"sea", country:"中国", region:"琼州海峡", priority:6, level:3 },
+  { name:"北部湾", lat:18.8, lng:108.2, type:"sea", region:"北部湾", priority:6, level:3 },
 ];
 
 const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
@@ -172,16 +185,18 @@ const getTyphoonLocationText = ({ lat, lng }) => {
     p.name !== main.name &&
     p.type === "city" &&
     p.level <= 2 &&
+    main.distance > 1000 &&
     p.distance < 4000 &&
-    Math.abs(p.distance - main.distance) > 500 &&
-    p.distance / main.distance < 1.5
+    Math.abs(p.distance - main.distance) > 800 &&
+    p.distance / main.distance < 1.8
   );
 
   if (second) result.push(format(second));
-  return `${result.length > 1 || main.type !== "city" ? "位于" : "距离"}${result.join("，")}${main.type !== "city" ? "洋面上" : ""}`;
+  const isOceanStyle = result.length > 1 || main.type !== "city";
+  return `${isOceanStyle ? "位于" : "距离"}${result.join("，")}${isOceanStyle ? "洋面上" : ""}`;
 };
 
-// 经纬度编码解密
+// 解密接口经纬度编码
 const getCryptoWeb = async () => {
   const html = `
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -383,13 +398,11 @@ const formatDate = (time, showMin) => {
 
 // 剩余登陆时间
 const getTyphoonRemainTime = (distance, speed) => {
-  const h = distance / (speed || 25);
-  if (h < 24) {
-    return `${Math.ceil(h)} 小时`;
-  }
+  const h = Math.ceil(distance / (speed || 25));
+  if (h < 24) return `${h} 小时`;
   const days = Math.floor(h / 24);
-  const remains = Math.ceil(h % 24)
-  return `${days} 天 ${remains} 小时`
+  const remains = h % 24;
+  return remains ? `${days} 天 ${remains} 小时` : `${days} 天`;
 };
 
 const getTyphoonColor = (speed) => {
