@@ -2,9 +2,10 @@
   "resultCount": 1,
   "results": [
     {
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
+      "features": [
+        "iosUniversal"
+      ],
+      "isGameCenterEnabled": false,
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/8d/59/4d/8d594d34-8a41-dafc-abdf-daeff152211b/1_iPhone.jpg/320x480bb.jpg",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/63/19/b2/6319b261-3e7d-7b5c-5fe9-01aaea8d2e1d/2_iPhone.jpg/320x480bb.jpg",
@@ -26,11 +27,10 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/9c/59/4a/9c594a0a-07c2-99db-403e-8287660baa20/8_iPad.jpg/360x480bb.jpg"
       ],
       "appletvScreenshotUrls": [],
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
       "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/512x512bb.jpg",
-      "isGameCenterEnabled": false,
-      "features": [
-        "iosUniversal"
-      ],
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -160,6 +160,7 @@
         "iPadAir13M4-iPadAir13M4",
         "iPadAir13M4Cellular-iPadAir13M4Cellular"
       ],
+      "kind": "software",
       "advisories": [
         "Infrequent/Mild Cartoon or Fantasy Violence",
         "Infrequent/Mild Medical/Treatment Information",
@@ -169,11 +170,11 @@
         "Infrequent/Mild Horror/Fear Themes",
         "Infrequent/Mild Realistic Violence"
       ],
-      "kind": "software",
-      "trackCensoredName": "ChatGPT",
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "contentAdvisoryRating": "12+",
+      "bundleId": "com.openai.chat",
       "sellerUrl": "https://openai.com/chatgpt",
+      "averageUserRating": 4.83044,
+      "averageUserRatingForCurrentVersion": 4.83044,
+      "trackCensoredName": "ChatGPT",
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -238,11 +239,10 @@
       ],
       "fileSizeBytes": "198425600",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 9197561,
+      "contentAdvisoryRating": "12+",
+      "userRatingCountForCurrentVersion": 9201929,
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "trackContentRating": "12+",
-      "averageUserRating": 4.83044,
-      "averageUserRatingForCurrentVersion": 4.83044,
-      "minimumOsVersion": "17.0",
       "artistId": 1684349733,
       "artistName": "OpenAI OpCo, LLC",
       "genres": [
@@ -250,25 +250,25 @@
         "Utilities"
       ],
       "price": 0,
-      "bundleId": "com.openai.chat",
       "trackId": 6448311069,
       "trackName": "ChatGPT",
-      "sellerName": "OpenAI OpCo, LLC",
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "currentVersionReleaseDate": "2026-08-07T21:46:28Z",
       "genreIds": [
         "6007",
         "6002"
       ],
-      "isVppDeviceBasedLicensingEnabled": true,
+      "releaseNotes": "Bug fixes and small improvements.",
       "primaryGenreName": "Productivity",
       "primaryGenreId": 6007,
-      "currentVersionReleaseDate": "2026-08-07T21:46:28Z",
-      "releaseNotes": "Bug fixes and small improvements.",
+      "sellerName": "OpenAI OpCo, LLC",
       "version": "1.2026.209",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "userRatingCount": 9197561
+      "minimumOsVersion": "17.0",
+      "isVppDeviceBasedLicensingEnabled": true,
+      "userRatingCount": 9201929
     }
   ]
 }
