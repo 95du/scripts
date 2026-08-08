@@ -12,9 +12,6 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/3c/0e/2d/3c0e2d70-f74d-8272-f98c-c903b0f161e1/7_iPhone.jpg/320x480bb.jpg",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/d5/18/63/d5186359-a0a4-d009-dfca-2af251306bb2/8_iPhone.jpg/320x480bb.jpg"
       ],
-      "features": [
-        "iosUniversal"
-      ],
       "ipadScreenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/53/a0/61/53a0610f-b97c-a849-9a8f-6513bdfa315c/1_iPad.jpg/360x480bb.jpg",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/11/48/6a/11486aad-6403-a4d0-b845-ce93e65d6723/2_iPad.jpg/360x480bb.jpg",
@@ -26,10 +23,7 @@
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/9c/59/4a/9c594a0a-07c2-99db-403e-8287660baa20/8_iPad.jpg/360x480bb.jpg"
       ],
       "appletvScreenshotUrls": [],
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
       "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/512x512bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
       "isGameCenterEnabled": false,
       "supportedDevices": [
         "iPhone5s-iPhone5s",
@@ -170,16 +164,12 @@
         "Infrequent/Mild Realistic Violence"
       ],
       "kind": "software",
-      "bundleId": "com.openai.chat",
-      "fileSizeBytes": "198425600",
-      "formattedPrice": "Free",
-      "contentAdvisoryRating": "12+",
-      "userRatingCountForCurrentVersion": 9196110,
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "trackContentRating": "12+",
-      "sellerUrl": "https://openai.com/chatgpt",
-      "averageUserRating": 4.83045,
-      "trackCensoredName": "ChatGPT",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
+      "features": [
+        "iosUniversal"
+      ],
       "languageCodesISO2A": [
         "SQ",
         "AM",
@@ -242,32 +232,42 @@
         "UR",
         "VI"
       ],
-      "minimumOsVersion": "17.0",
+      "fileSizeBytes": "198425600",
+      "formattedPrice": "Free",
+      "userRatingCountForCurrentVersion": 9196110,
+      "trackContentRating": "12+",
       "averageUserRatingForCurrentVersion": 4.83045,
+      "sellerUrl": "https://openai.com/chatgpt",
       "genres": [
         "Productivity",
         "Utilities"
       ],
-      "artistId": 1684349733,
       "price": 0,
-      "artistName": "OpenAI OpCo, LLC",
-      "trackId": 6448311069,
-      "trackName": "ChatGPT",
+      "bundleId": "com.openai.chat",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
       "genreIds": [
         "6007",
         "6002"
       ],
       "releaseDate": "2023-05-18T07:00:00Z",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
-      "sellerName": "OpenAI OpCo, LLC",
       "isVppDeviceBasedLicensingEnabled": true,
+      "trackId": 6448311069,
+      "trackName": "ChatGPT",
+      "sellerName": "OpenAI OpCo, LLC",
       "currentVersionReleaseDate": "2026-08-07T21:46:28Z",
       "releaseNotes": "Bug fixes and small improvements.",
       "version": "1.2026.209",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
+      "minimumOsVersion": "17.0",
+      "averageUserRating": 4.83045,
+      "trackCensoredName": "ChatGPT",
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "contentAdvisoryRating": "12+",
+      "artistId": 1684349733,
+      "artistName": "OpenAI OpCo, LLC",
       "userRatingCount": 9196110
     }
   ]
