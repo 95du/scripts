@@ -102,11 +102,6 @@ const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
 };
 
 const getDirection = (lat1, lng1, lat2, lng2) => {
-  // 接近同纬度，官方习惯描述为偏东/偏西
-  if (Math.abs(lat2 - lat1) < 0.8) {
-    if (lng2 > lng1) return "偏东";
-    if (lng2 < lng1) return "偏西";
-  }
   const rad = d => d * Math.PI / 180;
   const y = Math.sin(rad(lng2 - lng1)) * Math.cos(rad(lat2));
   const x =
@@ -114,20 +109,22 @@ const getDirection = (lat1, lng1, lat2, lng2) => {
     Math.sin(rad(lat1)) *
     Math.cos(rad(lat2)) *
     Math.cos(rad(lng2 - lng1));
-  const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+
+  let angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+  // 微调：非常接近正东/正西时，避免出现偏差
+  if (angle >= 82 && angle <= 98) return "偏东";
+  if (angle >= 262 && angle <= 278) return "偏西";
   if (angle >= 348.75 || angle < 11.25) return "偏北";
   if (angle < 33.75) return "北偏东";
   if (angle < 56.25) return "东北";
   if (angle < 78.75) return "东北偏东";
-  if (angle < 90) return "偏东";
-  if (angle < 145) return "东偏南";
-  if (angle < 157.5) return "东南";
+  if (angle < 112.5) return "东偏南";
+  if (angle < 146.25) return "东南";
   if (angle < 168.75) return "东南偏南";
   if (angle < 191.25) return "偏南";
   if (angle < 213.75) return "南偏西";
   if (angle < 236.25) return "西南";
   if (angle < 258.75) return "西南偏西";
-  if (angle < 281.25) return "偏西";
   if (angle < 303.75) return "西偏北";
   if (angle < 326.25) return "西北";
   return "北偏西";
