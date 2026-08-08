@@ -383,7 +383,11 @@ const currMergerTCNotice = (p, decrypt) => {
 };
 
 // 格式化日期
-const formatTime = (timestamp) => new Date(timestamp).toISOString().replace('T', ' ').slice(0, 16);
+const formatTime = (time) => {
+  const date = new Date(time);
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
 const formatDate = (time, showMin) => {
   const date = new Date(time);
@@ -501,6 +505,41 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
   ];
 };
 
+const generateTCItem = (dist, tcLocation, begin_time, decrypt, isLarge) => {
+  return [
+    { 
+      label: "中心位置", 
+      value: `东经${decrypt.lng}°　北纬${decrypt.lat}°`, 
+      color: '#00C400'
+    },
+    { 
+      label: "风速风力", 
+      value: `${decrypt.speed}米/秒，${decrypt.power}级，${decrypt.strong}`, 
+      color: '#39A7F8'
+    },
+    { 
+      label: "中心气压", 
+      value: `${decrypt.pressure} 百帕`, 
+      color: '#FFD83A'
+    },
+    ...((isLarge || tcLocation.length < 21) ? [{
+      label: "生成时间",
+      value: begin_time,
+      color: '#8C7CFF'
+    }] : []),
+    { 
+      label: "位置测距", 
+      value: `距离你的位置 ${dist} 公里`,
+      color: '#FF7800'
+    },
+    { 
+      label: "参考位置", 
+      value: tcLocation,
+      color: '#F95BF9'
+    }
+  ];
+};
+
 const levelAgency = () => {
   return [
     { 
@@ -552,30 +591,16 @@ const createBarStack = (stack, barColor, radius = 7, padding) => {
   return barStack;
 };
 
-const createButtonStack = (topStack, tyIcon, tf, barColor) => {
+const createButtonStack = (topStack, tyIcon, name, barColor) => {
   const barStack = createBarStack(topStack, barColor);
   const icon = barStack.addImage(tyIcon);
   icon.imageSize = new Size(17, 17);
   icon.tintColor = Color.white();
   barStack.addSpacer(6);
-  const statusText = barStack.addText(tf.ident + tf.name);
+  const statusText = barStack.addText(name);
   statusText.textColor = Color.white();
   statusText.font = Font.boldSystemFont(14.5);
   return barStack;
-};
-
-const createDiatText = (widget, dist, tcLocation = '') => {
-  const list = [
-    `距离你的位置 ${dist} 公里`,
-    tcLocation
-  ].filter(Boolean);
-  
-  list.forEach(item => {
-    const text = widget.addText(item);
-    text.font = Font.mediumSystemFont(14.5);
-    text.textColor = new Color('#FF3300');
-    widget.addSpacer(2);
-  });
 };
 
 const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge) => {
@@ -585,7 +610,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 5 : 4, 20);
-  createButtonStack(topStack, tyIcon, tf, barColor);
+  createButtonStack(topStack, tyIcon, (tf.ident + tf.name), barColor);
   topStack.addSpacer(10);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
@@ -603,7 +628,11 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   });
 
   if (isLarge) {
-    if (land && dist > 0 && dist < 100) createDiatText(widget, dist);
+    if (land && dist < 100) {
+      const distText = widget.addText(`距离你的位置 ${dist} 公里`);
+      distText.font = Font.mediumSystemFont(14.5);
+      distText.textColor = new Color('#FF3300');
+    }
     widget.addSpacer();
   }
   
@@ -632,8 +661,49 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   return widget;
 };
 
+// 热带扰动组件
+const createTCWidget = (tc, p, date, info, tcLocation, textColor, isLarge) => {
+  const widget = new ListWidget();
+  widget.setPadding(15, 20, 15, 20);
+  const topStack = widget.addStack();
+  topStack.layoutHorizontally();
+  topStack.centerAlignContent();
+  createButtonStack(topStack, tyIcon, (p.name + p.ename), new Color('#8C7CFF'));
+  topStack.addSpacer(10);
+  const dateText = topStack.addText(date)
+  dateText.font = Font.mediumSystemFont(14.5);
+  dateText.textColor = textColor;
+  topStack.addSpacer();
+  
+  tc.forEach((item, i) => {
+    const icon = topStack.addImage(tcIcon);
+    icon.imageSize = new Size(20, 20)
+    if (i < tc.length - 1) {
+      topStack.addSpacer(2);
+    }
+  });
+  
+  widget.addSpacer(isLarge ? null : 8);
+  
+  info.forEach((item, i) => {
+    const listStack = widget.addStack();
+    listStack.layoutHorizontally();
+    const labelText = listStack.addText(item.label);
+    labelText.font = Font.boldSystemFont(13.5);
+    labelText.textColor = new Color(item.color);
+    listStack.addSpacer(12);
+    const valueText = listStack.addText(item.value);
+    valueText.font = Font.mediumSystemFont(13.5);
+    valueText.textColor = textColor;;
+    if (i < info.length - 1) {
+      widget.addSpacer(3);
+    }
+  });
+  return widget;
+};
+
 // 无台风组件
-const createLevelWidget = (levels, tc, p, dist, tcLocation, textColor, isLarge) => {
+const createLevelWidget = (levels, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -648,30 +718,14 @@ const createLevelWidget = (levels, tc, p, dist, tcLocation, textColor, isLarge) 
     bar.cornerRadius = 50;
     topStack.addSpacer(19);
   }
-  const point = p.points?.at(-1);
-  const levelText = topStack.addText(tc.length ? `${p.name}  「 ${p.ename} 」  ${point.power}级` : '台风等级、预报机构');
+  
+  const levelText = topStack.addText('台风等级、预报机构');
   levelText.font = Font.boldSystemFont(15);
   levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
-  
-  if (tc.length) {
-    tc.forEach((item, i) => {
-      const icon = topStack.addImage(tcIcon);
-      icon.imageSize = new Size(20, 20)
-      if (i < tc.length - 1) {
-        topStack.addSpacer(2);
-      }
-    });
-  } else {
-    const timeText = topStack.addText(getFormattedTime());
-    timeText.font = Font.mediumSystemFont(16);
-    timeText.textColor = textColor;
-  }
-  
-  if (isLarge && tc.length && dist) {
-    widget.addSpacer(2);
-    createDiatText(widget, dist, tcLocation);
-  }
+  const timeText = topStack.addText(getFormattedTime());
+  timeText.font = Font.mediumSystemFont(16);
+  timeText.textColor = textColor;
   widget.addSpacer(isLarge ? null : 5);
   
   levels.forEach((item, i) => {
@@ -728,6 +782,18 @@ const createTyphoonWidget = async (arr, tf, typhoon, newest, textColor, isLarge)
   return createWidget(arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
 };
 
+const createTcData = (tc, p, decrypt, textColor, isLarge) => {
+  const tcLocation = getTyphoonLocationText(decrypt);
+  const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
+  const date = formatDate(decrypt.time);
+  const begin_time = formatTime(p.begin_time);
+  const info = generateTCItem(
+    dist, tcLocation, begin_time, 
+    decrypt, isLarge
+  );
+  return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
+};
+
 const runWidget = async () => {
   getLocation();
   const { arr, tf, typhoon } = await getTyphoonData() || {};
@@ -751,18 +817,16 @@ const runWidget = async () => {
       textColor, isLarge
     );
   } else {
-    const levels = levelAgency();
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
-    currMergerTCNotice(p, decrypt);
-    const tcLocation = getTyphoonLocationText(decrypt);
-    const dist = getDistance(
-      setting.lat, setting.lon, 
-      decrypt.lat, decrypt.lng
-    );
-    widget = createLevelWidget(
-      levels, tc, p, dist, tcLocation,
-      textColor, isLarge
-    );
+    if (tc.length) {
+      currMergerTCNotice(p, decrypt);
+      widget = createTcData(tc, p, decrypt, textColor, isLarge);
+    } else {
+      const levels = levelAgency();
+      widget = createLevelWidget(
+        levels, textColor, isLarge
+      );
+    }
   }
 
   if (!isSmall) await setBackground(widget, tf, isLarge);
