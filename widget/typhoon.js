@@ -55,41 +55,43 @@ const getFormattedTime = () => {
 };
 
 const typhoonPoints = [
-  { name: '菲律宾马尼拉', lat: 14.5995, lng: 120.9842, type: 'city', priority: 15, level: 1 },
-  { name: '菲律宾佬沃', lat: 18.197, lng: 120.592, type: 'city', priority: 6, level: 3 },
-  { name: '菲律宾卡加延', lat: 17.613, lng: 121.726, type: 'city', priority: 5, level: 3 },
-  { name: '菲律宾宿务市', lat: 10.315, lng: 123.885, type: 'city', priority: 4, level: 3 },
-  { name: '菲律宾达沃市', lat: 7.073, lng: 125.612, type: 'city', priority: 4, level: 3 },
-  { name: '菲律宾东部海域', lat: 13, lng: 135, type: 'sea', priority: 4, level: 3 },
-  { name: '台湾省台东县', lat: 22.755, lng: 121.15, type: 'city', priority: 12, level: 2 },
-  { name: '台湾省花莲市', lat: 23.99, lng: 121.61, type: 'city', priority: 8, level: 2 },
-  { name: '台湾省高雄市', lat: 22.627, lng: 120.301, type: 'city', priority: 10, level: 2 },
-  { name: '琉球群岛那霸市', lat: 26.212, lng: 127.681, type: 'city', priority: 15, level: 1 },
-  { name: '日本石垣市', lat: 24.34, lng: 124.16, type: 'city', priority: 8, level: 3 },
-  { name: '日本宫古岛市', lat: 24.8, lng: 125.28, type: 'city', priority: 8, level: 3 },
-  { name: '日本鹿儿岛', lat: 31.596, lng: 130.557, type: 'city', priority: 10, level: 2 },
-  { name: '日本东京', lat: 35.676, lng: 139.65, type: 'city', priority: 15, level: 1 },
-  { name: '美国关岛', lat: 13.444, lng: 144.793, type: 'island', priority: 12, level: 2 },
-  { name: '美国塞班岛', lat: 15.177, lng: 145.75, type: 'island', priority: 8, level: 3, region: '马里亚纳' },
-  { name: '日本小笠原群岛', lat: 27.1, lng: 142.2, type: 'island', priority: 6, level: 2, region: '小笠原' },
-  { name: '日本硫黄岛', lat: 24.754, lng: 141.29, type: 'island', priority: 5, level: 3, region: '小笠原' },
-  { name: '日本南鸟岛', lat: 24.28, lng: 153.98, type: 'island', priority: 5, level: 3, region: '小笠原' },
-  { name: '日本冲绳岛', lat: 26.5, lng: 127.9, type: 'island', priority: 8, level: 2 },
-  { name: '帕劳科罗尔', lat: 7.34, lng: 134.48, type: 'city', priority: 5, level: 3 },
-  { name: '雅浦岛', lat: 9.516, lng: 138.122, type: 'island', priority: 4, level: 3 },
-  { name: '马里亚纳群岛附近海域', lat: 15, lng: 146, type: 'sea', priority: 8, level: 2, region: '马里亚纳' },
-  { name: '菲律宾以东洋面', lat: 15, lng: 140, type: 'sea', priority: 3, level: 3 },
-  { name: '台湾东南海域', lat: 22, lng: 123, type: 'sea', priority: 3, level: 3 },
-  { name: '南海北部海域', lat: 18, lng: 118, type: 'sea', priority: 5, level: 2 },
-  { name: '南海东部海域', lat: 15, lng: 120, type: 'sea', priority: 5, level: 2 },
-  { name: '南海中部海域', lat: 15, lng: 115, type: 'sea', priority: 3, level: 3 },
-  { name: '南海西部海域', lat: 12, lng: 112, type: 'sea', priority: 3, level: 3 },
-  { name: '海南岛', lat: 19.2, lng: 109.7, type: 'island', country: '中国', region: '海南岛', priority: 8, level: 2 },
-  { name: '海南省东方市', lat: 19.09, lng: 108.65, type: 'city', country: '中国', region: '海南西部城市', priority: 12, level: 1 },
-  { name: '海南岛西部海域', lat: 19.7, lng: 107.8, type: 'sea', country: '中国', region: '海南西部海域', priority: 3, level: 3 },
-  { name: '琼州海峡', lat: 20.15, lng: 110.25, type: 'sea', country: '中国', region: '琼州海峡', priority: 3, level: 3 },
-  { name: '北部湾', lat: 18.8, lng: 108.2, type: 'sea', region: '北部湾', priority: 3, level: 3 }
+  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, type: "city", priority: 15, level: 1 },
+  { name: "菲律宾佬沃", lat: 18.197, lng: 120.592, type: "city", priority: 6, level: 3 },
+  { name: "菲律宾卡加延", lat: 17.613, lng: 121.726, type: "city", priority: 5, level: 3 },
+  { name: "菲律宾宿务市", lat: 10.315, lng: 123.885, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾达沃市", lat: 7.073, lng: 125.612, type: "city", priority: 4, level: 3 },
+  { name: "菲律宾东部海域", lat: 13, lng: 135, type: "sea", priority: 4, level: 3 },
+  { name: "台湾省台东县", lat: 22.755, lng: 121.15, type: "city", priority: 12, level: 2 },
+  { name: "台湾省花莲市", lat: 23.99, lng: 121.61, type: "city", priority: 8, level: 2 },
+  { name: "台湾省高雄市", lat: 22.627, lng: 120.301, type: "city", priority: 10, level: 2 },
+  { name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, type: "city", priority: 15, level: 1 },
+  { name: "日本石垣市", lat: 24.34, lng: 124.16, type: "city", priority: 8, level: 3 },
+  { name: "日本宫古岛市", lat: 24.8, lng: 125.28, type: "city", priority: 8, level: 3 },
+  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, type: "city", priority: 10, level: 2 },
+  { name: "日本东京", lat: 35.676, lng: 139.65, type: "city", priority: 15, level: 1 },
+  { name:"美国关岛", lat:13.444, lng:144.793, type:"island", priority:15, level:1, region:"马里亚纳" },
+  { name: "美国塞班岛", lat: 15.177, lng: 145.75, type: "island", priority: 8, level: 3, region: "马里亚纳" },
+  { name: "日本小笠原群岛", lat: 27.1, lng: 142.2, type: "island", priority: 6, level: 2, region: "小笠原" },
+  { name: "日本硫黄岛", lat: 24.754, lng: 141.29, type: "island", priority: 5, level: 3, region: "小笠原" },
+  { name: "日本南鸟岛", lat: 24.28, lng: 153.98, type: "island", priority: 5, level: 3, region: "小笠原" },
+  { name: "日本冲绳岛", lat: 26.5, lng: 127.9, type: "island", priority: 8, level: 2 },
+  { name: "帕劳科罗尔", lat: 7.34, lng: 134.48, type: "city", priority: 5, level: 3 },
+  { name: "雅浦岛", lat: 9.516, lng: 138.122, type: "island", priority: 4, level: 3 },
+  { name: "马里亚纳群岛附近海域", lat: 15, lng: 146, type: "sea", priority: 8, level: 2, region: "马里亚纳" },
+  { name: "菲律宾以东洋面", lat: 15, lng: 140, type: "sea", priority: 3, level: 3 },
+  { name: "台湾东南海域", lat: 22, lng: 123, type: "sea", priority: 3, level: 3 },
+  { name: "南海北部海域", lat: 18, lng: 118, type: "sea", priority: 5, level: 2 },
+  { name: "南海东部海域", lat: 15, lng: 120, type: "sea", priority: 5, level: 2 },
+  { name: "南海中部海域", lat: 15, lng: 115, type: "sea", priority: 3, level: 3 },
+  { name: "南海西部海域", lat: 12, lng: 112, type: "sea", priority: 3, level: 3 },
+  { name: "海南岛", lat: 19.2, lng: 109.7, type: "island", country: "中国", region: "海南岛", priority: 8, level: 2 },
+  { name: "海南省东方市", lat: 19.09, lng: 108.65, type: "city", country: "中国", region: "海南西部城市", priority: 12, level: 1 },
+  { name: "海南岛西部海域", lat: 19.7, lng: 107.8, type: "sea", country: "中国", region: "海南西部海域", priority: 3, level: 3 },
+  { name: "琼州海峡", lat: 20.15, lng: 110.25, type: "sea", country: "中国", region: "琼州海峡", priority: 3, level: 3 },
+  { name: "北部湾", lat: 18.8, lng: 108.2, type: "sea", region: "北部湾", priority: 3, level: 3 }
 ];
+
+// console.log(typhoonPoints)
 
 const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
   const rad = d => d * Math.PI / 180;
@@ -110,23 +112,28 @@ const getDirection = (lat1, lng1, lat2, lng2) => {
     Math.cos(rad(lat2)) *
     Math.cos(rad(lng2 - lng1));
 
-  let angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-  // 微调：非常接近正东/正西时，避免出现偏差
-  if (angle >= 82 && angle <= 98) return "偏东";
-  if (angle >= 262 && angle <= 278) return "偏西";
+  const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   if (angle >= 348.75 || angle < 11.25) return "偏北";
   if (angle < 33.75) return "北偏东";
   if (angle < 56.25) return "东北";
   if (angle < 78.75) return "东北偏东";
-  if (angle < 112.5) return "东偏南";
+  if (angle < 101.25) return "偏东";
+  if (angle < 123.75) return "东偏南";
   if (angle < 146.25) return "东南";
   if (angle < 168.75) return "东南偏南";
   if (angle < 191.25) return "偏南";
   if (angle < 213.75) return "南偏西";
   if (angle < 236.25) return "西南";
   if (angle < 258.75) return "西南偏西";
-  if (angle < 303.75) return "西偏北";
-  if (angle < 326.25) return "西北";
+  if (angle < 281.25) return "偏西";
+  if (angle < 315) return "西偏北";
+  // 西北象限：按日本气象厅习惯修正
+  if (angle < 346) {
+    if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
+      return "北偏西";
+    }
+    return "西北偏北";
+  }
   return "北偏西";
 };
 
@@ -178,14 +185,21 @@ const getTyphoonLocationText = ({ lat, lng }) => {
   if (!main) return "";
   const format = p => `${p.name}${getDirection(p.lat, p.lng, lat, lng)}方向约${p.distance}公里`;
   const result = [format(main)];
-  const second = points.find(p =>
-    p.name !== main.name &&
-    p.type === "city" &&
-    p.level <= 2 &&
-    p.distance < 4000 &&
-    Math.abs(p.distance - main.distance) > 500 &&
-    p.distance / main.distance < 1.5
-  );
+  const second = points
+    .filter(p =>
+      p.name !== main.name &&
+      p.type === "city" &&
+      p.level <= 2 &&
+      p.distance < 4000 &&
+      (
+        main.type !== "city" ||
+        main.distance > 1000
+      ) &&
+      Math.abs(p.distance - main.distance) > 300 &&
+      p.distance / main.distance < 2 &&
+      !(main.distance < 800 && p.distance > 1500)
+    )
+    .sort((a,b) => Math.abs(a.distance - main.distance) - Math.abs(b.distance - main.distance))[0];
 
   if (second) result.push(format(second));
   const isOceanStyle = result.length > 1 || main.type !== "city";
@@ -358,7 +372,7 @@ const speedChangeNotice = (tf, typhoon, newest) => {
   const oldSpeed = oldData.speed;
   const speed = typhoon.speed || 0;
   if (oldSpeed !== speed) {
-    const body = `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || ""})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`;
+    const body = `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`;
     notify(`⚠️ 台风 【${tf.name}】 风速变化 🌀`, body);
     setting.tf[id] = {
       ...oldData,
@@ -768,7 +782,7 @@ const errorWidget = () => {
 };
 
 // 整合数据
-const createTyphoonWidget = async (arr, tf, typhoon, newest, textColor, isLarge) => {
+const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) => {
   speedChangeNotice(tf, typhoon, newest);
   const barColor = getTyphoonColor(typhoon.speed);
   const date = formatDate(newest.update_time);
@@ -794,6 +808,7 @@ const createTcData = (tc, p, decrypt, textColor, isLarge) => {
   return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
 };
 
+// 主函数
 const runWidget = async () => {
   getLocation();
   const { arr, tf, typhoon } = await getTyphoonData() || {};
@@ -812,7 +827,7 @@ const runWidget = async () => {
   if (isSmall) {
     widget = errorWidget();
   } else if (tf) {
-    widget = await createTyphoonWidget(
+    widget = await createTyphoonData(
       arr, tf, typhoon, newest, 
       textColor, isLarge
     );
