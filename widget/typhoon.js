@@ -3,8 +3,9 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.0.0
+ * 组件版本: Version 1.0.3
  * https://t.me/+CpAbO_q_SGo2ZWE1
+ * 在桌面组件编辑参数中填写任意数字，可以看热带扰动详细信息，不添加则正常显示。
  * 中大号组件 ‼️
  */
 
@@ -69,8 +70,8 @@ const typhoonPoints = [
   { name: "日本宫古岛市", lat: 24.8, lng: 125.28, type: "city", priority: 8, level: 3 },
   { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, type: "city", priority: 10, level: 2 },
   { name: "日本东京", lat: 35.676, lng: 139.65, type: "city", priority: 15, level: 1 },
-  { name:"美国关岛", lat:13.444, lng:144.793, type:"island", priority:15, level:1, region:"马里亚纳" },
-  { name: "美国塞班岛", lat: 15.177, lng: 145.75, type: "island", priority: 8, level: 3, region: "马里亚纳" },
+  { name:"美国关岛", lat:13.444, lng:144.793, type:"island", priority:12, level:2, region:"马里亚纳" },
+  { name:"美国塞班岛", lat:15.177, lng:145.75, type:"island", priority:15, level:1, region:"马里亚纳" },
   { name: "日本小笠原群岛", lat: 27.1, lng: 142.2, type: "island", priority: 6, level: 2, region: "小笠原" },
   { name: "日本硫黄岛", lat: 24.754, lng: 141.29, type: "island", priority: 5, level: 3, region: "小笠原" },
   { name: "日本南鸟岛", lat: 24.28, lng: 153.98, type: "island", priority: 5, level: 3, region: "小笠原" },
@@ -106,35 +107,29 @@ const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
 const getDirection = (lat1, lng1, lat2, lng2) => {
   const rad = d => d * Math.PI / 180;
   const y = Math.sin(rad(lng2 - lng1)) * Math.cos(rad(lat2));
-  const x =
-    Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
-    Math.sin(rad(lat1)) *
-    Math.cos(rad(lat2)) *
-    Math.cos(rad(lng2 - lng1));
-
+  const x = Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
+    Math.sin(rad(lat1)) * Math.cos(rad(lat2)) * Math.cos(rad(lng2 - lng1));
+    
   const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
   if (angle >= 348.75 || angle < 11.25) return "偏北";
   if (angle < 33.75) return "北偏东";
   if (angle < 56.25) return "东北";
   if (angle < 78.75) return "东北偏东";
   if (angle < 101.25) return "偏东";
-  if (angle < 123.75) return "东偏南";
+  if (angle < 123.75) return "东南偏东";
   if (angle < 146.25) return "东南";
   if (angle < 168.75) return "东南偏南";
   if (angle < 191.25) return "偏南";
-  if (angle < 213.75) return "南偏西";
+  if (angle < 213.75) return "西南偏南";
   if (angle < 236.25) return "西南";
   if (angle < 258.75) return "西南偏西";
   if (angle < 281.25) return "偏西";
-  if (angle < 315) return "西偏北";
-  // 西北象限：按日本气象厅习惯修正
-  if (angle < 346) {
-    if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
-      return "北偏西";
-    }
-    return "西北偏北";
+  if (angle < 303.75) return "西北偏西";
+  if (angle < 326.25) return "西北";
+  if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
+    if (angle >= 326 && angle < 349) return "北偏西";
   }
-  return "北偏西";
+  return "西北偏北";
 };
 
 const getPointScore = (p, dist) => {
@@ -191,10 +186,7 @@ const getTyphoonLocationText = ({ lat, lng }) => {
       p.type === "city" &&
       p.level <= 2 &&
       p.distance < 4000 &&
-      (
-        main.type !== "city" ||
-        main.distance > 1000
-      ) &&
+      (main.type !== "city" || main.distance > 1000) &&
       Math.abs(p.distance - main.distance) > 300 &&
       p.distance / main.distance < 2 &&
       !(main.distance < 800 && p.distance > 1500)
@@ -208,11 +200,7 @@ const getTyphoonLocationText = ({ lat, lng }) => {
 
 // 解密接口经纬度编码
 const getCryptoWeb = async () => {
-  const html = `
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script>
-    const caesarDecrypt=(str,shift)=>[...str].map(c=>String.fromCharCode(c.charCodeAt(0)+2*shift)).join("");const generateAESKey=(date,fixedKey)=>{const base=caesarDecrypt(fixedKey,-1);const[year,month,day]=date.split("-");const text=year.slice(0,2)+base.slice(0,10)+year.slice(2)+base.slice(10,20)+month+base.slice(20)+day;return CryptoJS.MD5(text).toString().toUpperCase()};const decryptAES=(cipher,key)=>{const data=CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(cipher));return CryptoJS.AES.decrypt(data,CryptoJS.enc.Base64.parse(key),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)};const formatDate=date=>{const y=date.getFullYear();const m=String(date.getMonth()+1).padStart(2,"0");const d=String(date.getDate()).padStart(2,"0");return y+"-"+m+"-"+d};const decryptField=(cipher,time,fixedKey)=>{if(typeof cipher!=="string"||!cipher)return null;const base=new Date(time);if(isNaN(base.getTime()))return null;for(let i=-10;i<=10;i++){const date=new Date(base);date.setDate(date.getDate()+i);try{const result=decryptAES(cipher,generateAESKey(formatDate(date),fixedKey));if(result)return result}catch(e){}}return null};const parseField=(value,time,key)=>{if(value==null)return value;if(typeof value==="number"){return value}if(!isNaN(value)&&value.trim()!==""){return Number(value)}const result=decryptField(value,time,key);return result!==null&&!isNaN(result)?Number(result):value};const parseItem=(item,key)=>{if(!item)return item;return{...item,lat:parseField(item.lat,item.time,key),lng:parseField(item.lng,item.time,key)}};window.decryptTcObject=(data,key)=>Array.isArray(data)?data.map(item=>parseItem(item,key)):parseItem(data,key);
-  </script>`;
+  const html = `<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script><script>const caesarDecrypt=(s,n)=>[...s].map(c=>String.fromCharCode(c.charCodeAt(0)+2*n)).join("");const formatDate=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");const generateAESKey=(d,b)=>{const[y,m,day]=d.split("-");return CryptoJS.MD5(y.slice(0,2)+b.slice(0,10)+y.slice(2)+b.slice(10,20)+m+b.slice(20)+day).toString().toUpperCase()};const decryptAES=(c,k)=>{try{return CryptoJS.AES.decrypt(CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(c)),CryptoJS.enc.Base64.parse(k),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)}catch(e){return null}};const decryptField=(c,t,k,type)=>{if(typeof c!=="string"||!c)return c;const base=new Date(t);if(isNaN(base.getTime()))return c;const b=caesarDecrypt(k,-1);for(let i=0;i<=30;i++){for(const x of i?[i,-i]:[0]){const d=new Date(base);d.setDate(d.getDate()+x);const n=Number(decryptAES(c,generateAESKey(formatDate(d),b)));if(Number.isFinite(n)&&((type==="lat"&&n!==0&&Math.abs(n)<=90)||(type==="lng"&&Math.abs(n)>=90&&Math.abs(n)<=180)))return n}}return c};const parseField=(v,t,k,type)=>v==null?v:typeof v==="number"?v:!isNaN(v)&&v.trim()!==""?Number(v):decryptField(v,t,k,type);const parseItem=(i,k)=>i?({...i,lat:parseField(i.lat,i.time||"",k,"lat"),lng:parseField(i.lng,i.time||"",k,"lng")}):i;window.decryptTcObject=(d,k)=>Array.isArray(d)?d.map(i=>parseItem(i,k)):parseItem(d,k);</script>`;
   const webView = new WebView();
   await webView.loadHTML(html);
   return webView;
@@ -320,6 +308,7 @@ const getLatestData = async (tf) => {
  *
  * https://tf02.istrongcloud.com/typhoonVisual/home
  * https://tf03.istrongcloud.com/typhoonVisual/home
+ * 无加密 3 个
  * https://tf03.istrongcloud.com/member/v1.3/home
  * https://tf.istrongcloud.com/release/index-hrtt.html
  * https://tf.istrongcloud.com/sctyphoon/index.html#/home
@@ -595,11 +584,12 @@ const levelAgency = () => {
   ];
 };
 
-const createBarStack = (stack, barColor, radius = 7, padding) => {
+const createBarStack = (stack, barColor, radius = 7) => {
   const barStack = stack.addStack();
   barStack.layoutHorizontally();
   barStack.centerAlignContent();
-  barStack.setPadding(padding ? 4 : 3, 10, padding ? 4 : 3, 10);
+  barStack.setPadding(3, 10, 3, 10);
+  barStack.size = new Size(0, 23);
   barStack.cornerRadius = radius;
   barStack.backgroundColor = barColor;
   return barStack;
@@ -625,7 +615,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   topStack.centerAlignContent();
   topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 5 : 4, 20);
   createButtonStack(topStack, tyIcon, (tf.ident + tf.name), barColor);
-  topStack.addSpacer(10);
+  topStack.addSpacer(8);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
   dateText.textColor = textColor;
@@ -683,7 +673,7 @@ const createTCWidget = (tc, p, date, info, tcLocation, textColor, isLarge) => {
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   createButtonStack(topStack, tyIcon, (p.name + p.ename), new Color('#8C7CFF'));
-  topStack.addSpacer(10);
+  topStack.addSpacer(8);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
   dateText.textColor = textColor;
@@ -817,6 +807,8 @@ const runWidget = async () => {
   const family = config.runsInApp
     ? (tf ? 'large' : 'medium')
     : config.widgetFamily;
+  const param = args.widgetParameter;
+  const isNumber = param && !isNaN(Number(param));
   const isLarge = family === 'large';
   const isSmall = family === 'small';
   const textColor = isLarge
@@ -826,12 +818,12 @@ const runWidget = async () => {
   let widget;
   if (isSmall) {
     widget = errorWidget();
-  } else if (tf) {
+  } else if (tf && !isNumber) {
     widget = await createTyphoonData(
       arr, tf, typhoon, newest, 
       textColor, isLarge
     );
-  } else {
+  } else if (!tf || isNumber) {
     const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
     if (tc.length) {
       currMergerTCNotice(p, decrypt);
