@@ -2,6 +2,7 @@
   "resultCount": 1,
   "results": [
     {
+      "isGameCenterEnabled": false,
       "screenshotUrls": [
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/8d/59/4d/8d594d34-8a41-dafc-abdf-daeff152211b/1_iPhone.jpg/320x480bb.jpg",
         "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/63/19/b2/6319b261-3e7d-7b5c-5fe9-01aaea8d2e1d/2_iPhone.jpg/320x480bb.jpg",
@@ -24,23 +25,9 @@
       ],
       "appletvScreenshotUrls": [],
       "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/512x512bb.jpg",
-      "isGameCenterEnabled": false,
       "features": [
         "iosUniversal"
       ],
-      "advisories": [
-        "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Sexual Content and Nudity",
-        "Infrequent/Mild Cartoon or Fantasy Violence",
-        "Infrequent/Mild Profanity or Crude Humor",
-        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Realistic Violence"
-      ],
-      "kind": "software",
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -170,11 +157,22 @@
         "iPadAir13M4-iPadAir13M4",
         "iPadAir13M4Cellular-iPadAir13M4Cellular"
       ],
-      "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 9281738,
-      "averageUserRatingForCurrentVersion": 4.83044,
-      "fileSizeBytes": "198425600",
-      "trackContentRating": "12+",
+      "kind": "software",
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/af/5b/dc/af5bdcf7-7eb9-b981-88b3-1014de5b987a/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
+      "advisories": [
+        "Infrequent/Mild Medical/Treatment Information",
+        "Infrequent/Mild Sexual Content and Nudity",
+        "Infrequent/Mild Cartoon or Fantasy Violence",
+        "Infrequent/Mild Profanity or Crude Humor",
+        "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Horror/Fear Themes",
+        "Infrequent/Mild Realistic Violence"
+      ],
+      "minimumOsVersion": "17.0",
+      "releaseNotes": "Bug fixes and small improvements.",
+      "averageUserRatingForCurrentVersion": 4.83043,
       "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
         "SQ",
@@ -238,37 +236,39 @@
         "UR",
         "VI"
       ],
-      "price": 0,
-      "artistId": 1684349733,
+      "fileSizeBytes": "198425600",
+      "formattedPrice": "Free",
+      "userRatingCountForCurrentVersion": 9311746,
+      "trackContentRating": "12+",
       "artistName": "OpenAI OpCo, LLC",
+      "artistId": 1684349733,
       "genres": [
         "Productivity",
         "Utilities"
       ],
-      "isVppDeviceBasedLicensingEnabled": true,
-      "genreIds": [
-        "6007",
-        "6002"
-      ],
+      "price": 0,
       "bundleId": "com.openai.chat",
-      "sellerName": "OpenAI OpCo, LLC",
+      "currentVersionReleaseDate": "2026-08-07T21:46:28Z",
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "isVppDeviceBasedLicensingEnabled": true,
       "trackId": 6448311069,
       "trackName": "ChatGPT",
-      "currentVersionReleaseDate": "2026-08-07T21:46:28Z",
-      "releaseNotes": "Bug fixes and small improvements.",
+      "primaryGenreName": "Productivity",
+      "primaryGenreId": 6007,
       "version": "1.2026.209",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "minimumOsVersion": "17.0",
-      "averageUserRating": 4.83044,
       "trackCensoredName": "ChatGPT",
       "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
       "contentAdvisoryRating": "12+",
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "primaryGenreName": "Productivity",
-      "primaryGenreId": 6007,
-      "userRatingCount": 9281738
+      "averageUserRating": 4.83043,
+      "genreIds": [
+        "6007",
+        "6002"
+      ],
+      "sellerName": "OpenAI OpCo, LLC",
+      "userRatingCount": 9311746
     }
   ]
 }
