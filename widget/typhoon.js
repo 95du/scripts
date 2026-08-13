@@ -633,7 +633,9 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
 
   if (isLarge) {
     if (land && dist < 100) {
-      const distText = widget.addText(`距离你的位置 ${dist} 公里`);
+      const stack = widget.addStack();
+      stack.setPadding(0, 20, 0, 20);
+      const distText = stack.addText(`距离你的位置 ${dist} 公里`);
       distText.font = Font.mediumSystemFont(14.5);
       distText.textColor = new Color('#FF3300');
     }
@@ -643,8 +645,10 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
-  if (isLarge && tf.land.length) {
-    mainStack.backgroundColor = new Color(barColor.hex, .2);
+  if (isLarge) {
+    mainStack.backgroundColor = tf.land.length 
+    ? new Color(barColor.hex, 0.18)
+    : new Color('#333333', 0.12);
   }
   
   info.forEach((item, i) => {
@@ -657,7 +661,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
-    if (isLarge && land) listStack.addSpacer();
+    if (isLarge) listStack.addSpacer();
     if (i < info.length - 1) {
       mainStack.addSpacer(3);
     }
@@ -666,12 +670,13 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
 };
 
 // 热带扰动组件
-const createTCWidget = (tc, p, date, info, tcLocation, textColor, isLarge) => {
+const createTCWidget = (tc, p, decrypt, date, info, tcLocation, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
+  topStack.url = `https://maps.apple.com/?q=${encodeURIComponent(p.name + p.ename)}&ll=${decrypt.lat},${decrypt.lng}&t=m`;
   createButtonStack(topStack, tyIcon, (p.name + p.ename), new Color('#8C7CFF'));
   topStack.addSpacer(8);
   const dateText = topStack.addText(date)
@@ -795,7 +800,10 @@ const createTcData = (tc, p, decrypt, textColor, isLarge) => {
     dist, tcLocation, begin_time, 
     decrypt, isLarge
   );
-  return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
+  return createTCWidget(
+    tc, p, decrypt, date, info, 
+    tcLocation, textColor, isLarge
+  );
 };
 
 // 主函数
