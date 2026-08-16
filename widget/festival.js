@@ -157,8 +157,8 @@ const createCardItem = (rowStack, festival, index) => {
   butStack.layoutHorizontally();
   butStack.addSpacer(13);
   const termText = butStack.addText(name);
-  termText.font = Font.systemFont(13);
-  termText.textOpacity = 0.8
+  termText.font = Font.mediumSystemFont(13);
+  termText.textOpacity = 0.85
   termText.textColor = Color.white();
   butStack.addSpacer();
   idxStack.addSpacer();
