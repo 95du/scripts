@@ -72,7 +72,7 @@ const fetchData = async () => {
   const festivals = tplData
     .filter(obj => {
       const objDate = new Date(obj.oDate);
-      return objDate > curDate && (obj.type === 't' || obj.type === 'h' || obj.term);
+      return objDate > curDate && (obj.type === 't' || obj.term);
     })
     .sort((a, b) => new Date(a.oDate) - new Date(b.oDate));
 
@@ -116,14 +116,14 @@ const createCardItem = (rowStack, festival, index) => {
     isToday ? '#007AFF' : '#FF9500';
   
   const idxStack = rowStack.addStack();
-  idxStack.addSpacer();
-  idxStack.size = new Size(70, 70);
   idxStack.layoutVertically();
-  idxStack.backgroundColor = new Color(borderColor, 0.3);
+  idxStack.size = new Size(70, 70);
+  idxStack.backgroundColor = new Color(borderColor, isRest || isWork || isToday ? 0.15 : 0.3);
   idxStack.borderColor = new Color(borderColor);
   idxStack.cornerRadius = 20;
   idxStack.borderWidth = 4;
-
+  idxStack.addSpacer();
+  
   const dayStack = idxStack.addStack();
   dayStack.layoutHorizontally();
   dayStack.size = new Size(0, 32);
