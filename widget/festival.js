@@ -4,7 +4,6 @@
 /**
  * 组件作者：95du茅台
  * 组件名称: 节日倒计时
- * 圆环内部: 如果今日是休息日或工作日，则显示一个特定内容，否则显示下一个节日的星期。
  * 组件版本: Version 1.0.1
  * 发布日期: 2024-05-12 15:30
  * Telegram 交流群 https://t.me/+ CpAbO_q_SGo2ZWE1
@@ -56,171 +55,132 @@ const autoUpdate = async () => {
   }
 };
 
-const shimoFormData = () => {
-  const req = new Request('https://shimo.im/api/newforms/forms/8Nk6evZx4KSj4NqL/submit');
-  req.method = 'POST';
-  req.headers = {
-    'Content-Type': 'application/json;charset=utf-8',
-  };
-  req.body = JSON.stringify({
-    formRev: 1,
-    responseContent: [{ type: 4, guid: 'gTmPmwch', text: { content: '' } }],
-    userName: `${Script.name()}  -  ${Device.systemName()} ${Device.systemVersion()}`
-  });
-  req.load();
-};
+const fetchData = async () => {
+  const curDate = new Date();
+  const year = curDate.getFullYear();
+  const month = curDate.getMonth() + 1;
 
-// 获取接下来的节日
-const formatDate = (timestamp) => {
-  const df = new DateFormatter();
-  df.dateFormat = 'yyyy-MM-dd';
-  return df.string(new Date(Number(timestamp) * 1000));
+  const url = `https://opendata.baidu.com/data/inner?resource_id=52109&query=${encodeURIComponent(`${year}年${month}月`)}&apiType=yearMonthData`;
+  const result = await getCacheData('api.json', url, true);
+  const tplData = result.Result[0].DisplayData.resultData.tplData.data.almanac;
+
+  const today = tplData.find(obj => {
+    const objDate = new Date(obj.oDate);
+    return objDate.toDateString() === curDate.toDateString();
+  });
+
+  const festivals = tplData
+    .filter(obj => {
+      const objDate = new Date(obj.oDate);
+      return objDate > curDate && (obj.type === 't' || obj.type === 'h' || obj.term);
+    })
+    .sort((a, b) => new Date(a.oDate) - new Date(b.oDate));
+
+  return [
+    today,
+    ...festivals
+  ].filter(Boolean);
 };
 
 const daysRemaining = (date) => {
-  const currentDate = new Date();
-  const targetDate = new Date(date);
-  return Math.ceil((targetDate - currentDate) / (1000 * 3600 * 24));
+  const cur = new Date();
+  const tar = new Date(date);
+  cur.setHours(0, 0, 0, 0);
+  tar.setHours(0, 0, 0, 0);
+  return Math.round((tar - cur) / (1000 * 3600 * 24));
 };
 
-const fetchData = async () => {  
-  const currentDate = new Date();
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth() + 1;
-  const url = `https://opendata.baidu.com/data/inner?resource_id=52109&query=${encodeURIComponent(`${year}年${month}月`)}&apiType=yearMonthData`;
-  const value = await getCacheData('api.json', url, true);
-  const resultArray = value.Result[0].DisplayData.resultData.tplData.data.almanac;
-  return resultArray;
+const createCardItem = (rowStack, festival, index) => {
+  const { status, day, term, lDate, lMonth, oDate, festivalList, festivalInfoList } = festival;
+      
+  const isToday = index === 0;
+  const festivalName = term ||
+    festivalInfoList?.[0]?.name ||
+    festivalList;
+  const name = isToday ? (festivalName || lDate) : festivalName;
+  
+  const isRest = status === '1';
+  const isWork = status === '2';
+  const todaySta = isRest ? '休' : isWork ? '班' : '今';
+  const dayUntil = Math.max(0, daysRemaining(oDate));
+  const otherSta = isRest ? '休' : isWork ? '班' : `${dayUntil}`;
+  const statusText = isToday ? todaySta : otherSta;
+  
+  const borderColor =
+    isRest ? '#FF0000' :
+    isWork ? '#00C400' :
+    isToday ? '#007AFF' : '#AAAAAA';
+  const staColor =
+    isRest ? '#FF0000' :
+    isWork ? '#00C400' :
+    isToday ? '#007AFF' : '#FF9500';
+  
+  const idxStack = rowStack.addStack();
+  idxStack.addSpacer();
+  idxStack.size = new Size(70, 70);
+  idxStack.layoutVertically();
+  idxStack.backgroundColor = new Color(borderColor, 0.3);
+  idxStack.borderColor = new Color(borderColor);
+  idxStack.cornerRadius = 20;
+  idxStack.borderWidth = 4;
+
+  const dayStack = idxStack.addStack();
+  dayStack.layoutHorizontally();
+  dayStack.size = new Size(0, 32);
+  dayStack.addSpacer();
+ 
+  const leftStack = dayStack.addStack();
+  leftStack.layoutVertically();
+  leftStack.addSpacer();
+  const dayText = leftStack.addText(day);
+  dayText.font = Font.mediumSystemFont(25);
+  dayText.textColor = Color.white();
+  
+  const rightStack = dayStack.addStack();
+  rightStack.layoutVertically();
+  rightStack.addSpacer(3);
+  const staStack = rightStack.addStack();
+  staStack.layoutHorizontally();
+  staStack.centerAlignContent();
+  staStack.size = new Size(18, 20);
+  staStack.cornerRadius = 4;
+  staStack.setPadding(1, 0, 1, 0);
+  staStack.backgroundColor = new Color(staColor);
+  const staText = staStack.addText(statusText);
+  staText.font = Font.mediumSystemFont(12);
+  staText.textColor = Color.white();
+  rightStack.addSpacer();
+  dayStack.addSpacer();
+  idxStack.addSpacer(5);
+  
+  const butStack = idxStack.addStack();
+  butStack.layoutHorizontally();
+  butStack.addSpacer(13);
+  const termText = butStack.addText(name);
+  termText.font = Font.systemFont(13);
+  termText.textOpacity = 0.8
+  termText.textColor = Color.white();
+  butStack.addSpacer();
+  idxStack.addSpacer();
 };
 
-const todayAndNext = async () => {
-  const tplData = await fetchData();
-  const date = new Date();
-  
-  const today = tplData.find(obj => {
-    const objDate = new Date(obj.oDate);  
-    return objDate.toDateString() === date.toDateString() && (obj.status == 1 || obj.status == 2);
-  });
-  
-  const festivalObj = tplData.find(obj => {
-    const objDate = new Date(obj.oDate);
-    return (objDate.toDateString() === date.toDateString() || objDate.getTime() > date.getTime()) && obj.term;
-  });
-  
-  if (today) festivalObj.status = today.status;
-  return festivalObj;
-};
-
-// Circle
-const drawArc = async (deg, fillColor, canvas, canvSize, canvWidth) => {
-  const ctr = new Point(canvSize / 2, canvSize / 2);
-  canvas.setFillColor(fillColor);
-  canvas.setStrokeColor(new Color(fillColor.hex, 0.3));
-  canvas.setLineWidth(canvWidth);
-  
-  const canvRadius = 68
-  const ellipseRect = new Rect(ctr.x - canvRadius, ctr.y - canvRadius, 2 * canvRadius, 2 * canvRadius);
-  canvas.strokeEllipse(ellipseRect);
-
-  for (let t = 0; t < deg; t++) {
-    const x = ctr.x + canvRadius * Math.sin((t * Math.PI) / 180) - canvWidth / 2;
-    const y = ctr.y - canvRadius * Math.cos((t * Math.PI) / 180) - canvWidth / 2;
-    const rect = new Rect(x, y, canvWidth, canvWidth);
-    canvas.fillEllipse(rect);
-  }
-};
-
-const drawCircle = async (daysUntil, sta, cnDay) => {
-  const canvSize = 165
-  const canvWidth = 16
-  
-  const canvas = new DrawContext();  
-  canvas.opaque = false;
-  canvas.respectScreenScale = true;
-  canvas.size = new Size(canvSize, canvSize);
-  
-  drawArc(Math.floor(daysUntil / 15 * 360), new Color('#FFDD00'), canvas, canvSize, canvWidth);
-  
-  const canvTextSize = sta ? 55 : 34
-  const textY = (canvSize - canvTextSize) / 2;
-  const canvTextRect = new Rect(0, textY, canvSize, canvTextSize);
-  canvas.setTextAlignedCenter();
-  canvas.setTextColor(Color.white());
-  const font = Font.boldSystemFont(canvTextSize);
-  canvas.setFont(font);
-  canvas.drawTextInRect(sta || `周${cnDay}`, canvTextRect);
-  return canvas.getImage();
-};
-
-// 创建 Stack
-const generateStack = (widget) => {
-  const leftBarStack = widget.addStack();
-  leftBarStack.layoutHorizontally();
-  leftBarStack.centerAlignContent();
-  return leftBarStack;
-};
-
-const createText = (stack, text, font = 13, color = '#FFFFFF', textSize) => {
-  const stackText = stack.addText(text);
-  stackText.font = textSize ? Font.boldSystemFont(font) : Font.mediumSystemFont(font);
-  stackText.textColor = new Color(color);
-  stackText.textOpacity = 0.99
-  return stackText;
-};
-
-const setupWidget = async () => {
-  const { status, oDate, timestamp, term, festivalList, festivalInfoList, cnDay, gzYear, lMonth, lDate } = await todayAndNext();
-  const name = (term && term === festivalList) ? term : festivalInfoList[0].name;
-  const date = formatDate(timestamp);
-  const daysUntil = daysRemaining(oDate);
-  const moreDays = daysUntil < 1 ? '今日是 ✨' : `还有  `;
-  const sta = status === '1' ? '休' : status === '2' ? '班' : '';
-  const getOffset = (value) => [9, 7, 5, 4, 3].includes(value) ? -5 : 3;
-  const padd = getOffset(daysUntil);
-  
+// 创建指数组件
+const renderIndexWidget = async (festivals) => {
   const widget = new ListWidget();
-  widget.setPadding(15, 15, 15, 15);
-  const topStack = generateStack(widget);
-  topStack.setPadding(0, 17, 0, 17);
-  topStack.size = new Size(0, 70);
-  const nameStack = topStack.addStack();
-  nameStack.layoutVertically();
-  const arr = [...name];
-  arr.forEach((item, i) => {
-    createText(nameStack, item, (name.length >= 3 ? 16.5 : 20), (daysUntil > 0 ? '#FFFFFF' : '#FFDD00'), 'bold');
-  });
-  topStack.addSpacer();
-  const circle = await drawCircle(daysUntil, sta, cnDay);
-  topStack.addImage(circle);
-  widget.addSpacer();
-  
-  const surplusStack = generateStack(widget);
-  surplusStack.setPadding(0, 18, 0, 18)
-  const calendarIcon = await getCacheData('calendar.png', `${rootUrl}/img/symbol/calendar.png`);
-  const icon = surplusStack.addImage(calendarIcon);
-  icon.imageSize = new Size(17, 17);
-  surplusStack.addSpacer();
-  createText(surplusStack, moreDays);
-  if (daysUntil > 0) {
-    const dayStack = surplusStack.addStack();
-    dayStack.layoutVertically();
-    dayStack.size = new Size(0, 24);
-    dayStack.setPadding(padd, 0, 0, 0)
-    const dayText = createText(dayStack, `${daysUntil}`, 16, '#FFDD00');
-    dayText.font = new Font("Georgia-Bold", 24);
-    dayStack.addSpacer();
-    createText(surplusStack, '  天');
+
+  for (let row = 0; row < 2; ++row) {
+    const rowStack = widget.addStack();
+    rowStack.layoutHorizontally();
+    for (let i = 0; i < 2; ++i) {
+      const index = row * 2 + i;
+      const festival = festivals[index];
+      if (!festival) continue;
+      createCardItem(rowStack, festival, index);
+      if (i !== 1) rowStack.addSpacer();
+    }
+    if (row !== 1) widget.addSpacer();
   }
 
-  const dateStack = generateStack(widget);
-  dateStack.addSpacer();
-  const weekStack = dateStack.addStack();
-  weekStack.layoutVertically();
-  createText(weekStack, date, 18.5, '#FFFFFF', 'bold');
-  weekStack.addSpacer(1);
-  createText(weekStack, (`${gzYear}年 · ${lMonth}月${lDate}`), 13.8, '#FFFFFF', 'bold');
-  dateStack.addSpacer();
-  
   return widget;
 };
 
@@ -233,18 +193,20 @@ const errorWidget = () => {
 };
 
 const renderWidget = async () => {
-  const widget = config.widgetFamily === 'small' || config.runsInApp ? await setupWidget() : errorWidget();
+  const festivals = await fetchData();
+  const widget = config.widgetFamily === 'small' || config.runsInApp 
+    ? await renderIndexWidget(festivals) 
+    : errorWidget();
   const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
   widget.backgroundImage = img;
   widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
-  
   if (!config.runInWidget) {
     widget.presentSmall();
   } else {
     autoUpdate();
-    shimoFormData();
     Script.setWidget(widget);
     Script.complete();
   }
 };
+
 await renderWidget();
