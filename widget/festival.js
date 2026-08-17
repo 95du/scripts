@@ -58,7 +58,7 @@ const autoUpdate = async () => {
 const fetchData = async () => {
   const curDate = new Date();
   const year = curDate.getFullYear();
-  const month = curDate.getMonth() + 1;
+  const month = curDate.getMonth() + 2;
 
   const url = `https://opendata.baidu.com/data/inner?resource_id=52109&query=${encodeURIComponent(`${year}年${month}月`)}&apiType=yearMonthData`;
   const result = await getCacheData('api.json', url, true);
@@ -68,11 +68,17 @@ const fetchData = async () => {
     const objDate = new Date(obj.oDate);
     return objDate.toDateString() === curDate.toDateString();
   });
-
+  
   const festivals = tplData
     .filter(obj => {
       const objDate = new Date(obj.oDate);
-      return objDate > curDate && (obj.type === 't' || obj.term);
+      return objDate > curDate && (
+        obj.type === 't' ||
+        !!obj.term ||
+        !!obj.desc ||
+        obj.status === '1' ||
+        obj.status === '2'
+      );
     })
     .sort((a, b) => new Date(a.oDate) - new Date(b.oDate));
 
@@ -83,24 +89,22 @@ const fetchData = async () => {
 };
 
 const daysRemaining = (date) => {
-  const cur = new Date();
-  const tar = new Date(date);
-  cur.setHours(0, 0, 0, 0);
-  tar.setHours(0, 0, 0, 0);
-  return Math.round((tar - cur) / (1000 * 3600 * 24));
+  const currentDate = new Date();
+  const targetDate = new Date(date);
+  return Math.ceil((targetDate - currentDate) / (1000 * 3600 * 24));
 };
 
 const createCardItem = (rowStack, festival, index) => {
-  const { status, day, term, lDate, lMonth, oDate, festivalList, festivalInfoList } = festival;
+  const { status, day, term, desc, lDate, oDate, festivalList, festivalInfoList } = festival;
       
   const isToday = index === 0;
-  const festivalName = term ||
-    festivalInfoList?.[0]?.name ||
-    festivalList;
-  const name = isToday ? (festivalName || lDate) : festivalName;
-  
   const isRest = status === '1';
   const isWork = status === '2';
+  
+  const festivalName =term || desc;
+  const name = isWork && !festivalName
+    ? lDate : festivalName || lDate;
+  
   const todaySta = isRest ? '休' : isWork ? '班' : '今';
   const dayUntil = Math.max(0, daysRemaining(oDate));
   const otherSta = isRest ? '休' : isWork ? '班' : `${dayUntil}`;
@@ -118,7 +122,7 @@ const createCardItem = (rowStack, festival, index) => {
   const idxStack = rowStack.addStack();
   idxStack.layoutVertically();
   idxStack.size = new Size(70, 70);
-  idxStack.backgroundColor = new Color(borderColor, isRest || isWork || isToday ? 0.15 : 0.3);
+  idxStack.backgroundColor = new Color(borderColor, isRest || isWork || isToday ? 0.2 : 0.3);
   idxStack.borderColor = new Color(borderColor);
   idxStack.cornerRadius = 20;
   idxStack.borderWidth = 4;
@@ -167,41 +171,42 @@ const createCardItem = (rowStack, festival, index) => {
 // 创建指数组件
 const renderIndexWidget = async (festivals) => {
   const widget = new ListWidget();
+  const family = config.widgetFamily;
+  if (family === 'large') {
+    widget.setPadding(20, 20, 20, 20);
+  }
+  const rows =
+    family === 'large' ? 4 :
+    family === 'medium' ? 2 : 2;
+  const cols =
+    family === 'small' ? 2 : 4;
 
-  for (let row = 0; row < 2; ++row) {
+  for (let r = 0; r < rows; r++) {
     const rowStack = widget.addStack();
     rowStack.layoutHorizontally();
-    for (let i = 0; i < 2; ++i) {
-      const index = row * 2 + i;
+    for (let c = 0; c < cols; c++) {
+      const index = r * cols + c;
       const festival = festivals[index];
-      if (!festival) continue;
+      if (!festival) break;
       createCardItem(rowStack, festival, index);
-      if (i !== 1) rowStack.addSpacer();
+      if (c < cols - 1) {
+        rowStack.addSpacer();
+      }
     }
-    if (row !== 1) widget.addSpacer();
+    if (r < rows - 1) widget.addSpacer();
   }
 
   return widget;
 };
 
-const errorWidget = () => {
-  const widget = new ListWidget();
-  const text = widget.addText('仅支持小号组件');
-  text.font = Font.systemFont(17);
-  text.centerAlignText();
-  return widget;
-};
-
 const renderWidget = async () => {
   const festivals = await fetchData();
-  const widget = config.widgetFamily === 'small' || config.runsInApp 
-    ? await renderIndexWidget(festivals) 
-    : errorWidget();
+  const widget = await renderIndexWidget(festivals);
   const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
   widget.backgroundImage = img;
   widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
   if (!config.runInWidget) {
-    widget.presentSmall();
+    widget.presentMedium();
   } else {
     autoUpdate();
     Script.setWidget(widget);
