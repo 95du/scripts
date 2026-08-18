@@ -55,147 +55,146 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
+// 地点库
 const typhoonPoints = [
-  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, type: "city", priority: 15, level: 1 },
-  { name: "菲律宾佬沃", lat: 18.197, lng: 120.592, type: "city", priority: 6, level: 3 },
-  { name: "菲律宾卡加延", lat: 17.613, lng: 121.726, type: "city", priority: 5, level: 3 },
-  { name: "菲律宾宿务市", lat: 10.315, lng: 123.885, type: "city", priority: 4, level: 3 },
-  { name: "菲律宾达沃市", lat: 7.073, lng: 125.612, type: "city", priority: 4, level: 3 },
-  { name: "菲律宾东部海域", lat: 13, lng: 135, type: "sea", priority: 4, level: 3 },
-  { name: "台湾省台东县", lat: 22.755, lng: 121.15, type: "city", priority: 12, level: 2 },
-  { name: "台湾省花莲市", lat: 23.99, lng: 121.61, type: "city", priority: 8, level: 2 },
-  { name: "台湾省高雄市", lat: 22.627, lng: 120.301, type: "city", priority: 10, level: 2 },
-  { name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, type: "city", priority: 15, level: 1 },
-  { name: "日本石垣市", lat: 24.34, lng: 124.16, type: "city", priority: 8, level: 3 },
-  { name: "日本宫古岛市", lat: 24.8, lng: 125.28, type: "city", priority: 8, level: 3 },
-  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, type: "city", priority: 10, level: 2 },
-  { name: "日本东京", lat: 35.676, lng: 139.65, type: "city", priority: 15, level: 1 },
-  { name:"美国关岛", lat:13.444, lng:144.793, type:"island", priority:12, level:2, region:"马里亚纳" },
-  { name:"美国塞班岛", lat:15.177, lng:145.75, type:"island", priority:15, level:1, region:"马里亚纳" },
-  { name: "日本小笠原群岛", lat: 27.1, lng: 142.2, type: "island", priority: 6, level: 2, region: "小笠原" },
-  { name: "日本硫黄岛", lat: 24.754, lng: 141.29, type: "island", priority: 5, level: 3, region: "小笠原" },
-  { name: "日本南鸟岛", lat: 24.28, lng: 153.98, type: "island", priority: 5, level: 3, region: "小笠原" },
-  { name: "日本冲绳岛", lat: 26.5, lng: 127.9, type: "island", priority: 8, level: 2 },
-  { name: "帕劳科罗尔", lat: 7.34, lng: 134.48, type: "city", priority: 5, level: 3 },
-  { name: "雅浦岛", lat: 9.516, lng: 138.122, type: "island", priority: 4, level: 3 },
-  { name: "马里亚纳群岛附近海域", lat: 15, lng: 146, type: "sea", priority: 8, level: 2, region: "马里亚纳" },
-  { name: "菲律宾以东洋面", lat: 15, lng: 140, type: "sea", priority: 3, level: 3 },
-  { name: "台湾东南海域", lat: 22, lng: 123, type: "sea", priority: 3, level: 3 },
-  { name: "南海北部海域", lat: 18, lng: 118, type: "sea", priority: 5, level: 2 },
-  { name: "南海东部海域", lat: 15, lng: 120, type: "sea", priority: 5, level: 2 },
-  { name: "南海中部海域", lat: 15, lng: 115, type: "sea", priority: 3, level: 3 },
-  { name: "南海西部海域", lat: 12, lng: 112, type: "sea", priority: 3, level: 3 },
-  { name: "海南岛", lat: 19.2, lng: 109.7, type: "island", country: "中国", region: "海南岛", priority: 8, level: 2 },
-  { name: "海南省东方市", lat: 19.09, lng: 108.65, type: "city", country: "中国", region: "海南西部城市", priority: 12, level: 1 },
-  { name: "海南岛西部海域", lat: 19.7, lng: 107.8, type: "sea", country: "中国", region: "海南西部海域", priority: 3, level: 3 },
-  { name: "琼州海峡", lat: 20.15, lng: 110.25, type: "sea", country: "中国", region: "琼州海峡", priority: 3, level: 3 },
-  { name: "北部湾", lat: 18.8, lng: 108.2, type: "sea", region: "北部湾", priority: 3, level: 3 }
+  { name: "海南省东方市", lat: 19.09, lng: 108.65, level: 3 },
+  { name: "海南省文昌市", lat: 19.54, lng: 110.80, level: 3 },
+  { name: "香港", lat: 22.3193, lng: 114.1694, level: 2 },
+  { name: "台湾", lat: 23.5, lng: 121.0, level: 2 },
+  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, level: 1 },
+  { name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, level: 2, isSea: true },
+  { name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, level: 1 },
+  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, level: 2 },
+  { name: "日本东京", lat: 35.676, lng: 139.65, level: 1 },
+  { name: "关岛塞班", lat: 15.177, lng: 145.75, level: 2, group: "guam_archipelago", conditionalBoost: { lng: [147.5, 154.5], lat: [19, 24], factor: 0.62, vs: "美国关岛", distMargin: 150 } },
+  { name: "美国关岛", lat: 13.444, lng: 144.793, level: 1, group: "guam_archipelago", weightAdjust: 0.82 }
 ];
 
-// console.log(typhoonPoints)
-
-const getDistance = (lat1, lng1, lat2, lng2, precision = 10) => {
-  const rad = d => d * Math.PI / 180;
+const calcDistance = (lat1, lng1, lat2, lng2) => {
+  const rad = d => (d * Math.PI) / 180;
   const dLat = rad(lat2 - lat1);
   const dLng = rad(lng2 - lng1);
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
-  const distance = 6371 * 2 * Math.asin(Math.sqrt(a));
-  if (!Number.isFinite(distance)) return 0;
-  return precision > 1 ? Math.round(distance / precision) * precision : Math.round(distance);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return Math.round(6371 * 2 * Math.asin(Math.sqrt(a)));
 };
 
-const getDirection = (lat1, lng1, lat2, lng2) => {
-  const rad = d => d * Math.PI / 180;
+const calcDirection = (lat1, lng1, lat2, lng2) => {
+  const rad = d => (d * Math.PI) / 180;
   const y = Math.sin(rad(lng2 - lng1)) * Math.cos(rad(lat2));
-  const x = Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
+  const x =
+    Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
     Math.sin(rad(lat1)) * Math.cos(rad(lat2)) * Math.cos(rad(lng2 - lng1));
-    
-  const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-  if (angle >= 348.75 || angle < 11.25) return "偏北";
-  if (angle < 33.75) return "北偏东";
-  if (angle < 56.25) return "东北";
-  if (angle < 78.75) return "东北偏东";
-  if (angle < 101.25) return "偏东";
-  if (angle < 123.75) return "东南偏东";
-  if (angle < 146.25) return "东南";
-  if (angle < 168.75) return "东南偏南";
-  if (angle < 191.25) return "偏南";
-  if (angle < 213.75) return "西南偏南";
-  if (angle < 236.25) return "西南";
-  if (angle < 258.75) return "西南偏西";
-  if (angle < 281.25) return "偏西";
-  if (angle < 303.75) return "西北偏西";
-  if (angle < 326.25) return "西北";
+  let angle = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
   if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
-    if (angle >= 326 && angle < 349) return "北偏西";
+    if (angle >= 326.25 && angle < 348.75) return "北偏西";
   }
-  return "西北偏北";
+  if (lng1 >= 135 && lng1 <= 145 && lat1 >= 30 && lat1 <= 40) {
+    if (angle >= 95 && angle < 125) return "东偏南";
+  }
+  if (lng1 >= 144 && lng1 <= 146 && lat1 >= 13 && lat1 <= 15) {
+    if (angle >= 118 && angle < 132) return "东南";
+  }
+  const dirs = [
+    "偏北", "北偏东", "东北",
+    "东北偏东", "偏东", "东南偏东",
+    "东南", "东南偏南", "偏南",
+    "南偏西", "西南", "西南偏西",
+    "偏西", "西偏北", "西北", "西北偏北"
+  ];
+  const index = Math.floor((angle + 11.25) / 22.5) % 16;
+  return dirs[index];
 };
 
-const getPointScore = (p, dist) => {
-  const levelBonus = { 1: 800, 2: 300, 3: 0 };
-  const typeBonus = {
-    city: 0,
-    island: dist > 2000 ? 200 : 0,
-    sea: 200
+const calcIncludedAngle = (typhoon, p1, p2) => {
+  const rad = d => (d * Math.PI) / 180;
+  const x1 = (p1.lng - typhoon.lng) * Math.cos(rad(typhoon.lat));
+  const y1 = p1.lat - typhoon.lat;
+  const x2 = (p2.lng - typhoon.lng) * Math.cos(rad(typhoon.lat));
+  const y2 = p2.lat - typhoon.lat;
+  const dot = x1 * x2 + y1 * y2;
+  const mag1 = Math.hypot(x1, y1);
+  const mag2 = Math.hypot(x2, y2);
+  if (mag1 === 0 || mag2 === 0) return 0;
+  return (Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * 180) / Math.PI;
+};
+
+const locateTyphoon = (typhoon) => {
+  const scored = typhoonPoints.map(st => {
+    const dist = calcDistance(st.lat, st.lng, typhoon.lat, typhoon.lng);
+    let levelWeight = st.level === 1 ? 0.90 : st.level === 2 ? 1.15 : 1.45;
+
+    if (st.weightAdjust != null) {
+      levelWeight *= st.weightAdjust;
+    }
+
+    if (st.conditionalBoost) {
+      const { lng, lat, factor, vs, distMargin = 150 } = st.conditionalBoost;
+      if (
+        typhoon.lng > lng[0] && typhoon.lng < lng[1] &&
+        typhoon.lat >= lat[0] && typhoon.lat <= lat[1]
+      ) {
+        const vsPoint = typhoonPoints.find(p => p.name === vs);
+        if (vsPoint) {
+          const vsDist = calcDistance(vsPoint.lat, vsPoint.lng, typhoon.lat, typhoon.lng);
+          if (dist + distMargin < vsDist) {
+            levelWeight *= factor;
+          }
+        }
+      }
+    }
+
+    const score = dist < 520 ? dist : dist * levelWeight;
+    return { ...st, dist, score };
+  }).sort((a, b) => a.score - b.score);
+
+  const main = scored[0];
+  let second = null;
+
+  const shouldConsiderMulti = main.dist >= 450 || (typhoon.lng >= 115 && typhoon.lng <= 125 && typhoon.lat >= 18 && typhoon.lat <= 26);
+
+  if (shouldConsiderMulti) {
+    const candidates = scored.slice(1).filter(st => {
+      if (main.group && st.group === main.group) return false;
+      const angle = calcIncludedAngle(typhoon, main, st);
+      const minAngle = st.dist > 2500 ? 0 : 20;
+      if (angle < minAngle || angle > 160) return false;
+      if (st.dist > main.dist * 3.5 || st.dist > 4000) return false;
+      if (st.dist < main.dist * 0.65) return false;
+      return true;
+    });
+
+    if (candidates.length > 0) {
+      const preferred = candidates.find(c =>
+        (c.preferSecond ||
+         c.name.includes("日本") ||
+         c.name.includes("那霸") ||
+         c.name.includes("冲绳") ||
+         c.name.includes("台湾") ||
+         c.name.includes("海南") ||
+         c.name.includes("香港")) &&
+        c.dist < main.dist * 3.5
+      );
+      second = preferred || candidates[0];
+    }
+  }
+
+  const format = st => {
+    const dir = calcDirection(st.lat, st.lng, typhoon.lat, typhoon.lng);
+    const roundedDist = Math.round(st.dist / 10) * 10;
+    return `${st.name}${dir}方向约${roundedDist}公里`;
   };
-  const distancePenalty = p.type === "island" && dist > 3000 ? 500 : 0;
-  const bias = dist < 2500 ? (p.bias?.near || 0) : 0;
-  return dist
-    - p.priority * 100
-    - (levelBonus[p.level] || 0)
-    - (typeBonus[p.type] || 0)
-    + distancePenalty
-    - bias;
-};
 
-const getTyphoonLocationText = ({ lat, lng }) => {
-  const ranked = typhoonPoints
-    .map(p => {
-      const distance = getDistance(lat, lng, p.lat, p.lng);
-      return { ...p, distance, score: getPointScore(p, distance) };
-    })
-    .sort((a, b) => a.score - b.score);
-
-  const regionMap = new Map();
-  const points = [];
-  for (const p of ranked) {
-    if (!p.region) {
-      points.push(p);
-      continue;
-    }
-    const old = regionMap.get(p.region);
-    if (!old) {
-      regionMap.set(p.region, p);
-      points.push(p);
-      continue;
-    }
-    if (old.type === "sea" && p.type !== "sea") {
-      regionMap.set(p.region, p);
-      points[points.indexOf(old)] = p;
-    }
+  if (second) {
+    return `位于${format(main)}、${format(second)}的洋面上`;
+  } else {
+    const useOcean = main.group || main.isSea || main.dist >= 1600;
+    const prefix = (main.dist < 1400 && !useOcean) ? "距离" : "位于";
+    const suffix = 
+      useOcean ? "洋面上" : "";
+    return `${prefix}${format(main)}${suffix}`;
   }
-
-  const main = points[0];
-  if (!main) return "";
-  const format = p => `${p.name}${getDirection(p.lat, p.lng, lat, lng)}方向约${p.distance}公里`;
-  const result = [format(main)];
-  const second = points
-    .filter(p =>
-      p.name !== main.name &&
-      p.type === "city" &&
-      p.level <= 2 &&
-      p.distance < 4000 &&
-      (main.type !== "city" || main.distance > 1000) &&
-      Math.abs(p.distance - main.distance) > 300 &&
-      p.distance / main.distance < 2 &&
-      !(main.distance < 800 && p.distance > 1500)
-    )
-    .sort((a,b) => Math.abs(a.distance - main.distance) - Math.abs(b.distance - main.distance))[0];
-
-  if (second) result.push(format(second));
-  const isOceanStyle = result.length > 1 || main.type !== "city";
-  return `${isOceanStyle ? "位于" : "距离"}${result.join("，")}${isOceanStyle ? "洋面上" : ""}`;
 };
 
 // 解密接口经纬度编码
@@ -648,7 +647,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   if (isLarge) {
     mainStack.backgroundColor = tf.land.length 
     ? new Color(barColor.hex, 0.18)
-    : new Color('#333333', 0.12);
+    : new Color('#555555', 0);
   }
   
   info.forEach((item, i) => {
@@ -670,13 +669,13 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
 };
 
 // 热带扰动组件
-const createTCWidget = (tc, p, decrypt, date, info, tcLocation, textColor, isLarge) => {
+const createTCWidget = (tc, p, date, info, tcLocation, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.url = `https://maps.apple.com/?q=${encodeURIComponent(p.name + p.ename)}&ll=${decrypt.lat},${decrypt.lng}&t=m`;
+  topStack.size = new Size(0, 23);
   createButtonStack(topStack, tyIcon, (p.name + p.ename), new Color('#8C7CFF'));
   topStack.addSpacer(8);
   const dateText = topStack.addText(date)
@@ -692,8 +691,7 @@ const createTCWidget = (tc, p, decrypt, date, info, tcLocation, textColor, isLar
     }
   });
   
-  widget.addSpacer(isLarge ? null : 8);
-  
+  widget.addSpacer();
   info.forEach((item, i) => {
     const listStack = widget.addStack();
     listStack.layoutHorizontally();
@@ -735,7 +733,7 @@ const createLevelWidget = (levels, textColor, isLarge) => {
   const timeText = topStack.addText(getFormattedTime());
   timeText.font = Font.mediumSystemFont(16);
   timeText.textColor = textColor;
-  widget.addSpacer(isLarge ? null : 5);
+  widget.addSpacer();
   
   levels.forEach((item, i) => {
     const listStack = widget.addStack();
@@ -782,7 +780,7 @@ const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) =
   const barColor = getTyphoonColor(typhoon.speed);
   const date = formatDate(newest.update_time);
   const land = tf.land?.at(-1) ?? '';
-  const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon);
+  const dist = calcDistance(setting.lat, setting.lon, newest.lat, newest.lon);
   const distance = newest.location?.match(/\d+/)?.[0] || 0
   const hasNumber = /\d+/.test(newest.trend);
   const remainTime = getTyphoonRemainTime(distance, typhoon.move_speed);
@@ -792,18 +790,15 @@ const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) =
 };
 
 const createTcData = (tc, p, decrypt, textColor, isLarge) => {
-  const tcLocation = getTyphoonLocationText(decrypt);
-  const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
+  const tcLocation = locateTyphoon(decrypt);
+  const dist = calcDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
   const date = formatDate(decrypt.time);
   const begin_time = formatTime(p.begin_time);
   const info = generateTCItem(
     dist, tcLocation, begin_time, 
     decrypt, isLarge
   );
-  return createTCWidget(
-    tc, p, decrypt, date, info, 
-    tcLocation, textColor, isLarge
-  );
+  return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
 };
 
 // 主函数
