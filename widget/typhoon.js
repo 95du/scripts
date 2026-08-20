@@ -56,59 +56,64 @@ const getFormattedTime = () => {
 };
 
 // 地点库
-const typhoonPoints = [
-  { name: "海南省东方市", lat: 19.09, lng: 108.65, level: 3 },
-  { name: "海南省文昌市", lat: 19.54, lng: 110.80, level: 3 },
-  { name: "香港", lat: 22.3193, lng: 114.1694, level: 2 },
-  { name: "台湾", lat: 23.5, lng: 121.0, level: 2 },
-  { name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, level: 1 },
-  { name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, level: 2, isSea: true },
-  { name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, level: 1 },
-  { name: "日本鹿儿岛", lat: 31.596, lng: 130.557, level: 2 },
-  { name: "日本东京", lat: 35.676, lng: 139.65, level: 1 },
-  { name: "关岛塞班", lat: 15.177, lng: 145.75, level: 2, group: "guam_archipelago", conditionalBoost: { lng: [147.5, 154.5], lat: [19, 24], factor: 0.62, vs: "美国关岛", distMargin: 150 } },
-  { name: "美国关岛", lat: 13.444, lng: 144.793, level: 1, group: "guam_archipelago", weightAdjust: 0.82 }
+const anchors = [
+  { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
+  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
+  { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
+  { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
+  { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
+  { id: "keelung", name: "台湾基隆市", lat: 25.128, lng: 121.741, rx: 6, ry: 5 },
+  { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
+  { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
+  { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
+  { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
+  { id: "luzon_ne", name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
+  { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
+  { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
+  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
 ];
 
-const calcDistance = (lat1, lng1, lat2, lng2) => {
-  const rad = d => (d * Math.PI) / 180;
+const relations = {
+  tokyo:     ["naha", "kagoshima", "saipan"],
+  naha:      ["tokyo", "kagoshima", "saipan", "keelung", "hualien", "kaohsiung"],
+  kagoshima: ["tokyo", "naha"],
+  saipan:    ["guam", "naha", "tokyo"],
+  guam:      ["saipan", "naha", "manila", "tokyo"],
+  keelung:   ["naha", "hualien", "kaohsiung", "hongkong"],
+  hualien:   ["keelung", "kaohsiung", "naha", "luzon_ne"],
+  kaohsiung: ["keelung", "hualien", "hongkong", "manila", "luzon_ne"],
+  hongkong:  ["kaohsiung", "wenchang", "qionghai", "dongfang", "manila"],
+  manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
+  luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
+  dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
+  wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
+  qionghai:  ["wenchang", "hongkong", "dongfang", "manila"]
+};
+
+const rad = d => (d * Math.PI) / 180;
+
+const getDistance = (lat1, lng1, lat2, lng2) => {
   const dLat = rad(lat2 - lat1);
   const dLng = rad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
+  const a = Math.sin(dLat / 2) ** 2 +
     Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
   return Math.round(6371 * 2 * Math.asin(Math.sqrt(a)));
 };
 
-const calcDirection = (lat1, lng1, lat2, lng2) => {
-  const rad = d => (d * Math.PI) / 180;
+const getBearing = (lat1, lng1, lat2, lng2) => {
   const y = Math.sin(rad(lng2 - lng1)) * Math.cos(rad(lat2));
-  const x =
-    Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
+  const x = Math.cos(rad(lat1)) * Math.sin(rad(lat2)) -
     Math.sin(rad(lat1)) * Math.cos(rad(lat2)) * Math.cos(rad(lng2 - lng1));
-  let angle = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-  if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
-    if (angle >= 326.25 && angle < 348.75) return "北偏西";
-  }
-  if (lng1 >= 135 && lng1 <= 145 && lat1 >= 30 && lat1 <= 40) {
-    if (angle >= 95 && angle < 125) return "东偏南";
-  }
-  if (lng1 >= 144 && lng1 <= 146 && lat1 >= 13 && lat1 <= 15) {
-    if (angle >= 118 && angle < 132) return "东南";
-  }
-  const dirs = [
-    "偏北", "北偏东", "东北",
-    "东北偏东", "偏东", "东南偏东",
-    "东南", "东南偏南", "偏南",
-    "南偏西", "西南", "西南偏西",
-    "偏西", "西偏北", "西北", "西北偏北"
-  ];
-  const index = Math.floor((angle + 11.25) / 22.5) % 16;
-  return dirs[index];
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 };
 
-const calcIncludedAngle = (typhoon, p1, p2) => {
-  const rad = d => (d * Math.PI) / 180;
+const getInfluenceScore = (p, anchor) => {
+  const dLat = p.lat - anchor.lat;
+  const dLng = (p.lng - anchor.lng) * Math.cos(rad(p.lat));
+  return Math.hypot(dLng / anchor.rx, dLat / anchor.ry);
+};
+
+const getIncludedAngle = (typhoon, p1, p2) => {
   const x1 = (p1.lng - typhoon.lng) * Math.cos(rad(typhoon.lat));
   const y1 = p1.lat - typhoon.lat;
   const x2 = (p2.lng - typhoon.lng) * Math.cos(rad(typhoon.lat));
@@ -120,81 +125,124 @@ const calcIncludedAngle = (typhoon, p1, p2) => {
   return (Math.acos(Math.max(-1, Math.min(1, dot / (mag1 * mag2)))) * 180) / Math.PI;
 };
 
-const locateTyphoon = (typhoon) => {
-  const scored = typhoonPoints.map(st => {
-    const dist = calcDistance(st.lat, st.lng, typhoon.lat, typhoon.lng);
-    let levelWeight = st.level === 1 ? 0.90 : st.level === 2 ? 1.15 : 1.45;
+const getCandidates = point => {
+  return anchors.map(a => ({
+    ...a,
+    score: getInfluenceScore(point, a),
+    distance: getDistance(point.lat, point.lng, a.lat, a.lng)
+  })).sort((a, b) => a.score - b.score);
+};
 
-    if (st.weightAdjust != null) {
-      levelWeight *= st.weightAdjust;
-    }
+const selectMain = point => {
+  const candidates = getCandidates(point);
+  let main = candidates[0];
+  if (main.id === "tokyo" && main.distance > 1800) {
+    const better = candidates.find(c => (c.id === "guam" || c.id === "saipan") && c.distance < main.distance * 0.82 && c.score < main.score * 1.35);
+    if (better) main = better;
+  }
 
-    if (st.conditionalBoost) {
-      const { lng, lat, factor, vs, distMargin = 150 } = st.conditionalBoost;
-      if (
-        typhoon.lng > lng[0] && typhoon.lng < lng[1] &&
-        typhoon.lat >= lat[0] && typhoon.lat <= lat[1]
-      ) {
-        const vsPoint = typhoonPoints.find(p => p.name === vs);
-        if (vsPoint) {
-          const vsDist = calcDistance(vsPoint.lat, vsPoint.lng, typhoon.lat, typhoon.lng);
-          if (dist + distMargin < vsDist) {
-            levelWeight *= factor;
-          }
-        }
-      }
-    }
-
-    const score = dist < 520 ? dist : dist * levelWeight;
-    return { ...st, dist, score };
-  }).sort((a, b) => a.score - b.score);
-
-  const main = scored[0];
-  let second = null;
-
-  const shouldConsiderMulti = main.dist >= 450 || (typhoon.lng >= 115 && typhoon.lng <= 125 && typhoon.lat >= 18 && typhoon.lat <= 26);
-
-  if (shouldConsiderMulti) {
-    const candidates = scored.slice(1).filter(st => {
-      if (main.group && st.group === main.group) return false;
-      const angle = calcIncludedAngle(typhoon, main, st);
-      const minAngle = st.dist > 2500 ? 0 : 20;
-      if (angle < minAngle || angle > 160) return false;
-      if (st.dist > main.dist * 3.5 || st.dist > 4000) return false;
-      if (st.dist < main.dist * 0.65) return false;
-      return true;
-    });
-
-    if (candidates.length > 0) {
-      const preferred = candidates.find(c =>
-        (c.preferSecond ||
-         c.name.includes("日本") ||
-         c.name.includes("那霸") ||
-         c.name.includes("冲绳") ||
-         c.name.includes("台湾") ||
-         c.name.includes("海南") ||
-         c.name.includes("香港")) &&
-        c.dist < main.dist * 3.5
-      );
-      second = preferred || candidates[0];
+  if (main.id === "saipan") {
+    const guamCand = candidates.find(c => c.id === "guam");
+    if (guamCand && guamCand.distance < main.distance * 1.12 && guamCand.score < main.score * 1.25) {
+      main = guamCand;
     }
   }
 
-  const format = st => {
-    const dir = calcDirection(st.lat, st.lng, typhoon.lat, typhoon.lng);
-    const roundedDist = Math.round(st.dist / 10) * 10;
-    return `${st.name}${dir}方向约${roundedDist}公里`;
-  };
-
-  if (second) {
-    return `位于${format(main)}、${format(second)}的洋面上`;
-  } else {
-    const useOcean = main.group || main.isSea || main.dist >= 1600;
-    const prefix = (main.dist < 1400 && !useOcean) ? "距离" : "位于";
-    const suffix = 
-      useOcean ? "洋面上" : "";
-    return `${prefix}${format(main)}${suffix}`;
+  if (main.distance > 1200) {
+    const nearGuam = candidates.find(c => (c.id === "guam" || c.id === "saipan") && c.distance < 900);
+    if (nearGuam) main = nearGuam;
   }
+
+  const seaCand = candidates.find(c =>
+    c.isSea && c.distance < main.distance * 0.92
+  );
+  if (seaCand) main = seaCand;
+  return main;
+};
+
+const isMeaningfulSecond = (point, main, second) => {
+  if (!second) return false;
+  const d1 = main.distance;
+  const d2 = second.distance;
+  if (d2 > d1 * 3.5 || d2 > 4200) return false;
+  if (d2 < d1 * 0.5) return false;
+  if (d1 < 500 && d2 > 1200) return false;
+  if (main.group && second.group && main.group === second.group) return false;
+  const distBetween = getDistance(main.lat, main.lng, second.lat, second.lng);
+  if (distBetween < 500) return false;
+  if (d1 < 400 && d2 > d1 * 2.5) return false;
+  const angle = getIncludedAngle(point, main, second);
+  const minAngle = d2 > 2500 ? 0 : 18;
+  if (angle < minAngle || angle > 165) return false;
+  return true;
+};
+
+const selectSecond = (point, main) => {
+  const related = 
+    relations[main.id] || [];
+  const candidates = anchors
+    .filter(p => related.includes(p.id))
+    .map(p => ({
+      ...p,
+      distance: getDistance(point.lat, point.lng, p.lat, p.lng),
+      score: getInfluenceScore(point, p)
+    }))
+    .filter(p => p.distance < 4200)
+    .sort((a, b) => a.score - b.score);
+
+  const preferred = candidates.find(c => (c.id === "tokyo" || c.id === "naha" || c.id === "kagoshima") && isMeaningfulSecond(point, main, c));
+  if (preferred) return preferred;
+  for (const cand of candidates) {
+    if (isMeaningfulSecond(point, main, cand)) return cand;
+  }
+  return null;
+};
+
+const getDirection = (lat1, lng1, lat2, lng2) => {
+  const angle = getBearing(lat1, lng1, lat2, lng2);
+  if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
+    if (angle >= 326.25 && angle < 348.75) return "北偏西";
+  }
+  if (lng1 >= 135 && lng1 <= 145 && lat1 >= 30 && lat1 <= 40) {
+    if (angle >= 95 && angle < 125) return "东偏南";
+  }
+  const dirs = [
+    "偏北", "北偏东", "东北",
+    "东北偏东", "偏东", "东南偏东",
+    "东南", "东南偏南", "偏南",
+    "南偏西", "西南", "西南偏西",
+    "偏西", "西偏北", "西北", "西北偏北"
+  ];
+  return dirs[Math.floor((angle + 11.25) / 22.5) % 16];
+};
+
+const formatAnchor = (anchor, point) => {
+  const distance = Math.round(getDistance(anchor.lat, anchor.lng, point.lat, point.lng) / 10) * 10;
+  const direction = getDirection(anchor.lat, anchor.lng, point.lat, point.lng);
+  return `${anchor.name}${direction}方向约${distance}公里`;
+};
+
+const getSeaSuffix = point => {
+  if (point.lng < 120 && point.lat < 23) return "南海海面上";
+  return "洋面上";
+};
+
+const getTyphoonLocation = (point) => {
+  const main = selectMain(point);
+  if (!main) return "";
+  const second = selectSecond(point, main);
+  const mainText = formatAnchor(main, point);
+  const seaSuffix = getSeaSuffix(point);
+  const useOcean = main.distance >= 600 || main.isSea || main.group ||
+    ["saipan", "guam", "tokyo", "naha", "kagoshima", "luzon_ne"].includes(main.id);
+  if (second && isMeaningfulSecond(point, main, second)) {
+    const secondText = formatAnchor(second, point);
+    return `位于${mainText}、${secondText}的${seaSuffix}`;
+  }
+  if (useOcean) {
+    return `位于${mainText}的${seaSuffix}`;
+  }
+  return `距离${mainText}`;
 };
 
 // 解密接口经纬度编码
@@ -276,8 +324,8 @@ const complementLocTrend = async (tf, latest) => {
   if (!newest.location) {
     const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.tfbh}.json`;
     const loc = await new Request(locUrl).loadJSON();
-    newest.location = loc.location;
-    newest.trend = loc.completion;
+    newest.location = loc.location || '数据更新中...';
+    newest.trend = loc.completion || '数据更新中...';
   }
   return newest;
 };
@@ -360,8 +408,10 @@ const speedChangeNotice = (tf, typhoon, newest) => {
   const oldSpeed = oldData.speed;
   const speed = typhoon.speed || 0;
   if (oldSpeed !== speed) {
-    const body = `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`;
-    notify(`⚠️ 台风 【${tf.name}】 风速变化 🌀`, body);
+    notify(
+      `⚠️ 台风 【${tf.name}】`, 
+      `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`
+    );
     setting.tf[id] = {
       ...oldData,
       speed
@@ -374,10 +424,11 @@ const currMergerTCNotice = (p, decrypt) => {
   setting.tc = setting.tc || {};
   const id = p.tfbh || p.ident;
   const oldSpeed = setting.tc[id];
+  const tcLocation = getTyphoonLocation(decrypt);
   if (oldSpeed !== decrypt.speed) {
     notify(
-      `⚠️ ${p.name} ${p.ename}`,
-      `${p.ident} ${decrypt.strong}\n东经${decrypt.lng}°，北纬${decrypt.lat}°\n风速 ${decrypt.speed || 0}米/秒，${decrypt.power || 0}级，${decrypt.pressure || 0}百帕`
+      `⚠️ ${p.name} ${p.ename} - ${decrypt.strong}`,
+      `风速 ${decrypt.speed || 0}米/秒，${decrypt.power || 0}级，${decrypt.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
     );
     setting.tc[id] = decrypt.speed;
     writeSettings(setting);
@@ -780,7 +831,7 @@ const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) =
   const barColor = getTyphoonColor(typhoon.speed);
   const date = formatDate(newest.update_time);
   const land = tf.land?.at(-1) ?? '';
-  const dist = calcDistance(setting.lat, setting.lon, newest.lat, newest.lon);
+  const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon);
   const distance = newest.location?.match(/\d+/)?.[0] || 0
   const hasNumber = /\d+/.test(newest.trend);
   const remainTime = getTyphoonRemainTime(distance, typhoon.move_speed);
@@ -790,8 +841,8 @@ const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) =
 };
 
 const createTcData = (tc, p, decrypt, textColor, isLarge) => {
-  const tcLocation = locateTyphoon(decrypt);
-  const dist = calcDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
+  const tcLocation = getTyphoonLocation(decrypt);
+  const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
   const date = formatDate(decrypt.time);
   const begin_time = formatTime(p.begin_time);
   const info = generateTCItem(
