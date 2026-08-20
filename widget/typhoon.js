@@ -233,8 +233,7 @@ const getTyphoonLocation = (point) => {
   const second = selectSecond(point, main);
   const mainText = formatAnchor(main, point);
   const seaSuffix = getSeaSuffix(point);
-  const useOcean = main.distance >= 600 || main.isSea || main.group ||
-    ["saipan", "guam", "tokyo", "naha", "kagoshima", "luzon_ne"].includes(main.id);
+  const useOcean = !!second || main.isSea || main.distance >= 1200;
   if (second && isMeaningfulSecond(point, main, second)) {
     const secondText = formatAnchor(second, point);
     return `位于${mainText}、${secondText}的${seaSuffix}`;
