@@ -159,10 +159,10 @@ const createCardItem = (rowStack, festival, index) => {
   
   const butStack = idxStack.addStack();
   butStack.layoutHorizontally();
-  butStack.addSpacer(13);
+  butStack.addSpacer(name.length > 2 ? 10 : 13);
   const termText = butStack.addText(name);
   termText.font = Font.mediumSystemFont(13);
-  termText.textOpacity = 0.85
+  termText.textOpacity = 0.85;
   termText.textColor = Color.white();
   butStack.addSpacer();
   idxStack.addSpacer();
@@ -204,7 +204,7 @@ const renderWidget = async () => {
   const widget = await renderIndexWidget(festivals);
   const img = await getCacheData('holidays.png', `${rootUrl}/img/picture/holidays_1.png`);
   widget.backgroundImage = img;
-  widget.url = 'https://m.baidu.com/from=844b/s?word=万年历';
+  widget.url = 'https://mobile.51wnl.com/web';
   if (!config.runInWidget) {
     widget.presentMedium();
   } else {
