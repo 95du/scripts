@@ -63,6 +63,7 @@ const anchors = [
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
   { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
+  { id: "marshall", name: "马绍尔群岛", lat: 7.1, lng: 171.2, rx: 9, ry: 8, isSea: true },
   { id: "keelung", name: "台湾基隆市", lat: 25.128, lng: 121.741, rx: 6, ry: 5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
@@ -72,7 +73,8 @@ const anchors = [
   { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
-  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
+  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 },
+  { id: "nansha", name: "南沙群岛", lat: 9.5, lng: 112.5, rx: 8, ry: 7, isSea: true },
 ];
 
 const relations = {
@@ -90,6 +92,8 @@ const relations = {
   dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
   wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
   qionghai:  ["wenchang", "hongkong", "dongfang", "manila"],
+  marshall:  ["guam", "saipan", "tokyo"],
+  nansha:    ["wenchang", "hongkong", "manila"],
   palau:     ["philippine_se"],
   philippine_se: ["palau"],
 };
@@ -403,7 +407,7 @@ const messageNotice = (msg) => {
   }
 };
 
-const speedChangeNotice = (tf, typhoon, newest) => {
+const speedChangeNotice = (tf, typhoon, newest, dist) => {
   setting.tf = setting.tf || {};
   const id = tf.tfbh || tf.ident;
   if (!id) return;
@@ -413,7 +417,7 @@ const speedChangeNotice = (tf, typhoon, newest) => {
   if (oldSpeed !== speed) {
     notify(
       `⚠️ 台风 【${tf.name}】`, 
-      `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`
+      `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
     );
     setting.tf[id] = {
       ...oldData,
@@ -834,7 +838,6 @@ const errorWidget = () => {
 
 // 整合数据
 const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) => {
-  speedChangeNotice(tf, typhoon, newest);
   const barColor = getTyphoonColor(typhoon.speed);
   const date = formatDate(newest.update_time);
   const land = tf.land?.at(-1) ?? '';
@@ -844,6 +847,7 @@ const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) =
   const remainTime = getTyphoonRemainTime(distance, typhoon.move_speed);
   const maxSpeed = getMaxForecast(tf);
   const info = generateItem(isLarge, typhoon, newest, land, maxSpeed, dist, remainTime, hasNumber);
+  speedChangeNotice(tf, typhoon, newest, dist);
   return createWidget(arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
 };
 
