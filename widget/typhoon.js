@@ -62,12 +62,14 @@ const anchors = [
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
+  { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
   { id: "keelung", name: "台湾基隆市", lat: 25.128, lng: 121.741, rx: 6, ry: 5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
   { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
   { id: "luzon_ne", name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
+  { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
   { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
@@ -87,7 +89,9 @@ const relations = {
   luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
   dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
   wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
-  qionghai:  ["wenchang", "hongkong", "dongfang", "manila"]
+  qionghai:  ["wenchang", "hongkong", "dongfang", "manila"],
+  palau:     ["philippine_se"],
+  philippine_se: ["palau"],
 };
 
 const rad = d => (d * Math.PI) / 180;
@@ -169,7 +173,7 @@ const isMeaningfulSecond = (point, main, second) => {
   if (d1 < 500 && d2 > 1200) return false;
   if (main.group && second.group && main.group === second.group) return false;
   const distBetween = getDistance(main.lat, main.lng, second.lat, second.lng);
-  if (distBetween < 500) return false;
+  if (distBetween < 300) return false;
   if (d1 < 400 && d2 > d1 * 2.5) return false;
   const angle = getIncludedAngle(point, main, second);
   const minAngle = d2 > 2500 ? 0 : 18;
