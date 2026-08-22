@@ -43,7 +43,7 @@ const getCacheImage = async (name, url) => {
   return loadedImg;
 };
 
-const notify = (title, body, url, sound = 'event') => {
+const notify = (title, body, url, sound = 'piano_error') => {
   const n = Object.assign(new Notification(), { title, body, sound });
   if (url) n.openURL = url;
   n.schedule();
@@ -58,13 +58,12 @@ const getFormattedTime = () => {
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
-  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
+  { id: "naha", name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
   { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
-  { id: "marshall", name: "马绍尔群岛", lat: 7.1, lng: 171.2, rx: 9, ry: 8, isSea: true },
-  { id: "keelung", name: "台湾基隆市", lat: 25.128, lng: 121.741, rx: 6, ry: 5 },
+  { id: "yilan", name: "台湾省宜兰县", lat: 24.75, lng: 121.75, rx: 6, ry: 5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
@@ -73,29 +72,26 @@ const anchors = [
   { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
-  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 },
-  { id: "nansha", name: "南沙群岛", lat: 9.5, lng: 112.5, rx: 8, ry: 7, isSea: true },
+  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
 ];
 
 const relations = {
   tokyo:     ["naha", "kagoshima", "saipan"],
-  naha:      ["tokyo", "kagoshima", "saipan", "keelung", "hualien", "kaohsiung"],
+  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "yilan"],
   kagoshima: ["tokyo", "naha"],
   saipan:    ["guam", "naha", "tokyo"],
   guam:      ["saipan", "naha", "manila", "tokyo"],
-  keelung:   ["naha", "hualien", "kaohsiung", "hongkong"],
-  hualien:   ["keelung", "kaohsiung", "naha", "luzon_ne"],
-  kaohsiung: ["keelung", "hualien", "hongkong", "manila", "luzon_ne"],
+  yilan:     ["hualien", "naha", "kaohsiung"],
+  hualien:   ["kaohsiung", "naha", "luzon_ne", "yilan"],
+  kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "yilan"],
   hongkong:  ["kaohsiung", "wenchang", "qionghai", "dongfang", "manila"],
   manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
   luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
   dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
   wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
   qionghai:  ["wenchang", "hongkong", "dongfang", "manila"],
-  marshall:  ["guam", "saipan", "tokyo"],
-  nansha:    ["wenchang", "hongkong", "manila"],
-  palau:     ["philippine_se"],
   philippine_se: ["palau"],
+  palau: ["philippine_se"],
 };
 
 const rad = d => (d * Math.PI) / 180;
@@ -181,7 +177,7 @@ const isMeaningfulSecond = (point, main, second) => {
   if (d1 < 400 && d2 > d1 * 2.5) return false;
   const angle = getIncludedAngle(point, main, second);
   const minAngle = d2 > 2500 ? 0 : 18;
-  if (angle < minAngle || angle > 165) return false;
+  if (angle < minAngle || angle > 175) return false;
   return true;
 };
 
@@ -324,15 +320,50 @@ const currMergerTC = async () => {
   }
 };
 
+// 补充参考位置和未来趋势数据
+const fetchGovData = async (tfbh) => {
+  const fallback = { location: '---', trend: '等待官方数据更新中...' };
+  try {
+    const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
+    const govList = await new Request(govUrl).loadJSON();
+    const targetGov = govList.find(govItem => govItem.tfid === tfbh);
+    if (!targetGov) return fallback;
+    const detailUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${targetGov.tfid}`;
+    const newData = await new Request(detailUrl).loadJSON();
+    const typhoon = newData.points?.at(-1);
+    if (!typhoon) return fallback;
+    return {
+      location: typhoon.ckposition || fallback.location,
+      trend: typhoon.jl || fallback.trend
+    };
+  } catch {
+    return fallback;
+  }
+};
+
 // 经纬度/位置/趋势/台风动态
 const complementLocTrend = async (tf, latest) => {
-  if (!tf) return;
   const newest = latest.find(item => item.tfbh === tf.tfbh);
-  if (!newest.location) {
+  if (!newest) return;
+  if (newest.location) return newest;
+
+  let loc = null;
+  try {
     const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.tfbh}.json`;
-    const loc = await new Request(locUrl).loadJSON();
-    newest.location = loc.location || '数据更新中...';
-    newest.trend = loc.completion || '数据更新中...';
+    loc = await new Request(locUrl).loadJSON();
+  } catch (e) {
+    loc = null;
+  }
+
+  if (loc?.location) {
+    newest.location = loc.location;
+    newest.trend = loc.completion;
+  } else {
+    const govData = await fetchGovData(tf.tfbh);
+    if (govData?.location) {
+      newest.location = govData.location;
+      newest.trend = govData.trend;
+    }
   }
   return newest;
 };
@@ -356,9 +387,6 @@ const getLatestData = async (tf) => {
 
 /** 
  * https://tf02.istrongcloud.com/data/event/202613.json 演变过程
- *
- * https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity
- * https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/202613
  *
  * https://tf02.istrongcloud.com/typhoonVisual/home
  * https://tf03.istrongcloud.com/typhoonVisual/home
@@ -709,7 +737,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   if (isLarge) {
     mainStack.backgroundColor = tf.land.length 
     ? new Color(barColor.hex, 0.18)
-    : new Color('#555555', 0);
+    : new Color('#FEFEFE', 0.18);
   }
   
   info.forEach((item, i) => {
