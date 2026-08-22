@@ -58,18 +58,18 @@ const getFormattedTime = () => {
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
-  { id: "naha", name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
+  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
   { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
-  { id: "yilan", name: "台湾省宜兰县", lat: 24.75, lng: 121.75, rx: 6, ry: 5 },
+  { id: "taipei", name: "台湾台北市", lat: 25.033, lng: 121.565, rx: 6.5, ry: 5.5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
   { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
   { id: "luzon_ne", name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
-  { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
+  { id: "philippine_se", name: "菲律宾东南部洋面", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
   { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
@@ -77,13 +77,13 @@ const anchors = [
 
 const relations = {
   tokyo:     ["naha", "kagoshima", "saipan"],
-  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "yilan"],
+  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "taipei"],
   kagoshima: ["tokyo", "naha"],
   saipan:    ["guam", "naha", "tokyo"],
   guam:      ["saipan", "naha", "manila", "tokyo"],
-  yilan:     ["hualien", "naha", "kaohsiung"],
-  hualien:   ["kaohsiung", "naha", "luzon_ne", "yilan"],
-  kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "yilan"],
+  taipei:    ["hualien", "naha", "kaohsiung"],
+  hualien:   ["taipei", "kaohsiung", "naha", "luzon_ne"],
+  kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "taipei"],
   hongkong:  ["kaohsiung", "wenchang", "qionghai", "dongfang", "manila"],
   manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
   luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
@@ -204,20 +204,17 @@ const selectSecond = (point, main) => {
 
 const getDirection = (lat1, lng1, lat2, lng2) => {
   const angle = getBearing(lat1, lng1, lat2, lng2);
-  if (lng1 >= 118 && lng1 <= 123 && lat1 >= 13 && lat1 <= 20) {
-    if (angle >= 326.25 && angle < 348.75) return "北偏西";
-  }
-  if (lng1 >= 135 && lng1 <= 145 && lat1 >= 30 && lat1 <= 40) {
-    if (angle >= 95 && angle < 125) return "东偏南";
-  }
   const dirs = [
-    "偏北", "北偏东", "东北",
-    "东北偏东", "偏东", "东南偏东",
-    "东南", "东南偏南", "偏南",
-    "南偏西", "西南", "西南偏西",
-    "偏西", "西偏北", "西北", "西北偏北"
+    "偏北", "北偏东", "东北偏北", 
+    "东北", "东北偏东", "东偏北", 
+    "偏东", "东偏南", "东南偏东", 
+    "东南", "东南偏南", "南偏东",
+    "偏南", "南偏西", "西南偏南", 
+    "西南", "西南偏西", "西偏南", 
+    "偏西", "西偏北", "西北偏西", 
+    "西北", "西北偏北", "北偏西"
   ];
-  return dirs[Math.floor((angle + 11.25) / 22.5) % 16];
+  return dirs[Math.floor((angle + 7.5) / 15) % 24];
 };
 
 const formatAnchor = (anchor, point) => {
@@ -370,14 +367,17 @@ const complementLocTrend = async (tf, latest) => {
 
 const getLatestData = async (tf) => {
   try {
+    const url1 = `https://data.istrongcloud.com/data/latest.json`;
+    const url2 = 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json';
     const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
-    const latestUrl = `https://data.istrongcloud.com/data/latest.json`;
-    const [message, latest] = await Promise.all([
+    const [latest, config, message] = await Promise.all([
+      new Request(url1).loadJSON(),
+      new Request(url2).loadJSON(),
       new Request(msgUrl).loadJSON(),
-      new Request(latestUrl).loadJSON()
     ]);
-    messageNotice(message?.[0]);
     const newest = await complementLocTrend(tf, latest);
+    messageNotice(message?.[0]);
+    typhoonNotice(config);
     return newest;
   } catch (e) {
     console.log(e);
@@ -386,8 +386,6 @@ const getLatestData = async (tf) => {
 };
 
 /** 
- * https://tf02.istrongcloud.com/data/event/202613.json 演变过程
- *
  * https://tf02.istrongcloud.com/typhoonVisual/home
  * https://tf03.istrongcloud.com/typhoonVisual/home
  * 无加密 3 个
@@ -402,7 +400,6 @@ const getTyphoonData = async () => {
     const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
     const arr = JSON.parse(match);
     if (!arr.length) return null;
-    typhoonNotice(html);
     const tf = loopdNextIdx(arr, 'TF');
     const typhoon = tf.points?.at(-1);
     return { arr, tf, typhoon }
@@ -412,16 +409,11 @@ const getTyphoonData = async () => {
   }
 };
 
-/*
-const notice = https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json
-const home = notice.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
-console.log(home.data.common.title)
- */
-const typhoonNotice = (html) => {
-  const block = html.match(/config\s*:\s*(\[[\s\S]*?\])\s*,/)?.[1];
-  const tips = block?.match(/text\s*:\s*["']([^"']+)["']/)?.[1];
+const typhoonNotice = (config) => {
+  const home = config.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
+  const tips = home.data.common.title;
   if (tips && setting.tips !== tips) {
-    notify(`⚠️ 台风信息通告 🌀`, tips);
+    notify(`台风信息通告 ‼️`, tips);
     setting.tips = tips;
     writeSettings(setting);
   }
@@ -558,7 +550,7 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
   return [
     { 
       label: "中心位置", 
-      value: `东经${newest.lon}°　北纬${newest.lat}°`, 
+      value: `东经${newest.lon || 0}°　北纬${newest.lat || 0}°`, 
       color: '#00C400'
     },
     { 
@@ -581,7 +573,7 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
     },
     { 
       label: "参考位置", 
-      value: newest.location,
+      value: newest.location || '---',
       color: '#FF7800'
     },
     ...(!land && (isLarge || !hasNumber) ? [{
@@ -591,7 +583,7 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
     }] : []),
     { 
       label: "未来趋势", 
-      value: newest.trend,
+      value: newest.trend || '---',
       color: '#8C7CFF'
     }
   ];
@@ -736,8 +728,8 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
   if (isLarge) {
     mainStack.backgroundColor = tf.land.length 
-    ? new Color(barColor.hex, 0.18)
-    : new Color('#FEFEFE', 0.18);
+    ? new Color(barColor.hex, 0.16)
+    : new Color('#FEFEFE', 0.2);
   }
   
   info.forEach((item, i) => {
