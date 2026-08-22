@@ -68,8 +68,8 @@ const anchors = [
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
   { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
-  { id: "luzon_ne", name: "菲律宾吕宋岛东北洋面", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
-  { id: "philippine_se", name: "菲律宾东南部洋面", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
+  { id: "luzon_ne", name: "菲律宾吕宋岛", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
+  { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
   { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
