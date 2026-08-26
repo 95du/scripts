@@ -4,6 +4,7 @@
 /**
  * 组件作者: 95du茅台
  * 组件版本: Version 1.0.3
+ * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 在桌面组件编辑参数中填写任意数字，可以看热带扰动详细信息，不添加则正常显示。
  * 中大号组件 ‼️
@@ -855,6 +856,11 @@ const generateTCItem = (dist, tcLocation, begin_time, decrypt, isLarge) => {
       value: `${decrypt.pressure} 百帕`, 
       color: '#FFD83A'
     },
+    ...(!isLarge && tcLocation.length < 21 ? [{
+      label: "开始时间",
+      value: begin_time,
+      color: '#00B8D9'
+    }] : []),
     { 
       label: "位置测距", 
       value: `距离你的位置 ${dist} 公里`,
