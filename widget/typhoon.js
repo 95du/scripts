@@ -12,6 +12,8 @@
 const fm = FileManager.local();
 const mainPath = fm.joinPath(fm.documentsDirectory(), 'typhoon');
 if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
+const tilePath = fm.joinPath(mainPath, 'tiles');
+if (!fm.fileExists(tilePath)) fm.createDirectory(tilePath);
 const settingPath = fm.joinPath(mainPath, 'setting.json');
 
 const writeSettings = (setting) => {
@@ -26,21 +28,34 @@ const getSetting = () => {
 };
 const setting = getSetting() || {};
 
-const useFileManager = () => {
-  const fullPath = (name) => fm.joinPath(mainPath, name);
+const safeRemove = (p) => { try { fm.remove(p); } catch (e) {} };
+
+const useFileManager = (time) => {
+  const path = name => fm.joinPath(mainPath, name);
   return {
-    readImage: (name) => fm.fileExists(fullPath(name)) ? fm.readImage(fullPath(name)) : null,
-    writeImage: (name, image) => fm.writeImage(fullPath(name), image)
-  }
+    readImage: name => {
+      const file = path(name);
+      if (!fm.fileExists(file)) 
+        return null;
+      if (time != null && (Date.now() - fm.creationDate(file).getTime()) / 36e5 > time) {
+        safeRemove(file);
+        return null;
+      }
+      return fm.readImage(file);
+    },
+    writeImage: (name, image) => fm.writeImage(path(name), image)
+  };
 };
   
-const getCacheImage = async (name, url) => {
-  const cache = useFileManager();
+const getCacheImage = async (name, url, time) => {
+  const cache = useFileManager(time);
   const image = cache.readImage(name);
   if (image) return image;
-  const loadedImg = await new Request(url).loadImage();
-  cache.writeImage(name, loadedImg);
-  return loadedImg;
+  try {
+    const loaded = await new Request(url).loadImage();
+    if (loaded) cache.writeImage(name, loaded);
+    return loaded;
+  } catch (e) { return null; }
 };
 
 const notify = (title, body, url, sound = 'piano_error') => {
@@ -54,6 +69,16 @@ const getFormattedTime = () => {
   df.dateFormat = 'HH:mm';
   return df.string(new Date());
 };
+
+// 自动更新
+const autoUpdate = async () => {
+  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
+  if (script.includes('組件')) fm.writeString(module.filename, script)
+};
+
+// https://tf03.istrongcloud.com/typhoonVisual/js/chunk-0ecd511e.js
+const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
+const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 
 // 地点库
 const anchors = [
@@ -266,14 +291,226 @@ const decryptData = async (data) => {
   );
 };
 
-// 自动更新
-const autoUpdate = async () => {
-  const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
-  if (script.includes('組件')) fm.writeString(module.filename, script)
+/**
+ * 热带扰动地图背景图 ✅
+ */
+const getIsDay = () => {
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
 };
 
-const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
-const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
+const getTileDir = (z, x) => {
+  const dir = fm.joinPath(tilePath, `${z}_${x}`);
+  if (!fm.fileExists(dir)) fm.createDirectory(dir);
+  return dir;
+};
+
+const getTileFile = (z, x, y, style) => fm.joinPath(getTileDir(z, x), `${y}_${style}.png`);
+
+const getTileURL = (z, x, y, style) => {
+  const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
+  const host = style === 6 || style === 8 ? `webst0${s}` : `wprd0${s}`;
+  return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
+};
+
+const isValidTile = (img) => img && img.size.width === 256 && img.size.height === 256;
+
+const readTile = async (z, x, y, style, time) => {
+  const file = getTileFile(z, x, y, style);
+  if (fm.fileExists(file)) {
+    const date = fm.creationDate(file);
+    const expired = time != null && date && (Date.now() - date.getTime()) / 36e5 > time;
+    if (!expired) {
+      try {
+        const image = fm.readImage(file);
+        if (isValidTile(image)) 
+          return image;
+      } catch (e) {}
+    }
+    safeRemove(file);
+  }
+  try {
+    const image = await new Request(getTileURL(z, x, y, style)).loadImage();
+    if (!isValidTile(image)) throw new Error('invalid tile');
+
+    const tmp = file + '.tmp';
+    safeRemove(tmp);
+    fm.writeImage(tmp, image);
+    let verify = null;
+    try { verify = fm.readImage(tmp); } catch (e) {}
+    if (!isValidTile(verify)) { safeRemove(tmp); throw new Error('verify failed'); }
+
+    try {
+      safeRemove(file);
+      fm.move(tmp, file);
+    } catch (e) {
+      fm.writeImage(file, image);
+      safeRemove(tmp);
+    }
+    return image;
+  } catch (e) {
+    console.log(`Tile failed ${z}/${x}/${y}/${style}`);
+    return null;
+  }
+};
+
+const lngToWorldX = (lng, z) => (lng + 180) / 360 * 256 * Math.pow(2, z);
+const latToWorldY = (lat, z) => {
+  const r = lat * Math.PI / 180;
+  return (0.5 - Math.log((1 + Math.sin(r)) / (1 - Math.sin(r))) / (4 * Math.PI)) * 256 * Math.pow(2, z);
+};
+
+const getTileList = (lat, lng, z, radius = 3) => {
+  const max = Math.pow(2, z), cx = Math.floor(lngToWorldX(lng, z) / 256), cy = Math.floor(latToWorldY(lat, z) / 256), list = [];
+  for (let dx = -radius; dx <= radius; dx++) {
+    for (let dy = -radius; dy <= radius; dy++) {
+      let x = ((cx + dx) % max + max) % max, y = cy + dy;
+      if (y >= 0 && y < max) list.push({ z, x, y });
+    }
+  }
+  return list;
+};
+
+const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
+  const z = Math.round(viewport.zoom), tiles = getTileList(viewport.lat, viewport.lng, z, 3), jobs = [];
+  for (const t of tiles) for (const style of styles) jobs.push([t, style]);
+  const ready = new Map(), batchSize = 8;
+  for (let i = 0; i < jobs.length; i += batchSize) {
+    const batch = jobs.slice(i, i + batchSize);
+    const result = await Promise.all(batch.map(([t, style]) => readTile(t.z, t.x, t.y, style, tileCacheHours)));
+    batch.forEach(([t, style], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${style}`, result[j]));
+  }
+  const valid = tiles.filter(t => styles.every(style => ready.has(`${t.z}/${t.x}/${t.y}/${style}`)));
+  console.log(`zoom=${viewport.zoom},tileZoom=${z},tiles=${tiles.length},ready=${valid.length}`);
+  return { tiles: valid, images: ready };
+};
+
+const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
+  const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
+  const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 24;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const getViewport = points => {
+    if (!points || !points.length) return { lng: 120, lat: 21.5, zoom: 4.05 };
+    const lngs = points.map(p => p.lng);
+    const lats = points.map(p => p.lat);
+    const maxLng = Math.max(...lngs);
+    const minLng = Math.min(...lngs);
+    const avgLat = lats.reduce((s, v) => s + v, 0) / lats.length;
+    const lngSpan = maxLng - minLng;
+    const t = clamp((maxLng - 112) / 58, 0, 1);
+    let centerLng = 118.5 + t * 14 + clamp((maxLng - 155) * 0.5, 0, 10);
+    if (maxLng > 160) {
+      const extra = (maxLng - 160) * 0.42;
+      const spanFactor = clamp(1 - (lngSpan - 30) / 50, 0.35, 1);
+      centerLng += extra * spanFactor;
+    }
+    centerLng = clamp(centerLng, 112, 155);
+    const centerLat = clamp(21.5 + (avgLat - 22.5) * 0.12, 19.5, 24);
+    let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
+    if (maxLng > 165) zoom = Math.max(zoom, 3.02);
+    if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
+    zoom = clamp(zoom, 2.95, 4.25);
+    return { lng: centerLng, lat: centerLat, zoom };
+  };
+
+  const viewport = getViewport(typhoonPoints);
+  const z = Math.round(viewport.zoom);
+  const { tiles, images } = await prepareTiles(viewport, styles, TILE_CACHE_HOURS);
+  const fractionalScale = Math.pow(2, viewport.zoom - z);
+  const centerX = lngToWorldX(viewport.lng, z), centerY = latToWorldY(viewport.lat, z);
+  const worldSize = TILE * Math.pow(2, z) * fractionalScale * EXPORT_SCALE;
+
+  const ctx = new DrawContext();
+  ctx.size = new Size(W, H);
+  ctx.opaque = true;
+  ctx.respectScreenScale = true;
+  ctx.setFillColor(new Color('#80bde3'));
+  ctx.fillRect(new Rect(0, 0, W, H));
+
+  const worldToScreen = (wx, wy) => ({
+    x: ((wx - centerX) * fractionalScale + MAP_W / 2) * EXPORT_SCALE,
+    y: ((wy - centerY) * fractionalScale + MAP_H / 2) * EXPORT_SCALE
+  });
+  const project = (lat, lng) => {
+    const { x, y } = worldToScreen(lngToWorldX(lng, z), latToWorldY(lat, z));
+    return new Point(x, y);
+  };
+
+  const drawTiles = style => {
+    const OVERLAP = .75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
+    for (const tile of tiles) {
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`);
+      if (!image) continue;
+      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
+      while (x + size < 0) x += worldSize;
+      while (x > W) x -= worldSize;
+      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    }
+  };
+  drawTiles(styles[0]);
+  if (styles.length > 1) drawTiles(styles[1]);
+
+  const drawPath = (points, color, width, opacity, dash) => {
+    if (points.length < 2) return;
+    ctx.setStrokeColor(new Color(color, opacity));
+    ctx.setLineWidth(width * EXPORT_SCALE);
+    for (let i = 1; i < points.length; i++) {
+      const a = points[i - 1], b = points[i];
+      if (!dash) {
+        const path = new Path();
+        path.move(a); path.addLine(b);
+        ctx.addPath(path); ctx.strokePath();
+        continue;
+      }
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+      if (!len) continue;
+      const ux = dx / len, uy = dy / len;
+      let pos = 0, draw = true;
+      while (pos < len) {
+        const step = (draw ? dash[0] : dash[1]) * EXPORT_SCALE;
+        const end = Math.min(pos + step, len);
+        if (draw) {
+          const path = new Path();
+          path.move(new Point(a.x + ux * pos, a.y + uy * pos));
+          path.addLine(new Point(a.x + ux * end, a.y + uy * end));
+          ctx.addPath(path); ctx.strokePath();
+        }
+        pos = end; draw = !draw;
+      }
+    }
+  };
+
+  const warnLineConfig = [
+    { color: '#ff0000', weight: 1.5, opacity: .8, points: [[0, 105], [4.5, 113], [11, 119], [18, 119], [22, 127], [34, 127]] },
+    { color: '#008000', weight: 1.5, opacity: .9, dashArray: [8, 2], points: [[0, 105], [0, 120], [15, 132], [34, 132]] }
+  ];
+  for (const item of warnLineConfig) {
+    drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
+  }
+
+  for (const p of typhoonPoints) {
+    const pos = project(p.lat, p.lng);
+    const ICON_SIZE = 42 * EXPORT_SCALE;
+    if (tcIcon) {
+      ctx.drawImageInRect(tcIcon, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
+    }
+    if (p.ename) {
+      const fontSize = 11 * EXPORT_SCALE;
+      ctx.setFont(Font.boldSystemFont(fontSize));
+      ctx.setTextColor(isDay === 1 ? new Color('#555555') : new Color('#fefefe'));
+      ctx.setTextAlignedCenter();
+      const rectWidth = 200;
+      const textX = pos.x - rectWidth / 2;
+      const textY = pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE;
+      const textRect = new Rect(textX, textY, rectWidth, fontSize * 1.5);
+      ctx.drawTextInRect(p.ename, textRect);
+    }
+  }
+  return ctx.getImage();
+};
 
 // 获取当前位置经纬度
 const getLocation = async () => {
@@ -310,7 +547,12 @@ const currMergerTC = async () => {
     const p = loopdNextIdx(tc, 'TC');
     const ls = p.points?.at(-1) ?? '';
     const decrypt = await decryptData(ls);
-    return { tc, p, decrypt };
+    const points = tc.map(i => i.points?.at(-1) ? {
+      ...i.points.at(-1),
+      ename: i.ename
+    } : null).filter(Boolean);
+    const tcPoints = await decryptData(points);
+    return { tc, p, decrypt, tcPoints };
   } catch (e) {
     console.log(e);
     return {};
@@ -356,6 +598,7 @@ const complementLocTrend = async (tf, latest) => {
     newest.location = loc.location;
     newest.trend = loc.completion;
   } else {
+    console.log('调用备用接口')
     const govData = await fetchGovData(tf.tfbh);
     if (govData?.location) {
       newest.location = govData.location;
@@ -386,7 +629,6 @@ const getLatestData = async (tf) => {
 };
 
 /** 
- * https://tf02.istrongcloud.com/typhoonVisual/home
  * https://tf03.istrongcloud.com/typhoonVisual/home
  * 无加密 3 个
  * https://tf03.istrongcloud.com/member/v1.3/home
@@ -534,12 +776,19 @@ const getLatestTyImage = async () => {
 };
 
 // 设置背景
-const setBackground = async (widget, tf, isLarge) => {
-  widget.url = 'https://tf02.istrongcloud.com/typhoonApp/index.html';
+const setBackground = async (widget, typhoon, isLarge) => {
+  const isDay = getIsDay();
+  const theme = isDay === 1 ? 'light' : 'dark';
+  widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
-    const latestTy = await getLatestTyImage() || {};
     widget.backgroundColor = new Color('#A3CCFF');
-    widget.backgroundImage = latestTy.image;
+    if (typhoon === 'tf') {
+      const latestTy = await getLatestTyImage() || {};
+      widget.backgroundImage = latestTy.image;
+    } else {
+      const image = await generateTCMapImage(typhoon, isDay);
+      widget.backgroundImage = image;
+    }
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
     widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
@@ -606,11 +855,6 @@ const generateTCItem = (dist, tcLocation, begin_time, decrypt, isLarge) => {
       value: `${decrypt.pressure} 百帕`, 
       color: '#FFD83A'
     },
-    ...((isLarge || tcLocation.length < 21) ? [{
-      label: "生成时间",
-      value: begin_time,
-      color: '#8C7CFF'
-    }] : []),
     { 
       label: "位置测距", 
       value: `距离你的位置 ${dist} 公里`,
@@ -708,7 +952,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
     icon.imageSize = new Size(17, 17);
     icon.tintColor = getTyphoonColor(speed);
     if (i < arr.length - 1) {
-      topStack.addSpacer(3);
+      topStack.addSpacer(2);
     }
   });
 
@@ -727,9 +971,7 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
   if (isLarge) {
-    mainStack.backgroundColor = tf.land.length 
-    ? new Color(barColor.hex, 0.16)
-    : new Color('#FEFEFE', 0.2);
+    mainStack.backgroundColor = new Color('#FEFEFE', 0.2);
   }
   
   info.forEach((item, i) => {
@@ -899,7 +1141,11 @@ const runWidget = async () => {
   const textColor = isLarge
     ? Color.black()
     : Color.dynamic(Color.black(), Color.white());
-
+  const isDay = getIsDay();
+  const tcTextColor = isLarge
+    ? isDay === 1 ? Color.black() : Color.white()
+    : Color.dynamic(Color.black(), Color.white());
+  
   let widget;
   if (isSmall) {
     widget = errorWidget();
@@ -908,20 +1154,21 @@ const runWidget = async () => {
       arr, tf, typhoon, newest, 
       textColor, isLarge
     );
+    await setBackground(widget, 'tf', isLarge);
   } else if (!tf || isNumber) {
-    const { tc = [], p = {}, decrypt = {} } = await currMergerTC();
+    const { tc = [], p = {}, decrypt = {}, tcPoints } = await currMergerTC();
     if (tc.length) {
       currMergerTCNotice(p, decrypt);
-      widget = createTcData(tc, p, decrypt, textColor, isLarge);
+      widget = createTcData(tc, p, decrypt, tcTextColor, isLarge);
+      await setBackground(widget, tcPoints, isLarge);
     } else {
       const levels = levelAgency();
       widget = createLevelWidget(
         levels, textColor, isLarge
       );
+      await setBackground(widget, 'tf', isLarge);
     }
   }
-
-  if (!isSmall) await setBackground(widget, tf, isLarge);
 
   if (config.runsInApp) {
     await widget[isLarge ? 'presentLarge' : 'presentMedium']();
