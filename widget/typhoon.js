@@ -408,9 +408,9 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 24;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const getViewport = points => {
-    // 当无台风点时，默认视口居中于中国陆地 
+    // 默认视口居中于中国陆地 
     if (!points || !points.length) {
-      return { lng: 103.20, lat: 30.50, zoom: 3.50 };
+      return { lng: 104.5, lat: 30.5, zoom: 3.5 };
     }
     const lngs = points.map(p => p.lng);
     const lats = points.map(p => p.lat);
@@ -419,18 +419,21 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
     const avgLat = lats.reduce((s, v) => s + v, 0) / lats.length;
     const lngSpan = maxLng - minLng;
     const t = clamp((maxLng - 112) / 58, 0, 1);
-    let centerLng = 118.5 + t * 14 + clamp((maxLng - 155) * 0.5, 0, 10);
+    let centerLng = 117.5 + t * 14 + clamp((maxLng - 155) * 0.5, 0, 10);
     if (maxLng > 160) {
       const extra = (maxLng - 160) * 0.42;
       const spanFactor = clamp(1 - (lngSpan - 30) / 50, 0.35, 1);
       centerLng += extra * spanFactor;
     }
-    centerLng = clamp(centerLng, 112, 155);
-    const centerLat = clamp(21.5 + (avgLat - 22.5) * 0.12, 19.5, 24);
+    const OFFSET_EAST = 3.5; 
+    centerLng = clamp(centerLng + OFFSET_EAST, 112, 165);
+    let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
+    const OFFSET_NORTH = 2.0; 
+    centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
     if (maxLng > 165) zoom = Math.max(zoom, 3.02);
     if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
-    zoom = clamp(zoom, 2.95, 4.25);
+    zoom = clamp(zoom, 2.95, 4.4);
     return { lng: centerLng, lat: centerLat, zoom };
   };
 
@@ -474,7 +477,7 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   drawTiles(styles[0]);
   if (styles.length > 1) drawTiles(styles[1]);
   //.雷达
-  if (!typhoonPoints.length && radarImage) {
+  if (radarImage) {
     const radarRange = [
       [12.316339, 69.646079],
       [54.376029, 140.209411]
@@ -537,7 +540,7 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
     }
     if (p.ename) {
       const fs = 11 * EXPORT_SCALE;
-      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
+      const textColor = new Color(isDay === 1 ? '#333333' : '#eeeeee');
       ctx.setFont(Font.systemFont(fs))
       ctx.setTextColor(textColor);
       ctx.setTextAlignedCenter();
@@ -1204,7 +1207,7 @@ const runWidget = async () => {
     } else {
       const levels = levelAgency();
       widget = createLevelWidget(
-        levels, textColor, isLarge
+        levels, tcTextColor, isLarge
       );
       await setBackground(widget, [], isLarge);
     }
