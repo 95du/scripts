@@ -301,6 +301,20 @@ const getIsDay = () => {
   return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
 };
 
+// 雷达图片
+const getRadarImage = async () => {
+  try {
+    const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
+    const json = await new Request(radarUrl).loadJSON();
+    if (!json || !json.length || !json[0].url) return null;
+    const item = json[0];
+    return await getCacheImage(`radar_${item.name}`, item.url, 1);
+  } catch (e) {
+    console.log(`Radar failed: ${e}`);
+    return null;
+  }
+};
+
 const getTileDir = (z, x) => {
   const dir = fm.joinPath(tilePath, `${z}_${x}`);
   if (!fm.fileExists(dir)) fm.createDirectory(dir);
@@ -383,8 +397,10 @@ const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
     batch.forEach(([t, style], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${style}`, result[j]));
   }
   const valid = tiles.filter(t => styles.every(style => ready.has(`${t.z}/${t.x}/${t.y}/${style}`)));
-  console.log(`zoom=${viewport.zoom},tileZoom=${z},tiles=${tiles.length},ready=${valid.length}`);
-  return { tiles: valid, images: ready };
+  return { 
+    tiles: valid, 
+    images: ready 
+  };
 };
 
 const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
@@ -392,7 +408,10 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 24;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
   const getViewport = points => {
-    if (!points || !points.length) return { lng: 120, lat: 21.5, zoom: 4.05 };
+    // 当无台风点时，默认视口居中于中国陆地 
+    if (!points || !points.length) {
+      return { lng: 103.20, lat: 30.50, zoom: 3.50 };
+    }
     const lngs = points.map(p => p.lng);
     const lats = points.map(p => p.lat);
     const maxLng = Math.max(...lngs);
@@ -418,6 +437,7 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   const viewport = getViewport(typhoonPoints);
   const z = Math.round(viewport.zoom);
   const { tiles, images } = await prepareTiles(viewport, styles, TILE_CACHE_HOURS);
+  const radarImage = await getRadarImage();
   const fractionalScale = Math.pow(2, viewport.zoom - z);
   const centerX = lngToWorldX(viewport.lng, z), centerY = latToWorldY(viewport.lat, z);
   const worldSize = TILE * Math.pow(2, z) * fractionalScale * EXPORT_SCALE;
@@ -453,7 +473,24 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   };
   drawTiles(styles[0]);
   if (styles.length > 1) drawTiles(styles[1]);
-
+  //.雷达
+  if (!typhoonPoints.length && radarImage) {
+    const radarRange = [
+      [12.316339, 69.646079],
+      [54.376029, 140.209411]
+    ];
+    const radarNW = project(
+      radarRange[1][0], 
+      radarRange[0][1]
+    );
+    const radarSE = project(
+      radarRange[0][0], 
+      radarRange[1][1]
+    );
+    const radarRect = new Rect(radarNW.x, radarNW.y, radarSE.x - radarNW.x, radarSE.y - radarNW.y);
+    ctx.drawImageInRect(radarImage, radarRect);
+  }
+  
   const drawPath = (points, color, width, opacity, dash) => {
     if (points.length < 2) return;
     ctx.setStrokeColor(new Color(color, opacity));
@@ -499,15 +536,12 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
       ctx.drawImageInRect(tcIcon, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
     }
     if (p.ename) {
-      const fontSize = 11 * EXPORT_SCALE;
-      ctx.setFont(Font.boldSystemFont(fontSize));
-      ctx.setTextColor(isDay === 1 ? new Color('#555555') : new Color('#fefefe'));
+      const fs = 11 * EXPORT_SCALE;
+      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
+      ctx.setFont(Font.systemFont(fs))
+      ctx.setTextColor(textColor);
       ctx.setTextAlignedCenter();
-      const rectWidth = 200;
-      const textX = pos.x - rectWidth / 2;
-      const textY = pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE;
-      const textRect = new Rect(textX, textY, rectWidth, fontSize * 1.5);
-      ctx.drawTextInRect(p.ename, textRect);
+      ctx.drawTextInRect(p.ename, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
     }
   }
   return ctx.getImage();
@@ -552,7 +586,7 @@ const currMergerTC = async () => {
       ...i.points.at(-1),
       ename: i.ename
     } : null).filter(Boolean);
-    const tcPoints = await decryptData(points);
+    const tcPoints = await decryptData(points) ?? [];
     return { tc, p, decrypt, tcPoints };
   } catch (e) {
     console.log(e);
@@ -1172,7 +1206,7 @@ const runWidget = async () => {
       widget = createLevelWidget(
         levels, textColor, isLarge
       );
-      await setBackground(widget, 'tf', isLarge);
+      await setBackground(widget, [], isLarge);
     }
   }
 
