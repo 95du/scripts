@@ -84,7 +84,7 @@ const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typh
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
-  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
+  { id: "naha", name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
@@ -305,10 +305,10 @@ const getIsDay = () => {
 const getRadarImage = async () => {
   try {
     const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
-    const json = await new Request(radarUrl).loadJSON();
-    if (!json || !json.length || !json[0].url) return null;
-    const item = json[0];
-    return await getCacheImage(`radar_${item.name}`, item.url, 1);
+    const item = await new Request(radarUrl).loadJSON();
+    if (!item || !item.length || !item[0].url) return null;
+    const r = item.at(-1);
+    return await getCacheImage(`radar.png`, r.url, 0.2)
   } catch (e) {
     console.log(`Radar failed: ${e}`);
     return null;
@@ -888,11 +888,11 @@ const generateTCItem = (dist, tcLocation, begin_time, decrypt, isLarge) => {
       value: `${decrypt.speed}米/秒，${decrypt.power}级，${decrypt.strong}`, 
       color: '#39A7F8'
     },
-    { 
+    ...(!isLarge ? [{ 
       label: "中心气压", 
       value: `${decrypt.pressure} 百帕`, 
       color: '#FFD83A'
-    },
+    }] : []),
     ...(!isLarge && tcLocation.length < 21 ? [{
       label: "开始时间",
       value: begin_time,
