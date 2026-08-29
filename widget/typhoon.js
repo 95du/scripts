@@ -604,7 +604,7 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
       // 维持 40*60 原始比例 (2:3) 缩放
       const LOC_W = 22 * EXPORT_SCALE;
       const LOC_H = 33 * EXPORT_SCALE;
-      const BOTTOM_PADDING = 5 * EXPORT_SCALE;
+      const BOTTOM_PADDING = 3.3 * EXPORT_SCALE;
       ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
     }
   }
