@@ -3,10 +3,10 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.0.3
+ * 组件版本: Version 1.0.5
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
- * 在桌面组件编辑参数中填写任意数字，可以看热带扰动详细信息，不添加则正常显示。
+ * 在桌面组件编辑参数中填写数字(2️⃣)展示热带扰动加台风，其他数字只展示热带扰动，不添加则正常展示。
  * 中大号组件 ‼️
  */
 
@@ -31,32 +31,38 @@ const setting = getSetting() || {};
 
 const safeRemove = (p) => { try { fm.remove(p); } catch (e) {} };
 
-const useFileManager = (time) => {
-  const path = name => fm.joinPath(mainPath, name);
+const useFileManager = ({ cacheTime, type } = {}) => {
   return {
-    readImage: name => {
-      const file = path(name);
-      if (!fm.fileExists(file)) 
-        return null;
-      if (time != null && (Date.now() - fm.creationDate(file).getTime()) / 36e5 > time) {
-        safeRemove(file);
-        return null;
+    read: (name) => {
+      const filePath = fm.joinPath(mainPath, name);
+      if (fm.fileExists(filePath)) {
+        if (hasExpired(filePath) > cacheTime) fm.remove(filePath);
+        else return type ? JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);
       }
-      return fm.readImage(file);
     },
-    writeImage: (name, image) => fm.writeImage(path(name), image)
+    write: (name, content) => {
+      const filePath = fm.joinPath(mainPath, name);
+      type ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
+    },
   };
+
+  function hasExpired(filePath) {
+    const createTime = fm.creationDate(filePath).getTime();
+    return (Date.now() - createTime) / (60 * 60 * 1000);
+  }
 };
-  
-const getCacheImage = async (name, url, time) => {
-  const cache = useFileManager(time);
-  const image = cache.readImage(name);
-  if (image) return image;
-  try {
-    const loaded = await new Request(url).loadImage();
-    if (loaded) cache.writeImage(name, loaded);
-    return loaded;
-  } catch (e) { return null; }
+
+const getCacheData = async (name, url, type, cacheTime) => {
+  const cache = useFileManager({  
+    type, cacheTime
+  });
+  const cacheData = cache.read(name);
+  if (cacheData) return cacheData;
+  const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
+  if (response) {
+    cache.write(name, response);
+  }
+  return response;
 };
 
 const notify = (title, body, url, sound = 'piano_error') => {
@@ -78,13 +84,15 @@ const autoUpdate = async () => {
 };
 
 // https://tf03.istrongcloud.com/typhoonVisual/js/chunk-0ecd511e.js
-const tyIcon = await getCacheImage('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
-const tcIcon = await getCacheImage('tc.png', `https://tf02.istrongcloud.com/typhoonVisual/img/tfpt.png`);
+const tyIcon = await getCacheData('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
+const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typhoonVisual/img/tfpt.png`);
+const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
+const typhoonIcons = await getCacheData('icon.json', tyIconUrl, 'json', 24);
 
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
-  { id: "naha", name: "日本冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
+  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
@@ -301,14 +309,14 @@ const getIsDay = () => {
   return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
 };
 
-// 雷达图片
+// 雷达
 const getRadarImage = async () => {
   try {
     const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
     const item = await new Request(radarUrl).loadJSON();
     if (!item || !item.length || !item[0].url) return null;
-    const r = item.at(-1);
-    return await getCacheImage(`radar.png`, r.url, 0.2)
+    const radar = item.at(-1);
+    return await getCacheData(`radar.png`, radar.url, null, 0.5);
   } catch (e) {
     console.log(`Radar failed: ${e}`);
     return null;
@@ -397,18 +405,72 @@ const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
     batch.forEach(([t, style], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${style}`, result[j]));
   }
   const valid = tiles.filter(t => styles.every(style => ready.has(`${t.z}/${t.x}/${t.y}/${style}`)));
-  return { 
-    tiles: valid, 
-    images: ready 
-  };
+  return { tiles: valid, images: ready };
 };
 
-const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
+// 独立出来的 7 级风圈绘制函数
+const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
+  let quad = point.radius7_quad;
+  if (!quad && point.radius7) {
+    const r = point.radius7;
+    quad = { ne: r, se: r, sw: r, nw: r };
+  }
+  if (!quad) return;
+
+  const SCALE = 1.8;
+  const sectors = [
+    { start: 0, end: 90, r: quad.ne * SCALE },  // 东北方向风圈
+    { start: 90, end: 180, r: quad.se * SCALE }, // 东南方向风圈
+    { start: 180, end: 270, r: quad.sw * SCALE },// 西南方向风圈
+    { start: 270, end: 360, r: quad.nw * SCALE } // 西北方向风圈
+  ];
+
+  const kmToLng = (km, lat) => km / (111 * Math.cos(lat * Math.PI / 180));
+  const kmToLat = (km) => km / 111;
+  const path = new Path();
+  let firstPoint = true;
+
+  sectors.forEach(sector => {
+    if (!sector.r) return;
+    const step = 5;
+    for (let angle = sector.start; angle <= sector.end; angle += step) {
+      const rad = angle * Math.PI / 180;
+      const dLat = kmToLat(sector.r * Math.cos(rad));
+      const dLng = kmToLng(sector.r * Math.sin(rad), point.lat);
+      const pt = project(point.lat + dLat, point.lng + dLng);
+      if (firstPoint) {
+        path.move(pt);
+        firstPoint = false;
+      } else {
+        path.addLine(pt);
+      }
+    }
+  });
+  
+  if (!firstPoint) {
+    path.closeSubpath();
+    ctx.setFillColor(new Color('#4caf50', 0.2));
+    ctx.addPath(path);
+    ctx.fillPath();
+    ctx.setStrokeColor(new Color('#4caf50', 0.6));
+    ctx.setLineWidth(1.2 * EXPORT_SCALE);
+    ctx.addPath(path);
+    ctx.strokePath();
+  }
+};
+
+// 支持分别传入扰动数组和台风数组
+const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locationPoint = null) => {
+  const typhoonPoints = [
+    ...tcPoints.map(p => ({ ...p, isTyphoon: false })),
+    ...typhoons.map(p => ({ ...p, isTyphoon: true }))
+  ];
+
   const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
   const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 24;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
   const getViewport = points => {
-    // 默认视口居中于中国陆地 
     if (!points || !points.length) {
       return { lng: 104.5, lat: 30.5, zoom: 3.5 };
     }
@@ -476,7 +538,7 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   };
   drawTiles(styles[0]);
   if (styles.length > 1) drawTiles(styles[1]);
-  //.雷达
+
   if (radarImage) {
     const radarRange = [
       [12.316339, 69.646079],
@@ -531,38 +593,109 @@ const generateTCMapImage = async (typhoonPoints, isDay = 0) => {
   for (const item of warnLineConfig) {
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
-
+  
+  // 1，绘制当前定位图标
+  if (locationPoint) {
+    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
+    const locBase64 = typhoonIcons[locKey];
+    if (locBase64) {
+      const locImg = Image.fromData(Data.fromBase64String(locBase64));
+      const locPos = project(locationPoint.lat, locationPoint.lon);
+      // 维持 40*60 原始比例 (2:3) 缩放
+      const LOC_W = 22 * EXPORT_SCALE;
+      const LOC_H = 33 * EXPORT_SCALE;
+      const BOTTOM_PADDING = 5 * EXPORT_SCALE;
+      ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
+    }
+  }
+  
+  // 2. 仅对标记为台风的点绘制风圈
+  for (const p of typhoonPoints) {
+    if (p.isTyphoon) {
+      drawWindCircles(ctx, p, project, EXPORT_SCALE);
+    }
+  }
+  
+  // 3. 绘制图标及文本标注
   for (const p of typhoonPoints) {
     const pos = project(p.lat, p.lng);
-    const ICON_SIZE = 42 * EXPORT_SCALE;
-    if (tcIcon) {
-      ctx.drawImageInRect(tcIcon, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
+    const ICON_SIZE = (p.isTyphoon ? 36 : 42) * EXPORT_SCALE;
+    const iconImage = p.isTyphoon ? p.icon : tcIcon;
+    if (iconImage) {
+      ctx.drawImageInRect(iconImage, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
     }
-    if (p.ename) {
+    
+    const name = p.name || p.ename;
+    if (name) {
       const fs = 11 * EXPORT_SCALE;
-      const textColor = new Color(isDay === 1 ? '#333333' : '#eeeeee');
-      ctx.setFont(Font.systemFont(fs))
+      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
+      ctx.setFont(Font.systemFont(fs));
       ctx.setTextColor(textColor);
       ctx.setTextAlignedCenter();
-      ctx.drawTextInRect(p.ename, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
+      ctx.drawTextInRect(name, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
     }
   }
   return ctx.getImage();
 };
 
+/**
+ * GPS 获取的位置通常是 WGS-84 坐标系
+ * 高德地图使用的是 GCJ-02（火星坐标系）
+ */
+const wgs84ToGcj02 = (lng, lat) => {
+  const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
+  const outOfChina = (lng, lat) =>
+    lng < 72.004 || lng > 137.8347 ||
+    lat < 0.8293 || lat > 55.8271;
+  if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
+
+  const transformLat = (x, y) => {
+    let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+    ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
+    ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
+    return ret;
+  };
+
+  const transformLng = (x, y) => {
+    let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+    ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
+    ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
+    return ret;
+  };
+  
+  let dLat = transformLat(lng - 105, lat - 35);
+  let dLng = transformLng(lng - 105, lat - 35);
+  const radLat = lat * pi / 180;
+  let magic = Math.sin(radLat);
+  magic = 1 - ee * magic * magic;
+  const sqrtMagic = Math.sqrt(magic);
+  dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
+  dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
+  return {
+    longitude: lng + dLng,
+    latitude: lat + dLat
+  };
+};
+
 // 获取当前位置经纬度
 const getLocation = async () => {
   if (setting.updateTime) {
-    const diff = Date.now() - setting.updateTime;
-    const hours = diff / (3600 * 1000);
+    const hours = (Date.now() - setting.updateTime) / 3600000;
     if (hours < 3) return setting;
   }
   try {
-    const location = await Location.current();
-    setting.lon = location.longitude;
-    setting.lat = location.latitude;
+    const loc = await Location.current();
+    const gcj = wgs84ToGcj02(
+      loc.longitude,
+      loc.latitude
+    );
+    setting.lon = gcj.longitude;
+    setting.lat = gcj.latitude;
     setting.updateTime = Date.now();
     writeSettings(setting);
+    return setting;
   } catch (e) {
     console.log(e);
     return setting || null;
@@ -580,7 +713,7 @@ const loopdNextIdx = (arr, name) => {
 // 热带扰动
 const currMergerTC = async () => {
   try {
-    const url = `https://tf02.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
+    const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
     const tc = await new Request(url).loadJSON();
     const p = loopdNextIdx(tc, 'TC');
     const ls = p.points?.at(-1) ?? '';
@@ -682,7 +815,12 @@ const getTyphoonData = async () => {
     if (!arr.length) return null;
     const tf = loopdNextIdx(arr, 'TF');
     const typhoon = tf.points?.at(-1);
-    return { arr, tf, typhoon }
+    const points = arr.map(i => i.points?.at(-1) ? {
+      ...i.points.at(-1),
+      name: i.name
+    } : null).filter(Boolean);
+    const tfPoints = await decryptData(points) ?? [];
+    return { arr, tf, typhoon, tfPoints }
   } catch (e) {
     console.log(e);
     return null;
@@ -768,8 +906,8 @@ const getTyphoonRemainTime = (distance, speed) => {
 const getTyphoonColor = (speed) => {
   const colors = [
     [51, '#FF0000'], [42, '#F95BF9'],
-    [33, '#FF7800'], [25, '#FFD83A'],
-    [17, '#39A7F8'], [0, '#00C400']
+    [33, '#FDAC03'], [25, '#FFD83A'],
+    [17, '#38ABFF'], [0, '#00C400']
   ];
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
 };
@@ -814,22 +952,22 @@ const getLatestTyImage = async () => {
 };
 
 // 设置背景
-const setBackground = async (widget, typhoon, isLarge) => {
+const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
   const isDay = getIsDay();
   const theme = isDay === 1 ? 'light' : 'dark';
   widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
-    if (typhoon === 'tf') {
+    if (typhoonType === 'tf') {
       const latestTy = await getLatestTyImage() || {};
       widget.backgroundImage = latestTy.image;
     } else {
-      const image = await generateTCMapImage(typhoon, isDay);
+      const image = await generateTCMapImage(typhoonType, typhoons, isDay, setting);
       widget.backgroundImage = image;
     }
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
-    widget.backgroundImage = await getCacheImage('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
+    widget.backgroundImage = await getCacheData('background.png', `https://raw.githubusercontent.com/95du/scripts/master/img/background/glass_0.png`);
   }
 };
 
@@ -1168,10 +1306,16 @@ const createTcData = (tc, p, decrypt, textColor, isLarge) => {
   return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
 };
 
+// 提取台风等级 SuperTY
+const getTyphoonItem = data => data.map(item => {
+  const type = item.strong?.match(/\((.*?)\)/)?.[1];
+  return {...item, icon: typhoonIcons[type] ? Image.fromData(Data.fromBase64String(typhoonIcons[type])) : null};
+});
+
 // 主函数
 const runWidget = async () => {
   getLocation();
-  const { arr, tf, typhoon } = await getTyphoonData() || {};
+  const { arr, tf, typhoon, tfPoints } = await getTyphoonData() || {};
   const newest = await getLatestData(tf) || {};
   
   const family = config.runsInApp
@@ -1197,24 +1341,26 @@ const runWidget = async () => {
       arr, tf, typhoon, newest, 
       textColor, isLarge
     );
-    await setBackground(widget, 'tf', isLarge);
+    await setBackground(widget, 'tf', [], isLarge);
   } else if (!tf || isNumber) {
     const { tc = [], p = {}, decrypt = {}, tcPoints } = await currMergerTC();
     if (tc.length) {
       currMergerTCNotice(p, decrypt);
+      const typhoons = getTyphoonItem(tfPoints);
+      const tyPoints = Number(param) === 2 ? typhoons : [];
       widget = createTcData(tc, p, decrypt, tcTextColor, isLarge);
-      await setBackground(widget, tcPoints, isLarge);
+      await setBackground(widget, tcPoints, tyPoints, isLarge);
     } else {
       const levels = levelAgency();
       widget = createLevelWidget(
         levels, tcTextColor, isLarge
       );
-      await setBackground(widget, [], isLarge);
+      await setBackground(widget, [], [], isLarge);
     }
   }
 
   if (config.runsInApp) {
-    await widget[isLarge ? 'presentLarge' : 'presentMedium']();
+    await widget.presentLarge();
   } else {
     autoUpdate();
     Script.setWidget(widget);
