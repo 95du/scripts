@@ -33,8 +33,6 @@ const getSetting = () => {
 };
 const setting = getSetting() || {};
 
-const safeRemove = (p) => { try { fm.remove(p); } catch (e) {} };
-
 const useFileManager = ({ cacheTime, type } = {}) => {
   return {
     read: (name) => {
@@ -359,12 +357,9 @@ const getStationColor = country => {
 
 const getLevelColor = gradeEname => {
   const colors = {
-    TD: '#68FF8C',
-    TS: '#38ABFF',
-    STS: '#FBFF6B',
-    TY: '#FDAC03',
-    STY: '#F95AFF',
-    SUPERTY: '#FF0C0C'
+    TD: '#68FF8C', TS: '#38ABFF',
+    STS: '#FBFF6B', TY: '#FDAC03',
+    STY: '#F95AFF', SUPERTY: '#FF0C0C'
   };
   return colors[gradeEname] || '#68FF8C';
 };
@@ -384,6 +379,8 @@ const getTileURL = (z, x, y, style) => {
 };
 
 const isValidTile = (img) => img && img.size.width === 256 && img.size.height === 256;
+
+const safeRemove = (p) => { try { fm.remove(p); } catch (e) {} };
 
 const readTile = async (z, x, y, style, time) => {
   const file = getTileFile(z, x, y, style);
@@ -444,7 +441,8 @@ const getTileList = (lat, lng, z, radius = 3) => {
 const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
   const z = Math.round(viewport.zoom), tiles = getTileList(viewport.lat, viewport.lng, z, 3), jobs = [];
   for (const t of tiles) for (const style of styles) jobs.push([t, style]);
-  const ready = new Map(), batchSize = 8;
+  const ready = new Map();
+  const batchSize = 8;
   for (let i = 0; i < jobs.length; i += batchSize) {
     const batch = jobs.slice(i, i + batchSize);
     const result = await Promise.all(batch.map(([t, style]) => readTile(t.z, t.x, t.y, style, tileCacheHours)));
@@ -640,7 +638,7 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
   const drawTiles = style => {
     const OVERLAP = .75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
     for (const tile of tiles) {
-      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`);
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`)
       if (!image) continue;
       let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
       while (x + size < 0) x += worldSize;
@@ -860,7 +858,7 @@ const getRadarImageData = async (region) => {
 };
 
 // 循环数组中的对象
-const loopdNextIdx = (arr, name) => {
+const getNextItem = (arr, name) => {
   const optNextIndex = (num, data) => (num + 1) % data.length;
   setting[name] = optNextIndex(setting[name] || 0, arr);
   writeSettings(setting);
@@ -879,7 +877,7 @@ const currMergerTC = async () => {
       }
     }
     const tcItem = await decryptData(rawTC) ?? [];
-    const tc = loopdNextIdx(tcItem, 'TC');
+    const tc = getNextItem(tcItem, 'tdIndex');
     return { tcItem, tc };
   } catch (e) {
     console.log(e);
@@ -975,7 +973,7 @@ const getTyphoonData = async () => {
     const typhoons = await decryptData(tyItem) ?? [];
     const latest = await getLatestData();
     await mergeLatestData(typhoons, latest);
-    const tf = loopdNextIdx(typhoons, 'TF');
+    const tf = getNextItem(typhoons, 'tfIndex');
     return { typhoons, tf };
   } catch (e) {
     console.log(e);
@@ -1490,12 +1488,12 @@ const runWidget = async () => {
   getLocation();
   const { typhoons, tf } = await getTyphoonData() || {};
   
-  const param = args.widgetParameter;
   const regions = [
     '全国', '福建', '华南', 
     '华东', '西南', '华中', 
     '华北', '东北', '西北'
   ];
+  const param = args.widgetParameter;
   const hasRegion = param?.length === 2 && regions.some(i => param?.includes(i));
   
   const family = config.runsInApp
@@ -1543,10 +1541,10 @@ const runWidget = async () => {
   if (config.runsInApp) {
     await widget.presentLarge();
   } else {
-    autoUpdate();
     Script.setWidget(widget);
     Script.complete();
   }
 };
 
+autoUpdate();
 await runWidget();
