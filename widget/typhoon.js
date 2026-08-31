@@ -323,6 +323,32 @@ const getRadarImage = async () => {
   }
 };
 
+// 绘制台风预测路径
+const getStationColor = country => {
+  const colors = {
+    中国: '#FF4050',
+    香港: '#FF66FF',
+    日本: '#43FF4B',
+    台湾: '#FFA040',
+    美国: '#40DDFF',
+    韩国: '#669999',
+    欧洲: '#246ED4'
+  };
+  return colors[country] || '#FF66FF';
+};
+
+const getLevelColor = gradeEname => {
+  const colors = {
+    TD: '#68FF8C',
+    TS: '#38ABFF',
+    STS: '#FBFF6B',
+    TY: '#FDAC03',
+    STY: '#F95AFF',
+    SUPERTY: '#FF0C0C'
+  };
+  return colors[gradeEname] || '#68FF8C';
+};
+
 const getTileDir = (z, x) => {
   const dir = fm.joinPath(tilePath, `${z}_${x}`);
   if (!fm.fileExists(dir)) fm.createDirectory(dir);
@@ -457,6 +483,74 @@ const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
     ctx.addPath(path);
     ctx.strokePath();
   }
+};
+
+// 绘制台风预测路径
+const drawForecastPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
+  if (!typhoon.forecast || !typhoon.forecast.length) return;
+
+  const currentPos = project(typhoon.lat, typhoon.lng);
+  const pointRadius = 4.5 * EXPORT_SCALE;
+  const strokeWidth = 1.0 * EXPORT_SCALE;
+
+  for (const forecastSet of typhoon.forecast) {
+    if (!forecastSet.points || !forecastSet.points.length) continue;
+    const lineHex = getStationColor(forecastSet.sets);
+    const forecastPoints = forecastSet.points.map(p => project(p.lat, p.lng));
+    const allPathPoints = [currentPos, ...forecastPoints];
+    drawPathFn(allPathPoints, lineHex, 1.5, 0.8, [4, 3]);
+    for (let i = 0; i < forecastSet.points.length; i++) {
+      const p = forecastSet.points[i];
+      const pt = forecastPoints[i];
+      const level = p.strong?.match(/\((.*?)\)/)?.[1] || p.type;
+      const pointHex = getLevelColor(level);
+      const outerRadius = pointRadius + strokeWidth;
+      const outerRect = new Rect(pt.x - outerRadius, pt.y - outerRadius, outerRadius * 2, outerRadius * 2);
+      ctx.setFillColor(new Color('#000000', 0.9));
+      ctx.fillEllipse(outerRect);
+      const innerRect = new Rect(pt.x - pointRadius, pt.y - pointRadius, pointRadius * 2, pointRadius * 2);
+      ctx.setFillColor(new Color(pointHex, 1.0));
+      ctx.fillEllipse(innerRect);
+    }
+  }
+};
+
+// 绘制登陆位置信息框
+const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
+  const fontSize = 14 * EXPORT_SCALE;
+  const paddingH = 10 * EXPORT_SCALE;
+  const paddingV = 5 * EXPORT_SCALE;
+  const arrowHeight = 8 * EXPORT_SCALE;
+  const arrowWidth = 12 * EXPORT_SCALE;
+  const boxHeight = fontSize * 1.3 + paddingV * 2;
+  const fillColor = new Color(isDay === 1 ? '#38ABFF' : '#FDAC03', 0.7);
+  // 1. 估算文本和背景框的实际宽度
+  const estimatedTextWidth = text.length * fontSize;
+  const boxWidth = estimatedTextWidth + paddingH * 2;
+  // 2. 三角指针位置右移设置
+  const arrowOffsetX = boxWidth * 0.25;
+  const boxX = pos.x - arrowOffsetX;
+  const boxY = pos.y - iconSize / 2 - boxHeight - arrowHeight + (4 * EXPORT_SCALE);
+  // 3. 绘制主矩形/圆角背景框
+  const rectPath = new Path();
+  rectPath.addRoundedRect(new Rect(boxX, boxY, boxWidth, boxHeight), 12 * EXPORT_SCALE, 12 * EXPORT_SCALE);
+  ctx.setFillColor(fillColor);
+  ctx.addPath(rectPath);
+  ctx.fillPath();
+  // 4. 绘制底部指向小三角
+  const arrowPath = new Path();
+  const arrowTopY = boxY + boxHeight;
+  arrowPath.move(new Point(pos.x - arrowWidth / 2, arrowTopY));
+  arrowPath.addLine(new Point(pos.x + arrowWidth / 2, arrowTopY));
+  arrowPath.addLine(new Point(pos.x, arrowTopY + arrowHeight));
+  arrowPath.closeSubpath();
+  ctx.setFillColor(fillColor);
+  ctx.addPath(arrowPath);
+  ctx.fillPath();
+  ctx.setFont(Font.boldSystemFont(fontSize));
+  ctx.setTextColor(new Color('#ffffff'));
+  ctx.setTextAlignedCenter();
+  ctx.drawTextInRect(text, new Rect(boxX + paddingH, boxY + paddingV, boxWidth - paddingH * 2, boxHeight));
 };
 
 // 支持分别传入扰动数组和台风数组
@@ -594,7 +688,35 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
   
-  // 1，绘制当前定位图标
+  // 1. 仅对标记为台风的点绘制风圈
+  for (const p of typhoonPoints) {
+    if (p.isTyphoon) {
+      drawWindCircles(ctx, p, project, EXPORT_SCALE);
+      drawForecastPath(ctx, p, project, EXPORT_SCALE, drawPath);
+    }
+  }
+  
+  // 2. 绘制图标及文本标注
+  for (const p of typhoonPoints) {
+    const pos = project(p.lat, p.lng);
+    const ICON_SIZE = (p.isTyphoon ? 36 : 42) * EXPORT_SCALE;
+    const iconImage = p.isTyphoon ? p.icon : tcIcon;
+    if (iconImage) {
+      ctx.drawImageInRect(iconImage, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
+    }
+    
+    const name = p.isTyphoon ? p.name : p.ename;
+    if (name) {
+      const fs = 11 * EXPORT_SCALE;
+      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
+      ctx.setFont(Font.systemFont(fs));
+      ctx.setTextColor(textColor);
+      ctx.setTextAlignedCenter();
+      ctx.drawTextInRect(name, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
+    }
+  }
+  
+  // 3，绘制当前定位图标
   if (locationPoint) {
     const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
     const locBase64 = typhoonIcons[locKey];
@@ -608,33 +730,15 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
       ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
     }
   }
-  
-  // 2. 仅对标记为台风的点绘制风圈
+  // 4. 绘制登陆 location 提示框
   for (const p of typhoonPoints) {
-    if (p.isTyphoon) {
-      drawWindCircles(ctx, p, project, EXPORT_SCALE);
+    if (p.isTyphoon && p.land && p.land.length > 0 && p.latest && p.latest.location) {
+      const pos = project(p.lat, p.lng);
+      const ICON_SIZE = 40 * EXPORT_SCALE;
+      drawLandInfoBox(ctx, pos, p.latest.location, isDay, ICON_SIZE, EXPORT_SCALE);
     }
   }
   
-  // 3. 绘制图标及文本标注
-  for (const p of typhoonPoints) {
-    const pos = project(p.lat, p.lng);
-    const ICON_SIZE = (p.isTyphoon ? 36 : 42) * EXPORT_SCALE;
-    const iconImage = p.isTyphoon ? p.icon : tcIcon;
-    if (iconImage) {
-      ctx.drawImageInRect(iconImage, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
-    }
-    
-    const name = p.name || p.ename;
-    if (name) {
-      const fs = 11 * EXPORT_SCALE;
-      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
-      ctx.setFont(Font.systemFont(fs));
-      ctx.setTextColor(textColor);
-      ctx.setTextAlignedCenter();
-      ctx.drawTextInRect(name, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
-    }
-  }
   return ctx.getImage();
 };
 
@@ -713,17 +817,17 @@ const loopdNextIdx = (arr, name) => {
 // 热带扰动
 const currMergerTC = async () => {
   try {
-    const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`
-    const tc = await new Request(url).loadJSON();
-    const p = loopdNextIdx(tc, 'TC');
-    const ls = p.points?.at(-1) ?? '';
-    const decrypt = await decryptData(ls);
-    const points = tc.map(i => i.points?.at(-1) ? {
-      ...i.points.at(-1),
-      ename: i.ename
-    } : null).filter(Boolean);
-    const tcPoints = await decryptData(points) ?? [];
-    return { tc, p, decrypt, tcPoints };
+    const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`;
+    const rawTC = await new Request(url).loadJSON();
+    for (const item of rawTC) {
+      const point = item.points?.at(-1);
+      if (point) {
+        Object.assign(item, point);
+      }
+    }
+    const tcItem = await decryptData(rawTC) ?? [];
+    const tc = loopdNextIdx(tcItem, 'TC');
+    return { tcItem, tc };
   } catch (e) {
     console.log(e);
     return {};
@@ -751,51 +855,59 @@ const fetchGovData = async (tfbh) => {
   }
 };
 
-// 经纬度/位置/趋势/台风动态
-const complementLocTrend = async (tf, latest) => {
-  const newest = latest.find(item => item.tfbh === tf.tfbh);
-  if (!newest) return;
-  if (newest.location) return newest;
-
-  let loc = null;
-  try {
-    const locUrl = `https://tf.istrongcloud.com/data/completion/${tf.tfbh}.json`;
-    loc = await new Request(locUrl).loadJSON();
-  } catch (e) {
-    loc = null;
-  }
-
-  if (loc?.location) {
-    newest.location = loc.location;
-    newest.trend = loc.completion;
-  } else {
-    console.log('调用备用接口')
-    const govData = await fetchGovData(tf.tfbh);
-    if (govData?.location) {
-      newest.location = govData.location;
-      newest.trend = govData.trend;
+const getLocationTrend = async (tfbh, item) => {
+  if (item?.location) {
+    return { 
+      location: item.location, 
+      trend: item.trend
     }
-  }
-  return newest;
+  };
+  try {
+    const loc = await new Request(`https://tf.istrongcloud.com/data/completion/${tfbh}.json`).loadJSON();
+    if (loc?.location) {
+      return { 
+        location: loc.location, 
+        trend: loc.completion
+      }
+    }
+  } catch {}
+  return await fetchGovData(tfbh);
 };
 
-const getLatestData = async (tf) => {
+// 整理台风数据
+const mergeLatestData = async (tyItem, latest = []) => {
+  const latestMap = new Map(latest.map(item => [item.tfbh, item]));
+  
+  await Promise.all(tyItem.map(async tf => {
+    const point = tf.points?.at(-1);
+    const latestItem = latestMap.get(tf.tfbh);
+    if (point) Object.assign(tf, point);
+    if (latestItem) {
+      const { strong, update_time, location, trend } = latestItem;
+      const type = point.strong?.match(/\((.*?)\)/)?.[1];
+      Object.assign(tf, { strong, type, update_time, location, trend });
+      if (!location) {
+        Object.assign(tf, await getLocationTrend(tf.tfbh, latestItem));
+      }
+    }
+  }));
+  return tyItem;
+};
+
+// 参考位置，未来趋势
+const getLatestData = async () => {
   try {
-    const url1 = `https://data.istrongcloud.com/data/latest.json`;
-    const url2 = 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json';
-    const msgUrl = `https://tf02.istrongcloud.com/data/message/message.json`;
     const [latest, config, message] = await Promise.all([
-      new Request(url1).loadJSON(),
-      new Request(url2).loadJSON(),
-      new Request(msgUrl).loadJSON(),
+      new Request('https://data.istrongcloud.com/data/latest.json').loadJSON(),
+      new Request('https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json').loadJSON(),
+      new Request('https://tf02.istrongcloud.com/data/message/message.json').loadJSON()
     ]);
-    const newest = await complementLocTrend(tf, latest);
     messageNotice(message?.[0]);
     typhoonNotice(config);
-    return newest;
+    return latest || [];
   } catch (e) {
     console.log(e);
-    return null;
+    return [];
   }
 };
 
@@ -808,25 +920,23 @@ const getLatestData = async (tf) => {
  */
 const getTyphoonData = async () => {
   try {
-    const url = `https://tf03.istrongcloud.com/member/v1.3/home?r=${Date.now()}`;
-    const html = await new Request(url).loadString();
-    const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1];
-    const arr = JSON.parse(match);
-    if (!arr.length) return null;
-    const tf = loopdNextIdx(arr, 'TF');
-    const typhoon = tf.points?.at(-1);
-    const points = arr.map(i => i.points?.at(-1) ? {
-      ...i.points.at(-1),
-      name: i.name
-    } : null).filter(Boolean);
-    const tfPoints = await decryptData(points) ?? [];
-    return { arr, tf, typhoon, tfPoints }
+    const html = await new Request(`https://tf03.istrongcloud.com/member/v1.3/home?r=${Date.now()}`).loadString();
+    const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1]
+    if (!match) return null;
+    const tyItem = JSON.parse(match);
+    if (!tyItem?.length) return null;
+    const typhoons = await decryptData(tyItem) ?? [];
+    const latest = await getLatestData();
+    await mergeLatestData(typhoons, latest);
+    const tf = loopdNextIdx(typhoons, 'TF');
+    return { typhoons, tf };
   } catch (e) {
     console.log(e);
     return null;
   }
 };
 
+// 信息通知 🔔
 const typhoonNotice = (config) => {
   const home = config.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
   const tips = home.data.common.title;
@@ -845,17 +955,17 @@ const messageNotice = (msg) => {
   }
 };
 
-const speedChangeNotice = (tf, typhoon, newest, dist) => {
+const speedChangeNotice = (tf, dist) => {
   setting.tf = setting.tf || {};
   const id = tf.tfbh || tf.ident;
   if (!id) return;
   const oldData = setting.tf[id] || {};
   const oldSpeed = oldData.speed;
-  const speed = typhoon.speed || 0;
+  const speed = tf.speed || 0;
   if (oldSpeed !== speed) {
     notify(
       `⚠️ 台风 【${tf.name}】`, 
-      `风速 ${speed}米/秒，${typhoon.power || 0}级 (${newest.strong || "未知"})` + (newest.location ? `\n${newest.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
+      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
     );
     setting.tf[id] = {
       ...oldData,
@@ -865,17 +975,17 @@ const speedChangeNotice = (tf, typhoon, newest, dist) => {
   }
 };
 
-const currMergerTCNotice = (p, decrypt) => {
+const currMergerTCNotice = (tc) => {
   setting.tc = setting.tc || {};
-  const id = p.tfbh || p.ident;
+  const id = tc.tfbh || tc.ident;
   const oldSpeed = setting.tc[id];
-  const tcLocation = getTyphoonLocation(decrypt);
-  if (oldSpeed !== decrypt.speed) {
+  const tcLocation = getTyphoonLocation(tc);
+  if (oldSpeed !== tc.speed) {
     notify(
-      `⚠️ ${p.name} ${p.ename} - ${decrypt.strong}`,
-      `风速 ${decrypt.speed || 0}米/秒，${decrypt.power || 0}级，${decrypt.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
+      `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
+      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
     );
-    setting.tc[id] = decrypt.speed;
+    setting.tc[id] = tc.speed;
     writeSettings(setting);
   }
 };
@@ -892,15 +1002,6 @@ const formatDate = (time, showMin) => {
   const hour = `${date.getHours()}`.padStart(2, '0');
   const minute = date.getMinutes();
   return `${date.getMonth() + 1}月${date.getDate()}日${hour}时` + (showMin && minute ? `${minute}分` : '');
-};
-
-// 剩余登陆时间
-const getTyphoonRemainTime = (distance, speed) => {
-  const h = Math.ceil(distance / (speed || 25));
-  if (h < 24) return `${h} 小时`;
-  const days = Math.floor(h / 24);
-  const remains = h % 24;
-  return remains ? `${days} 天 ${remains} 小时` : `${days} 天`;
 };
 
 const getTyphoonColor = (speed) => {
@@ -971,16 +1072,16 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
   }
 };
 
-const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime, hasNumber) => {
+const generateItem = (isLarge, tf, land, maxSpeed, dist, hasNumber) => {
   return [
     { 
       label: "中心位置", 
-      value: `东经${newest.lon || 0}°　北纬${newest.lat || 0}°`, 
+      value: `东经${tf.lng || 0}°　北纬${tf.lat || 0}°`, 
       color: '#00C400'
     },
     { 
       label: "风速风力", 
-      value: `${typhoon.speed}米/秒，${typhoon.power}级 ( ${newest.strong} )`, 
+      value: `${tf.speed}米/秒，${tf.power}级 ( ${tf.strong} )`, 
       color: '#39A7F8'
     },
     { 
@@ -993,42 +1094,42 @@ const generateItem = (isLarge, typhoon, newest, land, maxSpeed, dist, remainTime
         ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
         : maxSpeed.power > 10
           ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`
-          : `${typhoon.radius7 || 0}km-7级，${typhoon.radius10 || 0}km-10级，${typhoon.radius12 || 0}km-12级`,
+          : `${tf.radius7 || 0}km-7级，${tf.radius10 || 0}km-10级，${tf.radius12 || 0}km-12级`,
       color: '#FFD83A'
     },
     { 
       label: "参考位置", 
-      value: newest.location || '---',
+      value: tf.location || '---',
       color: '#FF7800'
     },
     ...(!land && (isLarge || !hasNumber) ? [{
-      label: "登陆时间",
-      value: `预计 ${remainTime}后到达，离你 ${dist} 公里`,
+      label: "位置测距",
+      value: `距离你的位置 ${dist} 公里`,
       color: '#F95BF9'
     }] : []),
     { 
       label: "未来趋势", 
-      value: newest.trend || '---',
+      value: tf.trend || '---',
       color: '#8C7CFF'
     }
   ];
 };
 
-const generateTCItem = (dist, tcLocation, begin_time, decrypt, isLarge) => {
+const generateTCItem = (tc, dist, tcLocation, begin_time, isLarge) => {
   return [
     { 
       label: "中心位置", 
-      value: `东经${decrypt.lng}°　北纬${decrypt.lat}°`, 
+      value: `东经${tc.lng}°　北纬${tc.lat}°`, 
       color: '#00C400'
     },
     { 
       label: "风速风力", 
-      value: `${decrypt.speed}米/秒，${decrypt.power}级，${decrypt.strong}`, 
+      value: `${tc.speed}米/秒，${tc.power}级，${tc.strong}`, 
       color: '#39A7F8'
     },
     ...(!isLarge ? [{ 
       label: "中心气压", 
-      value: `${decrypt.pressure} 百帕`, 
+      value: `${tc.pressure} 百帕`, 
       color: '#FFD83A'
     }] : []),
     ...(!isLarge && tcLocation.length < 21 ? [{
@@ -1055,37 +1156,37 @@ const levelAgency = () => {
       label: '热带低压 (TD)', 
       agency: '中国', 
       iconColor: '#00C400',
-      textColor: '#FF0000',
+      textColor: '#FF4050',
     },
     { 
       label: '热带风暴 (TS)', 
       agency: '日本', 
       iconColor: '#39A7F8',
-      textColor: '#F95BF9',
+      textColor: '#43FF4B',
     },
     { 
       label: '强热带风暴 (STS)', 
       agency: '韩国', 
       iconColor: '#FFD83A',
-      textColor: '#FF7800',
+      textColor: '#669999',
     },
     { 
       label: '台风 (TY)', 
       agency: '美国', 
-      iconColor: '#FF7800',
-      textColor: '#FFD83A',
+      iconColor: '#FDAC03',
+      textColor: '#40DDFF',
     },
     { 
       label: '强台风 (STY)', 
       agency: '欧洲', 
       iconColor: '#F95BF9',
-      textColor: '#39A7F8',
+      textColor: '#246ED4',
     },
     { 
       label: '超强台风 (SuperTY)', 
       agency: '香港', 
       iconColor: '#FF0000',
-      textColor: '#00C400',
+      textColor: '#FF66FF',
     },
   ];
 };
@@ -1113,7 +1214,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
   return barStack;
 };
 
-const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge) => {
+const createWidget = (typhoons, tf, maxSpeed, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -1127,12 +1228,11 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
   dateText.textColor = textColor;
   topStack.addSpacer();
   
-  arr.forEach((tf, i) => {
-    const speed = tf.points?.at(-1)?.speed || '';
+  typhoons.forEach((ty, i) => {
     const icon = topStack.addImage(tyIcon);
     icon.imageSize = new Size(17, 17);
-    icon.tintColor = getTyphoonColor(speed);
-    if (i < arr.length - 1) {
+    icon.tintColor = getTyphoonColor(ty.speed);
+    if (i < typhoons.length - 1) {
       topStack.addSpacer(2);
     }
   });
@@ -1174,24 +1274,24 @@ const createWidget = (arr, tf, typhoon, maxSpeed, date, land, dist, info, barCol
 };
 
 // 热带扰动组件
-const createTCWidget = (tc, p, date, info, tcLocation, textColor, isLarge) => {
+const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
   topStack.size = new Size(0, 23);
-  createButtonStack(topStack, tyIcon, (p.name + p.ename), new Color('#8C7CFF'));
+  createButtonStack(topStack, tyIcon, (tc.name + tc.ename), new Color('#8C7CFF'));
   topStack.addSpacer(8);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
   dateText.textColor = textColor;
   topStack.addSpacer();
   
-  tc.forEach((item, i) => {
+  tcItem.forEach((item, i) => {
     const icon = topStack.addImage(tcIcon);
     icon.imageSize = new Size(20, 20)
-    if (i < tc.length - 1) {
+    if (i < tcItem.length - 1) {
       topStack.addSpacer(2);
     }
   });
@@ -1280,43 +1380,44 @@ const errorWidget = () => {
 };
 
 // 整合数据
-const createTyphoonData = async (arr, tf, typhoon, newest, textColor, isLarge) => {
-  const barColor = getTyphoonColor(typhoon.speed);
-  const date = formatDate(newest.update_time);
+const createTyphoonData = async (typhoons, tf, textColor, isLarge) => {
+  const barColor = getTyphoonColor(tf.speed);
+  const date = formatDate(tf.update_time);
   const land = tf.land?.at(-1) ?? '';
-  const dist = getDistance(setting.lat, setting.lon, newest.lat, newest.lon);
-  const distance = newest.location?.match(/\d+/)?.[0] || 0
-  const hasNumber = /\d+/.test(newest.trend);
-  const remainTime = getTyphoonRemainTime(distance, typhoon.move_speed);
+  const dist = getDistance(setting.lat, setting.lon, tf.lat, tf.lng);
+  const distance = tf.location?.match(/\d+/)?.[0] || 0;
+  const hasNumber = /\d+/.test(tf.trend);
   const maxSpeed = getMaxForecast(tf);
-  const info = generateItem(isLarge, typhoon, newest, land, maxSpeed, dist, remainTime, hasNumber);
-  speedChangeNotice(tf, typhoon, newest, dist);
-  return createWidget(arr, tf, typhoon, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
+  const info = generateItem(isLarge, tf, land, maxSpeed, dist, hasNumber);
+  speedChangeNotice(tf, dist);
+  return createWidget(typhoons, tf, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
 };
 
-const createTcData = (tc, p, decrypt, textColor, isLarge) => {
-  const tcLocation = getTyphoonLocation(decrypt);
-  const dist = getDistance(setting.lat, setting.lon, decrypt.lat, decrypt.lng);
-  const date = formatDate(decrypt.time);
-  const begin_time = formatTime(p.begin_time);
+const createTcData = (tcItem, tc, textColor, isLarge) => {
+  const tcLocation = getTyphoonLocation(tc);
+  const dist = getDistance(setting.lat, setting.lon, tc.lat, tc.lng);
+  const date = formatDate(tc.time);
+  const begin_time = formatTime(tc.begin_time);
   const info = generateTCItem(
-    dist, tcLocation, begin_time, 
-    decrypt, isLarge
+    tc, dist, tcLocation, 
+    begin_time, isLarge
   );
-  return createTCWidget(tc, p, date, info, tcLocation, textColor, isLarge);
+  return createTCWidget(
+    tcItem, tc, date, info, 
+    tcLocation, textColor, isLarge
+  );
 };
 
 // 提取台风等级 SuperTY
-const getTyphoonItem = data => data.map(item => {
-  const type = item.strong?.match(/\((.*?)\)/)?.[1];
+const getTyphoonItem = data => data?.map(item => {
+  const type = item.type;
   return {...item, icon: typhoonIcons[type] ? Image.fromData(Data.fromBase64String(typhoonIcons[type])) : null};
 });
 
 // 主函数
 const runWidget = async () => {
   getLocation();
-  const { arr, tf, typhoon, tfPoints } = await getTyphoonData() || {};
-  const newest = await getLatestData(tf) || {};
+  const { typhoons, tf } = await getTyphoonData() || {};
   
   const family = config.runsInApp
     ? (tf ? 'large' : 'medium')
@@ -1337,19 +1438,16 @@ const runWidget = async () => {
   if (isSmall) {
     widget = errorWidget();
   } else if (tf && !isNumber) {
-    widget = await createTyphoonData(
-      arr, tf, typhoon, newest, 
-      textColor, isLarge
-    );
+    widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], isLarge);
   } else if (!tf || isNumber) {
-    const { tc = [], p = {}, decrypt = {}, tcPoints } = await currMergerTC();
-    if (tc.length) {
-      currMergerTCNotice(p, decrypt);
-      const typhoons = getTyphoonItem(tfPoints);
-      const tyPoints = Number(param) === 2 ? typhoons : [];
-      widget = createTcData(tc, p, decrypt, tcTextColor, isLarge);
-      await setBackground(widget, tcPoints, tyPoints, isLarge);
+    const { tcItem, tc } = await currMergerTC();
+    if (tcItem.length) {
+      currMergerTCNotice(tc);
+      const tyPoints = getTyphoonItem(typhoons);
+      const tfItem = Number(param) === 2 ? tyPoints : [];
+      widget = createTcData(tcItem, tc, tcTextColor, isLarge);
+      await setBackground(widget, tcItem, tfItem, isLarge);
     } else {
       const levels = levelAgency();
       widget = createLevelWidget(
