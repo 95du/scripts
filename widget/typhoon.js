@@ -6,8 +6,12 @@
  * 组件版本: Version 1.0.5
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
- * 在桌面组件编辑参数中填写数字(2️⃣)展示热带扰动加台风，其他数字只展示热带扰动，不添加则正常展示。
- * 中大号组件 ‼️
+ *
+ * 支持中大号组件 ‼️
+ * 桌面组件输入参数:
+ 1，填写数字(2️⃣)展示热带扰动加台风。
+ 2，其他数字只展示热带扰动。
+ 3，填写 ('全国', '福建', '华南', '华东', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
  */
 
 const fm = FileManager.local();
@@ -90,6 +94,7 @@ const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/
 const typhoonIcons = await getCacheData('icon.json', tyIconUrl, 'json', 24);
 
 // 地点库
+// 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
   { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
@@ -99,6 +104,7 @@ const anchors = [
   { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
   { id: "taipei", name: "台湾台北市", lat: 25.033, lng: 121.565, rx: 6.5, ry: 5.5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
+  { id: "yilan", name: "台湾省宜兰县", lat: 24.702, lng: 121.738, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
   { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
@@ -111,7 +117,7 @@ const anchors = [
 
 const relations = {
   tokyo:     ["naha", "kagoshima", "saipan"],
-  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "taipei"],
+  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "taipei", "yilan"],
   kagoshima: ["tokyo", "naha"],
   saipan:    ["guam", "naha", "tokyo"],
   guam:      ["saipan", "naha", "manila", "tokyo"],
@@ -228,8 +234,22 @@ const selectSecond = (point, main) => {
     .filter(p => p.distance < 4200)
     .sort((a, b) => a.score - b.score);
 
-  const preferred = candidates.find(c => (c.id === "tokyo" || c.id === "naha" || c.id === "kagoshima") && isMeaningfulSecond(point, main, c));
-  if (preferred) return preferred;
+  const JP_CHAIN = ["tokyo", "naha", "kagoshima"];
+  const TW_CHAIN = ["yilan", "hualien", "taipei", "kaohsiung"];
+  const preferred = candidates.find(c => JP_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c));
+
+  if (preferred) {
+    const closestTw = candidates
+      .filter(c => TW_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c))
+      .sort((a, b) => a.distance - b.distance)[0];
+    if (closestTw &&
+        closestTw.distance < preferred.distance &&
+        (preferred.distance - closestTw.distance) <= preferred.distance * 0.05) {
+      return closestTw;
+    }
+    return preferred;
+  }
+
   for (const cand of candidates) {
     if (isMeaningfulSecond(point, main, cand)) return cand;
   }
@@ -309,7 +329,7 @@ const getIsDay = () => {
   return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
 };
 
-// 雷达
+// 雷达图片
 const getRadarImage = async () => {
   try {
     const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
@@ -732,10 +752,10 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
   }
   // 4. 绘制登陆 location 提示框
   for (const p of typhoonPoints) {
-    if (p.isTyphoon && p.land && p.land.length > 0 && p.latest && p.latest.location) {
+    if (p.isTyphoon && p.land && p.land.length > 0 && p.location) {
       const pos = project(p.lat, p.lng);
       const ICON_SIZE = 40 * EXPORT_SCALE;
-      drawLandInfoBox(ctx, pos, p.latest.location, isDay, ICON_SIZE, EXPORT_SCALE);
+      drawLandInfoBox(ctx, pos, p.location, isDay, ICON_SIZE, EXPORT_SCALE);
     }
   }
   
@@ -806,6 +826,38 @@ const getLocation = async () => {
   }
 };
 
+// 未来两小时天气
+const getMinutelySummary = async (lng, lat) => {
+  const url = `https://api.qweather.com/v7/minutely/5m?location=${lng},${lat}&key=73ca4f214b9241fb98f6d291345d9d84`
+  const data = await new Request(url).loadJSON();
+  return data?.summary ?? null;
+};
+
+// 雷达拼图
+const getRadarImageData = async (region) => {
+  try {
+    const radarDataUrl = 'https://img.istrongcloud.com/release/config-gzqx-radar.json';
+    const config = await getCacheData('radarData.json', radarDataUrl, 'json', 24);
+    const data = config?.[0]?.data?.[0]?.data ?? [];
+    const radarUrl = data.find(i => i.name === `${region}雷达拼图`)?.url;
+    if (!radarUrl) return null;
+    const images = await new Request(radarUrl).loadJSON();
+    const last = images?.at(-1);
+    if (!last) return null;
+    const m = last.name.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+    if (!m) return { url: last.url, name: last.name };
+    const [, y, mo, d, h, min] = m;
+    const title = `${region}${region === '全国' ? '' : '地区'}雷达拼图 ${y}-${mo}-${d} ${h}:${min}`;
+    return {
+      url: last.url,
+      name: title
+    }
+  } catch (e) {
+    console.log('获取雷达拼图错误' + e);
+    return null;
+  }
+};
+
 // 循环数组中的对象
 const loopdNextIdx = (arr, name) => {
   const optNextIndex = (num, data) => (num + 1) % data.length;
@@ -836,7 +888,7 @@ const currMergerTC = async () => {
 
 // 补充参考位置和未来趋势数据
 const fetchGovData = async (tfbh) => {
-  const fallback = { location: '---', trend: '等待官方数据更新中...' };
+  const fallback = { location: '---', trend: '官方数据更新中...' };
   try {
     const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
     const govList = await new Request(govUrl).loadJSON();
@@ -857,18 +909,12 @@ const fetchGovData = async (tfbh) => {
 
 const getLocationTrend = async (tfbh, item) => {
   if (item?.location) {
-    return { 
-      location: item.location, 
-      trend: item.trend
-    }
+    return {  location: item.location, trend: item.trend }
   };
   try {
-    const loc = await new Request(`https://tf.istrongcloud.com/data/completion/${tfbh}.json`).loadJSON();
+    const loc = await new Request(`https://tf03.istrongcloud.com/data/completion/${tfbh}.json`).loadJSON();
     if (loc?.location) {
-      return { 
-        location: loc.location, 
-        trend: loc.completion
-      }
+      return { location: loc.location, trend: loc.completion }
     }
   } catch {}
   return await fetchGovData(tfbh);
@@ -900,7 +946,7 @@ const getLatestData = async () => {
     const [latest, config, message] = await Promise.all([
       new Request('https://data.istrongcloud.com/data/latest.json').loadJSON(),
       new Request('https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json').loadJSON(),
-      new Request('https://tf02.istrongcloud.com/data/message/message.json').loadJSON()
+      new Request('https://tf03.istrongcloud.com/data/message/message.json').loadJSON()
     ]);
     messageNotice(message?.[0]);
     typhoonNotice(config);
@@ -936,7 +982,7 @@ const getTyphoonData = async () => {
   }
 };
 
-// 信息通知 🔔
+// 信息通知
 const typhoonNotice = (config) => {
   const home = config.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
   const tips = home.data.common.title;
@@ -1204,10 +1250,12 @@ const createBarStack = (stack, barColor, radius = 7) => {
 
 const createButtonStack = (topStack, tyIcon, name, barColor) => {
   const barStack = createBarStack(topStack, barColor);
-  const icon = barStack.addImage(tyIcon);
-  icon.imageSize = new Size(17, 17);
-  icon.tintColor = Color.white();
-  barStack.addSpacer(6);
+  if (tyIcon) {
+    const icon = barStack.addImage(tyIcon);
+    icon.imageSize = new Size(17, 17);
+    icon.tintColor = Color.white();
+    barStack.addSpacer(6);
+  }
   const statusText = barStack.addText(name);
   statusText.textColor = Color.white();
   statusText.font = Font.boldSystemFont(14.5);
@@ -1311,6 +1359,28 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
       widget.addSpacer(3);
     }
   });
+  return widget;
+};
+
+// 雷达拼图组件
+const createRaderWidget = async (url, name, summary) => {
+  const widget = new ListWidget();
+  widget.backgroundImage = await new Request(url).loadImage();
+  widget.setPadding(18, 20, 18, 20);
+  const topStack = widget.addStack();
+  topStack.layoutHorizontally();
+  topStack.addSpacer();
+  createButtonStack(topStack, '', name, new Color('#8C7CFF'));
+  topStack.addSpacer();
+  if (!summary.includes('无')) {
+    widget.addSpacer(15);
+    const weatherStack = widget.addStack();
+    weatherStack.layoutHorizontally();
+    weatherStack.addSpacer();
+    createButtonStack(weatherStack, '', summary, new Color('#38ABFF'));
+    weatherStack.addSpacer();
+  }
+  widget.addSpacer();
   return widget;
 };
 
@@ -1419,13 +1489,21 @@ const runWidget = async () => {
   getLocation();
   const { typhoons, tf } = await getTyphoonData() || {};
   
+  const param = args.widgetParameter;
+  const regions = [
+    '全国', '福建', '华南', 
+    '华东', '西南', '华中', 
+    '华北', '东北', '西北'
+  ];
+  const hasRegion = param?.length === 2 && regions.some(i => param?.includes(i));
+  
   const family = config.runsInApp
     ? (tf ? 'large' : 'medium')
     : config.widgetFamily;
-  const param = args.widgetParameter;
   const isNumber = param && !isNaN(Number(param));
   const isLarge = family === 'large';
   const isSmall = family === 'small';
+  
   const textColor = isLarge
     ? Color.black()
     : Color.dynamic(Color.black(), Color.white());
@@ -1437,6 +1515,10 @@ const runWidget = async () => {
   let widget;
   if (isSmall) {
     widget = errorWidget();
+  } else if (hasRegion && isLarge) {
+    const { url, name } = await getRadarImageData(param || '华南');
+    const summary = await getMinutelySummary(setting.lon, setting.lat);
+    widget = await createRaderWidget(url, name, summary);
   } else if (tf && !isNumber) {
     widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], isLarge);
@@ -1444,7 +1526,7 @@ const runWidget = async () => {
     const { tcItem, tc } = await currMergerTC();
     if (tcItem.length) {
       currMergerTCNotice(tc);
-      const tyPoints = getTyphoonItem(typhoons);
+      const tyPoints = getTyphoonItem(typhoons || []);
       const tfItem = Number(param) === 2 ? tyPoints : [];
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
       await setBackground(widget, tcItem, tfItem, isLarge);
