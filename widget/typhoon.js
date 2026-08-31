@@ -708,7 +708,22 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
   
-  // 1. 仅对标记为台风的点绘制风圈
+  // 1，绘制当前定位图标
+  if (locationPoint) {
+    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
+    const locBase64 = typhoonIcons[locKey];
+    if (locBase64) {
+      const locImg = Image.fromData(Data.fromBase64String(locBase64));
+      const locPos = project(locationPoint.lat, locationPoint.lon);
+      // 维持 40*60 原始比例 (2:3) 缩放
+      const LOC_W = 22 * EXPORT_SCALE;
+      const LOC_H = 33 * EXPORT_SCALE;
+      const BOTTOM_PADDING = 3.3 * EXPORT_SCALE;
+      ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
+    }
+  }
+  
+  // 2. 仅对标记为台风的点绘制风圈
   for (const p of typhoonPoints) {
     if (p.isTyphoon) {
       drawWindCircles(ctx, p, project, EXPORT_SCALE);
@@ -716,7 +731,7 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     }
   }
   
-  // 2. 绘制图标及文本标注
+  // 3. 绘制图标及文本标注
   for (const p of typhoonPoints) {
     const pos = project(p.lat, p.lng);
     const ICON_SIZE = (p.isTyphoon ? 36 : 42) * EXPORT_SCALE;
@@ -736,20 +751,6 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     }
   }
   
-  // 3，绘制当前定位图标
-  if (locationPoint) {
-    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
-    const locBase64 = typhoonIcons[locKey];
-    if (locBase64) {
-      const locImg = Image.fromData(Data.fromBase64String(locBase64));
-      const locPos = project(locationPoint.lat, locationPoint.lon);
-      // 维持 40*60 原始比例 (2:3) 缩放
-      const LOC_W = 22 * EXPORT_SCALE;
-      const LOC_H = 33 * EXPORT_SCALE;
-      const BOTTOM_PADDING = 3.3 * EXPORT_SCALE;
-      ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
-    }
-  }
   // 4. 绘制登陆 location 提示框
   for (const p of typhoonPoints) {
     if (p.isTyphoon && p.land && p.land.length > 0 && p.location) {
@@ -1373,7 +1374,7 @@ const createRaderWidget = async (url, name, summary) => {
   createButtonStack(topStack, '', name, new Color('#8C7CFF'));
   topStack.addSpacer();
   if (!summary.includes('无')) {
-    widget.addSpacer(15);
+    widget.addSpacer(10);
     const weatherStack = widget.addStack();
     weatherStack.layoutHorizontally();
     weatherStack.addSpacer();
