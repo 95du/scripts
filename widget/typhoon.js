@@ -11,7 +11,7 @@
  * 桌面组件输入参数:
  1，填写数字(2️⃣)展示热带扰动加台风。
  2，其他数字只展示热带扰动。
- 3，填写 ('全国', '福建', '华南', '华东', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
+ 3，填写 ('全国', '华南', '华东', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
  */
 
 const fm = FileManager.local();
@@ -608,6 +608,7 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     if (maxLng > 165) zoom = Math.max(zoom, 3.02);
     if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
     zoom = clamp(zoom, 2.95, 4.4);
+    if (zoom < 3.5) centerLng = Math.max(centerLng, 132.2);
     return { lng: centerLng, lat: centerLat, zoom };
   };
 
@@ -1489,7 +1490,7 @@ const runWidget = async () => {
   const { typhoons, tf } = await getTyphoonData() || {};
   
   const regions = [
-    '全国', '福建', '华南', 
+    '全国', '华南', 
     '华东', '西南', '华中', 
     '华北', '东北', '西北'
   ];
