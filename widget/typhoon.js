@@ -11,7 +11,9 @@
  * 桌面组件输入参数:
  1，填写数字(2️⃣)展示热带扰动加台风。
  2，其他数字只展示热带扰动。
- 3，填写 ('全国', '华南', '华东', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
+ 3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
+ 4，华东分成上下，原图示例:
+https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH.gif
  */
 
 const fm = FileManager.local();
@@ -316,6 +318,20 @@ const decryptData = async (data) => {
   return await webView.evaluateJavaScript(
     `decryptTcObject(${JSON.stringify(data)},${JSON.stringify(key)})`
   );
+};
+
+// 制作华东地区图片
+const processImagePipeline = async (img, trim = { top: 1, right: 2, bottom: 1, left: 3 }) => {
+  const imgData = Data.fromPNG(img).toBase64String();
+  const html=`<img id="srcImg" src="data:image/png;base64,${imgData}"/>`;const js=` const img=document.getElementById("srcImg");const run=()=>{const{top:t,right:r,bottom:b,left:l}=${JSON.stringify(trim)};const cropW=img.naturalWidth-(l+r);const cropH=img.naturalHeight-(t+b);const clean=document.createElement("canvas");clean.width=cropW;clean.height=cropH;clean.getContext('2d').drawImage(img,l,t,cropW,cropH,0,0,cropW,cropH);const targetW=950;const targetH=997;const scaledH=876;const sliceH=Math.round(scaledH*(cropW/targetW));const canvasA=document.createElement("canvas");canvasA.width=targetW;canvasA.height=121;const ctxA=canvasA.getContext('2d');const sideMargin=(targetW-cropW)/2;ctxA.fillStyle="#FFFFFF";ctxA.fillRect(0,0,targetW,121);ctxA.drawImage(clean,0,cropH-121,cropW,121,sideMargin,0,cropW,121);ctxA.fillStyle="#000000";ctxA.fillRect(0,1,sideMargin,1);ctxA.fillRect(targetW-sideMargin,1,sideMargin,1);const createStitchedCanvas=(startY)=>{const canvas=document.createElement("canvas");canvas.width=targetW;canvas.height=targetH;const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(clean,0,startY,cropW,sliceH,0,0,targetW,scaledH);ctx.drawImage(canvasA,0,scaledH);return canvas.toDataURL('image/png');};const upperTotalH=cropH-121;const res1=createStitchedCanvas(0);const startY2=upperTotalH-sliceH;const res2=createStitchedCanvas(startY2);completion(JSON.stringify([res1,res2]));};if(img.complete){run();}else{img.onload=run;}`;
+  const wv = new WebView();
+  await wv.loadHTML(html);
+  const base64Str = await wv.evaluateJavaScript(js, true);
+  const image = JSON.parse(base64Str);
+  return await Promise.all([
+    new Request(image[0]).loadImage(),
+    new Request(image[1]).loadImage()
+  ]);
 };
 
 /**
@@ -1363,9 +1379,12 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
 };
 
 // 雷达拼图组件
-const createRaderWidget = async (url, name, summary) => {
+const createRadarWidget = async (param) => {
+  const parameter = param.includes('华东') ? '华东' : param;
+  const { url, name } = await getRadarImageData(parameter);
+  const summary = await getMinutelySummary(setting.lon, setting.lat);
+
   const widget = new ListWidget();
-  widget.backgroundImage = await new Request(url).loadImage();
   widget.setPadding(18, 20, 18, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
@@ -1381,6 +1400,19 @@ const createRaderWidget = async (url, name, summary) => {
     weatherStack.addSpacer();
   }
   widget.addSpacer();
+
+  const image = param.includes('华东')
+    ? await new Request(url).load()
+    : await new Request(url).loadImage();
+    
+  if (param.includes('华东')) {
+    const rawImg = Image.fromData(image);
+    const [imgTop, imgBottom] = await processImagePipeline(rawImg);
+    widget.backgroundImage = param === '华东上' ? imgTop : imgBottom;
+  } else {
+    widget.backgroundImage = image;
+  }
+
   return widget;
 };
 
@@ -1490,12 +1522,11 @@ const runWidget = async () => {
   const { typhoons, tf } = await getTyphoonData() || {};
   
   const regions = [
-    '全国', '华南', 
-    '华东', '西南', '华中', 
-    '华北', '东北', '西北'
+    '全国', '华南', '华东上', '华东下', 
+    '西南', '华中', '华北', '东北', '西北'
   ];
   const param = args.widgetParameter;
-  const hasRegion = param?.length === 2 && regions.some(i => param?.includes(i));
+  const hasRegion = regions.some(i => param?.includes(i));
   
   const family = config.runsInApp
     ? (tf ? 'large' : 'medium')
@@ -1516,9 +1547,7 @@ const runWidget = async () => {
   if (isSmall) {
     widget = errorWidget();
   } else if (hasRegion && isLarge) {
-    const { url, name } = await getRadarImageData(param || '华南');
-    const summary = await getMinutelySummary(setting.lon, setting.lat);
-    widget = await createRaderWidget(url, name, summary);
+    widget = await createRadarWidget(param);
   } else if (tf && !isNumber) {
     widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], isLarge);
