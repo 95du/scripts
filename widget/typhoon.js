@@ -6,12 +6,12 @@
  * 组件版本: Version 1.0.5
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
- *
  * 支持中大号组件 ‼️
+ *
  * 桌面组件输入参数:
  1，填写数字(2️⃣)展示热带扰动加台风。
  2，其他数字只展示热带扰动。
- 3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北')展示对应地区的雷达拼图。
+ 3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北') 展示对应地区的雷达拼图。
  4，华东分成上下，原图示例:
 https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH.gif
  */
@@ -30,43 +30,41 @@ const writeSettings = (setting) => {
 const getSetting = () => {
   if (fm.fileExists(settingPath)) {
     const data = fm.readString(settingPath);
-    return JSON.parse(data);
+    return JSON.parse(data) || {};
   }
 };
-const setting = getSetting() || {};
+const setting = getSetting();
 
-const useFileManager = ({ cacheTime, type } = {}) => {
-  return {
-    read: (name) => {
-      const filePath = fm.joinPath(mainPath, name);
-      if (fm.fileExists(filePath)) {
-        if (hasExpired(filePath) > cacheTime) fm.remove(filePath);
-        else return type ? JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);
-      }
-    },
-    write: (name, content) => {
-      const filePath = fm.joinPath(mainPath, name);
-      type ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
-    },
-  };
-
-  function hasExpired(filePath) {
-    const createTime = fm.creationDate(filePath).getTime();
-    return (Date.now() - createTime) / (60 * 60 * 1000);
+const useFileManager = (type) => ({
+  read: (name) => {
+    const filePath = fm.joinPath(mainPath, name);
+    if (!fm.fileExists(filePath)) return null;
+    return type ? fm.readString(filePath) && JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);
+  },
+  write: (name, content) => {
+    const filePath = fm.joinPath(mainPath, name);
+    if (fm.fileExists(filePath)) fm.remove(filePath);
+    type ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
   }
-};
+});
 
-const getCacheData = async (name, url, type, cacheTime) => {
-  const cache = useFileManager({  
-    type, cacheTime
-  });
-  const cacheData = cache.read(name);
-  if (cacheData) return cacheData;
-  const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
-  if (response) {
-    cache.write(name, response);
-  }
-  return response;
+const getCacheData = async (name, url, type, cacheTime = 0) => {
+  const cache = useFileManager(type);
+  const filePath = fm.joinPath(mainPath, name);
+  const data = cache.read(name);
+  const expired = cacheTime > 0 &&
+    (!fm.fileExists(filePath) ||
+      (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
+  if (data && !expired) return data;
+  try {
+    console.log(name)
+    const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
+    if (response) {
+      cache.write(name, response);
+      return response;
+    }
+  } catch (e) {}
+  return data;
 };
 
 const notify = (title, body, url, sound = 'piano_error') => {
@@ -549,6 +547,21 @@ const drawForecastPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
   }
 };
 
+// 绘制单个台风的所有登陆点旗帜（一个台风可能多次登陆）
+const drawLandingFlags = (ctx, typhoon, flagIcon, project, EXPORT_SCALE) => {
+  if (!flagIcon || !typhoon.land || !typhoon.land.length) return;
+  const FLAG_SCALE = 0.85;
+  const FLAG_W = 32 * FLAG_SCALE * EXPORT_SCALE;
+  const FLAG_H = 34 * FLAG_SCALE * EXPORT_SCALE;
+  for (const p of typhoon.land) {
+    const landLat = parseFloat(p.lat);
+    const landLng = parseFloat(p.lng);
+    if (Number.isNaN(landLat) || Number.isNaN(landLng)) continue;
+    const flagPos = project(landLat, landLng);
+    ctx.drawImageInRect(flagIcon, new Rect(flagPos.x - FLAG_W / 2, flagPos.y - FLAG_H, FLAG_W, FLAG_H));
+  }
+};
+
 // 绘制登陆位置信息框
 const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
   const fontSize = 14 * EXPORT_SCALE;
@@ -588,7 +601,7 @@ const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
 };
 
 // 支持分别传入扰动数组和台风数组
-const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locationPoint = null) => {
+const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locationPoint = null) => {
   const typhoonPoints = [
     ...tcPoints.map(p => ({ ...p, isTyphoon: false })),
     ...typhoons.map(p => ({ ...p, isTyphoon: true }))
@@ -766,7 +779,14 @@ const generateTCMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locat
     }
   }
   
-  // 4. 绘制登陆 location 提示框
+  // 4. 绘制登陆点旗帜标记
+  const flagBase64 = typhoonIcons.flag;
+  const flagIcon = flagBase64 ? Image.fromData(Data.fromBase64String(flagBase64)) : null;
+  for (const p of typhoonPoints) {
+    if (p.isTyphoon) drawLandingFlags(ctx, p, flagIcon, project, EXPORT_SCALE);
+  }
+  
+  // 5. 绘制登陆 location 提示框
   for (const p of typhoonPoints) {
     if (p.isTyphoon && p.land && p.land.length > 0 && p.location) {
       const pos = project(p.lat, p.lng);
@@ -1053,11 +1073,7 @@ const currMergerTCNotice = (tc) => {
 };
 
 // 格式化日期
-const formatTime = (time) => {
-  const date = new Date(time);
-  const pad = n => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-};
+const formatTime = time => time.replace('T', ' ').slice(0, 16);
 
 const formatDate = (time, showMin) => {
   const date = new Date(time);
@@ -1090,28 +1106,14 @@ const getMaxForecast = (tf) => {
   }, null);
 };
 
-// 获取最晚发布的台风路径图片
-const getLatestTyImage = async () => {
-  const urls = [
-    `https://upy.istrongcloud.com/applet/typhoon/screenshot/posterMulti.png?r=${Date.now()}`,
-    `https://upy.istrongcloud.com/applet/typhoon/screenshot/wxPosterAll.png?r=${Date.now()}`
+const getTyphoonImage = async () => {
+  const files = [
+    'wxPosterAll.png',
+    'posterMulti.png'
   ];
-
-  try {
-    const list = await Promise.all(urls.map(async url => {
-      const r = new Request(url);
-      const data = await r.load();
-      const timestamp = Date.parse(r.response.headers['Last-Modified'] || 0);
-      return {
-        image: Image.fromData(data),
-        time: timestamp,
-        timeText: formatTime(timestamp)
-      };
-    }));
-    return list.reduce((a, b) => a.time > b.time ? a : b);
-  } catch (e) {
-    console.log(`台风图片获取失败: ${e}`)
-  }
+  const name = files[Math.floor(Math.random() * files.length)];
+  const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/${name}?r=${Date.now()}`;
+  return await getCacheData(name, url, null, 0.2);
 };
 
 // 设置背景
@@ -1122,10 +1124,9 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (typhoonType === 'tf') {
-      const latestTy = await getLatestTyImage() || {};
-      widget.backgroundImage = latestTy.image;
+      widget.backgroundImage = await getTyphoonImage();
     } else {
-      const image = await generateTCMapImage(typhoonType, typhoons, isDay, setting);
+      const image = await generateMapImage(typhoonType, typhoons, isDay, setting);
       widget.backgroundImage = image;
     }
   } else {
