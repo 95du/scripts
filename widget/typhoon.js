@@ -30,10 +30,10 @@ const writeSettings = (setting) => {
 const getSetting = () => {
   if (fm.fileExists(settingPath)) {
     const data = fm.readString(settingPath);
-    return JSON.parse(data) || {};
+    return JSON.parse(data);
   }
 };
-const setting = getSetting();
+const setting = getSetting() || {};
 
 const useFileManager = (type) => ({
   read: (name) => {
@@ -1449,7 +1449,7 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
   }
 };
 
-const generateItem = (isLarge, tf, land, maxSpeed, dist, hasNumber) => [
+const generateItem = (isLarge, tf, land, dist = 0 ) => [
   {
     label: "中心位置",
     value: `东经${tf.lng || 0}°　北纬${tf.lat || 0}°`,
@@ -1460,14 +1460,12 @@ const generateItem = (isLarge, tf, land, maxSpeed, dist, hasNumber) => [
     value: `${tf.speed}米/秒，${tf.power}级 ( ${tf.strong} )`,
     color: '#39A7F8'
   },
-  ...(land || maxSpeed.power > 10 ? [{
-    label: land ? "登陆位置" : "预测强度",
-    value: land
-      ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
-      : `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`,
+  ...(land?.length ? [{
+    label: "登陆位置",
+    value: `${formatDate(land[0].land_time, true)}，在${land[0].position}登陆`,
     color: '#FFD83A'
   }] : []),
-  ...(!land && (isLarge || !hasNumber) ? [{
+  ...((isLarge || !land?.length) ? [{
     label: "位置测距",
     value: `距离你的位置 ${dist} 公里`,
     color: '#F95BF9'
@@ -1585,7 +1583,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
   return barStack;
 };
 
-const createWidget = (typhoons, tf, maxSpeed, date, land, dist, info, barColor, textColor, isLarge) => {
+const createWidget = (typhoons, tf, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -1594,7 +1592,7 @@ const createWidget = (typhoons, tf, maxSpeed, date, land, dist, info, barColor, 
   topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 5 : 4, 20);
   createButtonStack(topStack, tyIcon, (tf.ident + tf.name), barColor);
   topStack.addSpacer(8);
-  const dateText = topStack.addText(date)
+  const dateText = topStack.addText(date);
   dateText.font = Font.mediumSystemFont(14.5);
   dateText.textColor = textColor;
   topStack.addSpacer();
@@ -1794,12 +1792,9 @@ const createTyphoonData = async (typhoons, tf, textColor, isLarge) => {
   const date = formatDate(tf.update_time);
   const land = tf.land?.at(-1) ?? '';
   const dist = getDistance(setting.lat, setting.lon, tf.lat, tf.lng);
-  const distance = tf.location?.match(/\d+/)?.[0] || 0;
-  const hasNumber = /\d+/.test(tf.trend);
-  const maxSpeed = getMaxForecast(tf);
-  const info = generateItem(isLarge, tf, land, maxSpeed, dist, hasNumber);
+  const info = generateItem(isLarge, tf, land, dist);
   speedChangeNotice(tf, dist);
-  return createWidget(typhoons, tf, maxSpeed, date, land, dist, info, barColor, textColor, isLarge);
+  return createWidget(typhoons, tf, date, land, dist, info, barColor, textColor, isLarge);
 };
 
 const createTcData = (tcItem, tc, textColor, isLarge) => {
@@ -1860,7 +1855,7 @@ const runWidget = async () => {
     await setBackground(widget, 'tf', [], isLarge);
   } else if (!tf || isNumber) {
     const { tcItem, tc } = await currMergerTC();
-    if (tcItem.length) {
+    if (tcItem?.length) {
       currMergerTCNotice(tc);
       const tyPoints = getTyphoonItem(typhoons || []);
       const tfItem = Number(param) === 2 ? tyPoints : [];
