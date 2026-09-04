@@ -57,10 +57,10 @@ const getCacheData = async (name, url, type, cacheTime = 0) => {
       (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
   if (data && !expired) return data;
   try {
-    console.log(name)
     const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
     if (response) {
       cache.write(name, response);
+      console.log(name)
       return response;
     }
   } catch (e) {}
@@ -91,7 +91,6 @@ const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typho
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
 const typhoonIcons = await getCacheData('icon.json', tyIconUrl, 'json', 24);
 
-// 地点库
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
@@ -358,12 +357,9 @@ const getRadarImage = async () => {
 // 绘制台风预测路径
 const getStationColor = country => {
   const colors = {
-    中国: '#FF4050',
-    香港: '#FF66FF',
-    日本: '#43FF4B',
-    台湾: '#FFA040',
-    美国: '#40DDFF',
-    韩国: '#669999',
+    中国: '#FF4050', 香港: '#FF66FF',
+    日本: '#43FF4B', 台湾: '#FFA040',
+    美国: '#40DDFF', 韩国: '#669999',
     欧洲: '#246ED4'
   };
   return colors[country] || '#FF66FF';
@@ -562,7 +558,7 @@ const drawLandingFlags = (ctx, typhoon, flagIcon, project, EXPORT_SCALE) => {
   }
 };
 
-// 绘制登陆位置信息框
+// 绘制台风登陆位置信息框
 const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
   const fontSize = 14 * EXPORT_SCALE;
   const paddingH = 10 * EXPORT_SCALE;
@@ -600,8 +596,317 @@ const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
   ctx.drawTextInRect(text, new Rect(boxX + paddingH, boxY + paddingV, boxWidth - paddingH * 2, boxHeight));
 };
 
+/**
+ * 矩形碰撞检测函数（包含 Margin 边距保护）
+ */
+const isOverlapping = (rectA, rectB, margin = 10) => {
+  return !(rectA.x + rectA.width + margin <= rectB.x || rectA.x >= rectB.x + rectB.width + margin || rectA.y + rectA.height + margin <= rectB.y || rectA.y >= rectB.y + rectB.height + margin);
+};
+
+const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXPORT_SCALE) => {
+  if (!badgeText) return;
+
+  const badgeW = badgeText.length * badgeFS * 0.85 + 10 * EXPORT_SCALE;
+  const badgeH = badgeFS + 6 * EXPORT_SCALE;
+  const badgeX = boxX + boxW - badgeW - 6 * EXPORT_SCALE;
+  const badgeY = boxY - badgeH / 2;
+  const typeUpper = (subscriptType || "").toUpperCase();
+  const badgeBg = typeUpper === 'TOP' 
+    ? new Color('#f5a623') 
+    : (typeUpper === 'NEW' ? new Color('#2b88e6') : new Color('#a255ff'));
+  ctx.setFillColor(badgeBg);
+  // 绘制圆角背景
+  const baseBadgePath = new Path();
+  baseBadgePath.addRoundedRect(new Rect(badgeX, badgeY, badgeW, badgeH), badgeH / 2, badgeH / 2);
+  ctx.addPath(baseBadgePath);
+  ctx.fillPath();
+  // 绘制角标左下角的小尾巴
+  const tailExt = 1.5 * EXPORT_SCALE;
+  const tailPath = new Path();
+  tailPath.move(new Point(badgeX, badgeY + badgeH / 2));
+  tailPath.addLine(new Point(badgeX, badgeY + badgeH));
+  tailPath.addLine(new Point(badgeX - tailExt, badgeY + badgeH));
+  tailPath.addLine(new Point(badgeX + (8 * EXPORT_SCALE), badgeY + badgeH));
+  tailPath.addLine(new Point(badgeX + (8 * EXPORT_SCALE), badgeY + badgeH / 2));
+  tailPath.closeSubpath();
+  ctx.addPath(tailPath);
+  ctx.fillPath();
+  // 绘制角标文字
+  const badgeFont = Font.boldSystemFont(badgeFS);
+  ctx.setFont(badgeFont);
+  ctx.setTextColor(new Color('#ffffff'));
+  ctx.setTextAlignedCenter();
+  ctx.drawTextInRect(badgeText, new Rect(badgeX, badgeY + (badgeH - badgeFS) / 2 - EXPORT_SCALE, badgeW, badgeFS * 1.5));
+};
+
+// 裁剪圆形头像
+const getCircleAvatar = async (title, imageUrl) => {
+  if (!imageUrl) return null;
+  const rawAvatar = await getCacheData(`avatar_raw_${title}.png`, imageUrl, false, 2);
+  if (!rawAvatar) return null;
+  const cache = useFileManager(false);
+  const circleName = `avatar_circle_${title}.png`;
+  const cached = cache.read(circleName);
+  if (cached) return cached;
+  try {
+    const sz = Math.min(rawAvatar.size.width, rawAvatar.size.height);
+    const wv = new WebView();
+    await wv.loadHTML(`<canvas id="c" width="${sz}" height="${sz}"></canvas><script>const i=new Image();i.onload=()=>{const c=document.getElementById('c');const x=c.getContext('2d');x.beginPath();x.arc(${sz/2},${sz/2},${sz/2},0,Math.PI*2);x.clip();x.drawImage(i,0,0,${sz},${sz});document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`);
+    let b64 = "";
+    for (let i = 0; i < 30; i++) {
+      b64 = await wv.evaluateJavaScript("document.body.getAttribute('d')");
+      if (b64) break;
+      await new Promise(r => setTimeout(r, 50));
+    }
+    if (!b64) return rawAvatar;
+    const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
+    cache.write(circleName, img);
+    return img;
+  } catch {
+    return rawAvatar;
+  }
+};
+
+/**
+ * 智能筛选并绘制最多 3 个互不重叠的卡片
+ */
+const drawFeedbackInfoBoxes = async (
+  ctx, 
+  feedbackData, 
+  project, 
+  EXPORT_SCALE, 
+  canvasW = 1000, 
+  canvasH = 1000,
+  currentZoom = 3.6
+) => {
+  if (!feedbackData?.length || currentZoom < 3.5) return [];
+  // 1. 基础尺寸与配置
+  const titleFS = 13 * EXPORT_SCALE;
+  const subFS = 10 * EXPORT_SCALE;
+  const badgeFS = 8 * EXPORT_SCALE;
+  const lineSpacing = 4 * EXPORT_SCALE;
+  const padH = 6 * EXPORT_SCALE, padV = 5 * EXPORT_SCALE;
+  const avatarSize = 34 * EXPORT_SCALE, arrowSize = 16 * EXPORT_SCALE, pointerSize = 22 * EXPORT_SCALE;
+  const triW = 10 * EXPORT_SCALE, triH = 6 * EXPORT_SCALE;
+
+  const loadBase64 = str => (str && Data.fromBase64String(str.trim())) ? Image.fromData(Data.fromBase64String(str.trim())) : null;
+  const arrowImg = loadBase64(typhoonIcons?.arrow);
+  const pointerImg = loadBase64(typhoonIcons?.blueCircle);
+
+  const shuffledData = [...feedbackData];
+  for (let i = shuffledData.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledData[i], shuffledData[j]] = [shuffledData[j], shuffledData[i]];
+  }
+  
+  const drawnRects = [];
+  const selItems = []; // 暂存通过碰撞检测、确定要绘制的卡片数据
+  const TARGET_COUNT = 3; 
+
+  // 阶段 1：碰撞检测与数据筛选
+  for (const item of shuffledData) {
+    if (selItems.length >= TARGET_COUNT) break; 
+    const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    // 吉林往北（lat > 43.5）不显示提示框，避免遮挡小组件顶部标题
+    if (lat > 43.5) continue;
+    const pos = project(lat, lon);
+    if (isNaN(pos.x) || isNaN(pos.y)) continue;
+    const margin = 10 * EXPORT_SCALE;
+    if (pos.x < margin || pos.x > canvasW - margin || pos.y < margin || pos.y > canvasH - margin) {
+      continue;
+    }
+
+    const titleText = item.title || "", subTitleText = item.subTitle || "";
+    const textW = Math.max(titleText.length * titleFS * 1.05, subTitleText.length * subFS * 1.05);
+    const boxW = avatarSize + textW + arrowSize + padH * 6;
+    const boxH = avatarSize + padV * 2;
+    
+    let boxX = pos.x - boxW / 2;
+    let boxY = pos.y - boxH - triH - (pointerSize / 2);
+    let isFlippedVertically = false;
+    boxX = Math.max(margin, Math.min(boxX, canvasW - boxW - margin));
+    if (boxY < margin) {
+      boxY = pos.y + (pointerSize / 2) + triH;
+      isFlippedVertically = true;
+    }
+    const currentCardRect = { x: boxX, y: boxY, width: boxW, height: boxH };
+    // 防重叠碰撞检测
+    const safeGap = 12 * EXPORT_SCALE;
+    if (drawnRects.some(rect => isOverlapping(currentCardRect, rect, safeGap))) {
+      continue; 
+    }
+    
+    drawnRects.push(currentCardRect);
+    selItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
+  }
+
+  // 阶段 2：底层绘制 —— 绘制所有定位圆点
+  if (pointerImg) {
+    for (const card of selItems) {
+      const ptrX = card.pos.x - pointerSize / 2;
+      const ptrY = card.pos.y - pointerSize / 2;
+      ctx.drawImageInRect(pointerImg, new Rect(ptrX, ptrY, pointerSize, pointerSize));
+    }
+  }
+
+  // 阶段 3：顶层绘制 —— 绘制所有提示框卡片
+  for (const card of selItems) {
+    const { item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically } = card;
+    const titleText = item.title || "", subTitleText = item.subTitle || "";
+    const badgeText = item.subscriptTypeLabel || item.subscriptType || "";
+    // 1. 绘制主卡片背景
+    const mainRectPath = new Path();
+    mainRectPath.addRoundedRect(new Rect(boxX, boxY, boxW, boxH), boxH / 2, boxH / 2);
+    ctx.setFillColor(new Color('#ffffff'));
+    ctx.addPath(mainRectPath);
+    ctx.fillPath();
+
+    ctx.setStrokeColor(new Color('#e0e0e0'));
+    ctx.setLineWidth(1 * EXPORT_SCALE);
+    ctx.addPath(mainRectPath);
+    ctx.strokePath();
+    // 2. 绘制卡片指向小三角
+    const triCenterX = Math.max(boxX + triW, Math.min(boxX + boxW - triW, pos.x));
+    const triPath = new Path();
+    let triTopY, triBottomY;
+
+    if (!isFlippedVertically) {
+      triTopY = boxY + boxH - (1 * EXPORT_SCALE);
+      triBottomY = triTopY + triH;
+      triPath.move(new Point(triCenterX - triW / 2, triTopY));
+      triPath.addLine(new Point(triCenterX + triW / 2, triTopY));
+      triPath.addLine(new Point(triCenterX, triBottomY));
+    } else {
+      triBottomY = boxY + (1 * EXPORT_SCALE);
+      triTopY = triBottomY - triH;
+      triPath.move(new Point(triCenterX - triW / 2, triBottomY));
+      triPath.addLine(new Point(triCenterX + triW / 2, triBottomY));
+      triPath.addLine(new Point(triCenterX, triTopY));
+    }
+    triPath.closeSubpath();
+    ctx.setFillColor(new Color('#ffffff'));
+    ctx.addPath(triPath);
+    ctx.fillPath();
+
+    const triBorder = new Path();
+    if (!isFlippedVertically) {
+      triBorder.move(new Point(triCenterX - triW / 2, triTopY));
+      triBorder.addLine(new Point(triCenterX, triBottomY));
+      triBorder.addLine(new Point(triCenterX + triW / 2, triTopY));
+    } else {
+      triBorder.move(new Point(triCenterX - triW / 2, triBottomY));
+      triBorder.addLine(new Point(triCenterX, triTopY));
+      triBorder.addLine(new Point(triCenterX + triW / 2, triBottomY));
+    }
+    ctx.addPath(triBorder);
+    ctx.strokePath();
+    // 3. 绘制左侧圆形头像
+    const circleAvatar = await getCircleAvatar(item.title, item.imageUrl);
+    if (circleAvatar) {
+      ctx.drawImageInRect(circleAvatar, new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize));
+    }
+    // 4. 绘制标题和副标题
+    const textX = boxX + padH + avatarSize + 6 * EXPORT_SCALE;
+    const startTextY = boxY + (boxH - (subTitleText ? titleFS + subFS + lineSpacing : titleFS)) / 2 - EXPORT_SCALE;
+    const titleFont = Font.boldSystemFont(titleFS);
+    ctx.setFont(titleFont);
+    ctx.setTextColor(new Color('#38b6ff'));
+    ctx.setTextAlignedLeft();
+    ctx.drawTextInRect(titleText, new Rect(textX, startTextY, textW, titleFS * 1.2));
+    if (subTitleText) {
+      const subTitleFont = Font.systemFont(subFS);
+      ctx.setFont(subTitleFont);
+      ctx.setTextColor(new Color('#222222'));
+      ctx.drawTextInRect(subTitleText, new Rect(textX, startTextY + titleFS + lineSpacing, textW, subFS * 1.2));
+    }
+    // 5. 绘制右侧箭头
+    if (arrowImg) {
+      ctx.drawImageInRect(arrowImg, new Rect(boxX + boxW - padH * 2 - arrowSize, boxY + (boxH - arrowSize) / 2, arrowSize, arrowSize));
+    }
+    // 6. 绘制右上角角标
+    drawBadge(ctx, badgeText, item.subscriptType, boxX, boxY, boxW, badgeFS, EXPORT_SCALE);
+  }
+  return drawnRects;
+};
+
+// 风景图标绘制
+const drawLandmarkIcons = async (
+  ctx,
+  feedbackData,
+  project,
+  EXPORT_SCALE,
+  canvasW = 1000,
+  canvasH = 1000,
+  drawnRects = []
+) => {
+  if (!feedbackData?.length) return;
+  const ICON_W = 22 * EXPORT_SCALE;
+  const ICON_H = 38 * EXPORT_SCALE;
+  // 小圆点中心相对原图（88x152）的比例，按实测像素换算
+  const ANCHOR_X_RATIO = 42.5 / 88;
+  const ANCHOR_Y_RATIO = 115.5 / 152;
+  const safeGap = 3 * EXPORT_SCALE;
+  const MAX_ICON_COUNT = 3;
+  let drawnCount = 0;
+  // 1. 过滤符合条件的风景图标
+  const landmarkItems = feedbackData.filter(item => {
+    const isRec = String(item.isRecommend) === "0";
+    const hasIcon = !!item.iconUrl;
+    const isScenery = (item.iconLabel || "").includes("风景");
+    return isRec && hasIcon && isScenery;
+  });
+  if (landmarkItems.length === 0) return;
+  // 2. 随机打乱
+  const shuffledItems = [...landmarkItems];
+  for (let i = shuffledItems.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledItems[i], shuffledItems[j]] = [shuffledItems[j], shuffledItems[i]];
+  }
+
+  for (const item of shuffledItems) {
+    if (drawnCount >= MAX_ICON_COUNT) break;
+    const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
+    if (isNaN(lat) || isNaN(lon)) continue;
+    const pos = project(lat, lon);
+    if (!pos || isNaN(pos.x) || isNaN(pos.y)) continue;
+    // 小圆点中心对齐坐标点
+    const boxX = pos.x - ICON_W * ANCHOR_X_RATIO;
+    const boxY = pos.y - ICON_H * ANCHOR_Y_RATIO;
+    // 边缘检测（适当放宽边距）
+    const margin = 10 * EXPORT_SCALE;
+    if (boxX < -margin || boxX + ICON_W > canvasW + margin || boxY < -margin || boxY + ICON_H > canvasH + margin) {
+      continue;
+    }
+    const currentIconRect = { x: boxX, y: boxY, width: ICON_W, height: ICON_H };
+    // 碰撞检测避让
+    const hasCollision = drawnRects.some(rect => {
+      return !(
+        currentIconRect.x + currentIconRect.width + safeGap < rect.x || currentIconRect.x - safeGap > rect.x + rect.width || currentIconRect.y + currentIconRect.height + safeGap < rect.y || currentIconRect.y - safeGap > rect.y + rect.height
+      );
+    });
+    if (hasCollision) continue;
+    // 缓存读取与绘制
+    try {
+      const key = `${item.title || 'landmark'}_${Data.fromString(item.iconUrl).toBase64String().slice(-12)}`;
+      const iconImg = await getCacheData(`landmark_${key}.png`, item.iconUrl, false, 24);
+      if (iconImg) {
+        ctx.drawImageInRect(iconImg, new Rect(boxX, boxY, ICON_W, ICON_H));
+        drawnRects.push(currentIconRect);
+        drawnCount++;
+      }
+    } catch (e) {}
+  }
+};
+
 // 支持分别传入扰动数组和台风数组
-const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locationPoint = null) => {
+const generateMapImage = async (
+  isDay = 0, 
+  tcPoints = [], 
+  typhoons = [], 
+  feedbackData = [], 
+  locationPoint = null
+) => {
   const typhoonPoints = [
     ...tcPoints.map(p => ({ ...p, isTyphoon: false })),
     ...typhoons.map(p => ({ ...p, isTyphoon: true }))
@@ -636,7 +941,11 @@ const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locatio
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
     if (maxLng > 165) zoom = Math.max(zoom, 3.02);
     if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
-    zoom = clamp(zoom, 2.95, 4.4);
+    // 20°以内的间隔都算"同一片区域"，zoom 下限抬到 3.5；
+    // 超过20°后逐渐回落到 2.95（在 span=50 时落到底），宽跨度组合不受影响
+    const tightness = clamp(1 - Math.max(0, lngSpan - 20) / 30, 0, 1);
+    const minZoom = 2.95 + tightness * 0.55;
+    zoom = clamp(zoom, minZoom, 4.4);
     if (zoom < 3.5) centerLng = Math.max(centerLng, 132.2);
     return { lng: centerLng, lat: centerLat, zoom };
   };
@@ -736,22 +1045,12 @@ const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locatio
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
   
-  // 1，绘制当前定位图标
-  if (locationPoint) {
-    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
-    const locBase64 = typhoonIcons[locKey];
-    if (locBase64) {
-      const locImg = Image.fromData(Data.fromBase64String(locBase64));
-      const locPos = project(locationPoint.lat, locationPoint.lon);
-      // 维持 40*60 原始比例 (2:3) 缩放
-      const LOC_W = 22 * EXPORT_SCALE;
-      const LOC_H = 33 * EXPORT_SCALE;
-      const BOTTOM_PADDING = 3.3 * EXPORT_SCALE;
-      ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
-    }
-  }
+  // 1. 出行推荐提示框绘制
+  const occupiedRects = await drawFeedbackInfoBoxes(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
+  // 2，绘制风景图标
+  await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
   
-  // 2. 仅对标记为台风的点绘制风圈
+  // 3. 点绘制台风风圈与预测路径
   for (const p of typhoonPoints) {
     if (p.isTyphoon) {
       drawWindCircles(ctx, p, project, EXPORT_SCALE);
@@ -759,10 +1058,10 @@ const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locatio
     }
   }
   
-  // 3. 绘制图标及文本标注
+  // 4. 仅对台风/热带扰动绘制图标
   for (const p of typhoonPoints) {
     const pos = project(p.lat, p.lng);
-    const ICON_SIZE = (p.isTyphoon ? 36 : 42) * EXPORT_SCALE;
+    const ICON_SIZE = (p.isTyphoon ? 40 : 42) * EXPORT_SCALE;
     const iconImage = p.isTyphoon ? p.icon : tcIcon;
     if (iconImage) {
       ctx.drawImageInRect(iconImage, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
@@ -772,29 +1071,42 @@ const generateMapImage = async (tcPoints = [], typhoons = [], isDay = 0, locatio
     if (name) {
       const fs = 11 * EXPORT_SCALE;
       const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
-      ctx.setFont(Font.systemFont(fs));
+      ctx.setFont(Font.systemFont(fs))
       ctx.setTextColor(textColor);
       ctx.setTextAlignedCenter();
       ctx.drawTextInRect(name, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
     }
   }
   
-  // 4. 绘制登陆点旗帜标记
+  // 5. 绘制登陆点旗帜标记
   const flagBase64 = typhoonIcons.flag;
   const flagIcon = flagBase64 ? Image.fromData(Data.fromBase64String(flagBase64)) : null;
   for (const p of typhoonPoints) {
     if (p.isTyphoon) drawLandingFlags(ctx, p, flagIcon, project, EXPORT_SCALE);
   }
   
-  // 5. 绘制登陆 location 提示框
-  for (const p of typhoonPoints) {
-    if (p.isTyphoon && p.land && p.land.length > 0 && p.location) {
-      const pos = project(p.lat, p.lng);
-      const ICON_SIZE = 40 * EXPORT_SCALE;
-      drawLandInfoBox(ctx, pos, p.location, isDay, ICON_SIZE, EXPORT_SCALE);
+  // 6. 绘制当前定位图标
+  if (locationPoint) {
+    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
+    const locBase64 = typhoonIcons[locKey];
+    if (locBase64) {
+      const locImg = Image.fromData(Data.fromBase64String(locBase64));
+      const locPos = project(locationPoint.lat, locationPoint.lon);
+      const LOC_W = 22 * EXPORT_SCALE;
+      const LOC_H = 33 * EXPORT_SCALE;
+      const BOTTOM_PADDING = 3.3 * EXPORT_SCALE; 
+      ctx.drawImageInRect(locImg, new Rect(locPos.x - LOC_W / 2, locPos.y - LOC_H + BOTTOM_PADDING, LOC_W, LOC_H));
     }
   }
   
+  // 7. 绘制登陆 location 提示框（最顶层）
+  for (const p of typhoonPoints) {
+    if (p.isTyphoon && p.land && p.land.length > 0 && p.latest && p.latest.location) {
+      const pos = project(p.lat, p.lng);
+      const ICON_SIZE = 40 * EXPORT_SCALE;
+      drawLandInfoBox(ctx, pos, p.latest.location, ICON_SIZE, EXPORT_SCALE);
+    }
+  }
   return ctx.getImage();
 };
 
@@ -1126,7 +1438,9 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
     if (typhoonType === 'tf') {
       widget.backgroundImage = await getTyphoonImage();
     } else {
-      const image = await generateMapImage(typhoonType, typhoons, isDay, setting);
+      const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 1)
+      const feedbackData = feedbackJson.data ?? [];
+      const image = await generateMapImage(isDay, typhoonType, typhoons, feedbackData, setting);
       widget.backgroundImage = image;
     }
   } else {
