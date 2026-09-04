@@ -1449,48 +1449,40 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
   }
 };
 
-const generateItem = (isLarge, tf, land, maxSpeed, dist, hasNumber) => {
-  return [
-    { 
-      label: "中心位置", 
-      value: `东经${tf.lng || 0}°　北纬${tf.lat || 0}°`, 
-      color: '#00C400'
-    },
-    { 
-      label: "风速风力", 
-      value: `${tf.speed}米/秒，${tf.power}级 ( ${tf.strong} )`, 
-      color: '#39A7F8'
-    },
-    { 
-      label: land
-        ? "登陆位置"
-        : maxSpeed.power > 10
-          ? "预测强度"
-          : "风圈半径",
-      value: land
-        ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
-        : maxSpeed.power > 10
-          ? `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`
-          : `${tf.radius7 || 0}km-7级，${tf.radius10 || 0}km-10级，${tf.radius12 || 0}km-12级`,
-      color: '#FFD83A'
-    },
-    { 
-      label: "参考位置", 
-      value: tf.location || '---',
-      color: '#FF7800'
-    },
-    ...(!land && (isLarge || !hasNumber) ? [{
-      label: "位置测距",
-      value: `距离你的位置 ${dist} 公里`,
-      color: '#F95BF9'
-    }] : []),
-    { 
-      label: "未来趋势", 
-      value: tf.trend || '---',
-      color: '#8C7CFF'
-    }
-  ];
-};
+const generateItem = (isLarge, tf, land, maxSpeed, dist, hasNumber) => [
+  {
+    label: "中心位置",
+    value: `东经${tf.lng || 0}°　北纬${tf.lat || 0}°`,
+    color: '#00C400'
+  },
+  {
+    label: "风速风力",
+    value: `${tf.speed}米/秒，${tf.power}级 ( ${tf.strong} )`,
+    color: '#39A7F8'
+  },
+  ...(land || maxSpeed.power > 10 ? [{
+    label: land ? "登陆位置" : "预测强度",
+    value: land
+      ? `${formatDate(land.land_time, true)}，在${land.position}登陆`
+      : `${maxSpeed.speed}米/秒，${maxSpeed.power}级 ${maxSpeed.strong}，${maxSpeed.sets}预测`,
+    color: '#FFD83A'
+  }] : []),
+  ...(!land && (isLarge || !hasNumber) ? [{
+    label: "位置测距",
+    value: `距离你的位置 ${dist} 公里`,
+    color: '#F95BF9'
+  }] : []),
+  {
+    label: "参考位置",
+    value: tf.location || '---',
+    color: '#FF7800'
+  },
+  {
+    label: "未来趋势",
+    value: tf.trend || '---',
+    color: '#8C7CFF'
+  }
+];
 
 const generateTCItem = (tc, dist, tcLocation, begin_time, isLarge) => {
   return [
