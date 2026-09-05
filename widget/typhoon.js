@@ -643,7 +643,8 @@ const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXP
 const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
   if (!imageUrl) return null;
   const cacheName = `avatar_${title}.png`;
-  const cached = await getCacheData(cacheName, imageUrl, null, cacheHours);
+  const cache = useFileManager();
+  const cached = cache.read(cacheName);
   if (cached) return cached;
   const rawAvatar = await new Request(imageUrl).loadImage();
   if (!rawAvatar) return null;
@@ -659,10 +660,9 @@ const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
       await new Promise(r => setTimeout(r, 30));
     }
     if (!b64) return rawAvatar;
-    const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
-    const cache = useFileManager();
-    cache.write(cacheName, img);
-    return img;
+    const circleImg = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
+    cache.write(cacheName, circleImg);
+    return circleImg;
   } catch (e) {
     return rawAvatar;
   }
@@ -673,7 +673,6 @@ const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
  */
 const drawFeedbackInfoBoxes = async (
   ctx, 
-  tcPoints,
   feedbackData, 
   project, 
   EXPORT_SCALE, 
@@ -714,12 +713,12 @@ const drawFeedbackInfoBoxes = async (
   }
   
   const drawnRects = [];
-  const selItems = []; 
-  const TARGET_COUNT = tcPoints.length? 3 : 4;
+  const selectedItems = []; 
+  const TARGET_COUNT = 3; 
 
   // 阶段 1：碰撞检测与数据筛选
   for (const item of shuffledData) {
-    if (selItems.length >= TARGET_COUNT) break; 
+    if (selectedItems.length >= TARGET_COUNT) break; 
     const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
     if (isNaN(lat) || isNaN(lon)) continue;
     // 坐标在吉林往北不显示提示框
@@ -731,7 +730,7 @@ const drawFeedbackInfoBoxes = async (
       continue;
     }
 
-    const titleText = item.title || "", subTitleText = item.subTitle || ""
+    const titleText = item.title || "", subTitleText = item.subTitle || "";
     const textW = Math.max(titleText.length * titleFS * 1.05, subTitleText.length * subFS * 1.05);
     const boxW = avatarSize + textW + arrowSize + padH * 6;
     const boxH = avatarSize + padV * 2;
@@ -750,12 +749,12 @@ const drawFeedbackInfoBoxes = async (
       continue; 
     }
     drawnRects.push(currentCardRect);
-    selItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
+    selectedItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
   }
 
   // 阶段 2：底层绘制 —— 绘制所有定位圆点
   if (pointerImg) {
-    for (const card of selItems) {
+    for (const card of selectedItems) {
       const ptrX = card.pos.x - pointerSize / 2;
       const ptrY = card.pos.y - pointerSize / 2;
       ctx.drawImageInRect(pointerImg, new Rect(ptrX, ptrY, pointerSize, pointerSize));
@@ -763,7 +762,7 @@ const drawFeedbackInfoBoxes = async (
   }
 
   // 阶段 3：顶层绘制 —— 绘制所有提示框卡片
-  for (const card of selItems) {
+  for (const card of selectedItems) {
     const { item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically } = card;
     const titleText = item.title || "", subTitleText = item.subTitle || "";
     const badgeText = item.subscriptTypeLabel || item.subscriptType || "";
@@ -1056,7 +1055,7 @@ const generateMapImage = async (
   }
   
   // 1. 出行推荐提示框绘制
-  const occupiedRects = await drawFeedbackInfoBoxes(ctx, typhoonPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
+  const occupiedRects = await drawFeedbackInfoBoxes(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
   // 2，绘制风景图标
   if (!tcPoints.length) {
     await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
