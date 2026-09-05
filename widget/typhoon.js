@@ -673,6 +673,7 @@ const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
  */
 const drawFeedbackInfoBoxes = async (
   ctx, 
+  tcPoints, 
   feedbackData, 
   project, 
   EXPORT_SCALE, 
@@ -714,7 +715,7 @@ const drawFeedbackInfoBoxes = async (
   
   const drawnRects = [];
   const selectedItems = []; 
-  const TARGET_COUNT = 3; 
+  const TARGET_COUNT = !tcPoints.length ? 4 : 3;
 
   // 阶段 1：碰撞检测与数据筛选
   for (const item of shuffledData) {
@@ -1055,7 +1056,7 @@ const generateMapImage = async (
   }
   
   // 1. 出行推荐提示框绘制
-  const occupiedRects = await drawFeedbackInfoBoxes(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
+  const occupiedRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
   // 2，绘制风景图标
   if (!tcPoints.length) {
     await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
@@ -1436,7 +1437,7 @@ const getTyphoonImage = async () => {
   ];
   const name = files[Math.floor(Math.random() * files.length)];
   const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/${name}?r=${Date.now()}`;
-  return await getCacheData(name, url, null, 0.2);
+  return await getCacheData(name, url, null, 0.5);
 };
 
 // 设置背景
