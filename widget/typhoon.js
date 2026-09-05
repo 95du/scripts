@@ -640,29 +640,30 @@ const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXP
 };
 
 // 裁剪圆形头像
-const getCircleAvatar = async (title, imageUrl) => {
+const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
   if (!imageUrl) return null;
-  const rawAvatar = await getCacheData(`avatar_raw_${title}.png`, imageUrl, false, 2);
-  if (!rawAvatar) return null;
-  const cache = useFileManager(false);
-  const circleName = `avatar_circle_${title}.png`;
-  const cached = cache.read(circleName);
+  const cacheName = `avatar_${title}.png`;
+  const cached = await getCacheData(cacheName, imageUrl, null, cacheHours);
   if (cached) return cached;
+  const rawAvatar = await new Request(imageUrl).loadImage();
+  if (!rawAvatar) return null;
   try {
     const sz = Math.min(rawAvatar.size.width, rawAvatar.size.height);
+    const html = `<canvas id="c" width="${sz}" height="${sz}"></canvas><script>const i=new Image();i.onload=()=>{const c=document.getElementById('c'),x=c.getContext('2d');x.beginPath();x.arc(${sz/2},${sz/2},${sz/2},0,Math.PI*2);x.clip();x.drawImage(i,0,0,${sz},${sz});document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`;
     const wv = new WebView();
-    await wv.loadHTML(`<canvas id="c" width="${sz}" height="${sz}"></canvas><script>const i=new Image();i.onload=()=>{const c=document.getElementById('c');const x=c.getContext('2d');x.beginPath();x.arc(${sz/2},${sz/2},${sz/2},0,Math.PI*2);x.clip();x.drawImage(i,0,0,${sz},${sz});document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`);
+    await wv.loadHTML(html);
     let b64 = "";
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 20; i++) {
       b64 = await wv.evaluateJavaScript("document.body.getAttribute('d')");
       if (b64) break;
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, 30));
     }
     if (!b64) return rawAvatar;
     const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
-    cache.write(circleName, img);
+    const cache = useFileManager();
+    cache.write(cacheName, img);
     return img;
-  } catch {
+  } catch (e) {
     return rawAvatar;
   }
 };
@@ -672,6 +673,7 @@ const getCircleAvatar = async (title, imageUrl) => {
  */
 const drawFeedbackInfoBoxes = async (
   ctx, 
+  tcPoints,
   feedbackData, 
   project, 
   EXPORT_SCALE, 
@@ -680,6 +682,18 @@ const drawFeedbackInfoBoxes = async (
   currentZoom = 3.6
 ) => {
   if (!feedbackData?.length || currentZoom < 3.5) return [];
+  // 在开始前处理所有头像下载与裁切
+  const avatarMap = new Map();
+  await Promise.all(
+    feedbackData.map(async item => {
+      if (!item?.imageUrl) return;
+      const avatar = await getCircleAvatar(item.title, item.imageUrl, 24);
+      if (avatar) {
+        avatarMap.set(item.title, avatar);
+      }
+    })
+  );
+
   // 1. 基础尺寸与配置
   const titleFS = 13 * EXPORT_SCALE;
   const subFS = 10 * EXPORT_SCALE;
@@ -700,15 +714,15 @@ const drawFeedbackInfoBoxes = async (
   }
   
   const drawnRects = [];
-  const selItems = []; // 暂存通过碰撞检测、确定要绘制的卡片数据
-  const TARGET_COUNT = 3; 
+  const selItems = []; 
+  const TARGET_COUNT = tcPoints.length? 3 : 4;
 
   // 阶段 1：碰撞检测与数据筛选
   for (const item of shuffledData) {
     if (selItems.length >= TARGET_COUNT) break; 
     const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
     if (isNaN(lat) || isNaN(lon)) continue;
-    // 吉林往北（lat > 43.5）不显示提示框，避免遮挡小组件顶部标题
+    // 坐标在吉林往北不显示提示框
     if (lat > 43.5) continue;
     const pos = project(lat, lon);
     if (isNaN(pos.x) || isNaN(pos.y)) continue;
@@ -717,11 +731,10 @@ const drawFeedbackInfoBoxes = async (
       continue;
     }
 
-    const titleText = item.title || "", subTitleText = item.subTitle || "";
+    const titleText = item.title || "", subTitleText = item.subTitle || ""
     const textW = Math.max(titleText.length * titleFS * 1.05, subTitleText.length * subFS * 1.05);
     const boxW = avatarSize + textW + arrowSize + padH * 6;
     const boxH = avatarSize + padV * 2;
-    
     let boxX = pos.x - boxW / 2;
     let boxY = pos.y - boxH - triH - (pointerSize / 2);
     let isFlippedVertically = false;
@@ -736,7 +749,6 @@ const drawFeedbackInfoBoxes = async (
     if (drawnRects.some(rect => isOverlapping(currentCardRect, rect, safeGap))) {
       continue; 
     }
-    
     drawnRects.push(currentCardRect);
     selItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
   }
@@ -761,7 +773,6 @@ const drawFeedbackInfoBoxes = async (
     ctx.setFillColor(new Color('#ffffff'));
     ctx.addPath(mainRectPath);
     ctx.fillPath();
-
     ctx.setStrokeColor(new Color('#e0e0e0'));
     ctx.setLineWidth(1 * EXPORT_SCALE);
     ctx.addPath(mainRectPath);
@@ -770,7 +781,6 @@ const drawFeedbackInfoBoxes = async (
     const triCenterX = Math.max(boxX + triW, Math.min(boxX + boxW - triW, pos.x));
     const triPath = new Path();
     let triTopY, triBottomY;
-
     if (!isFlippedVertically) {
       triTopY = boxY + boxH - (1 * EXPORT_SCALE);
       triBottomY = triTopY + triH;
@@ -801,8 +811,8 @@ const drawFeedbackInfoBoxes = async (
     }
     ctx.addPath(triBorder);
     ctx.strokePath();
-    // 3. 绘制左侧圆形头像
-    const circleAvatar = await getCircleAvatar(item.title, item.imageUrl);
+    // 3. 从预加载的 avatarMap 中直接提取已完成的圆形头像（0 耗时）
+    const circleAvatar = avatarMap.get(item.title);
     if (circleAvatar) {
       ctx.drawImageInRect(circleAvatar, new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize));
     }
@@ -1046,9 +1056,11 @@ const generateMapImage = async (
   }
   
   // 1. 出行推荐提示框绘制
-  const occupiedRects = await drawFeedbackInfoBoxes(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
+  const occupiedRects = await drawFeedbackInfoBoxes(ctx, typhoonPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
   // 2，绘制风景图标
-  await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
+  if (!tcPoints.length) {
+    await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
+  }
   
   // 3. 点绘制台风风圈与预测路径
   for (const p of typhoonPoints) {
@@ -1218,7 +1230,7 @@ const getNextItem = (arr, name) => {
 const currMergerTC = async () => {
   try {
     const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`;
-    const rawTC = await new Request(url).loadJSON();
+    const rawTC = await getCacheData('tcData.json', url, 'json', 24);
     for (const item of rawTC) {
       const point = item.points?.at(-1);
       if (point) {
@@ -1291,10 +1303,10 @@ const mergeLatestData = async (tyItem, latest = []) => {
 // 参考位置，未来趋势
 const getLatestData = async () => {
   try {
-    const [latest, config, message] = await Promise.all([
+    const [latest, message, config] = await Promise.all([
       new Request('https://data.istrongcloud.com/data/latest.json').loadJSON(),
-      new Request('https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json').loadJSON(),
-      new Request('https://tf03.istrongcloud.com/data/message/message.json').loadJSON()
+      getCacheData('message.json', 'https://tf03.istrongcloud.com/data/message/message.json', 'json', 4),
+      getCacheData('config.json', 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json', 'json', 4)
     ]);
     messageNotice(message?.[0]);
     typhoonNotice(config);
@@ -1438,7 +1450,7 @@ const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
     if (typhoonType === 'tf') {
       widget.backgroundImage = await getTyphoonImage();
     } else {
-      const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 1)
+      const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 2)
       const feedbackData = feedbackJson.data ?? [];
       const image = await generateMapImage(isDay, typhoonType, typhoons, feedbackData, setting);
       widget.backgroundImage = image;
@@ -1845,15 +1857,18 @@ const runWidget = async () => {
     ? isDay === 1 ? Color.black() : Color.white()
     : Color.dynamic(Color.black(), Color.white());
   
+  // 💡 在 App 内预览且无特定数字参数时，50% 概率随机展示第二个分支
+  const shouldRandomBranch = config.runsInApp && !isNumber && Math.random() < 0.5;
+
   let widget;
   if (isSmall) {
     widget = errorWidget();
   } else if (hasRegion && isLarge) {
     widget = await createRadarWidget(param);
-  } else if (tf && !isNumber) {
+  } else if (tf && !isNumber && !shouldRandomBranch) {
     widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], isLarge);
-  } else if (!tf || isNumber) {
+  } else {
     const { tcItem, tc } = await currMergerTC();
     if (tcItem?.length) {
       currMergerTCNotice(tc);
