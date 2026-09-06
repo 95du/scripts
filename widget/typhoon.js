@@ -35,22 +35,22 @@ const getSetting = () => {
 };
 const setting = getSetting() || {};
 
-const useFileManager = (type) => ({
+const useFileManager = (type, path = mainPath) => ({
   read: (name) => {
-    const filePath = fm.joinPath(mainPath, name);
+    const filePath = fm.joinPath(path, name);
     if (!fm.fileExists(filePath)) return null;
     return type ? fm.readString(filePath) && JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);
   },
   write: (name, content) => {
-    const filePath = fm.joinPath(mainPath, name);
+    const filePath = fm.joinPath(path, name);
     if (fm.fileExists(filePath)) fm.remove(filePath);
     type ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
   }
 });
 
-const getCacheData = async (name, url, type, cacheTime = 0) => {
-  const cache = useFileManager(type);
-  const filePath = fm.joinPath(mainPath, name);
+const getCacheData = async (name, url, type, cacheTime = 0, path = mainPath) => {
+  const cache = useFileManager(type, path);
+  const filePath = fm.joinPath(path, name);
   const data = cache.read(name);
   const expired = cacheTime > 0 &&
     (!fm.fileExists(filePath) ||
@@ -60,11 +60,11 @@ const getCacheData = async (name, url, type, cacheTime = 0) => {
     const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
     if (response) {
       cache.write(name, response);
-      console.log(name)
+      console.warn(name);
       return response;
     }
   } catch (e) {}
-  return data;
+  return data ?? null;
 };
 
 const notify = (title, body, url, sound = 'piano_error') => {
@@ -380,55 +380,16 @@ const getTileDir = (z, x) => {
   return dir;
 };
 
-const getTileFile = (z, x, y, style) => fm.joinPath(getTileDir(z, x), `${y}_${style}.png`);
-
 const getTileURL = (z, x, y, style) => {
   const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
   const host = style === 6 || style === 8 ? `webst0${s}` : `wprd0${s}`;
   return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
 };
 
-const isValidTile = (img) => img && img.size.width === 256 && img.size.height === 256;
-
-const safeRemove = (p) => { try { fm.remove(p); } catch (e) {} };
-
-const readTile = async (z, x, y, style, time) => {
-  const file = getTileFile(z, x, y, style);
-  if (fm.fileExists(file)) {
-    const date = fm.creationDate(file);
-    const expired = time != null && date && (Date.now() - date.getTime()) / 36e5 > time;
-    if (!expired) {
-      try {
-        const image = fm.readImage(file);
-        if (isValidTile(image)) 
-          return image;
-      } catch (e) {}
-    }
-    safeRemove(file);
-  }
-  try {
-    const image = await new Request(getTileURL(z, x, y, style)).loadImage();
-    if (!isValidTile(image)) throw new Error('invalid tile');
-
-    const tmp = file + '.tmp';
-    safeRemove(tmp);
-    fm.writeImage(tmp, image);
-    let verify = null;
-    try { verify = fm.readImage(tmp); } catch (e) {}
-    if (!isValidTile(verify)) { safeRemove(tmp); throw new Error('verify failed'); }
-
-    try {
-      safeRemove(file);
-      fm.move(tmp, file);
-    } catch (e) {
-      fm.writeImage(file, image);
-      safeRemove(tmp);
-    }
-    return image;
-  } catch (e) {
-    console.log(`Tile failed ${z}/${x}/${y}/${style}`);
-    return null;
-  }
+const readTile = async (z, x, y, style, time = 24) => {
+  const dir = getTileDir(z, x);
+  const name = `${y}_${style}.png`;
+  return await getCacheData(name, getTileURL(z, x, y, style), false, time, dir);
 };
 
 const lngToWorldX = (lng, z) => (lng + 180) / 360 * 256 * Math.pow(2, z);
@@ -1240,7 +1201,7 @@ const getNextItem = (arr, name) => {
 const currMergerTC = async () => {
   try {
     const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`;
-    const rawTC = await getCacheData('tcData.json', url, 'json', 24);
+    const rawTC = await getCacheData('tcData.json', url, 'json', 1);
     for (const item of rawTC) {
       const point = item.points?.at(-1);
       if (point) {
@@ -1277,34 +1238,18 @@ const fetchGovData = async (tfbh) => {
   }
 };
 
-const getLocationTrend = async (tfbh, item) => {
-  if (item?.location) {
-    return {  location: item.location, trend: item.trend }
-  };
-  try {
-    const loc = await new Request(`https://tf03.istrongcloud.com/data/completion/${tfbh}.json`).loadJSON();
-    if (loc?.location) {
-      return { location: loc.location, trend: loc.completion }
-    }
-  } catch {}
-  return await fetchGovData(tfbh);
-};
-
-// 整理台风数据
 const mergeLatestData = async (tyItem, latest = []) => {
   const latestMap = new Map(latest.map(item => [item.tfbh, item]));
-  
   await Promise.all(tyItem.map(async tf => {
     const point = tf.points?.at(-1);
     const latestItem = latestMap.get(tf.tfbh);
     if (point) Object.assign(tf, point);
-    if (latestItem) {
-      const { strong, update_time, location, trend } = latestItem;
-      const type = point.strong?.match(/\((.*?)\)/)?.[1];
-      Object.assign(tf, { strong, type, update_time, location, trend });
-      if (!location) {
-        Object.assign(tf, await getLocationTrend(tf.tfbh, latestItem));
-      }
+    if (!latestItem) return;
+    const { strong, update_time, location, trend } = latestItem;
+    const type = point?.strong?.match(/\((.*?)\)/)?.[1]
+    Object.assign(tf, { strong, type, update_time, location, trend });
+    if (!location) {
+      Object.assign(tf, await fetchGovData(tf.tfbh));
     }
   }));
   return tyItem;
