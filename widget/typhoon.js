@@ -884,13 +884,13 @@ const drawLandmarkIcons = async (
 const generateMapImage = async (
   isDay = 0, 
   tcPoints = [], 
-  typhoons = [], 
+  tfPoints = [], 
   feedbackData = [], 
   locationPoint = null
 ) => {
   const typhoonPoints = [
     ...tcPoints.map(p => ({ ...p, isTyphoon: false })),
-    ...typhoons.map(p => ({ ...p, isTyphoon: true }))
+    ...tfPoints.map(p => ({ ...p, isTyphoon: true }))
   ];
 
   const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
@@ -1201,7 +1201,7 @@ const getNextItem = (arr, name) => {
 const currMergerTC = async () => {
   try {
     const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`;
-    const rawTC = await getCacheData('tcData.json', url, 'json', 1);
+    const rawTC = await getCacheData('currMergerTC.json', url, 'json', 1);
     for (const item of rawTC) {
       const point = item.points?.at(-1);
       if (point) {
@@ -1259,7 +1259,7 @@ const mergeLatestData = async (tyItem, latest = []) => {
 const getLatestData = async () => {
   try {
     const [latest, message, config] = await Promise.all([
-      new Request('https://data.istrongcloud.com/data/latest.json').loadJSON(),
+      getCacheData('latest.json', 'https://data.istrongcloud.com/data/latest.json', 'json', 1),
       getCacheData('message.json', 'https://tf03.istrongcloud.com/data/message/message.json', 'json', 4),
       getCacheData('config.json', 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json', 'json', 4)
     ]);
@@ -1273,20 +1273,14 @@ const getLatestData = async () => {
 };
 
 /** 
- * https://tf03.istrongcloud.com/typhoonVisual/home
- * 无加密 3 个
- * https://tf03.istrongcloud.com/member/v1.3/home
- * https://tf.istrongcloud.com/release/index-hrtt.html
- * https://tf.istrongcloud.com/sctyphoon/index.html#/home
+ * 台风数据接口
+ * https://tf02.istrongcloud.com/data/complex/2026.json
  */
 const getTyphoonData = async () => {
   try {
-    const html = await new Request(`https://tf03.istrongcloud.com/member/v1.3/home?r=${Date.now()}`).loadString();
-    const match = html.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1]
-    if (!match) return null;
-    const tyItem = JSON.parse(match);
-    if (!tyItem?.length) return null;
-    const typhoons = await decryptData(tyItem) ?? [];
+    const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
+    if (!TYPHOONS.length) return null;
+    const typhoons = await decryptData(TYPHOONS) ?? [];
     const latest = await getLatestData();
     await mergeLatestData(typhoons, latest);
     const tf = getNextItem(typhoons, 'tfIndex');
@@ -1392,22 +1386,22 @@ const getTyphoonImage = async () => {
   ];
   const name = files[Math.floor(Math.random() * files.length)];
   const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/${name}?r=${Date.now()}`;
-  return await getCacheData(name, url, null, 0.5);
+  return await getCacheData(name, url, null, 1);
 };
 
 // 设置背景
-const setBackground = async (widget, typhoonType, typhoons, isLarge) => {
+const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
   const isDay = getIsDay();
   const theme = isDay === 1 ? 'light' : 'dark';
   widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
-    if (typhoonType === 'tf') {
+    if (type === 'tf') {
       widget.backgroundImage = await getTyphoonImage();
     } else {
       const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 2)
       const feedbackData = feedbackJson.data ?? [];
-      const image = await generateMapImage(isDay, typhoonType, typhoons, feedbackData, setting);
+      const image = await generateMapImage(isDay, tcItem, tfItem, feedbackData, setting);
       widget.backgroundImage = image;
     }
   } else {
@@ -1821,21 +1815,21 @@ const runWidget = async () => {
     widget = await createRadarWidget(param);
   } else if (tf && !isNumber && !shouldRandomBranch) {
     widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
-    await setBackground(widget, 'tf', [], isLarge);
+    await setBackground(widget, 'tf', [], [], isLarge);
   } else {
     const { tcItem, tc } = await currMergerTC();
     if (tcItem?.length) {
       currMergerTCNotice(tc);
-      const tyPoints = getTyphoonItem(typhoons || []);
-      const tfItem = Number(param) === 2 ? tyPoints : [];
+      const typhoonItem = getTyphoonItem(typhoons || []);
+      const tfItem = Number(param) === 2 ? typhoonItem : [];
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
-      await setBackground(widget, tcItem, tfItem, isLarge);
+      await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
     } else {
       const levels = levelAgency();
       widget = createLevelWidget(
         levels, tcTextColor, isLarge
       );
-      await setBackground(widget, [], [], isLarge);
+      await setBackground(widget, 'level', [], [], isLarge);
     }
   }
 
