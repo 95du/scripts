@@ -640,29 +640,31 @@ const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXP
 };
 
 // 裁剪圆形头像
-const getCircleAvatar = async (title, imageUrl, cacheHours = 24) => {
+const getCircleAvatar = async (title, imageUrl) => {
   if (!imageUrl) return null;
-  const cacheName = `avatar_${title}.png`;
   const cache = useFileManager();
+  const cacheName = `${title}_${imageUrl.split('/').pop()}`;
   const cached = cache.read(cacheName);
-  if (cached) return cached;
-  const rawAvatar = await new Request(imageUrl).loadImage();
-  if (!rawAvatar) return null;
+  if (cached && cached instanceof Image) return cached;
   try {
-    const sz = Math.min(rawAvatar.size.width, rawAvatar.size.height);
-    const html = `<canvas id="c" width="${sz}" height="${sz}"></canvas><script>const i=new Image();i.onload=()=>{const c=document.getElementById('c'),x=c.getContext('2d');x.beginPath();x.arc(${sz/2},${sz/2},${sz/2},0,Math.PI*2);x.clip();x.drawImage(i,0,0,${sz},${sz});document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`;
+    const rawAvatar = await new Request(imageUrl).loadImage();
+    if (!rawAvatar) return null;
+    const html = `<canvas id="c"></canvas><script>const i=new Image();i.onload=()=>{const sz=Math.min(i.width,i.height),c=document.getElementById('c');c.width=c.height=sz;const x=c.getContext('2d'),s=Math.max(sz/i.width,sz/i.height),w=i.width*s,h=i.height*s;x.beginPath();x.arc(sz/2,sz/2,sz/2,0,Math.PI*2);x.clip();x.drawImage(i,(sz-w)/2,(sz-h)/2,w,h);document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`;
     const wv = new WebView();
     await wv.loadHTML(html);
     let b64 = "";
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 15; i++) {
       b64 = await wv.evaluateJavaScript("document.body.getAttribute('d')");
       if (b64) break;
       await new Promise(r => setTimeout(r, 30));
     }
     if (!b64) return rawAvatar;
-    const circleImg = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
-    cache.write(cacheName, circleImg);
-    return circleImg;
+    const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
+    if (img && img instanceof Image) {
+      cache.write(cacheName, img);
+      return img;
+    }
+    return rawAvatar;
   } catch (e) {
     return rawAvatar;
   }
@@ -682,17 +684,6 @@ const drawFeedbackInfoBoxes = async (
   currentZoom = 3.6
 ) => {
   if (!feedbackData?.length || currentZoom < 3.5) return [];
-  // 在开始前处理所有头像下载与裁切
-  const avatarMap = new Map();
-  await Promise.all(
-    feedbackData.map(async item => {
-      if (!item?.imageUrl) return;
-      const avatar = await getCircleAvatar(item.title, item.imageUrl, 24);
-      if (avatar) {
-        avatarMap.set(item.title, avatar);
-      }
-    })
-  );
 
   // 1. 基础尺寸与配置
   const titleFS = 13 * EXPORT_SCALE;
@@ -714,16 +705,15 @@ const drawFeedbackInfoBoxes = async (
   }
   
   const drawnRects = [];
-  const selectedItems = []; 
+  const selItems = []; 
   const TARGET_COUNT = !tcPoints.length ? 4 : 3;
 
-  // 阶段 1：碰撞检测与数据筛选
+  // 阶段 1：纯数学筛选（坐标校验与碰撞检测
   for (const item of shuffledData) {
-    if (selectedItems.length >= TARGET_COUNT) break; 
+    if (selItems.length >= TARGET_COUNT) break; 
     const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
     if (isNaN(lat) || isNaN(lon)) continue;
-    // 坐标在吉林往北不显示提示框
-    if (lat > 43.5) continue;
+    if (lat > 43.5) continue; // 坐标在吉林往北不显示提示框
     const pos = project(lat, lon);
     if (isNaN(pos.x) || isNaN(pos.y)) continue;
     const margin = 10 * EXPORT_SCALE;
@@ -744,29 +734,42 @@ const drawFeedbackInfoBoxes = async (
       isFlippedVertically = true;
     }
     const currentCardRect = { x: boxX, y: boxY, width: boxW, height: boxH };
+    
     // 防重叠碰撞检测
     const safeGap = 12 * EXPORT_SCALE;
     if (drawnRects.some(rect => isOverlapping(currentCardRect, rect, safeGap))) {
       continue; 
     }
     drawnRects.push(currentCardRect);
-    selectedItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
+    selItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
   }
 
-  // 阶段 2：底层绘制 —— 绘制所有定位圆点
+  // 阶段 2：按需加载头像（只对选中的最多 3 个卡片拉取/裁切头像）
+  const avatarMap = new Map();
+  await Promise.all(
+    selItems.map(async card => {
+      const { item } = card;
+      if (!item?.imageUrl) return;
+      const avatar = await getCircleAvatar(item.title, item.imageUrl);
+      if (avatar instanceof Image) avatarMap.set(item.title, avatar);
+    })
+  );
+
+  // 阶段 3：底层绘制 —— 绘制所有定位圆点
   if (pointerImg) {
-    for (const card of selectedItems) {
+    for (const card of selItems) {
       const ptrX = card.pos.x - pointerSize / 2;
       const ptrY = card.pos.y - pointerSize / 2;
       ctx.drawImageInRect(pointerImg, new Rect(ptrX, ptrY, pointerSize, pointerSize));
     }
   }
 
-  // 阶段 3：顶层绘制 —— 绘制所有提示框卡片
-  for (const card of selectedItems) {
+  // 阶段 4：顶层绘制 —— 绘制所有提示框卡片
+  for (const card of selItems) {
     const { item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically } = card;
     const titleText = item.title || "", subTitleText = item.subTitle || "";
     const badgeText = item.subscriptTypeLabel || item.subscriptType || "";
+
     // 1. 绘制主卡片背景
     const mainRectPath = new Path();
     mainRectPath.addRoundedRect(new Rect(boxX, boxY, boxW, boxH), boxH / 2, boxH / 2);
@@ -777,6 +780,7 @@ const drawFeedbackInfoBoxes = async (
     ctx.setLineWidth(1 * EXPORT_SCALE);
     ctx.addPath(mainRectPath);
     ctx.strokePath();
+
     // 2. 绘制卡片指向小三角
     const triCenterX = Math.max(boxX + triW, Math.min(boxX + boxW - triW, pos.x));
     const triPath = new Path();
@@ -811,11 +815,13 @@ const drawFeedbackInfoBoxes = async (
     }
     ctx.addPath(triBorder);
     ctx.strokePath();
-    // 3. 从预加载的 avatarMap 中直接提取已完成的圆形头像（0 耗时）
+
+    // 3. 读取并绘制头像（安全的类型检测防崩）
     const circleAvatar = avatarMap.get(item.title);
-    if (circleAvatar) {
+    if (circleAvatar && circleAvatar instanceof Image) {
       ctx.drawImageInRect(circleAvatar, new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize));
     }
+
     // 4. 绘制标题和副标题
     const textX = boxX + padH + avatarSize + 6 * EXPORT_SCALE;
     const startTextY = boxY + (boxH - (subTitleText ? titleFS + subFS + lineSpacing : titleFS)) / 2 - EXPORT_SCALE;
@@ -824,19 +830,23 @@ const drawFeedbackInfoBoxes = async (
     ctx.setTextColor(new Color('#38b6ff'));
     ctx.setTextAlignedLeft();
     ctx.drawTextInRect(titleText, new Rect(textX, startTextY, textW, titleFS * 1.2));
+
     if (subTitleText) {
       const subTitleFont = Font.systemFont(subFS);
       ctx.setFont(subTitleFont);
       ctx.setTextColor(new Color('#222222'));
       ctx.drawTextInRect(subTitleText, new Rect(textX, startTextY + titleFS + lineSpacing, textW, subFS * 1.2));
     }
+
     // 5. 绘制右侧箭头
     if (arrowImg) {
       ctx.drawImageInRect(arrowImg, new Rect(boxX + boxW - padH * 2 - arrowSize, boxY + (boxH - arrowSize) / 2, arrowSize, arrowSize));
     }
+
     // 6. 绘制右上角角标
     drawBadge(ctx, badgeText, item.subscriptType, boxX, boxY, boxW, badgeFS, EXPORT_SCALE);
   }
+
   return drawnRects;
 };
 
@@ -1857,7 +1867,6 @@ const runWidget = async () => {
     ? isDay === 1 ? Color.black() : Color.white()
     : Color.dynamic(Color.black(), Color.white());
   
-  // 💡 在 App 内预览且无特定数字参数时，50% 概率随机展示第二个分支
   const shouldRandomBranch = config.runsInApp && !isNumber && Math.random() < 0.5;
 
   let widget;
