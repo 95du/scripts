@@ -627,7 +627,7 @@ const getCircleAvatar = async (title, imageUrl) => {
     }
     return rawAvatar;
   } catch (e) {
-    return rawAvatar;
+    return null;
   }
 };
 
