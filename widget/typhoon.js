@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.0.5
+ * 组件版本: Version 1.0.7
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -899,7 +899,7 @@ const generateMapImage = async (
 
   const getViewport = points => {
     if (!points || !points.length) {
-      return { lng: 104.5, lat: 30.5, zoom: 3.5 };
+      return { lng: 104.5, lat: 28.8, zoom: 3.5 };
     }
     const lngs = points.map(p => p.lng);
     const lats = points.map(p => p.lat);
@@ -1200,8 +1200,7 @@ const getNextItem = (arr, name) => {
 // 热带扰动
 const currMergerTC = async () => {
   try {
-    const url = `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`;
-    const rawTC = await getCacheData('currMergerTC.json', url, 'json', 1);
+    const rawTC = await getCacheData('currMergerTC.json', `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`, 'json', 1);
     for (const item of rawTC) {
       const point = item.points?.at(-1);
       if (point) {
