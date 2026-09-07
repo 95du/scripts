@@ -4,15 +4,10 @@
 let body = $response.body;
 try {
   let obj = JSON.parse(body);
-  if (obj && obj.data && Array.isArray(obj.data)) {
-    obj.data.forEach(item => {
-      if (item.code === "TYPHOON_HOME_AD" || item.code === "TYPHOON_HOME_DETAIL_AD") {
-        item.appShow = false;
-        if (item.data && item.data.common) {
-          item.data.common.list = [];
-          item.data.common.delay = 0;
-        }
-      }
+  if (obj && Array.isArray(obj.data)) {
+    // 直接删掉广告配置项
+    obj.data = obj.data.filter(item => {
+      return item.code !== "TYPHOON_HOME_AD" && item.code !== "TYPHOON_HOME_DETAIL_AD";
     });
   }
   body = JSON.stringify(obj);
