@@ -386,7 +386,7 @@ const getTileURL = (z, x, y, style) => {
   return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
 };
 
-const readTile = async (z, x, y, style, time = 24) => {
+const readTile = async (z, x, y, style, time = 720) => {
   const dir = getTileDir(z, x);
   const name = `${y}_${style}.png`;
   return await getCacheData(name, getTileURL(z, x, y, style), false, time, dir);
@@ -566,7 +566,6 @@ const isOverlapping = (rectA, rectB, margin = 10) => {
 
 const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXPORT_SCALE) => {
   if (!badgeText) return;
-
   const badgeW = badgeText.length * badgeFS * 0.85 + 10 * EXPORT_SCALE;
   const badgeH = badgeFS + 6 * EXPORT_SCALE;
   const badgeX = boxX + boxW - badgeW - 6 * EXPORT_SCALE;
@@ -780,7 +779,10 @@ const drawFeedbackInfoBoxes = async (
     // 3. 读取并绘制头像（安全的类型检测防崩）
     const circleAvatar = avatarMap.get(item.title);
     if (circleAvatar && circleAvatar instanceof Image) {
-      ctx.drawImageInRect(circleAvatar, new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize));
+      ctx.drawImageInRect(
+        circleAvatar, 
+        new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize)
+      );
     }
 
     // 4. 绘制标题和副标题
@@ -1566,17 +1568,7 @@ const createWidget = (typhoons, tf, date, land, dist, info, barColor, textColor,
     }
   });
 
-  if (isLarge) {
-    if (land && dist < 100) {
-      const stack = widget.addStack();
-      stack.setPadding(0, 20, 0, 20);
-      const distText = stack.addText(`距离你的位置 ${dist} 公里`);
-      distText.font = Font.mediumSystemFont(14.5);
-      distText.textColor = new Color('#FF3300');
-    }
-    widget.addSpacer();
-  }
-  
+  if (isLarge) widget.addSpacer();
   const mainStack = widget.addStack();
   mainStack.layoutVertically();
   mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
