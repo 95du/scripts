@@ -1782,9 +1782,7 @@ const runWidget = async () => {
   const param = args.widgetParameter;
   const hasRegion = regions.some(i => param?.includes(i));
   
-  const family = config.runsInApp
-    ? (tf ? 'large' : 'medium')
-    : config.widgetFamily;
+  const family = config.runsInWidget ? config.widgetFamily : 'large' ;
   const isNumber = param && !isNaN(Number(param));
   const isLarge = family === 'large';
   const isSmall = family === 'small';
