@@ -195,6 +195,15 @@ async function main() {
   
   // 请求数据
   const httpsRequest = async (url, sessionid, body) => {
+    try {
+      const parsedUrl = new URL(url);
+      if (!parsedUrl.hostname.endsWith('.amap.com')) {
+        throw new Error('Invalid URL: only amap.com domains are allowed');
+      }
+    } catch (e) {
+      console.error('URL validation failed: ' + e.message);
+      return null;
+    }
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
       sessionid: sessionid
