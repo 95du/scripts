@@ -14,13 +14,19 @@
  3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北') 展示对应地区的雷达拼图。
  4，华东分成上下，原图示例:
 https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH.gif
+ * 
+ * 新增主题皮肤，第四个皮肤日出日落 18:00 后展示卫星地图，白天展示第一种 😍
  */
 
 const fm = FileManager.local();
-const mainPath = fm.joinPath(fm.documentsDirectory(), 'typhoon');
-if (!fm.fileExists(mainPath)) fm.createDirectory(mainPath);
-const tilePath = fm.joinPath(mainPath, 'tiles');
-if (!fm.fileExists(tilePath)) fm.createDirectory(tilePath);
+const ensureDir = (...paths) => {
+  const fullPath = fm.joinPath(...paths);
+  if (!fm.fileExists(fullPath)) fm.createDirectory(fullPath, true);
+  return fullPath;
+};
+const mainPath = ensureDir(fm.documentsDirectory(), 'typhoon');
+const tilePath = ensureDir(mainPath, 'tiles');
+const tdtPath = ensureDir(mainPath, 'tdt_tiles');
 const settingPath = fm.joinPath(mainPath, 'setting.json');
 
 const writeSettings = (setting) => {
@@ -35,32 +41,40 @@ const getSetting = () => {
 };
 const setting = getSetting() || {};
 
-const useFileManager = (type, path = mainPath) => ({
-  read: (name) => {
-    const filePath = fm.joinPath(path, name);
-    if (!fm.fileExists(filePath)) return null;
-    return type ? fm.readString(filePath) && JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);
-  },
-  write: (name, content) => {
-    const filePath = fm.joinPath(path, name);
-    if (fm.fileExists(filePath)) fm.remove(filePath);
-    type ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
-  }
-});
+const useFileManager = (type, path = mainPath) => {
+  const getPath = name => fm.joinPath(path, name);
+  return {
+    read: name => {
+      const filePath = getPath(name);
+      if (!fm.fileExists(filePath)) return null;
+      return type === 'json' ? JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);;
+    },
+    write: (name, content) => {
+      const filePath = getPath(name);
+      if (fm.fileExists(filePath)) fm.remove(filePath);
+      type === 'json' ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
+    }
+  };
+};
 
 const getCacheData = async (name, url, type, cacheTime = 0, path = mainPath) => {
   const cache = useFileManager(type, path);
   const filePath = fm.joinPath(path, name);
   const data = cache.read(name);
-  const expired = cacheTime > 0 &&
-    (!fm.fileExists(filePath) ||
-      (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
+  const expired = cacheTime > 0 && (!fm.fileExists(filePath) || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
   if (data && !expired) return data;
   try {
-    const response = await new Request(url)[type ? 'loadJSON' : 'loadImage']();
+    const request = new Request(url);
+    request.headers = {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': '*/*'
+    };
+    const response = type === 'json' 
+      ? await request.loadJSON() 
+      : await request.loadImage();
     if (response) {
-      cache.write(name, response);
       console.warn(name);
+      cache.write(name, response);
       return response;
     }
   } catch (e) {}
@@ -77,6 +91,10 @@ const getFormattedTime = () => {
   const df = new DateFormatter();
   df.dateFormat = 'HH:mm';
   return df.string(new Date());
+};
+
+const ScriptableRun = () => {
+  Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
 };
 
 // 自动更新
@@ -347,7 +365,7 @@ const getRadarImage = async () => {
     const item = await new Request(radarUrl).loadJSON();
     if (!item || !item.length || !item[0].url) return null;
     const radar = item.at(-1);
-    return await getCacheData(`radar.png`, radar.url, null, 0.5);
+    return await getCacheData(`radar.png`, radar.url, null, 2);
   } catch (e) {
     console.log(`Radar failed: ${e}`);
     return null;
@@ -374,9 +392,10 @@ const getLevelColor = gradeEname => {
   return colors[gradeEname] || '#68FF8C';
 };
 
+/** =======💜 高德地图 💜======= */
 const getTileDir = (z, x) => {
   const dir = fm.joinPath(tilePath, `${z}_${x}`);
-  if (!fm.fileExists(dir)) fm.createDirectory(dir);
+  if (!fm.fileExists(dir)) fm.createDirectory(dir, true);
   return dir;
 };
 
@@ -386,7 +405,7 @@ const getTileURL = (z, x, y, style) => {
   return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
 };
 
-const readTile = async (z, x, y, style, time = 720) => {
+const readTile = async (z, x, y, style, time = 24) => {
   const dir = getTileDir(z, x);
   const name = `${y}_${style}.png`;
   return await getCacheData(name, getTileURL(z, x, y, style), false, time, dir);
@@ -420,8 +439,50 @@ const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
     batch.forEach(([t, style], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${style}`, result[j]));
   }
   const valid = tiles.filter(t => styles.every(style => ready.has(`${t.z}/${t.x}/${t.y}/${style}`)));
-  return { tiles: valid, images: ready };
+  return { 
+    tiles: valid, 
+    images: ready 
+  }
 };
+
+/** =======💜 立体地形 💜======= */
+const getTDTTileDir = (z, x) => {
+  const dir = fm.joinPath(tdtPath, `${z}_${x}`);
+  if (!fm.fileExists(dir)) fm.createDirectory(dir, true);
+  return dir;
+};
+
+const getTDTTileURL = (z, x, y, layer) => {
+  const TDT_KEY = '8f7bb06b77e11cd20d3195f69beba3cc';
+  const server = Math.abs(x + y) % 8;
+  return `https://t${server}.tianditu.gov.cn/${layer}_w/wmts?tk=${TDT_KEY}&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+};
+
+const readTDTTile = async (z, x, y, layer, time = 24) => {
+  const dir = getTDTTileDir(z, x);
+  const name = `${y}_${layer}.png`;
+  return await getCacheData(name, getTDTTileURL(z, x, y, layer), null, time, dir);
+};
+
+const prepareTDTTiles = async (viewport, layers = ['ter', 'cta'], tileCacheHours = 24) => {
+  const z = Math.round(viewport.zoom);
+  const tiles = getTileList(viewport.lat, viewport.lng, z, 3);
+  const jobs = [];
+  for (const tile of tiles) for (const layer of layers) jobs.push([tile, layer]);
+  const ready = new Map();
+  const batchSize = 8;
+  for (let i = 0; i < jobs.length; i += batchSize) {
+    const batch = jobs.slice(i, i + batchSize);
+    const result = await Promise.all(batch.map(([tile, layer]) => readTDTTile(tile.z, tile.x, tile.y, layer, tileCacheHours)));
+    batch.forEach(([tile, layer], j) => result[j] && ready.set(`${tile.z}/${tile.x}/${tile.y}/${layer}`, result[j]));
+  }
+  const valid = tiles.filter(tile => layers.every(layer => ready.has(`${tile.z}/${tile.x}/${tile.y}/${layer}`)));
+  return { 
+    tiles: valid, 
+    images: ready
+  }
+};
+/** ======💛 地图瓦片结束 💛====== */
 
 // 独立出来的 7 级风圈绘制函数
 const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
@@ -653,6 +714,10 @@ const drawFeedbackInfoBoxes = async (
   const padH = 6 * EXPORT_SCALE, padV = 5 * EXPORT_SCALE;
   const avatarSize = 34 * EXPORT_SCALE, arrowSize = 16 * EXPORT_SCALE, pointerSize = 22 * EXPORT_SCALE;
   const triW = 10 * EXPORT_SCALE, triH = 6 * EXPORT_SCALE;
+  // 动态设置顶部安全边距
+  const margin = 10 * EXPORT_SCALE;
+  const hasTcPoints = Array.isArray(tcPoints) && tcPoints.length > 0;
+  const topSafeZone = hasTcPoints ? 85 * EXPORT_SCALE : margin;
 
   const loadBase64 = str => (str && Data.fromBase64String(str.trim())) ? Image.fromData(Data.fromBase64String(str.trim())) : null;
   const arrowImg = loadBase64(typhoonIcons?.arrow);
@@ -666,9 +731,9 @@ const drawFeedbackInfoBoxes = async (
   
   const drawnRects = [];
   const selItems = []; 
-  const TARGET_COUNT = !tcPoints.length ? 4 : 3;
+  const TARGET_COUNT = !tcPoints?.length ? 4 : 3;
 
-  // 阶段 1：纯数学筛选（坐标校验与碰撞检测
+  // 阶段 1：纯数学筛选（坐标校验与碰撞检测）
   for (const item of shuffledData) {
     if (selItems.length >= TARGET_COUNT) break; 
     const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
@@ -676,8 +741,7 @@ const drawFeedbackInfoBoxes = async (
     if (lat > 43.5) continue; // 坐标在吉林往北不显示提示框
     const pos = project(lat, lon);
     if (isNaN(pos.x) || isNaN(pos.y)) continue;
-    const margin = 10 * EXPORT_SCALE;
-    if (pos.x < margin || pos.x > canvasW - margin || pos.y < margin || pos.y > canvasH - margin) {
+    if (pos.x < margin || pos.x > canvasW - margin || pos.y < topSafeZone || pos.y > canvasH - margin) {
       continue;
     }
 
@@ -686,15 +750,17 @@ const drawFeedbackInfoBoxes = async (
     const boxW = avatarSize + textW + arrowSize + padH * 6;
     const boxH = avatarSize + padV * 2;
     let boxX = pos.x - boxW / 2;
-    let boxY = pos.y - boxH - triH - (pointerSize / 2);
+    let boxY = pos.y - boxH - triH - (pointerSize / 2); // 默认向上绘制
     let isFlippedVertically = false;
+    // 左右边界钳制
     boxX = Math.max(margin, Math.min(boxX, canvasW - boxW - margin));
-    if (boxY < margin) {
+    if (boxY < topSafeZone) {
       boxY = pos.y + (pointerSize / 2) + triH;
       isFlippedVertically = true;
+      if (boxY + boxH > canvasH - margin) continue;
     }
+
     const currentCardRect = { x: boxX, y: boxY, width: boxW, height: boxH };
-    
     // 防重叠碰撞检测
     const safeGap = 12 * EXPORT_SCALE;
     if (drawnRects.some(rect => isOverlapping(currentCardRect, rect, safeGap))) {
@@ -704,7 +770,7 @@ const drawFeedbackInfoBoxes = async (
     selItems.push({ item, pos, boxX, boxY, boxW, boxH, textW, isFlippedVertically });
   }
 
-  // 阶段 2：按需加载头像（只对选中的最多 3 个卡片拉取/裁切头像）
+  // 阶段 2：按需加载头像
   const avatarMap = new Map();
   await Promise.all(
     selItems.map(async card => {
@@ -717,10 +783,12 @@ const drawFeedbackInfoBoxes = async (
 
   // 阶段 3：底层绘制 —— 绘制所有定位圆点
   if (pointerImg) {
+    const scale = 0.8;
+    const actualSize = pointerSize * scale;
     for (const card of selItems) {
-      const ptrX = card.pos.x - pointerSize / 2;
-      const ptrY = card.pos.y - pointerSize / 2;
-      ctx.drawImageInRect(pointerImg, new Rect(ptrX, ptrY, pointerSize, pointerSize));
+      const ptrX = card.pos.x - actualSize / 2;
+      const ptrY = card.pos.y - actualSize / 2;
+      ctx.drawImageInRect(pointerImg, new Rect(ptrX, ptrY, actualSize, actualSize));
     }
   }
 
@@ -776,13 +844,10 @@ const drawFeedbackInfoBoxes = async (
     ctx.addPath(triBorder);
     ctx.strokePath();
 
-    // 3. 读取并绘制头像（安全的类型检测防崩）
+    // 3. 读取并绘制头像
     const circleAvatar = avatarMap.get(item.title);
     if (circleAvatar && circleAvatar instanceof Image) {
-      ctx.drawImageInRect(
-        circleAvatar, 
-        new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize)
-      );
+      ctx.drawImageInRect(circleAvatar, new Rect(boxX + padH, boxY + padV, avatarSize, avatarSize));
     }
 
     // 4. 绘制标题和副标题
@@ -882,6 +947,75 @@ const drawLandmarkIcons = async (
   }
 };
 
+// 皮肤辅助函数
+const drawAMapLayers = async (
+  ctx, 
+  viewport, 
+  styles, 
+  TILE, 
+  tileCacheHours, 
+  EXPORT_SCALE, 
+  fractionalScale, 
+  worldToScreen, 
+  worldSize, 
+  W
+) => {
+  const { tiles, images } = await prepareTiles(viewport, styles, tileCacheHours);
+
+  const drawTiles = style => {
+    const OVERLAP = 0.75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
+    for (const tile of tiles) {
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`)
+      if (!image) continue;
+      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
+      while (x + size < 0) x += worldSize;
+      while (x > W) x -= worldSize;
+      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    }
+  };
+
+  drawTiles(styles[0]);
+  if (styles.length > 1) drawTiles(styles[1]);
+};
+
+// 天地图图层绘制辅助函数
+const drawTDTLayers = async (
+  ctx, 
+  viewport, 
+  tileCacheHours, 
+  worldToScreen, 
+  worldSize, 
+  W, 
+  fractionalScale, 
+  EXPORT_SCALE,
+  TILE = 256
+) => {
+  const layers = ['ter', 'cta'];
+  const { tiles, images } = await prepareTDTTiles(viewport, layers, tileCacheHours);
+
+  const drawTDTLayer = layer => {
+    const OVERLAP = 0.75;
+    const ox = OVERLAP / 2;
+    const size = TILE * fractionalScale * EXPORT_SCALE;
+    for (const tile of tiles) {
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${layer}`)
+      if (!image) continue;
+      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
+      while (x + size < 0) x += worldSize;
+      while (x > W) x -= worldSize;
+      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    }
+  };
+
+  drawTDTLayer('ter');
+  drawTDTLayer('cta');
+};
+
+
 // 支持分别传入扰动数组和台风数组
 const generateMapImage = async (
   isDay = 0, 
@@ -896,12 +1030,12 @@ const generateMapImage = async (
   ];
 
   const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
-  const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 24;
+  const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 720;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
   const getViewport = points => {
     if (!points || !points.length) {
-      return { lng: 104.5, lat: 28.8, zoom: 3.5 };
+      return { lng: 104.5, lat: 28.6, zoom: 3.5 };
     }
     const lngs = points.map(p => p.lng);
     const lats = points.map(p => p.lat);
@@ -916,16 +1050,17 @@ const generateMapImage = async (
       const spanFactor = clamp(1 - (lngSpan - 30) / 50, 0.35, 1);
       centerLng += extra * spanFactor;
     }
-    const OFFSET_EAST = 3.5; 
-    centerLng = clamp(centerLng + OFFSET_EAST, 112, 165);
+    
+    const OFFSET_EAST = 3.5;
+    const offsetFactor = clamp((t - 0.15) / 0.2, 0, 1);
+    centerLng = clamp(centerLng + OFFSET_EAST * offsetFactor, 112, 165);
     let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
-    const OFFSET_NORTH = 2.0; 
+    const OFFSET_NORTH = 2.0;
     centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
     if (maxLng > 165) zoom = Math.max(zoom, 3.02);
     if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
-    // 20°以内的间隔都算"同一片区域"，zoom 下限抬到 3.5；
-    // 超过20°后逐渐回落到 2.95（在 span=50 时落到底），宽跨度组合不受影响
+
     const tightness = clamp(1 - Math.max(0, lngSpan - 20) / 30, 0, 1);
     const minZoom = 2.95 + tightness * 0.55;
     zoom = clamp(zoom, minZoom, 4.4);
@@ -935,7 +1070,6 @@ const generateMapImage = async (
 
   const viewport = getViewport(typhoonPoints);
   const z = Math.round(viewport.zoom);
-  const { tiles, images } = await prepareTiles(viewport, styles, TILE_CACHE_HOURS);
   const radarImage = await getRadarImage();
   const fractionalScale = Math.pow(2, viewport.zoom - z);
   const centerX = lngToWorldX(viewport.lng, z), centerY = latToWorldY(viewport.lat, z);
@@ -957,21 +1091,24 @@ const generateMapImage = async (
     return new Point(x, y);
   };
 
-  const drawTiles = style => {
-    const OVERLAP = .75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
-    for (const tile of tiles) {
-      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`)
-      if (!image) continue;
-      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
-      while (x + size < 0) x += worldSize;
-      while (x > W) x -= worldSize;
-      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    // 判断地图皮肤类型 (0: 亮色, 1: 立体地形, 2: 暗色, 3: 自动随 isDay 切换)
+  const skinMode = setting.skin || 0
+  if (skinMode === 1) {
+    await drawTDTLayers(ctx, viewport, TILE_CACHE_HOURS, worldToScreen, worldSize, W, fractionalScale, EXPORT_SCALE, TILE);
+  } else {
+    let styles = [];
+    if (skinMode === 0) {
+      styles = [7]; // 亮色
+    } else if (skinMode === 2) {
+      styles = [6, 8]; // 暗色
+    } else if (skinMode === 3) {
+      styles = isDay === 1 ? [7] : [6, 8]; // 自动跟随日夜模式
     }
-  };
-  drawTiles(styles[0]);
-  if (styles.length > 1) drawTiles(styles[1]);
+
+    if (styles.length > 0) {
+      await drawAMapLayers(ctx, viewport, styles, TILE, TILE_CACHE_HOURS, EXPORT_SCALE, fractionalScale, worldToScreen, worldSize, W);
+    }
+  }
 
   if (radarImage) {
     const radarRange = [
@@ -1380,14 +1517,14 @@ const getMaxForecast = (tf) => {
   }, null);
 };
 
-const getTyphoonImage = async () => {
+const getTyphoonImage = async (tfItem) => {
   const files = [
     'wxPosterAll.png',
     'posterMulti.png'
   ];
   const name = files[Math.floor(Math.random() * files.length)];
   const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/${name}?r=${Date.now()}`;
-  return await getCacheData(name, url, null, 1);
+  return await getCacheData(name, url, null, tfItem.length ? 1 : 4);
 };
 
 // 设置背景
@@ -1398,7 +1535,7 @@ const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (type === 'tf') {
-      widget.backgroundImage = await getTyphoonImage();
+      widget.backgroundImage = await getTyphoonImage(tfItem);
     } else {
       const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 2)
       const feedbackData = feedbackJson.data ?? [];
@@ -1630,6 +1767,8 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
     valueText.textColor = textColor;;
     if (i < info.length - 1) {
       widget.addSpacer(3);
+    } else if (isLarge) {
+      listStack.size = new Size(0, 33)
     }
   });
   return widget;
@@ -1688,11 +1827,11 @@ const createLevelWidget = (levels, textColor, isLarge) => {
     bar.backgroundColor = new Color('#8C7CFF');
     bar.cornerRadius = 50;
     topStack.addSpacer(19);
+    const levelText = topStack.addText('台风等级、预报机构');
+    levelText.font = Font.boldSystemFont(15);
+    levelText.textColor = new Color('#00B388');
   }
   
-  const levelText = topStack.addText('台风等级、预报机构');
-  levelText.font = Font.boldSystemFont(15);
-  levelText.textColor = new Color('#00B388');
   topStack.addSpacer();
   const timeText = topStack.addText(getFormattedTime());
   timeText.font = Font.mediumSystemFont(16);
@@ -1781,18 +1920,16 @@ const runWidget = async () => {
   ];
   const param = args.widgetParameter;
   const hasRegion = regions.some(i => param?.includes(i));
-  
-  const family = config.runsInWidget ? config.widgetFamily : 'large' ;
   const isNumber = param && !isNaN(Number(param));
+  const family = config.runsInWidget ? config.widgetFamily : 'large' ;
   const isLarge = family === 'large';
   const isSmall = family === 'small';
   
   const textColor = isLarge
     ? Color.black()
     : Color.dynamic(Color.black(), Color.white());
-  const isDay = getIsDay();
   const tcTextColor = isLarge
-    ? isDay === 1 ? Color.black() : Color.white()
+    ? (getIsDay() === 1 && setting.skin === 3) || setting.skin === 0 || setting.skin === 1 ? Color.black() : Color.white()
     : Color.dynamic(Color.black(), Color.white());
   
   const shouldRandomBranch = config.runsInApp && !isNumber && Math.random() < 0.5;
@@ -1830,5 +1967,118 @@ const runWidget = async () => {
   }
 };
 
-autoUpdate();
-await runWidget();
+// 选择皮肤
+const selectSkin = async () => {
+  const html = `
+<html>
+<head>
+  <meta name='viewport' content='width=device-width, user-scalable=no, viewport-fit=cover'>
+  <link href="/typhoonVisual/css/app.css" rel="stylesheet">
+  <style>
+    #app > div > div:first-child {
+      visibility: hidden !important;
+      height: 92px !important;
+      min-height: 92px !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .theme-footer { border: 1px solid #ddd !important; border-radius: 25px 25px 0 0 !important; }
+    @keyframes skinClick {
+      0% { transform: scale(1); }
+      50% { transform: scale(.98); }
+      100% { transform: scale(1); }
+    }
+    .skin-clicking {
+      animation: skinClick .25s ease-out !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="/typhoonVisual/js/chunk-vendors.js" defer></script>
+  <script src="/typhoonVisual/js/app.js" defer></script>
+  <script>
+    window.isApp = true;
+    setInterval(() => {
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let n;
+      while (n = w.nextNode()) {
+        if (n.nodeValue.includes('炫酷3D')) n.nodeValue = n.nodeValue.replaceAll('炫酷3D', '日出日落');
+      }
+    }, 100);
+  
+    window.__selectedSkinIndex = -1;
+    const getIndex = () =>
+      [...document.querySelectorAll(
+        '.theme-footer-list li,[class*="list"]>*,[class*="grid"]>*'
+      )].findIndex(el =>
+        el.classList.contains('item-active') || el.querySelector('.item-active,.active') || el.className.includes('active')
+      );
+  
+    document.addEventListener('click', e => {
+      const target = e.target;
+      const text = target?.textContent?.trim();
+      if (text !== '立即装扮') return;
+      const btn = target.closest('button') || target.closest('[class*="btn"]') || target.parentElement;
+      if (btn) {
+        btn.classList.remove('skin-clicking');
+        void btn.offsetWidth;
+        btn.classList.add('skin-clicking');
+      }
+  
+      const skinIndex = getIndex();
+      window.dispatchEvent(new CustomEvent('JBridge', {
+        detail: { code: 'skinSelected', data: skinIndex }
+      }));
+    }, true);
+  </script>
+</body>
+</html>`;
+
+  const webView = new WebView();
+  await webView.loadHTML(html, 'https://tf03.istrongcloud.com/typhoonVisual/custom-theme');
+  // 处理事件
+  const handleEvent = async (code, data) => {
+    if (code === 'skinSelected') {
+      setting.skin = data;
+      writeSettings(setting);
+      await runWidget();
+    }
+  };
+
+  // 注入监听器
+  const injectListener = async () => {
+    const event = await webView.evaluateJavaScript(
+      `(() => {
+        const controller = new AbortController();
+        const listener = (e) => {
+          completion(e.detail);
+          controller.abort();
+        };
+        window.addEventListener(
+          'JBridge', listener, { signal: controller.signal }
+        );
+      })()`, true
+    ).catch((err) => {
+      console.error(err);
+    });
+
+    if (event) {
+      const { code, data } = event;
+      await handleEvent(code, data);
+    }
+    await injectListener();
+  };
+  // 启动监听器
+  injectListener().catch(e => {
+    console.error(e);
+  });
+  await webView.present(true);
+};
+
+if (config.runsInApp) {
+  await selectSkin();
+} else {
+  autoUpdate();
+  await runWidget();
+};
