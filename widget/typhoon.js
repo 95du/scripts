@@ -107,7 +107,7 @@ const autoUpdate = async () => {
 const tyIcon = await getCacheData('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
-const typhoonIcons = await getCacheData('icon.json', tyIconUrl, 'json', 24);
+const typhoonIcons = await getCacheData('typhoonIcons.json', tyIconUrl, 'json', 24);
 
 // 地点库
 const anchors = [
@@ -1999,6 +1999,25 @@ const selectSkin = async () => {
   <script src="/typhoonVisual/js/app.js" defer></script>
   <script>
     window.isApp = true;
+    const EFFECT = '${typhoonIcons.effect}';
+    const LATEST = '${typhoonIcons.latest}';
+    const replaceImages = () => {
+      document.querySelectorAll('img')
+      .forEach(img => {
+        if (img.src.includes('3D-effect.png')) img.src = EFFECT;
+        else if (img.src.includes('3D-latest.png')) img.src = LATEST;
+      });
+    };
+    new MutationObserver(replaceImages)
+    .observe(
+    document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['src']
+    });
+    replaceImages();
+    
     setInterval(() => {
       const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let n;
