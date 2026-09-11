@@ -107,7 +107,7 @@ const autoUpdate = async () => {
 const tyIcon = await getCacheData('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
 const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
-const typhoonIcons = await getCacheData('typhoonIcons.json', tyIconUrl, 'json', 24);
+const typhoonIcons = await getCacheData('iconBase64.json', tyIconUrl, 'json', 24);
 
 // 地点库
 const anchors = [
@@ -198,9 +198,12 @@ const getCandidates = point => {
 const selectMain = point => {
   const candidates = getCandidates(point);
   let main = candidates[0];
-  // 马朱罗只在附近时作为主要参照点
   if (main.id === "majuro" && main.distance > 600) {
     main = candidates.find(c => c.id !== "majuro") || main;
+  }
+
+  if (main.id === "philippine_se" && main.distance > 2500) {
+    main = candidates.find(c => c.id !== "philippine_se") || main;
   }
 
   if (main.id === "tokyo" && main.distance > 1800) {
@@ -218,7 +221,7 @@ const selectMain = point => {
     if (nearGuam) main = nearGuam;
   }
 
-  const seaCand = candidates.find(c => c.isSea && c.distance < main.distance * 0.92 && (c.id !== "majuro" || c.distance <= 600));
+  const seaCand = candidates.find(c => c.isSea && c.distance < main.distance * 0.92 && (c.id !== "majuro" || c.distance <= 600) && (c.id !== "philippine_se" || c.distance <= 2500));
   if (seaCand) main = seaCand;
   return main;
 };
@@ -318,6 +321,312 @@ const getTyphoonLocation = (point) => {
   return `距离${mainText}`;
 };
 
+// 选择主题皮肤
+const selectSkin = async () => {
+  const html = `
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #000;
+    }
+    .theme {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-repeat: no-repeat;
+      background-size: 100% 500px;
+      background-position: top center;
+      background-color: #fff;
+      overflow: hidden;
+    }
+    .theme-effect {
+      position: absolute;
+      top: 65px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 680px;
+      pointer-events: none;
+      object-fit: fill;
+      z-index: 1;
+    }
+    .theme-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 342px;
+      background-color: #fff;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+      border: 1px solid #ddd;
+      border-radius: 30px;
+      padding: 25px 25px;
+      text-align: center;
+      z-index: 10;
+    }
+    .theme-footer-title {
+      font-weight: 700;
+      font-size: 19px;
+      color: #333;
+      line-height: 1;
+      display: block;
+    }
+    .theme-footer-list {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      list-style: none;
+    }
+    .theme-footer-list li {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    .theme-footer-list li span {
+      font-size: 14.5px;
+      color: #212121;
+      margin-top: 12px;
+    }
+    .theme-footer-list .item {
+      position: relative;
+      width: 85px;
+      height: 123px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      box-sizing: border-box;
+    }
+    .theme-footer-list .item-active {
+      border: 2px solid #008eef !important;
+    }
+    .theme-footer-list .item .img1 {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .theme-footer-list .item .img2 {
+      position: absolute;
+      width: 42.66px;
+      height: 13.33px;
+      bottom: 4px;
+      right: 4px;
+    }
+    .theme-footer-btn-own {
+      width: 100%;
+      max-width: 400px;
+      height: 45px;
+      line-height: 45px;
+      background: #008eef;
+      border-radius: 50px;
+      font-size: 19px;
+      font-weight: 500;
+      text-align: center;
+      color: #fff;
+      margin: 33px auto 0;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .theme-footer-btn {
+      width: 100%;
+      max-width: 400px;
+      height: 45px;
+      line-height: 45px;
+      background: linear-gradient(270deg,#eeb88d,#fee3c3),#008eef;
+      border-radius: 50px;
+      font-weight: 500;
+      font-size: 19px;
+      color: #212121;
+      text-align: center;
+      position: relative;
+      margin: 33px auto 0;
+    }
+    .theme-footer-btn span {
+      position: absolute;
+      right: 0;
+      top: -10px;
+      background-image: url('https://tf03.istrongcloud.com/typhoonVisual/img/theme-vip-bg.png');
+      background-size: 100% 100%;
+      width: 180px;
+      height: 38px;
+      font-size: 12px;
+      color: #fff;
+      padding: 5px 0 0 15px;
+      line-height: 1;
+      text-align: left;
+    }
+    
+    /* 点击动画①：轻微缩放弹回 */
+    @keyframes skinClick {
+      0% { transform: scale(1); }
+      40% { transform: scale(.96); }
+      70% { transform: scale(1.015); }
+      100% { transform: scale(1); }
+    }
+    .skin-clicking {
+      animation: skinClick .3s ease-out !important;
+    }
+
+    /* 点击动画②：水波纹 */
+    .skin-ripple {
+      position: relative !important;
+      overflow: hidden !important;
+    }
+    .skin-ripple span {
+      position: absolute;
+      transform: translate(-50%,-50%);
+      border-radius: 50%;
+      background: rgba(255,255,255,.65);
+      pointer-events: none;
+      animation: ripple .6s linear;
+    }
+    @keyframes ripple {
+      0% { width: 0; height: 0; opacity: .65; }
+      100% { width: 500px; height: 500px; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme" id="tBox">
+    <img class="theme-effect" id="themeEffect" src="" alt="">
+    <div class="theme-footer">
+      <span class="theme-footer-title">皮肤推荐</span>
+      <ul class="theme-footer-list" id="skinList"></ul>
+      <div class="theme-footer-btn" id="vipBtn"> 使用 VIP 主题 <span>该皮肤为会员专属，已解锁</span>
+      </div>
+      <div class="theme-footer-btn-own" id="submitBtn">立即装扮</div>
+    </div>
+  </div>
+  <script>
+    const LOCK_ICON = 'data:image/png;base64,${typhoonIcons.vip}';
+
+    const themes = [
+      { id: 'light', bg: 'https://tfzbimg.istrongcloud.com/tflj/skin/light-bg.png', effect: 'https://tfzbimg.istrongcloud.com/tflj/skin/light-effect.png', cover: 'https://tfzbimg.istrongcloud.com/tflj/skin/light-latest.png', name: '经典简约', isVip: false },
+      { id: 'tdtdx', bg: 'https://tfzbimg.istrongcloud.com/tflj/skin/tdtdx-bg.png', effect: 'https://tfzbimg.istrongcloud.com/tflj/skin/tdtdx-effect.png', cover: 'https://tfzbimg.istrongcloud.com/tflj/skin/tdtdx-latest.png', name: '立体地形', isVip: false },
+      { id: 'dark', bg: 'https://tfzbimg.istrongcloud.com/tflj/skin/dark-bg.png', effect: 'https://tfzbimg.istrongcloud.com/tflj/skin/dark-effect.png', cover: 'https://tfzbimg.istrongcloud.com/tflj/skin/dark-latest.png', name: '卫星俯瞰', isVip: false },
+      { id: 'solid', bg: 'https://tfzbimg.istrongcloud.com/tflj/skin/3D-bg.png', effect: 'https://raw.githubusercontent.com/95du/scripts/master/img/weather/effect.png', cover: 'https://raw.githubusercontent.com/95du/scripts/master/img/weather/latest.png', name: '日出日落', isVip: true }
+    ];
+    
+    const savedTheme = localStorage.getItem('THEME');
+    const currentThemeIndex = themes.findIndex(t => t.id === savedTheme);
+    let currentIndex = currentThemeIndex > -1 ? currentThemeIndex : 0;
+    const tBox = document.getElementById('tBox');
+    const themeEffect = document.getElementById('themeEffect')
+    const skinList = document.getElementById('skinList');
+    const submitBtn = document.getElementById('submitBtn');
+    const vipBtn = document.getElementById('vipBtn');
+    
+    function renderList() {
+      let listHtml = '';
+      for (let i = 0; i < themes.length; i++) {
+        const item = themes[i];
+        const isActive = i === currentIndex ? 'item-active' : '';
+        const lockImg = item.isVip
+          ? '<img class="img2" src="' + LOCK_ICON + '">'
+          : '';
+        listHtml += '<li data-index="' + i + '">' + '<div class="item ' + isActive + '">' + '<img class="img1" src="' + item.cover + '">' + lockImg + '</div>' + '<span>' + item.name + '</span>' + '</li>';
+      }
+      skinList.innerHTML = listHtml;
+      const lis = skinList.querySelectorAll('li');
+      lis.forEach(li => {
+        li.addEventListener('click', function() {
+          currentIndex = parseInt(this.getAttribute('data-index'), 10);
+          renderList();
+        });
+      });
+      
+      const activeTheme = themes[currentIndex];
+      tBox.style.backgroundImage = 'url("' + activeTheme.bg + '")';
+      tBox.style.backgroundColor = ['light','tdtdx'].includes(activeTheme.id) ? '#fff' : '#000';
+      themeEffect.src = activeTheme.effect;
+      vipBtn.style.display = activeTheme.isVip ? 'block' : 'none';
+      submitBtn.style.display = activeTheme.isVip ? 'none' : 'block';
+    }
+    
+    // 两种按钮皮肤主题
+    vipBtn.addEventListener('click', function() {
+      this.classList.remove('skin-clicking');
+      void this.offsetWidth;
+      this.classList.add('skin-clicking');
+      localStorage.setItem('THEME', themes[currentIndex].id);
+      window.dispatchEvent(new CustomEvent('JBridge', {
+        detail: { code: 'skinSelected', data: currentIndex }
+      }));
+    });
+    submitBtn.addEventListener('click', function(e) {
+      const btn = this;
+      /* 动画①：缩放弹回 */
+      btn.classList.remove('skin-clicking');
+      void btn.offsetWidth;
+      btn.classList.add('skin-clicking');
+      /* 动画②：水波纹 */
+      btn.classList.add('skin-ripple');
+      const rect = btn.getBoundingClientRect();
+      const span = document.createElement('span');
+      span.style.left = (e.clientX - rect.left) + 'px';
+      span.style.top = (e.clientY - rect.top) + 'px';
+      btn.appendChild(span);
+      setTimeout(() => {
+        span.remove();
+        btn.classList.remove('skin-ripple');
+      }, 850);
+      localStorage.setItem('THEME', themes[currentIndex].id);
+      window.dispatchEvent(new CustomEvent('JBridge', {
+        detail: { code: 'skinSelected', data: currentIndex }
+      }));
+    });
+    renderList();
+  </script>
+</body>
+</html>`;
+
+  const webView = new WebView();
+  await webView.loadHTML(html, 'https://tf03.istrongcloud.com/typhoonVisual/custom-theme');
+  const handleEvent = async ({ code, data } = {}) => {
+    if (code === 'skinSelected') {
+      setting.skin = data;
+      writeSettings(setting);
+      await runWidget();
+    }
+  };
+  // 注入监听器
+  const injectListener = async () => {
+    const event = await webView.evaluateJavaScript(
+      `(() => {
+        const controller = new AbortController();
+        const listener = (e) => {
+          completion(e.detail);
+          controller.abort();
+        };
+        window.addEventListener(
+          'JBridge', listener, { signal: controller.signal }
+        );
+      })()`, true
+    ).catch(e => console.error(e));
+    if (event) await handleEvent(event);
+    await injectListener();
+  };
+  injectListener().catch(e => console.error(e));
+  await webView.present(true);
+};
+
 // 解密接口经纬度编码
 const getCryptoWeb = async () => {
   const html = `<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script><script>const caesarDecrypt=(s,n)=>[...s].map(c=>String.fromCharCode(c.charCodeAt(0)+2*n)).join("");const formatDate=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");const generateAESKey=(d,b)=>{const[y,m,day]=d.split("-");return CryptoJS.MD5(y.slice(0,2)+b.slice(0,10)+y.slice(2)+b.slice(10,20)+m+b.slice(20)+day).toString().toUpperCase()};const decryptAES=(c,k)=>{try{return CryptoJS.AES.decrypt(CryptoJS.enc.Base64.stringify(CryptoJS.enc.Base64.parse(c)),CryptoJS.enc.Base64.parse(k),{mode:CryptoJS.mode.ECB,padding:CryptoJS.pad.Pkcs7}).toString(CryptoJS.enc.Utf8)}catch(e){return null}};const decryptField=(c,t,k,type)=>{if(typeof c!=="string"||!c)return c;const base=new Date(t);if(isNaN(base.getTime()))return c;const b=caesarDecrypt(k,-1);for(let i=0;i<=30;i++){for(const x of i?[i,-i]:[0]){const d=new Date(base);d.setDate(d.getDate()+x);const n=Number(decryptAES(c,generateAESKey(formatDate(d),b)));if(Number.isFinite(n)&&((type==="lat"&&n!==0&&Math.abs(n)<=90)||(type==="lng"&&Math.abs(n)>=90&&Math.abs(n)<=180)))return n}}return c};const parseField=(v,t,k,type)=>v==null?v:typeof v==="number"?v:!isNaN(v)&&v.trim()!==""?Number(v):decryptField(v,t,k,type);const parseItem=(i,k)=>i?({...i,lat:parseField(i.lat,i.time||"",k,"lat"),lng:parseField(i.lng,i.time||"",k,"lng")}):i;window.decryptTcObject=(d,k)=>Array.isArray(d)?d.map(i=>parseItem(i,k)):parseItem(d,k);</script>`;
@@ -374,24 +683,21 @@ const getRadarImage = async () => {
 };
 
 // 绘制台风预测路径颜色
-const getStationColor = country => {
-  const colors = {
-    中国: '#FF4050', 香港: '#FF66FF',
-    日本: '#43FF4B', 台湾: '#FFA040',
-    美国: '#40DDFF', 韩国: '#669999',
-    欧洲: '#246ED4'
-  };
-  return colors[country] || '#FF66FF';
-};
+const getStationColor = country => ({
+  中国: '#FF4050', 香港: '#FF66FF',
+  日本: '#43FF4B', 台湾: '#FFA040',
+  美国: '#40DDFF', 韩国: '#669999',
+  欧洲: '#246ED4'
+}[country] || '#FF66FF');
 
-const getLevelColor = gradeEname => {
-  const colors = {
-    TD: '#68FF8C', TS: '#38ABFF',
-    STS: '#FBFF6B', TY: '#FDAC03',
-    STY: '#F95AFF', SUPERTY: '#FF0C0C'
-  };
-  return colors[gradeEname] || '#68FF8C';
-};
+const getLevelColor = gradeEname => ({
+  TD: '#68FF8C',
+  TS: '#38ABFF',
+  STS: '#FBFF6B',
+  TY: '#FDAC03',
+  STY: '#F95AFF',
+  SUPERTY: '#FF0C0C',
+}[gradeEname] || '#68FF8C');
 
 /** =======💜 高德地图 💜======= */
 const getTileDir = (z, x) => {
@@ -1055,7 +1361,8 @@ const generateMapImage = async (
     const offsetFactor = clamp((t - 0.15) / 0.2, 0, 1);
     centerLng = clamp(centerLng + OFFSET_EAST * offsetFactor, 112, 165);
     let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
-    if (avgLat <= 14) centerLat += 1.8; // 视图向下推
+    // 视图向下推
+    centerLat += avgLat <= 10 ? 2.55 : avgLat <= 14 ? 1.8 : centerLat;
     const OFFSET_NORTH = 2.0;
     centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
@@ -1966,131 +2273,6 @@ const runWidget = async () => {
     Script.setWidget(widget);
     Script.complete();
   }
-};
-
-// 选择皮肤
-const selectSkin = async () => {
-  const html = `
-<html>
-<head>
-  <meta name='viewport' content='width=device-width, user-scalable=no, viewport-fit=cover'>
-  <link href="/typhoonVisual/css/app.css" rel="stylesheet">
-  <style>
-    #app > div > div:first-child {
-      visibility: hidden !important;
-      height: 92px !important;
-      min-height: 92px !important;
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-    .theme-footer { border: 1px solid #ddd !important; border-radius: 25px 25px 0 0 !important; }
-    @keyframes skinClick {
-      0% { transform: scale(1); }
-      50% { transform: scale(.98); }
-      100% { transform: scale(1); }
-    }
-    .skin-clicking {
-      animation: skinClick .25s ease-out !important;
-    }
-  </style>
-</head>
-<body>
-  <div id="app"></div>
-  <script src="/typhoonVisual/js/chunk-vendors.js" defer></script>
-  <script src="/typhoonVisual/js/app.js" defer></script>
-  <script>
-    window.isApp = true;
-    const EFFECT = '${typhoonIcons.effect}';
-    const LATEST = '${typhoonIcons.latest}';
-    const replaceImages = () => {
-      document.querySelectorAll('img')
-      .forEach(img => {
-        if (img.src.includes('3D-effect.png')) img.src = EFFECT;
-        else if (img.src.includes('3D-latest.png')) img.src = LATEST;
-      });
-    };
-    new MutationObserver(replaceImages)
-    .observe(
-    document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['src']
-    });
-    replaceImages();
-    
-    setInterval(() => {
-      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      let n;
-      while (n = w.nextNode()) {
-        if (n.nodeValue.includes('炫酷3D')) n.nodeValue = n.nodeValue.replaceAll('炫酷3D', '日出日落');
-      }
-    }, 100);
-  
-    window.__selectedSkinIndex = -1;
-    const getIndex = () =>
-      [...document.querySelectorAll(
-        '.theme-footer-list li,[class*="list"]>*,[class*="grid"]>*'
-      )].findIndex(el =>
-        el.classList.contains('item-active') || el.querySelector('.item-active,.active') || el.className.includes('active')
-      );
-  
-    document.addEventListener('click', e => {
-      const target = e.target;
-      const text = target?.textContent?.trim();
-      if (text !== '立即装扮') return;
-      const btn = target.closest('button') || target.closest('[class*="btn"]') || target.parentElement;
-      if (btn) {
-        btn.classList.remove('skin-clicking');
-        void btn.offsetWidth;
-        btn.classList.add('skin-clicking');
-      }
-  
-      const skinIndex = getIndex();
-      window.dispatchEvent(new CustomEvent('JBridge', {
-        detail: { code: 'skinSelected', data: skinIndex }
-      }));
-    }, true);
-  </script>
-</body>
-</html>`;
-
-  const webView = new WebView();
-  await webView.loadHTML(html, 'https://tf03.istrongcloud.com/typhoonVisual/custom-theme');
-  // 处理事件
-  const handleEvent = async ({ code, data } = event) => {
-    if (code === 'skinSelected') {
-      setting.skin = data;
-      writeSettings(setting);
-      await runWidget();
-    }
-  };
-
-  // 注入监听器
-  const injectListener = async () => {
-    const event = await webView.evaluateJavaScript(
-      `(() => {
-        const controller = new AbortController();
-        const listener = (e) => {
-          completion(e.detail);
-          controller.abort();
-        };
-        window.addEventListener(
-          'JBridge', listener, { signal: controller.signal }
-        );
-      })()`, true
-    ).catch((err) => {
-      console.error(err);
-    });
-
-    if (event) await handleEvent(event);
-    await injectListener();
-  };
-  // 启动监听器
-  injectListener().catch(e => {
-    console.error(e);
-  });
-  await webView.present(true);
 };
 
 if (config.runsInApp) {
