@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.0.7
+ * 组件版本: Version 1.1.0
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -112,41 +112,44 @@ const typhoonIcons = await getCacheData('typhoonIcons.json', tyIconUrl, 'json', 
 // 地点库
 const anchors = [
   { id: "tokyo", name: "日本东京", lat: 35.676, lng: 139.65, rx: 14, ry: 12 },
-  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "kagoshima", name: "日本鹿儿岛", lat: 31.596, lng: 130.557, rx: 9, ry: 8 },
-  { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
-  { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
-  { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
+  { id: "naha", name: "冲绳县那霸市", lat: 26.212, lng: 127.681, rx: 11, ry: 9 },
   { id: "taipei", name: "台湾台北市", lat: 25.033, lng: 121.565, rx: 6.5, ry: 5.5 },
-  { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "yilan", name: "台湾省宜兰县", lat: 24.702, lng: 121.738, rx: 6, ry: 5 },
+  { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
-  { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
-  { id: "luzon_ne", name: "菲律宾吕宋岛", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
-  { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
-  { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
-  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 }
+  { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 },
+  { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
+  { id: "luzon_ne", name: "菲律宾吕宋岛", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
+  { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
+  { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
+  { id: "guam", name: "美国关岛", lat: 13.444, lng: 144.793, rx: 8.5, ry: 7.5, group: "guam_archipelago" },
+  { id: "philippine_se", name: "菲律宾东南部", lat: 10.5, lng: 133.5, rx: 12, ry: 10, isSea: true },
+  { id: "palau", name: "帕劳", lat: 7.5, lng: 134.5, rx: 8, ry: 7, isSea: true },
+  { id: "majuro", name: "马绍尔群岛马朱罗", lat: 7.116, lng: 171.185, rx: 5, ry: 4, isSea: true }
 ];
 
 const relations = {
   tokyo:     ["naha", "kagoshima", "saipan"],
-  naha:      ["tokyo", "kagoshima", "saipan", "hualien", "kaohsiung", "taipei", "yilan"],
   kagoshima: ["tokyo", "naha"],
-  saipan:    ["guam", "naha", "tokyo"],
-  guam:      ["saipan", "naha", "manila", "tokyo"],
-  taipei:    ["hualien", "naha", "kaohsiung"],
-  hualien:   ["taipei", "kaohsiung", "naha", "luzon_ne"],
+  naha:      ["tokyo", "kagoshima", "saipan", "yilan", "hualien", "kaohsiung", "taipei"],
+  taipei:    ["yilan", "hualien", "naha", "kaohsiung"],
+  yilan:     ["taipei", "hualien", "naha"],
+  hualien:   ["yilan", "taipei", "kaohsiung", "naha", "luzon_ne"],
   kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "taipei"],
   hongkong:  ["kaohsiung", "wenchang", "qionghai", "dongfang", "manila"],
-  manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
-  luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
-  dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
   wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
   qionghai:  ["wenchang", "hongkong", "dongfang", "manila"],
-  philippine_se: ["palau"],
-  palau: ["philippine_se"],
+  dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
+  luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
+  saipan:    ["guam", "naha", "tokyo", "majuro"],
+  manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
+  guam:      ["saipan", "naha", "manila", "tokyo", "majuro"],
+  philippine_se: ["palau", "majuro"],
+  palau:     ["philippine_se", "majuro"],
+  majuro:    ["guam", "saipan", "palau", "philippine_se"]
 };
 
 const rad = d => (d * Math.PI) / 180;
@@ -195,6 +198,11 @@ const getCandidates = point => {
 const selectMain = point => {
   const candidates = getCandidates(point);
   let main = candidates[0];
+  // 马朱罗只在附近时作为主要参照点
+  if (main.id === "majuro" && main.distance > 600) {
+    main = candidates.find(c => c.id !== "majuro") || main;
+  }
+
   if (main.id === "tokyo" && main.distance > 1800) {
     const better = candidates.find(c => (c.id === "guam" || c.id === "saipan") && c.distance < main.distance * 0.82 && c.score < main.score * 1.35);
     if (better) main = better;
@@ -202,9 +210,7 @@ const selectMain = point => {
 
   if (main.id === "saipan") {
     const guamCand = candidates.find(c => c.id === "guam");
-    if (guamCand && guamCand.distance < main.distance * 1.12 && guamCand.score < main.score * 1.25) {
-      main = guamCand;
-    }
+    if (guamCand && guamCand.distance < main.distance * 1.12 && guamCand.score < main.score * 1.25) main = guamCand;
   }
 
   if (main.distance > 1200) {
@@ -212,9 +218,7 @@ const selectMain = point => {
     if (nearGuam) main = nearGuam;
   }
 
-  const seaCand = candidates.find(c =>
-    c.isSea && c.distance < main.distance * 0.92
-  );
+  const seaCand = candidates.find(c => c.isSea && c.distance < main.distance * 0.92 && (c.id !== "majuro" || c.distance <= 600));
   if (seaCand) main = seaCand;
   return main;
 };
@@ -349,9 +353,6 @@ const processImagePipeline = async (img, trim = { top: 1, right: 2, bottom: 1, l
   ]);
 };
 
-/**
- * 热带扰动地图背景图 ✅
- */
 const getIsDay = () => {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -372,7 +373,7 @@ const getRadarImage = async () => {
   }
 };
 
-// 绘制台风预测路径
+// 绘制台风预测路径颜色
 const getStationColor = country => {
   const colors = {
     中国: '#FF4050', 香港: '#FF66FF',
@@ -484,7 +485,7 @@ const prepareTDTTiles = async (viewport, layers = ['ter', 'cta'], tileCacheHours
 };
 /** ======💛 地图瓦片结束 💛====== */
 
-// 独立出来的 7 级风圈绘制函数
+// 绘制 7 级风圈
 const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
   let quad = point.radius7_quad;
   if (!quad && point.radius7) {
@@ -1050,19 +1051,19 @@ const generateMapImage = async (
       const spanFactor = clamp(1 - (lngSpan - 30) / 50, 0.35, 1);
       centerLng += extra * spanFactor;
     }
-    
     const OFFSET_EAST = 3.5;
     const offsetFactor = clamp((t - 0.15) / 0.2, 0, 1);
     centerLng = clamp(centerLng + OFFSET_EAST * offsetFactor, 112, 165);
     let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
+    if (avgLat <= 14) centerLat += 1.8; // 视图向下推
     const OFFSET_NORTH = 2.0;
     centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
     if (maxLng > 165) zoom = Math.max(zoom, 3.02);
     if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
-
     const tightness = clamp(1 - Math.max(0, lngSpan - 20) / 30, 0, 1);
-    const minZoom = 2.95 + tightness * 0.55;
+    const isolationFactor = clamp(1 - Math.max(0, maxLng - 160) / 20, 0, 1);
+    const minZoom = 2.95 + tightness * isolationFactor * 0.55;
     zoom = clamp(zoom, minZoom, 4.4);
     if (zoom < 3.5) centerLng = Math.max(centerLng, 132.2);
     return { lng: centerLng, lat: centerLat, zoom };
@@ -2057,7 +2058,7 @@ const selectSkin = async () => {
   const webView = new WebView();
   await webView.loadHTML(html, 'https://tf03.istrongcloud.com/typhoonVisual/custom-theme');
   // 处理事件
-  const handleEvent = async (code, data) => {
+  const handleEvent = async ({ code, data } = event) => {
     if (code === 'skinSelected') {
       setting.skin = data;
       writeSettings(setting);
@@ -2082,10 +2083,7 @@ const selectSkin = async () => {
       console.error(err);
     });
 
-    if (event) {
-      const { code, data } = event;
-      await handleEvent(code, data);
-    }
+    if (event) await handleEvent(event);
     await injectListener();
   };
   // 启动监听器
