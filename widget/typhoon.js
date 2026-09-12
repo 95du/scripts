@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.0
+ * 组件版本: Version 1.1.2
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -451,7 +451,8 @@ const getCandidates = point => {
 const selectMain = point => {
   const candidates = getCandidates(point);
   let main = candidates[0];
-  if (main.id === "majuro" && main.distance > 600) {
+  // 马朱罗仅影响马绍尔群岛附近区域
+  if (main.id === "majuro" && (main.distance > 1200 || point.lng < 168)) {
     main = candidates.find(c => c.id !== "majuro") || main;
   }
 
@@ -474,7 +475,7 @@ const selectMain = point => {
     if (nearGuam) main = nearGuam;
   }
 
-  const seaCand = candidates.find(c => c.isSea && c.distance < main.distance * 0.92 && (c.id !== "majuro" || c.distance <= 600) && (c.id !== "philippine_se" || c.distance <= 2500));
+  const seaCand = candidates.find(c => c.isSea && c.distance < main.distance * 0.92 && (c.id !== "majuro" || (c.distance <= 1200 && point.lng >= 168)) && (c.id !== "philippine_se" || c.distance <= 2500));
   if (seaCand) main = seaCand;
   return main;
 };
@@ -626,7 +627,7 @@ const selectSkin = async () => {
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
       border: 1px solid #ddd;
       border-radius: 30px;
-      padding: 25px 25px;
+      padding: 23px 23px;
       text-align: center;
       z-index: 10;
     }
@@ -764,7 +765,7 @@ const selectSkin = async () => {
       <ul class="theme-footer-list" id="skinList"></ul>
       <div class="theme-footer-btn" id="vipBtn"> 使用 VIP 主题 <span>该皮肤为会员专属，已解锁</span>
       </div>
-      <div class="theme-footer-btn-own" id="submitBtn">立即装扮</div>
+      <div class="theme-footer-btn-own" id="submitBtn">立即使用</div>
     </div>
   </div>
   <script>
@@ -1593,7 +1594,7 @@ const generateMapImage = async (
     centerLng = clamp(centerLng + OFFSET_EAST * offsetFactor, 112, 165);
     let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
     // 视图向下推
-    centerLat += avgLat <= 10 ? 2.55 : avgLat <= 14 ? 1.8 : centerLat;
+    centerLat += avgLat <= 10 ? 2.55 : avgLat <= 14 ? 1.8 : 0;
     const OFFSET_NORTH = 2.0;
     centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
     let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
