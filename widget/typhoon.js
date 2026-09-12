@@ -57,7 +57,13 @@ const useFileManager = (type, path = mainPath) => {
   };
 };
 
-const getCacheData = async (name, url, type, cacheTime = 0, path = mainPath) => {
+const getCacheData = async (
+  name, 
+  url, 
+  type, 
+  cacheTime = 0, 
+  path = mainPath
+) => {
   const cache = useFileManager(type, path);
   const filePath = fm.joinPath(path, name);
   const data = cache.read(name);
@@ -93,10 +99,6 @@ const getFormattedTime = () => {
   return df.string(new Date());
 };
 
-const ScriptableRun = () => {
-  Safari.open('scriptable:///run/' + encodeURIComponent(Script.name()));
-};
-
 // 自动更新
 const autoUpdate = async () => {
   const script = await new Request('https://raw.githubusercontent.com/95du/scripts/master/widget/typhoon.js').loadString();
@@ -108,6 +110,257 @@ const tyIcon = await getCacheData('typhoon.png', `https://raw.githubusercontent.
 const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
 const typhoonIcons = await getCacheData('iconBase64.json', tyIconUrl, 'json', 24);
+
+/**
+ * GPS 获取的位置通常是 WGS-84 坐标系
+ * 高德地图使用的是 GCJ-02（火星坐标系）
+ */
+const wgs84ToGcj02 = (lng, lat) => {
+  const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
+  const outOfChina = (lng, lat) =>
+    lng < 72.004 || lng > 137.8347 ||
+    lat < 0.8293 || lat > 55.8271;
+  if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
+
+  const transformLat = (x, y) => {
+    let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+    ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
+    ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
+    return ret;
+  };
+
+  const transformLng = (x, y) => {
+    let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+    ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
+    ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
+    return ret;
+  };
+  
+  let dLat = transformLat(lng - 105, lat - 35);
+  let dLng = transformLng(lng - 105, lat - 35);
+  const radLat = lat * pi / 180;
+  let magic = Math.sin(radLat);
+  magic = 1 - ee * magic * magic;
+  const sqrtMagic = Math.sqrt(magic);
+  dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
+  dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
+  return {
+    longitude: lng + dLng,
+    latitude: lat + dLat
+  };
+};
+
+// 获取当前位置经纬度
+const getLocation = async () => {
+  if (setting.updateTime) {
+    const hours = (Date.now() - setting.updateTime) / 3600000;
+    if (hours < 3) return setting;
+  }
+  try {
+    const loc = await Location.current();
+    const gcj = wgs84ToGcj02(
+      loc.longitude,
+      loc.latitude
+    );
+    setting.lon = gcj.longitude;
+    setting.lat = gcj.latitude;
+    setting.updateTime = Date.now();
+    writeSettings(setting);
+    return setting;
+  } catch (e) {
+    console.log(e);
+    return setting || null;
+  }
+};
+
+// 未来两小时天气
+const getMinutelySummary = async (lng, lat) => {
+  const url = `https://api.qweather.com/v7/minutely/5m?location=${lng},${lat}&key=73ca4f214b9241fb98f6d291345d9d84`
+  const data = await new Request(url).loadJSON();
+  return data?.summary ?? null;
+};
+
+// 雷达拼图
+const getRadarImageData = async (region) => {
+  try {
+    const radarDataUrl = 'https://img.istrongcloud.com/release/config-gzqx-radar.json';
+    const config = await getCacheData('radarData.json', radarDataUrl, 'json', 24);
+    const data = config?.[0]?.data?.[0]?.data ?? [];
+    const radarUrl = data.find(i => i.name === `${region}雷达拼图`)?.url;
+    if (!radarUrl) return null;
+    const images = await new Request(radarUrl).loadJSON();
+    const last = images?.at(-1);
+    if (!last) return null;
+    const m = last.name.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
+    if (!m) return { url: last.url, name: last.name };
+    const [, y, mo, d, h, min] = m;
+    const title = `${region}${region === '全国' ? '' : '地区'}雷达拼图 ${y}-${mo}-${d} ${h}:${min}`;
+    return {
+      url: last.url,
+      name: title
+    }
+  } catch (e) {
+    console.log('获取雷达拼图错误' + e);
+    return null;
+  }
+};
+
+// 循环数组中的对象
+const getNextItem = (arr, name) => {
+  const optNextIndex = (num, data) => (num + 1) % data.length;
+  setting[name] = optNextIndex(setting[name] || 0, arr);
+  writeSettings(setting);
+  return arr[setting[name]];
+};
+
+// 热带扰动
+const currMergerTC = async () => {
+  try {
+    const rawTC = await getCacheData('currMergerTC.json', `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`, 'json', 1);
+    for (const item of rawTC) {
+      const point = item.points?.at(-1);
+      if (point) {
+        Object.assign(item, point);
+      }
+    }
+    const tcItem = await decryptData(rawTC) ?? [];
+    const tc = getNextItem(tcItem, 'tdIndex');
+    return { tcItem, tc };
+  } catch (e) {
+    console.log(e);
+    return {};
+  }
+};
+
+// 补充参考位置和未来趋势数据
+const fetchGovData = async (tfbh) => {
+  const fallback = { location: '---', trend: '官方数据更新中...' };
+  try {
+    const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
+    const govList = await new Request(govUrl).loadJSON();
+    const targetGov = govList.find(govItem => govItem.tfid === tfbh);
+    if (!targetGov) return fallback;
+    const detailUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${targetGov.tfid}`;
+    const newData = await new Request(detailUrl).loadJSON();
+    const typhoon = newData.points?.at(-1);
+    if (!typhoon) return fallback;
+    return {
+      location: typhoon.ckposition || fallback.location,
+      trend: typhoon.jl || fallback.trend
+    };
+  } catch {
+    return fallback;
+  }
+};
+
+const mergeLatestData = async (tyItem, latest = []) => {
+  const latestMap = new Map(latest.map(item => [item.tfbh, item]));
+  await Promise.all(tyItem.map(async tf => {
+    const point = tf.points?.at(-1);
+    const latestItem = latestMap.get(tf.tfbh);
+    if (point) Object.assign(tf, point);
+    if (!latestItem) return;
+    const { strong, update_time, location, trend } = latestItem;
+    const type = point?.strong?.match(/\((.*?)\)/)?.[1]
+    Object.assign(tf, { strong, type, update_time, location, trend });
+    if (!location) {
+      Object.assign(tf, await fetchGovData(tf.tfbh));
+    }
+  }));
+  return tyItem;
+};
+
+// 参考位置，未来趋势
+const getLatestData = async () => {
+  try {
+    const [latest, message, config] = await Promise.all([
+      getCacheData('latest.json', 'https://data.istrongcloud.com/data/latest.json', 'json', 1),
+      getCacheData('message.json', 'https://tf03.istrongcloud.com/data/message/message.json', 'json', 4),
+      getCacheData('config.json', 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json', 'json', 4)
+    ]);
+    messageNotice(message?.[0]);
+    typhoonNotice(config);
+    return latest || [];
+  } catch (e) {
+    console.log(e);
+    return [];
+  }
+};
+
+/** 
+ * 台风数据接口
+ * https://tf02.istrongcloud.com/data/complex/2026.json
+ */
+const getTyphoonData = async () => {
+  try {
+    const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
+    if (!TYPHOONS.length) return null;
+    const typhoons = await decryptData(TYPHOONS) ?? [];
+    const latest = await getLatestData();
+    await mergeLatestData(typhoons, latest);
+    const tf = getNextItem(typhoons, 'tfIndex');
+    return { typhoons, tf };
+  } catch (e) {
+    console.log(e);
+    return null;
+  }
+};
+
+// 信息通知
+const typhoonNotice = (config) => {
+  const home = config.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
+  const tips = home.data.common.title;
+  if (tips && setting.tips !== tips) {
+    notify(`台风信息通告 ‼️`, tips);
+    setting.tips = tips;
+    writeSettings(setting);
+  }
+};
+
+const messageNotice = (msg) => {
+  if (msg && setting.message !== msg.message) {
+    notify(`⚠️ ${msg.title}`, msg.message);
+    setting.message = msg.message;
+    writeSettings(setting);
+  }
+};
+
+const speedChangeNotice = (tf, dist) => {
+  setting.tf = setting.tf || {};
+  const id = tf.tfbh || tf.ident;
+  if (!id) return;
+  const oldData = setting.tf[id] || {};
+  const oldSpeed = oldData.speed;
+  const speed = tf.speed || 0;
+  if (oldSpeed !== speed) {
+    notify(
+      `⚠️ 台风 【${tf.name}】`, 
+      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
+    );
+    setting.tf[id] = {
+      ...oldData,
+      speed
+    };
+    writeSettings(setting);
+  }
+};
+
+const currMergerTCNotice = (tc) => {
+  setting.tc = setting.tc || {};
+  const id = tc.tfbh || tc.ident;
+  const oldSpeed = setting.tc[id];
+  const tcLocation = getTyphoonLocation(tc);
+  if (oldSpeed !== tc.speed) {
+    notify(
+      `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
+      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
+    );
+    setting.tc[id] = tc.speed;
+    writeSettings(setting);
+  }
+};
 
 // 地点库
 const anchors = [
@@ -387,7 +640,7 @@ const selectSkin = async () => {
     .theme-footer-list {
       display: flex;
       justify-content: space-between;
-      margin-top: 20px;
+      margin-top: 22px;
       list-style: none;
     }
     .theme-footer-list li {
@@ -404,7 +657,7 @@ const selectSkin = async () => {
     .theme-footer-list .item {
       position: relative;
       width: 85px;
-      height: 123px;
+      height: 121px;
       border-radius: 12px;
       overflow: hidden;
       border: 2px solid transparent;
@@ -662,12 +915,6 @@ const processImagePipeline = async (img, trim = { top: 1, right: 2, bottom: 1, l
   ]);
 };
 
-const getIsDay = () => {
-  const now = new Date();
-  const currentTime = now.getHours() * 60 + now.getMinutes();
-  return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
-};
-
 // 雷达图片
 const getRadarImage = async () => {
   try {
@@ -680,6 +927,12 @@ const getRadarImage = async () => {
     console.log(`Radar failed: ${e}`);
     return null;
   }
+};
+
+const getIsDay = () => {
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  return (currentTime >= 6 * 60 + 30 && currentTime < 18 * 60) ? 1 : 0;
 };
 
 // 绘制台风预测路径颜色
@@ -699,24 +952,7 @@ const getLevelColor = gradeEname => ({
   SUPERTY: '#FF0C0C',
 }[gradeEname] || '#68FF8C');
 
-/** =======💜 高德地图 💜======= */
-const getTileDir = (z, x) => {
-  const dir = fm.joinPath(tilePath, `${z}_${x}`);
-  if (!fm.fileExists(dir)) fm.createDirectory(dir, true);
-  return dir;
-};
-
-const getTileURL = (z, x, y, style) => {
-  const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
-  const host = style === 6 || style === 8 ? `webst0${s}` : `wprd0${s}`;
-  return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
-};
-
-const readTile = async (z, x, y, style, time = 24) => {
-  const dir = getTileDir(z, x);
-  const name = `${y}_${style}.png`;
-  return await getCacheData(name, getTileURL(z, x, y, style), false, time, dir);
-};
+/** ======💛 地图辅助函数 💛====== */
 
 const lngToWorldX = (lng, z) => (lng + 180) / 360 * 256 * Math.pow(2, z);
 const latToWorldY = (lat, z) => {
@@ -735,21 +971,40 @@ const getTileList = (lat, lng, z, radius = 3) => {
   return list;
 };
 
-const prepareTiles = async (viewport, styles, tileCacheHours = 24) => {
-  const z = Math.round(viewport.zoom), tiles = getTileList(viewport.lat, viewport.lng, z, 3), jobs = [];
-  for (const t of tiles) for (const style of styles) jobs.push([t, style]);
+const prepareTiles = async (viewport, types, readFunc, hours = 24) => {
+  const z = Math.round(viewport.zoom);
+  const tiles = getTileList(viewport.lat, viewport.lng, z, 3);
+  const jobs = tiles.flatMap(t => types.map(type => [t, type]));
   const ready = new Map();
   const batchSize = 8;
   for (let i = 0; i < jobs.length; i += batchSize) {
     const batch = jobs.slice(i, i + batchSize);
-    const result = await Promise.all(batch.map(([t, style]) => readTile(t.z, t.x, t.y, style, tileCacheHours)));
-    batch.forEach(([t, style], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${style}`, result[j]));
+    const result = await Promise.all(
+      batch.map(([t, type]) => readFunc(t.z, t.x, t.y, type, hours))
+    );
+    batch.forEach(([t, type], j) => result[j] && ready.set(`${t.z}/${t.x}/${t.y}/${type}`, result[j]));
   }
-  const valid = tiles.filter(t => styles.every(style => ready.has(`${t.z}/${t.x}/${t.y}/${style}`)));
+  const valid = tiles.filter(t => types.every(type => ready.has(`${t.z}/${t.x}/${t.y}/${type}`)));
   return { 
     tiles: valid, 
-    images: ready 
-  }
+    images: ready
+   };
+};
+
+/** =======💜 高德地图 💜======= */
+const getTileDir = (z, x) => {
+  const dir = fm.joinPath(tilePath, `${z}_${x}`);
+  if (!fm.fileExists(dir)) fm.createDirectory(dir, true);
+  return dir;
+};
+
+const readTile = async (z, x, y, style, time = 24) => {
+  const dir = getTileDir(z, x);
+  const name = `${y}_${style}.png`;
+  const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
+  const host = style === 6 || style === 8 ? `webst0${s}` : `wprd0${s}`;
+  const url = `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
+  return await getCacheData(name, url, false, time, dir);
 };
 
 /** =======💜 立体地形 💜======= */
@@ -759,37 +1014,14 @@ const getTDTTileDir = (z, x) => {
   return dir;
 };
 
-const getTDTTileURL = (z, x, y, layer) => {
-  const TDT_KEY = '8f7bb06b77e11cd20d3195f69beba3cc';
-  const server = Math.abs(x + y) % 8;
-  return `https://t${server}.tianditu.gov.cn/${layer}_w/wmts?tk=${TDT_KEY}&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
-};
-
 const readTDTTile = async (z, x, y, layer, time = 24) => {
   const dir = getTDTTileDir(z, x);
   const name = `${y}_${layer}.png`;
-  return await getCacheData(name, getTDTTileURL(z, x, y, layer), null, time, dir);
+  const TDT_KEY = '8f7bb06b77e11cd20d3195f69beba3cc';
+  const server = Math.abs(x + y) % 8;
+  const url = `https://t${server}.tianditu.gov.cn/${layer}_w/wmts?tk=${TDT_KEY}&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;
+  return await getCacheData(name, url, null, time, dir);
 };
-
-const prepareTDTTiles = async (viewport, layers = ['ter', 'cta'], tileCacheHours = 24) => {
-  const z = Math.round(viewport.zoom);
-  const tiles = getTileList(viewport.lat, viewport.lng, z, 3);
-  const jobs = [];
-  for (const tile of tiles) for (const layer of layers) jobs.push([tile, layer]);
-  const ready = new Map();
-  const batchSize = 8;
-  for (let i = 0; i < jobs.length; i += batchSize) {
-    const batch = jobs.slice(i, i + batchSize);
-    const result = await Promise.all(batch.map(([tile, layer]) => readTDTTile(tile.z, tile.x, tile.y, layer, tileCacheHours)));
-    batch.forEach(([tile, layer], j) => result[j] && ready.set(`${tile.z}/${tile.x}/${tile.y}/${layer}`, result[j]));
-  }
-  const valid = tiles.filter(tile => layers.every(layer => ready.has(`${tile.z}/${tile.x}/${tile.y}/${layer}`)));
-  return { 
-    tiles: valid, 
-    images: ready
-  }
-};
-/** ======💛 地图瓦片结束 💛====== */
 
 // 绘制 7 级风圈
 const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
@@ -1254,7 +1486,7 @@ const drawLandmarkIcons = async (
   }
 };
 
-// 皮肤辅助函数
+// 高德地图瓦片辅助函数
 const drawAMapLayers = async (
   ctx, 
   viewport, 
@@ -1267,7 +1499,7 @@ const drawAMapLayers = async (
   worldSize, 
   W
 ) => {
-  const { tiles, images } = await prepareTiles(viewport, styles, tileCacheHours);
+  const { tiles, images } = await prepareTiles(viewport, styles, readTile, tileCacheHours);
 
   const drawTiles = style => {
     const OVERLAP = 0.75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
@@ -1287,7 +1519,7 @@ const drawAMapLayers = async (
   if (styles.length > 1) drawTiles(styles[1]);
 };
 
-// 天地图图层绘制辅助函数
+// 天地图瓦片辅助函数
 const drawTDTLayers = async (
   ctx, 
   viewport, 
@@ -1300,7 +1532,7 @@ const drawTDTLayers = async (
   TILE = 256
 ) => {
   const layers = ['ter', 'cta'];
-  const { tiles, images } = await prepareTDTTiles(viewport, layers, tileCacheHours);
+  const { tiles, images } = await prepareTiles(viewport, layers, readTDTTile, tileCacheHours);
 
   const drawTDTLayer = layer => {
     const OVERLAP = 0.75;
@@ -1321,7 +1553,6 @@ const drawTDTLayers = async (
   drawTDTLayer('ter');
   drawTDTLayer('cta');
 };
-
 
 // 支持分别传入扰动数组和台风数组
 const generateMapImage = async (
@@ -1540,258 +1771,8 @@ const generateMapImage = async (
   return ctx.getImage();
 };
 
-/**
- * GPS 获取的位置通常是 WGS-84 坐标系
- * 高德地图使用的是 GCJ-02（火星坐标系）
- */
-const wgs84ToGcj02 = (lng, lat) => {
-  const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
-  const outOfChina = (lng, lat) =>
-    lng < 72.004 || lng > 137.8347 ||
-    lat < 0.8293 || lat > 55.8271;
-  if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
+/*======= 💚 创建组件 💚 ======*/
 
-  const transformLat = (x, y) => {
-    let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
-    ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
-    ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
-    return ret;
-  };
-
-  const transformLng = (x, y) => {
-    let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-    ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
-    ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
-    ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
-    return ret;
-  };
-  
-  let dLat = transformLat(lng - 105, lat - 35);
-  let dLng = transformLng(lng - 105, lat - 35);
-  const radLat = lat * pi / 180;
-  let magic = Math.sin(radLat);
-  magic = 1 - ee * magic * magic;
-  const sqrtMagic = Math.sqrt(magic);
-  dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
-  dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
-  return {
-    longitude: lng + dLng,
-    latitude: lat + dLat
-  };
-};
-
-// 获取当前位置经纬度
-const getLocation = async () => {
-  if (setting.updateTime) {
-    const hours = (Date.now() - setting.updateTime) / 3600000;
-    if (hours < 3) return setting;
-  }
-  try {
-    const loc = await Location.current();
-    const gcj = wgs84ToGcj02(
-      loc.longitude,
-      loc.latitude
-    );
-    setting.lon = gcj.longitude;
-    setting.lat = gcj.latitude;
-    setting.updateTime = Date.now();
-    writeSettings(setting);
-    return setting;
-  } catch (e) {
-    console.log(e);
-    return setting || null;
-  }
-};
-
-// 未来两小时天气
-const getMinutelySummary = async (lng, lat) => {
-  const url = `https://api.qweather.com/v7/minutely/5m?location=${lng},${lat}&key=73ca4f214b9241fb98f6d291345d9d84`
-  const data = await new Request(url).loadJSON();
-  return data?.summary ?? null;
-};
-
-// 雷达拼图
-const getRadarImageData = async (region) => {
-  try {
-    const radarDataUrl = 'https://img.istrongcloud.com/release/config-gzqx-radar.json';
-    const config = await getCacheData('radarData.json', radarDataUrl, 'json', 24);
-    const data = config?.[0]?.data?.[0]?.data ?? [];
-    const radarUrl = data.find(i => i.name === `${region}雷达拼图`)?.url;
-    if (!radarUrl) return null;
-    const images = await new Request(radarUrl).loadJSON();
-    const last = images?.at(-1);
-    if (!last) return null;
-    const m = last.name.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);
-    if (!m) return { url: last.url, name: last.name };
-    const [, y, mo, d, h, min] = m;
-    const title = `${region}${region === '全国' ? '' : '地区'}雷达拼图 ${y}-${mo}-${d} ${h}:${min}`;
-    return {
-      url: last.url,
-      name: title
-    }
-  } catch (e) {
-    console.log('获取雷达拼图错误' + e);
-    return null;
-  }
-};
-
-// 循环数组中的对象
-const getNextItem = (arr, name) => {
-  const optNextIndex = (num, data) => (num + 1) % data.length;
-  setting[name] = optNextIndex(setting[name] || 0, arr);
-  writeSettings(setting);
-  return arr[setting[name]];
-};
-
-// 热带扰动
-const currMergerTC = async () => {
-  try {
-    const rawTC = await getCacheData('currMergerTC.json', `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`, 'json', 1);
-    for (const item of rawTC) {
-      const point = item.points?.at(-1);
-      if (point) {
-        Object.assign(item, point);
-      }
-    }
-    const tcItem = await decryptData(rawTC) ?? [];
-    const tc = getNextItem(tcItem, 'tdIndex');
-    return { tcItem, tc };
-  } catch (e) {
-    console.log(e);
-    return {};
-  }
-};
-
-// 补充参考位置和未来趋势数据
-const fetchGovData = async (tfbh) => {
-  const fallback = { location: '---', trend: '官方数据更新中...' };
-  try {
-    const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
-    const govList = await new Request(govUrl).loadJSON();
-    const targetGov = govList.find(govItem => govItem.tfid === tfbh);
-    if (!targetGov) return fallback;
-    const detailUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${targetGov.tfid}`;
-    const newData = await new Request(detailUrl).loadJSON();
-    const typhoon = newData.points?.at(-1);
-    if (!typhoon) return fallback;
-    return {
-      location: typhoon.ckposition || fallback.location,
-      trend: typhoon.jl || fallback.trend
-    };
-  } catch {
-    return fallback;
-  }
-};
-
-const mergeLatestData = async (tyItem, latest = []) => {
-  const latestMap = new Map(latest.map(item => [item.tfbh, item]));
-  await Promise.all(tyItem.map(async tf => {
-    const point = tf.points?.at(-1);
-    const latestItem = latestMap.get(tf.tfbh);
-    if (point) Object.assign(tf, point);
-    if (!latestItem) return;
-    const { strong, update_time, location, trend } = latestItem;
-    const type = point?.strong?.match(/\((.*?)\)/)?.[1]
-    Object.assign(tf, { strong, type, update_time, location, trend });
-    if (!location) {
-      Object.assign(tf, await fetchGovData(tf.tfbh));
-    }
-  }));
-  return tyItem;
-};
-
-// 参考位置，未来趋势
-const getLatestData = async () => {
-  try {
-    const [latest, message, config] = await Promise.all([
-      getCacheData('latest.json', 'https://data.istrongcloud.com/data/latest.json', 'json', 1),
-      getCacheData('message.json', 'https://tf03.istrongcloud.com/data/message/message.json', 'json', 4),
-      getCacheData('config.json', 'https://tf02.istrongcloud.com/data/moduleConfig/typhoonModuleConfig.json', 'json', 4)
-    ]);
-    messageNotice(message?.[0]);
-    typhoonNotice(config);
-    return latest || [];
-  } catch (e) {
-    console.log(e);
-    return [];
-  }
-};
-
-/** 
- * 台风数据接口
- * https://tf02.istrongcloud.com/data/complex/2026.json
- */
-const getTyphoonData = async () => {
-  try {
-    const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
-    if (!TYPHOONS.length) return null;
-    const typhoons = await decryptData(TYPHOONS) ?? [];
-    const latest = await getLatestData();
-    await mergeLatestData(typhoons, latest);
-    const tf = getNextItem(typhoons, 'tfIndex');
-    return { typhoons, tf };
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-};
-
-// 信息通知
-const typhoonNotice = (config) => {
-  const home = config.data.find(item => item.code === 'TYPHOON_HOME_NOTICE');
-  const tips = home.data.common.title;
-  if (tips && setting.tips !== tips) {
-    notify(`台风信息通告 ‼️`, tips);
-    setting.tips = tips;
-    writeSettings(setting);
-  }
-};
-
-const messageNotice = (msg) => {
-  if (msg && setting.message !== msg.message) {
-    notify(`⚠️ ${msg.title}`, msg.message);
-    setting.message = msg.message;
-    writeSettings(setting);
-  }
-};
-
-const speedChangeNotice = (tf, dist) => {
-  setting.tf = setting.tf || {};
-  const id = tf.tfbh || tf.ident;
-  if (!id) return;
-  const oldData = setting.tf[id] || {};
-  const oldSpeed = oldData.speed;
-  const speed = tf.speed || 0;
-  if (oldSpeed !== speed) {
-    notify(
-      `⚠️ 台风 【${tf.name}】`, 
-      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
-    );
-    setting.tf[id] = {
-      ...oldData,
-      speed
-    };
-    writeSettings(setting);
-  }
-};
-
-const currMergerTCNotice = (tc) => {
-  setting.tc = setting.tc || {};
-  const id = tc.tfbh || tc.ident;
-  const oldSpeed = setting.tc[id];
-  const tcLocation = getTyphoonLocation(tc);
-  if (oldSpeed !== tc.speed) {
-    notify(
-      `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
-      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
-    );
-    setting.tc[id] = tc.speed;
-    writeSettings(setting);
-  }
-};
-
-// 格式化日期
 const formatTime = time => time.replace('T', ' ').slice(0, 16);
 
 const formatDate = (time, showMin) => {
@@ -1808,21 +1789,6 @@ const getTyphoonColor = (speed) => {
     [17, '#38ABFF'], [0, '#00C400']
   ];
   return new Color(colors.find(([min]) => speed >= min)?.[1]);
-};
-
-// 查找最大风速的 Point
-const getMaxForecast = (tf) => {
-  return (tf.points ?? []).flatMap(p => p.forecast ?? []).reduce((max, { sets, points = [] }) => {
-    const point = points.at(-1);
-    if (!point) return max;
-    const item = { ...point, sets };
-    if (!max || item.power > max.power || (item.power === max.power && item.speed > max.speed)) {
-      const strong = item.strong.split('(')[0].trim();
-      item.strong = `( ${strong} )`;
-      max = item;
-    }
-    return max;
-  }, null);
 };
 
 const getTyphoonImage = async (tfItem) => {
