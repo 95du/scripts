@@ -236,21 +236,23 @@ const currMergerTC = async () => {
 
 // 补充参考位置和未来趋势数据
 const fetchGovData = async (tfbh) => {
-  const fallback = { location: '---', trend: '官方数据更新中...' };
+  const fallback = { location: '-----', trend: '-----' };
   try {
     const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
     const govList = await new Request(govUrl).loadJSON();
-    const targetGov = govList.find(govItem => govItem.tfid === tfbh);
+    const targetGov = govList.find(govItem => govItem.tfid === tfbh) || govList[0];
     if (!targetGov) return fallback;
     const detailUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${targetGov.tfid}`;
     const newData = await new Request(detailUrl).loadJSON();
     const typhoon = newData.points?.at(-1);
     if (!typhoon) return fallback;
+    console.log(typhoon.jl);
     return {
-      location: typhoon.ckposition || fallback.location,
-      trend: typhoon.jl || fallback.trend
+      location: typhoon.ckposition?.trim() || fallback.location,
+      trend: typhoon.jl?.trim() || fallback.trend
     };
-  } catch {
+  } catch (e) {
+    console.log(e);
     return fallback;
   }
 };
@@ -1555,6 +1557,60 @@ const drawTDTLayers = async (
   drawTDTLayer('cta');
 };
 
+// 多目标参照自适应视口算法
+const mercY = (latDeg) => {
+  const r = latDeg * Math.PI / 180;
+  return 0.5 - Math.log((1 + Math.sin(r)) / (1 - Math.sin(r))) / (4 * Math.PI);
+};
+const invMercY = (y) => Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+const getViewport = (points) => {
+  if (!points || !points.length) {
+    return { vp: { lng: 104.5, lat: 28.6, zoom: 3.5 }, diag: {} };
+  }
+  
+  const TILE = 256;
+  const EXPORT_SCALE = 2 / 3;
+  const CANVAS_W = 364, CANVAS_H = 382;
+  const BOX = { xMin: 36.75, xMax: 298.47, yMin: 131.06, yMax: 318.06 };
+  const REF = { lat: 5.0, lng: 111.16 };
+  const MIN_ZOOM = 2.69, MAX_ZOOM = 3.92;
+  const ASIA_LABEL_LNG_FLOOR = 132.2;
+  const OCEANIA_LABEL_LAT_FLOOR = 22.8;
+  
+  const lngs = points.map(p => p.lng).concat([REF.lng]);
+  const lats = points.map(p => p.lat).concat([REF.lat]);
+  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const boxW = BOX.xMax - BOX.xMin;
+  const boxH = BOX.yMax - BOX.yMin;
+  const lngSpan = Math.max(maxLng - minLng, 1e-6);
+  const zoomX = Math.log2(boxW * 360 / (lngSpan * TILE * EXPORT_SCALE));
+  const y0min = mercY(minLat), y0max = mercY(maxLat);
+  const h0 = Math.max(y0min - y0max, 1e-9);
+  const zoomY = Math.log2(boxH / (h0 * TILE * EXPORT_SCALE));
+  let zoom = clamp(Math.min(zoomX, zoomY, MAX_ZOOM), MIN_ZOOM, MAX_ZOOM);
+  const midLng = (minLng + maxLng) / 2;
+  const midMercY = (y0min + y0max) / 2;
+  const boxCenterX = (BOX.xMin + BOX.xMax) / 2;
+  const boxCenterY = (BOX.yMin + BOX.yMax) / 2;
+  const scaleLng = TILE * Math.pow(2, zoom) * EXPORT_SCALE / 360;
+  let centerLng = midLng - (boxCenterX - CANVAS_W / 2) / scaleLng;
+  const scaleLat = TILE * Math.pow(2, zoom) * EXPORT_SCALE;
+  const centerMercY = midMercY - (boxCenterY - CANVAS_H / 2) / scaleLat;
+  let centerLat = invMercY(centerMercY);
+  if (zoom < 3.5) {
+    centerLng = Math.max(centerLng, ASIA_LABEL_LNG_FLOOR);
+    centerLat = Math.max(centerLat, OCEANIA_LABEL_LAT_FLOOR);
+  }
+  return {
+    lng: Number(centerLng.toFixed(4)),
+    lat: Number(centerLat.toFixed(4)),
+    zoom: Number(zoom.toFixed(4))
+  };
+};
+
 // 支持分别传入扰动数组和台风数组
 const generateMapImage = async (
   isDay = 0, 
@@ -1568,51 +1624,13 @@ const generateMapImage = async (
     ...tfPoints.map(p => ({ ...p, isTyphoon: true }))
   ];
 
-  const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
-  const styles = isDay === 0 ? [6, 8] : [7], TILE_CACHE_HOURS = 720;
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-  const getViewport = points => {
-    if (!points || !points.length) {
-      return { lng: 104.5, lat: 28.6, zoom: 3.5 };
-    }
-    const lngs = points.map(p => p.lng);
-    const lats = points.map(p => p.lat);
-    const maxLng = Math.max(...lngs);
-    const minLng = Math.min(...lngs);
-    const avgLat = lats.reduce((s, v) => s + v, 0) / lats.length;
-    const lngSpan = maxLng - minLng;
-    const t = clamp((maxLng - 112) / 58, 0, 1);
-    let centerLng = 117.5 + t * 14 + clamp((maxLng - 155) * 0.5, 0, 10);
-    if (maxLng > 160) {
-      const extra = (maxLng - 160) * 0.42;
-      const spanFactor = clamp(1 - (lngSpan - 30) / 50, 0.35, 1);
-      centerLng += extra * spanFactor;
-    }
-    const OFFSET_EAST = 3.5;
-    const offsetFactor = clamp((t - 0.15) / 0.2, 0, 1);
-    centerLng = clamp(centerLng + OFFSET_EAST * offsetFactor, 112, 165);
-    let centerLat = 21.5 + (avgLat - 22.5) * 0.12;
-    // 视图向下推
-    centerLat += avgLat <= 10 ? 2.55 : avgLat <= 14 ? 1.8 : 0;
-    const OFFSET_NORTH = 2.0;
-    centerLat = clamp(centerLat + OFFSET_NORTH, 19.5, 27.0);
-    let zoom = 4.15 - 1.25 * Math.pow(t, 0.72);
-    if (maxLng > 165) zoom = Math.max(zoom, 3.02);
-    if (lngSpan > 50) zoom -= 0.08 * clamp((lngSpan - 50) / 30, 0, 1);
-    const tightness = clamp(1 - Math.max(0, lngSpan - 20) / 30, 0, 1);
-    const isolationFactor = clamp(1 - Math.max(0, maxLng - 160) / 20, 0, 1);
-    const minZoom = 2.95 + tightness * isolationFactor * 0.55;
-    zoom = clamp(zoom, minZoom, 4.4);
-    if (zoom < 3.5) centerLng = Math.max(centerLng, 132.2);
-    return { lng: centerLng, lat: centerLat, zoom };
-  };
-
   const viewport = getViewport(typhoonPoints);
   const z = Math.round(viewport.zoom);
   const radarImage = await getRadarImage();
   const fractionalScale = Math.pow(2, viewport.zoom - z);
   const centerX = lngToWorldX(viewport.lng, z), centerY = latToWorldY(viewport.lat, z);
+  
+  const W = 364, H = 382, MAP_W = 546, MAP_H = 573, EXPORT_SCALE = 2 / 3, TILE = 256;
   const worldSize = TILE * Math.pow(2, z) * fractionalScale * EXPORT_SCALE;
 
   const ctx = new DrawContext();
@@ -1631,8 +1649,9 @@ const generateMapImage = async (
     return new Point(x, y);
   };
 
-    // 判断地图皮肤类型 (0: 亮色, 1: 立体地形, 2: 暗色, 3: 自动随 isDay 切换)
-  const skinMode = setting.skin || 0
+  // 判断地图皮肤类型 (0: 亮色, 1: 立体地形, 2: 暗色, 3: 自动随 isDay 切换)
+  const skinMode = setting.skin || 0;
+  const TILE_CACHE_HOURS = 720;
   if (skinMode === 1) {
     await drawTDTLayers(ctx, viewport, TILE_CACHE_HOURS, worldToScreen, worldSize, W, fractionalScale, EXPORT_SCALE, TILE);
   } else {
