@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.2
+ * 组件版本: Version 1.1.3
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -105,11 +105,14 @@ const autoUpdate = async () => {
   if (script.includes('組件')) fm.writeString(module.filename, script)
 };
 
+// 解码 base64 编码图
+const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64));
+
 // https://tf03.istrongcloud.com/typhoonVisual/js/chunk-0ecd511e.js
-const tyIcon = await getCacheData('typhoon.png', `https://raw.githubusercontent.com/95du/scripts/master/img/weather/typhoon_1.png`);
-const tcIcon = await getCacheData('tc.png', `https://tf03.istrongcloud.com/typhoonVisual/img/tfpt.png`);
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
 const typhoonIcons = await getCacheData('iconBase64.json', tyIconUrl, 'json', 24);
+const tyIcon = decodeBase64Image(typhoonIcons.tf);
+const tcIcon = decodeBase64Image(typhoonIcons.tc);
 
 /**
  * GPS 获取的位置通常是 WGS-84 坐标系
@@ -1001,7 +1004,21 @@ const getTileDir = (z, x) => {
   return dir;
 };
 
+const customTiles = {
+  '3/6/3/8': typhoonIcons.china,
+  '3/6/4/8': typhoonIcons.oceania,
+  '4/13/9/8': typhoonIcons.oceania,
+  '3/5/2/8': typhoonIcons.asia3528,
+  '3/6/2/8': typhoonIcons.asia3628,
+  '4/11/5/8': typhoonIcons.asia41158
+};
+
 const readTile = async (z, x, y, style, time = 24) => {
+  const mapKey = `${z}/${x}/${y}/${style}`;
+  if (customTiles[mapKey]) {
+    const base64 = customTiles[mapKey];
+    return decodeBase64Image(base64);
+  }
   const dir = getTileDir(z, x);
   const name = `${y}_${style}.png`;
   const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
@@ -1239,14 +1256,14 @@ const getCircleAvatar = async (title, imageUrl) => {
 const drawFeedbackInfoBoxes = async (
   ctx, 
   tcPoints, 
-  feedbackData, 
+  feedbackData = [], 
   project, 
   EXPORT_SCALE, 
   canvasW = 1000, 
   canvasH = 1000,
-  currentZoom = 3.6
+  currentZoom = 3.5
 ) => {
-  if (!feedbackData?.length || currentZoom < 3.5) return [];
+  if (!feedbackData.length) return [];
 
   // 1. 基础尺寸与配置
   const titleFS = 13 * EXPORT_SCALE;
@@ -1273,7 +1290,7 @@ const drawFeedbackInfoBoxes = async (
   
   const drawnRects = [];
   const selItems = []; 
-  const TARGET_COUNT = !tcPoints?.length ? 4 : 3;
+  const TARGET_COUNT = !tcPoints?.length ? 4 : currentZoom < 3.3 ? 2 : 3;
 
   // 阶段 1：纯数学筛选（坐标校验与碰撞检测）
   for (const item of shuffledData) {
@@ -1557,52 +1574,79 @@ const drawTDTLayers = async (
   drawTDTLayer('cta');
 };
 
-// 多目标参照自适应视口算法
-const mercY = (latDeg) => {
-  const r = latDeg * Math.PI / 180;
-  return 0.5 - Math.log((1 + Math.sin(r)) / (1 - Math.sin(r))) / (4 * Math.PI);
-};
-const invMercY = (y) => Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+// 地理范围的自适应视口模型辅助函数
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-const getViewport = (points) => {
-  if (!points || !points.length) {
-    return { vp: { lng: 104.5, lat: 28.6, zoom: 3.5 }, diag: {} };
-  }
+const mercY = lat => {
+  const r = lat * Math.PI / 180;
+  return 0.5 - Math.log((1 + Math.sin(r)) / (1 - Math.sin(r))) / (4 * Math.PI);
+};
+
+const invMercY = y =>
+  Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180 / Math.PI;
+
+const zoomCapFor = ({ lng }) => {
+  if (lng <= 122) return 3.92;
+  if (lng <= 130) return 3.85;
+  if (lng <= 145) return 3.50;
+  return 3.30;
+};
+
+const spanCapFor = span => {
+  if (span > 40) return 3.30;
+  if (span > 25) return 3.50;
+  return Infinity;
+};
+
+// 基于地理范围的自适应视口模型 + 少量针对固定组件视觉布局的经验校准。✅
+const getViewport = points => {
+  if (!points?.length) return { lng: 104.5, lat: 28.6, zoom: 3.5 };
   
   const TILE = 256;
-  const EXPORT_SCALE = 2 / 3;
-  const CANVAS_W = 364, CANVAS_H = 382;
+  const SCALE = 2 / 3;
+  const CANVAS = { w: 364, h: 382 };
   const BOX = { xMin: 36.75, xMax: 298.47, yMin: 131.06, yMax: 318.06 };
-  const REF = { lat: 5.0, lng: 111.16 };
-  const MIN_ZOOM = 2.69, MAX_ZOOM = 3.92;
-  const ASIA_LABEL_LNG_FLOOR = 132.2;
-  const OCEANIA_LABEL_LAT_FLOOR = 22.8;
-  
-  const lngs = points.map(p => p.lng).concat([REF.lng]);
-  const lats = points.map(p => p.lat).concat([REF.lat]);
-  const minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  const REF = { lat: 5, lng: 111.16 };
+  const MIN_ZOOM = 3;
+  const LAT_FLOOR_C = 20;
+  const LAT_FLOOR_AB = 24;
+  const LAT_FLOOR_ZOOM = 3.5;
+
+  const lngs = points.map(p => p.lng).concat(REF.lng);
+  const lats = points.map(p => p.lat).concat(REF.lat);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const lngSpan = Math.max(maxLng - minLng, 1e-6);
   const boxW = BOX.xMax - BOX.xMin;
   const boxH = BOX.yMax - BOX.yMin;
-  const lngSpan = Math.max(maxLng - minLng, 1e-6);
-  const zoomX = Math.log2(boxW * 360 / (lngSpan * TILE * EXPORT_SCALE));
-  const y0min = mercY(minLat), y0max = mercY(maxLat);
-  const h0 = Math.max(y0min - y0max, 1e-9);
-  const zoomY = Math.log2(boxH / (h0 * TILE * EXPORT_SCALE));
-  let zoom = clamp(Math.min(zoomX, zoomY, MAX_ZOOM), MIN_ZOOM, MAX_ZOOM);
+  const zoomX = Math.log2(boxW * 360 / (lngSpan * TILE * SCALE));
+  const yMin = mercY(minLat);
+  const yMax = mercY(maxLat);
+  const zoomY = Math.log2(boxH / (Math.max(yMin - yMax, 1e-9) * TILE * SCALE));
+  // 用最靠近中国的台风点决定区域分档。
+  const nearestPt = points.reduce((a, b) => a.lng < b.lng ? a : b);
+  const maxZoom = Math.min(zoomCapFor(nearestPt), spanCapFor(lngSpan));
+  const zoom = clamp(Math.min(zoomX, zoomY, maxZoom), MIN_ZOOM, maxZoom);
+  // 将 bbox 中心映射到安全 BOX 中心。
   const midLng = (minLng + maxLng) / 2;
-  const midMercY = (y0min + y0max) / 2;
+  const midMercY = (yMin + yMax) / 2;
   const boxCenterX = (BOX.xMin + BOX.xMax) / 2;
   const boxCenterY = (BOX.yMin + BOX.yMax) / 2;
-  const scaleLng = TILE * Math.pow(2, zoom) * EXPORT_SCALE / 360;
-  let centerLng = midLng - (boxCenterX - CANVAS_W / 2) / scaleLng;
-  const scaleLat = TILE * Math.pow(2, zoom) * EXPORT_SCALE;
-  const centerMercY = midMercY - (boxCenterY - CANVAS_H / 2) / scaleLat;
+  const scaleLng = TILE * 2 ** zoom * SCALE;
+  const centerLng =
+    midLng - (boxCenterX - CANVAS.w / 2) / scaleLng;
+  const scaleLat = TILE * 2 ** zoom * SCALE;
+  const centerMercY =
+    midMercY - (boxCenterY - CANVAS.h / 2) / scaleLat;
   let centerLat = invMercY(centerMercY);
-  if (zoom < 3.5) {
-    centerLng = Math.max(centerLng, ASIA_LABEL_LNG_FLOOR);
-    centerLat = Math.max(centerLat, OCEANIA_LABEL_LAT_FLOOR);
+  // 低 zoom 时避免镜头构图过度偏移。
+  if (zoom <= LAT_FLOOR_ZOOM) {
+    centerLat = Math.max(centerLat, clamp(nearestPt.lat + 5.5, 24, 30));
+    if (maxLng > 170 && lngSpan > 10) centerLat = Math.min(centerLat, LAT_FLOOR_AB);
+  } else if (zoom <= 3.85) {
+    centerLat = Math.max(centerLat, LAT_FLOOR_C);
   }
   return {
     lng: Number(centerLng.toFixed(4)),
@@ -2061,7 +2105,7 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
     valueText.textColor = textColor;;
     if (i < info.length - 1) {
       widget.addSpacer(3);
-    } else if (isLarge) {
+    } else if (isLarge && item.value.length > 20) {
       listStack.size = new Size(0, 33)
     }
   });
