@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.3
+ * 组件版本: Version 1.1.5
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -208,6 +208,24 @@ const getRadarImageData = async (region) => {
     console.log('获取雷达拼图错误' + e);
     return null;
   }
+};
+
+const getTravelData = async () => {
+  const { data = [] } = await getCacheData(
+    'travelRecommend.json',
+    'https://tf03.istrongcloud.com/data/travelRecommend/data.json',
+    'json', 2
+  );
+  const validNames = new Set(
+    data.flatMap(({ title, imageUrl }) =>  imageUrl ? [`${title}_${imageUrl.split('/').pop()}`] : [])
+  );
+  fm.listContents(mainPath)
+    .filter(name => /\.(jpe?g)$/i.test(name) && !validNames.has(name))
+    .forEach(name => {
+      const filePath = fm.joinPath(mainPath, name);
+      fm.remove(filePath)
+    });
+  return data;
 };
 
 // 循环数组中的对象
@@ -1005,9 +1023,17 @@ const getTileDir = (z, x) => {
 };
 
 const customTiles = {
-  '3/6/3/8': typhoonIcons.china,
-  '3/6/4/8': typhoonIcons.oceania,
-  '4/13/9/8': typhoonIcons.oceania,
+  // style 7
+  '3/6/3/7': typhoonIcons.china3637,
+  '3/6/4/7': typhoonIcons.oceania3647,
+  '4/13/9/7': typhoonIcons.oceania41397,
+  '3/5/2/7': typhoonIcons.asia3527,
+  '3/6/2/7': typhoonIcons.asia3627,
+  '4/11/5/7': typhoonIcons.asia41157,
+  // style 6/8
+  '3/6/3/8': typhoonIcons.china3638,
+  '3/6/4/8': typhoonIcons.transparent,
+  '4/13/9/8': typhoonIcons.transparent,
   '3/5/2/8': typhoonIcons.asia3528,
   '3/6/2/8': typhoonIcons.asia3628,
   '4/11/5/8': typhoonIcons.asia41158
@@ -1812,7 +1838,7 @@ const generateMapImage = async (
   
   // 6. 绘制当前定位图标
   if (locationPoint) {
-    const locKey = isDay === 1 ? 'loc_light' : 'loc_night';
+    const locKey = setting.skin === 2 || (setting.skin === 3 && isDay === 0) ? 'loc_night' : 'loc_light';
     const locBase64 = typhoonIcons[locKey];
     if (locBase64) {
       const locImg = Image.fromData(Data.fromBase64String(locBase64));
@@ -1875,8 +1901,7 @@ const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
     if (type === 'tf') {
       widget.backgroundImage = await getTyphoonImage(tfItem);
     } else {
-      const feedbackJson = await getCacheData('travelRecommend.json', 'https://tf03.istrongcloud.com/data/travelRecommend/data.json', 'json', 2)
-      const feedbackData = feedbackJson.data ?? [];
+      const feedbackData = await getTravelData();
       const image = await generateMapImage(isDay, tcItem, tfItem, feedbackData, setting);
       widget.backgroundImage = image;
     }
