@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.5
+ * 组件版本: Version 1.1.6
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -110,7 +110,7 @@ const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64)
 
 // https://tf03.istrongcloud.com/typhoonVisual/js/chunk-0ecd511e.js
 const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
-const typhoonIcons = await getCacheData('iconBase64.json', tyIconUrl, 'json', 24);
+const typhoonIcons = await getCacheData('base64.json', tyIconUrl, 'json', 24);
 const tyIcon = decodeBase64Image(typhoonIcons.tf);
 const tcIcon = decodeBase64Image(typhoonIcons.tc);
 
@@ -1022,34 +1022,38 @@ const getTileDir = (z, x) => {
   return dir;
 };
 
-const customTiles = {
-  // style 7
-  '3/6/3/7': typhoonIcons.china3637,
-  '3/6/4/7': typhoonIcons.oceania3647,
-  '4/13/9/7': typhoonIcons.oceania41397,
-  '3/5/2/7': typhoonIcons.asia3527,
-  '3/6/2/7': typhoonIcons.asia3627,
-  '4/11/5/7': typhoonIcons.asia41157,
-  // style 6/8
-  '3/6/3/8': typhoonIcons.china3638,
-  '3/6/4/8': typhoonIcons.transparent,
-  '4/13/9/8': typhoonIcons.transparent,
-  '3/5/2/8': typhoonIcons.asia3528,
-  '3/6/2/8': typhoonIcons.asia3628,
-  '4/11/5/8': typhoonIcons.asia41158
+const getTileURL = (z, x, y, style, type) => {
+  const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
+  const host = `${type}0${s}`;
+  return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
 };
 
-const readTile = async (z, x, y, style, time = 24) => {
-  const mapKey = `${z}/${x}/${y}/${style}`;
-  if (customTiles[mapKey]) {
-    const base64 = customTiles[mapKey];
-    return decodeBase64Image(base64);
+const customTiles = {
+  // webrd style 8 矢量图
+  '3/6/3/webrd/8': typhoonIcons.china_webrd3638,
+  '3/6/4/webrd/8': typhoonIcons.oceania_webrd3648,
+  '4/13/9/webrd/8': typhoonIcons.oceania_webrd41398,
+  '3/5/2/webrd/8': typhoonIcons.asia_webrd3528,
+  '3/6/2/webrd/8': typhoonIcons.asia_webrd3628,
+  '4/11/5/webrd/8': typhoonIcons.asia_webrd41158,
+  // webst style 6/8 卫星地图
+  '3/6/3/webst/8': typhoonIcons.china_webst3638,
+  '3/6/4/webst/8': typhoonIcons.transparent,
+  '4/13/9/webst/8': typhoonIcons.transparent,
+  '3/5/2/webst/8': typhoonIcons.asia_webst3528,
+  '3/6/2/webst/8': typhoonIcons.asia_webst3628,
+  '4/11/5/webst/8': typhoonIcons.asia_webst41158
+}
+
+const readTile = async (z, x, y, type, time = 24) => {
+  const [host, style] = type.split('_');
+  const key = `${z}/${x}/${y}/${host}/${style}`;
+  if (customTiles[key]) {
+    return Image.fromData(Data.fromBase64String(customTiles[key]));
   }
   const dir = getTileDir(z, x);
-  const name = `${y}_${style}.png`;
-  const s = ['1', '2', '3', '4'][Math.abs(x + y) % 4];
-  const host = style === 6 || style === 8 ? `webst0${s}` : `wprd0${s}`;
-  const url = `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
+  const name = `${y}_${host}_${style}.png`;
+  const url = getTileURL(z, x, y, style, host);
   return await getCacheData(name, url, false, time, dir);
 };
 
@@ -1727,11 +1731,11 @@ const generateMapImage = async (
   } else {
     let styles = [];
     if (skinMode === 0) {
-      styles = [7]; // 亮色
+      styles = ['webrd_8']; // 矢量
     } else if (skinMode === 2) {
-      styles = [6, 8]; // 暗色
+      styles = ['webst_6', 'webst_8'];
     } else if (skinMode === 3) {
-      styles = isDay === 1 ? [7] : [6, 8]; // 自动跟随日夜模式
+      styles = isDay === 1 ? ['webrd_8'] : ['webst_6', 'webst_8'];
     }
 
     if (styles.length > 0) {
