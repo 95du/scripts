@@ -1053,7 +1053,7 @@ const ensureTiles = async () => {
   const tileImageUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/tile_image.json';
   const data = await getCacheData('tile_image.json', tileImageUrl, 'json', 24);
   for (const [key, item] of missing) {
-    const base64 = tileImages[key];
+    const base64 = data[key];
     if (!base64) continue;
     const image = Data.fromBase64String(base64);
     fm.writeImage(getTilePath(item), Image.fromData(image));
@@ -1869,12 +1869,13 @@ const generateMapImage = async (
   
   // 7. 绘制登陆 location 提示框（最顶层）
   for (const p of typhoonPoints) {
-    if (p.isTyphoon && p.land && p.land.length > 0 && p.latest && p.latest.location) {
+    if (p.isTyphoon && p.land?.length > 0 && p.location) {
       const pos = project(p.lat, p.lng);
       const ICON_SIZE = 40 * EXPORT_SCALE;
-      drawLandInfoBox(ctx, pos, p.latest.location, ICON_SIZE, EXPORT_SCALE);
+      drawLandInfoBox(ctx, pos, p.location, isDay, ICON_SIZE, EXPORT_SCALE);
     }
   }
+  
   return ctx.getImage();
 };
 
