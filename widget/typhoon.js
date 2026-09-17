@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.6
+ * 组件版本: Version 1.1.7
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -108,9 +108,10 @@ const autoUpdate = async () => {
 // 解码 base64 编码图
 const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64));
 
-// https://tf03.istrongcloud.com/typhoonVisual/js/chunk-0ecd511e.js
-const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
-const typhoonIcons = await getCacheData('base64.json', tyIconUrl, 'json', 24);
+const [typhoonIcons, tileImages] = await Promise.all([
+  getCacheData('typhoon_icons.json', 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json', 'json', 24),
+  getCacheData('tile_image.json', 'https://raw.githubusercontent.com/95du/scripts/master/update/tile_image.json', 'json', 24)
+]);
 const tyIcon = decodeBase64Image(typhoonIcons.tf);
 const tcIcon = decodeBase64Image(typhoonIcons.tc);
 
@@ -1028,33 +1029,44 @@ const getTileURL = (z, x, y, style, type) => {
   return `https://${host}.is.autonavi.com/appmaptile?lang=zh_cn&style=${style}&x=${x}&y=${y}&z=${z}`;
 };
 
-const customTiles = {
-  // webrd style 8 矢量图
-  '3/6/3/webrd/8': typhoonIcons.china_webrd3638,
-  '3/6/4/webrd/8': typhoonIcons.oceania_webrd3648,
-  '4/13/9/webrd/8': typhoonIcons.oceania_webrd41398,
-  '3/5/2/webrd/8': typhoonIcons.asia_webrd3528,
-  '3/6/2/webrd/8': typhoonIcons.asia_webrd3628,
-  '4/11/5/webrd/8': typhoonIcons.asia_webrd41158,
-  // webst style 6/8 卫星地图
-  '3/6/3/webst/8': typhoonIcons.china_webst3638,
-  '3/6/4/webst/8': typhoonIcons.transparent,
-  '4/13/9/webst/8': typhoonIcons.transparent,
-  '3/5/2/webst/8': typhoonIcons.asia_webst3528,
-  '3/6/2/webst/8': typhoonIcons.asia_webst3628,
-  '4/11/5/webst/8': typhoonIcons.asia_webst41158
-}
+const getTilePath = item => {
+  const [z, x, y, type, style] = item.split('/');
+  return fm.joinPath(getTileDir(z, x), `${y}_${type}_${style}.png`);
+};
+
+const customTiles = [
+  ['webrd3638', '3/6/3/webrd/8'],
+  ['webrd3648', '3/6/4/webrd/8'],
+  ['webrd41398', '4/13/9/webrd/8'],
+  ['webrd3528', '3/5/2/webrd/8'],
+  ['webrd3628', '3/6/2/webrd/8'],
+  ['webrd41158', '4/11/5/webrd/8'],
+  ['webst3638', '3/6/3/webst/8'],
+  ['transparent', '3/6/4/webst/8'],
+  ['transparent', '4/13/9/webst/8'],
+  ['webst3528', '3/5/2/webst/8'],
+  ['webst3628', '3/6/2/webst/8'],
+  ['webst41158', '4/11/5/webst/8']
+];
+
+const ensureTiles = async () => {
+  const missing = customTiles.filter(([, item]) => !fm.fileExists(getTilePath(item)));
+  if (!missing.length) return;
+  for (const [key, item] of missing) {
+    const base64 = tileImages[key];
+    if (!base64) continue;
+    const image = Data.fromBase64String(base64);
+    fm.writeImage(getTilePath(item), Image.fromData(image));
+  }
+};
 
 const readTile = async (z, x, y, type, time = 24) => {
   const [host, style] = type.split('_');
-  const key = `${z}/${x}/${y}/${host}/${style}`;
-  if (customTiles[key]) {
-    return Image.fromData(Data.fromBase64String(customTiles[key]));
-  }
   const dir = getTileDir(z, x);
   const name = `${y}_${host}_${style}.png`;
-  const url = getTileURL(z, x, y, style, host);
-  return await getCacheData(name, url, false, time, dir);
+  const path = fm.joinPath(dir, name);
+  if (fm.fileExists(path)) return fm.readImage(path);
+  return await getCacheData(name, getTileURL(z, x, y, style, host), false, time, dir);
 };
 
 /** =======💜 立体地形 💜======= */
@@ -1549,6 +1561,7 @@ const drawAMapLayers = async (
   worldSize, 
   W
 ) => {
+  await ensureTiles();
   const { tiles, images } = await prepareTiles(viewport, styles, readTile, tileCacheHours);
 
   const drawTiles = style => {
@@ -2197,9 +2210,9 @@ const createLevelWidget = (levels, textColor, isLarge) => {
     const levelText = topStack.addText('台风等级、预报机构');
     levelText.font = Font.boldSystemFont(15);
     levelText.textColor = new Color('#00B388');
+    topStack.addSpacer();
   }
   
-  topStack.addSpacer();
   const timeText = topStack.addText(getFormattedTime());
   timeText.font = Font.mediumSystemFont(16);
   timeText.textColor = textColor;
