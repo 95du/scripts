@@ -108,10 +108,8 @@ const autoUpdate = async () => {
 // 解码 base64 编码图
 const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64));
 
-const [typhoonIcons, tileImages] = await Promise.all([
-  getCacheData('typhoon_icons.json', 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json', 'json', 24),
-  getCacheData('tile_image.json', 'https://raw.githubusercontent.com/95du/scripts/master/update/tile_image.json', 'json', 24)
-]);
+const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
+const typhoonIcons = await getCacheData('typhoon_icons.json', tyIconUrl, 'json', 24);
 const tyIcon = decodeBase64Image(typhoonIcons.tf);
 const tcIcon = decodeBase64Image(typhoonIcons.tc);
 
@@ -1052,6 +1050,8 @@ const customTiles = [
 const ensureTiles = async () => {
   const missing = customTiles.filter(([, item]) => !fm.fileExists(getTilePath(item)));
   if (!missing.length) return;
+  const tileImageUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/tile_image.json';
+  const data = await getCacheData('tile_image.json', tileImageUrl, 'json', 24);
   for (const [key, item] of missing) {
     const base64 = tileImages[key];
     if (!base64) continue;
