@@ -27,6 +27,7 @@ const ensureDir = (...paths) => {
 const mainPath = ensureDir(fm.documentsDirectory(), 'typhoon');
 const tilePath = ensureDir(mainPath, 'tiles');
 const tdtPath = ensureDir(mainPath, 'tdt_tiles');
+const travelPath = ensureDir(mainPath, 'travel');
 const settingPath = fm.joinPath(mainPath, 'setting.json');
 
 const writeSettings = (setting) => {
@@ -294,10 +295,10 @@ const getTravelData = async () => {
   const validNames = new Set(
     data.flatMap(({ title, imageUrl }) =>  imageUrl ? [`${title}_${imageUrl.split('/').pop()}`] : [])
   );
-  fm.listContents(mainPath)
+  fm.listContents(travelPath)
     .filter(name => /\.(jpe?g)$/i.test(name) && !validNames.has(name))
     .forEach(name => {
-      const filePath = fm.joinPath(mainPath, name);
+      const filePath = fm.joinPath(travelPath, name);
       fm.remove(filePath)
     });
   return data;
@@ -387,10 +388,7 @@ const getLatestData = async () => {
   }
 };
 
-/** 
- * 台风数据接口
- * https://tf02.istrongcloud.com/data/complex/2026.json
- */
+// 获取当前台风
 const getTyphoonData = async () => {
   try {
     const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
@@ -1323,7 +1321,7 @@ const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXP
 // 裁剪圆形头像
 const getCircleAvatar = async (title, imageUrl) => {
   if (!imageUrl) return null;
-  const cache = useFileManager();
+  const cache = useFileManager('image', travelPath);
   const cacheName = `${title}_${imageUrl.split('/').pop()}`;
   const cached = cache.read(cacheName);
   if (cached && cached instanceof Image) return cached;
