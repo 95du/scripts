@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.7
+ * 组件版本: Version 1.1.8
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -47,27 +47,34 @@ const useFileManager = (type, path = mainPath) => {
     read: name => {
       const filePath = getPath(name);
       if (!fm.fileExists(filePath)) return null;
-      return type === 'json' ? JSON.parse(fm.readString(filePath)) : fm.readImage(filePath);;
+      if (type === 'json') return JSON.parse(fm.readString(filePath));
+      if (type === 'string') return fm.readString(filePath);
+      return fm.readImage(filePath);
     },
     write: (name, content) => {
       const filePath = getPath(name);
       if (fm.fileExists(filePath)) fm.remove(filePath);
-      type === 'json' ? fm.writeString(filePath, JSON.stringify(content)) : fm.writeImage(filePath, content);
+      if (type === 'json') fm.writeString(filePath, JSON.stringify(content));
+      else if (type === 'string') fm.writeString(filePath, content);
+      else fm.writeImage(filePath, content);
     }
   };
 };
 
 const getCacheData = async (
-  name, 
-  url, 
-  type, 
-  cacheTime = 0, 
+  name,
+  url,
+  type,
+  cacheTime = 0,
   path = mainPath
 ) => {
   const cache = useFileManager(type, path);
   const filePath = fm.joinPath(path, name);
   const data = cache.read(name);
-  const expired = cacheTime > 0 && (!fm.fileExists(filePath) || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
+  const expired = cacheTime > 0 && (
+    !fm.fileExists(filePath) ||
+    (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime
+  );
   if (data && !expired) return data;
   try {
     const request = new Request(url);
@@ -75,11 +82,12 @@ const getCacheData = async (
       'User-Agent': 'Mozilla/5.0',
       'Accept': '*/*'
     };
-    const response = type === 'json' 
-      ? await request.loadJSON() 
-      : await request.loadImage();
+    const response = type === 'json'
+      ? await request.loadJSON()
+      : type === 'string'
+        ? await request.loadString()
+        : await request.loadImage();
     if (response) {
-      console.warn(name);
       cache.write(name, response);
       return response;
     }
@@ -177,6 +185,60 @@ const getLocation = async () => {
   }
 };
 
+// 获取台风命名
+const getNextTyphoonNames = async (currentName, count = 6) => {
+  if (!currentName) return [];
+
+  const colors = [
+    ['#00C400', '#FF4050'],
+    ['#39A7F8', '#43FF4B'],
+    ['#FFD83A', '#669999'],
+    ['#FDAC03', '#40DDFF'],
+    ['#F95BF9', '#246ED4'],
+    ['#FF0000', '#FF66FF']
+  ];
+
+  const url = 'https://www.nmc.cn/publish/typhoon/typhoon-name/index.html';
+  const html = await getCacheData('nexttyphoonNames.html', url, 'string', 2160);
+
+  const parse = t => {
+    t = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    const [, name] = t.match(/中文名[：:]\s*(\S+)/) || [];
+    const [, ename] = t.match(/英文名[：:]\s*(\S+)/) || [];
+    const [, source] = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/) || [];
+    const [, meaning] = t.match(/意义[：:]\s*(.+)/) || [];
+    return name && { name, ename, source, meaning };
+  };
+
+  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+    .filter((_, i) => !(i % 2))
+    .map(x => parse(x[1]))
+    .filter(Boolean)
+  ).filter(row => row.length === 5);
+
+  const list = rows.flatMap((row, i) => rows.map(row => row[i]));
+  const index = list.findIndex(x => x.name === currentName);
+  if (index < 0) return [];
+  return Array.from({ length: count }, (_, i) => {
+    const item = list[(index + i + 1) % list.length];
+    const [iconColor, textColor] = colors[i % colors.length];
+    return { ...item, iconColor, textColor };
+  });
+};
+
+// 获取当年历史台风
+const getHistoryTyphoon = async (year = new Date().getFullYear()) => {
+  try {
+    const url = `https://tf02.istrongcloud.com/data/complex/${year}.json`;
+    const data = await getCacheData('historyTyphoon.json', url, 'json', 720);
+    if (!Array.isArray(data)) return null;
+    return data.find(item => item.is_current === 1) || null;
+  } catch (e) {
+    console.error(`历史台风失败: ${e}`);
+    return null;
+  }
+};
+
 // 未来两小时天气
 const getMinutelySummary = async (lng, lat) => {
   const url = `https://api.qweather.com/v7/minutely/5m?location=${lng},${lat}&key=73ca4f214b9241fb98f6d291345d9d84`
@@ -205,6 +267,20 @@ const getRadarImageData = async (region) => {
     }
   } catch (e) {
     console.log('获取雷达拼图错误' + e);
+    return null;
+  }
+};
+
+// 雷达图层
+const getRadarImage = async () => {
+  try {
+    const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
+    const item = await new Request(radarUrl).loadJSON();
+    if (!item || !item.length || !item[0].url) return null;
+    const radar = item.at(-1);
+    return await getCacheData(`radar.png`, radar.url, null, 2);
+  } catch (e) {
+    console.log(`Radar failed: ${e}`);
     return null;
   }
 };
@@ -911,11 +987,7 @@ const getCryptoWeb = async () => {
   return webView;
 };
 
-/**
- * 解密单个台风对象
- * @param {Object|Array} 原始台风数据对象
- * @returns {Promise<Object|null>} 解密后的对象
- */
+// 解密单个台风对象
 const decryptData = async (data) => {
   const webView = await getCryptoWeb();
   const key = "3H4533HEH2C96283C;F458H25HFD2C64";
@@ -938,20 +1010,7 @@ const processImagePipeline = async (img, trim = { top: 1, right: 2, bottom: 1, l
   ]);
 };
 
-// 雷达图片
-const getRadarImage = async () => {
-  try {
-    const radarUrl = 'https://tf03.istrongcloud.com/data/images/radar/mingle/sc_tran_1x.json';
-    const item = await new Request(radarUrl).loadJSON();
-    if (!item || !item.length || !item[0].url) return null;
-    const radar = item.at(-1);
-    return await getCacheData(`radar.png`, radar.url, null, 2);
-  } catch (e) {
-    console.log(`Radar failed: ${e}`);
-    return null;
-  }
-};
-
+// 日出 1，日落 0
 const getIsDay = () => {
   const now = new Date();
   const currentTime = now.getHours() * 60 + now.getMinutes();
@@ -2194,7 +2253,7 @@ const createRadarWidget = async (param) => {
 };
 
 // 无台风组件
-const createLevelWidget = (levels, textColor, isLarge) => {
+const createLevelWidget = (levels, names, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
@@ -2219,7 +2278,8 @@ const createLevelWidget = (levels, textColor, isLarge) => {
   timeText.textColor = textColor;
   widget.addSpacer();
   
-  levels.forEach((item, i) => {
+  const info = isLarge && names?.length ? names : levels;
+  info.forEach((item, i) => {
     const listStack = widget.addStack();
     listStack.layoutHorizontally();
     listStack.centerAlignContent();
@@ -2228,7 +2288,7 @@ const createLevelWidget = (levels, textColor, isLarge) => {
     icon.tintColor = new Color(item.iconColor);
     listStack.addSpacer(15);
     
-    const labelText = listStack.addText(item.label);
+    const labelText = listStack.addText(isLarge && names?.length ? item.name + `(${item.ename})` : item.label);
     labelText.font = Font.mediumSystemFont(13.5);
     labelText.textColor = textColor;
     listStack.addSpacer();
@@ -2240,10 +2300,10 @@ const createLevelWidget = (levels, textColor, isLarge) => {
     agencyStack.layoutHorizontally();
     agencyStack.size = new Size(95, 0);
     agencyStack.addSpacer();
-    const agencyText = agencyStack.addText(item.agency);
+    const agencyText = agencyStack.addText(isLarge && names?.length ? item.source : item.agency);
     agencyText.font = Font.mediumSystemFont(13.5);
     agencyText.textColor = textColor;
-    if (i < levels.length - 1) {
+    if (i < info.length - 1) {
       widget.addSpacer(3);
     }
   });
@@ -2333,8 +2393,10 @@ const runWidget = async () => {
       await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
     } else {
       const levels = levelAgency();
+      const history = await getHistoryTyphoon();
+      const typhoonNames = await getNextTyphoonNames(history?.name);
       widget = createLevelWidget(
-        levels, tcTextColor, isLarge
+        levels, typhoonNames, tcTextColor, isLarge
       );
       await setBackground(widget, 'level', [], [], isLarge);
     }
