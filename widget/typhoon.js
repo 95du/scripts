@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.8
+ * 组件版本: Version 1.1.9
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  * 支持中大号组件 ‼️
@@ -19,15 +19,13 @@ https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH
  */
 
 const fm = FileManager.local();
-const ensureDir = (...paths) => {
-  const fullPath = fm.joinPath(...paths);
-  if (!fm.fileExists(fullPath)) fm.createDirectory(fullPath, true);
-  return fullPath;
-};
-const mainPath = ensureDir(fm.documentsDirectory(), 'typhoon');
-const tilePath = ensureDir(mainPath, 'tiles');
-const tdtPath = ensureDir(mainPath, 'tdt_tiles');
-const travelPath = ensureDir(mainPath, 'travel');
+const ensureDir = path => (
+  fm.fileExists(path) || fm.createDirectory(path, true), path
+);
+const mainPath = ensureDir(fm.joinPath(fm.documentsDirectory(), 'typhoon'));
+const tilePath = ensureDir(fm.joinPath(mainPath, 'tiles'));
+const tdtPath = ensureDir(fm.joinPath(mainPath, 'tdt_tiles'));
+const travelPath = ensureDir(fm.joinPath(mainPath, 'travel'));
 const settingPath = fm.joinPath(mainPath, 'setting.json');
 
 const writeSettings = (setting) => {
@@ -671,6 +669,18 @@ const getTyphoonLocation = (point) => {
   return `距离${mainText}`;
 };
 
+// 查看台风路径
+const viewTyphoon = async () => {
+  const theme = setting.skin === 0 || (setting.skin !== 2 && getIsDay()) ? 'light' : 'dark';
+  const url = `https://tf03.istrongcloud.com/typhoonVisual/home?theme=light`;
+  const content = await new Request(url).loadString();
+  const typhoon =  content.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1]
+  const html=`<html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1"><script>(function(w,d,s,q,i){w[q]=w[q]||[];})(window,document,'script','aplus_queue');</script><script>var GOLABEL_TYPHOON_INDEX={typhoonPopupConfig:{isShow:false}};</script><script>var typhoons_data=${typhoon};</script><link href=css/app.css rel=stylesheet></head><body><div id=app></div><script src=js/chunk-vendors.js></script><script src=js/app.js></script></body></html>`;
+  const webView = new WebView();
+  webView.loadHTML(html, `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`);
+  webView.present();
+};
+
 // 选择主题皮肤
 const selectSkin = async () => {
   const html = `
@@ -718,7 +728,7 @@ const selectSkin = async () => {
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 342px;
+      height: 350px;
       background-color: #fff;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
       border: 1px solid #ddd;
@@ -727,12 +737,24 @@ const selectSkin = async () => {
       text-align: center;
       z-index: 10;
     }
-    .theme-footer-title {
-      font-weight: 700;
-      font-size: 19px;
-      color: #333;
-      line-height: 1;
-      display: block;
+    .theme-footer-title-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14.5px;
+      color: #ffffff;
+      background: #ff8c00;
+      height: 30px;
+      padding: 0 35px;
+      letter-spacing: 1px;
+      border-radius: 30px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(255, 140, 0, 0.3);
     }
     .theme-footer-list {
       display: flex;
@@ -857,7 +879,7 @@ const selectSkin = async () => {
   <div class="theme" id="tBox">
     <img class="theme-effect" id="themeEffect" src="" alt="">
     <div class="theme-footer">
-      <span class="theme-footer-title">皮肤推荐</span>
+      <div class="theme-footer-title-btn" id="pathBtn">台风路径</div>
       <ul class="theme-footer-list" id="skinList"></ul>
       <div class="theme-footer-btn" id="vipBtn"> 使用 VIP 主题 <span>该皮肤为会员专属，已解锁</span>
       </div>
@@ -882,6 +904,7 @@ const selectSkin = async () => {
     const skinList = document.getElementById('skinList');
     const submitBtn = document.getElementById('submitBtn');
     const vipBtn = document.getElementById('vipBtn');
+    const pathBtn = document.getElementById('pathBtn');
     
     function renderList() {
       let listHtml = '';
@@ -910,33 +933,40 @@ const selectSkin = async () => {
       submitBtn.style.display = activeTheme.isVip ? 'none' : 'block';
     }
     
-    // 两种按钮皮肤主题
+    function triggerAnim(btn, e) {
+      btn.classList.remove('skin-clicking');
+      void btn.offsetWidth;
+      btn.classList.add('skin-clicking');
+      if (e) {
+        btn.classList.add('skin-ripple');
+        const rect = btn.getBoundingClientRect();
+        const span = document.createElement('span');
+        span.style.left = (e.clientX - rect.left) + 'px';
+        span.style.top = (e.clientY - rect.top) + 'px';
+        btn.appendChild(span);
+        setTimeout(() => {
+          span.remove();
+          btn.classList.remove('skin-ripple');
+        }, 850);
+      }
+    }
+
+    pathBtn.addEventListener('click', function(e) {
+      triggerAnim(this, e);
+      window.dispatchEvent(new CustomEvent('JBridge', {
+        detail: { code: 'typhoon', data: currentIndex }
+      }));
+    });
+
     vipBtn.addEventListener('click', function() {
-      this.classList.remove('skin-clicking');
-      void this.offsetWidth;
-      this.classList.add('skin-clicking');
+      triggerAnim(this);
       localStorage.setItem('THEME', themes[currentIndex].id);
       window.dispatchEvent(new CustomEvent('JBridge', {
         detail: { code: 'skinSelected', data: currentIndex }
       }));
     });
     submitBtn.addEventListener('click', function(e) {
-      const btn = this;
-      /* 动画①：缩放弹回 */
-      btn.classList.remove('skin-clicking');
-      void btn.offsetWidth;
-      btn.classList.add('skin-clicking');
-      /* 动画②：水波纹 */
-      btn.classList.add('skin-ripple');
-      const rect = btn.getBoundingClientRect();
-      const span = document.createElement('span');
-      span.style.left = (e.clientX - rect.left) + 'px';
-      span.style.top = (e.clientY - rect.top) + 'px';
-      btn.appendChild(span);
-      setTimeout(() => {
-        span.remove();
-        btn.classList.remove('skin-ripple');
-      }, 850);
+      triggerAnim(this, e);
       localStorage.setItem('THEME', themes[currentIndex].id);
       window.dispatchEvent(new CustomEvent('JBridge', {
         detail: { code: 'skinSelected', data: currentIndex }
@@ -954,6 +984,8 @@ const selectSkin = async () => {
       setting.skin = data;
       writeSettings(setting);
       await runWidget();
+    } else if (code === 'typhoon') {
+      await viewTyphoon();
     }
   };
   // 注入监听器
@@ -1700,7 +1732,8 @@ const spanCapFor = span => {
 
 // 基于地理范围的自适应视口模型 + 少量针对固定组件视觉布局的经验校准。✅
 const getViewport = points => {
-  if (!points?.length) return { lng: 104.5, lat: 28.6, zoom: 3.5 };
+  const typeZoom = setting.skin === 1 ? 3.5 : 3.48;
+  if (!points?.length) return { lng: 104.5, lat: 29.5, zoom: typeZoom };
   
   const TILE = 256;
   const SCALE = 2 / 3;
