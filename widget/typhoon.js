@@ -1720,13 +1720,13 @@ const invMercY = y =>
 const zoomCapFor = ({ lng }) => {
   if (lng <= 122) return 3.92;
   if (lng <= 130) return 3.85;
-  if (lng <= 145) return 3.50;
-  return 3.30;
+  if (lng <= 145) return 3.49;
+  return 3.15;
 };
 
 const spanCapFor = span => {
-  if (span > 40) return 3.30;
-  if (span > 25) return 3.50;
+  if (span > 40) return 3.15;
+  if (span > 25) return 3.49;
   return Infinity;
 };
 
@@ -1743,7 +1743,7 @@ const getViewport = points => {
   const MIN_ZOOM = 3;
   const LAT_FLOOR_C = 20;
   const LAT_FLOOR_AB = 24;
-  const LAT_FLOOR_ZOOM = 3.5;
+  const LAT_FLOOR_ZOOM = 3.48;
 
   const lngs = points.map(p => p.lng).concat(REF.lng);
   const lats = points.map(p => p.lat).concat(REF.lat);
