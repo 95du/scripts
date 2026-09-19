@@ -26,6 +26,7 @@ class CodeMaker {
       
       let normalResult = {};
       let assignResult = {};
+      let doubleResult = {};
     
       const renderNormal = () => {
         if (!window.template) return;
@@ -49,13 +50,26 @@ class CodeMaker {
             summary: assignResult.summary
           });
       };
+      
+      const renderDouble = () => {
+        if (!window.template) return;
+        const tbody = document.getElementById('double_tbody');
+        tbody.innerHTML = template('tpl_double', { Data: doubleResult.records || [] });
+        document.getElementById('double_summary').innerHTML =
+          template('tpl_summary_text', {
+            title: doubleResult.title,
+            summary: doubleResult.summary
+          });
+      };
     
       window.renderReplay = (data) => {
         if (!data) return;
         normalResult = data.normal || {};
         assignResult = data.simulate || {};
+        doubleResult = data.double || {};
         renderNormal();
         renderAssign();
+        renderDouble();
       };
     
       // 构建下拉选项
@@ -111,12 +125,17 @@ class CodeMaker {
       window.showModule = (id) => {
         if (id === 'normal') renderNormal();
         if (id === 'assign') renderAssign();
+        if (id === 'double') renderDouble();
         document.querySelectorAll('[name="module"]').forEach(el => el.classList.remove('active'));
         const target = document.getElementById(id);
         if (target) target.classList.add('active');
         const module = document.querySelector('.module');
         [target, module].forEach(el => el && (el.scrollTop = 0));
-        const tabMap = { normal: 'tab_normal', assign: 'tab_assign' };
+        const tabMap = {
+          normal: 'tab_normal',
+          assign: 'tab_assign',
+          double: 'tab_double'
+        };
         document.querySelectorAll('.mode-tab').forEach(tab => {
           tab.classList.remove('active', 'blue', 'orange');
         });
@@ -154,6 +173,12 @@ class CodeMaker {
         .t-1 .bg3 td {
           background:#e3f5fd;
         }
+        .t-1 {
+          width: 100%;
+        }
+        .t-1 td:nth-child(6) {
+          width: 20%;
+        }
         
         .header {
           position: fixed;
@@ -177,7 +202,7 @@ class CodeMaker {
         }
         
         .mode-tab {
-          min-width: 90px;
+          min-width: 88px;
           padding: 8px 18px;
           text-align: center;
           font-size: 15px;
@@ -197,9 +222,11 @@ class CodeMaker {
         .mode-tab.blue.active {
           background: #008DFF;
         }
-        
         .mode-tab.orange.active {
           background: #ff7800;
+        }
+        .mode-tab.red.active {
+          background: #ff3b30;
         }
         
         .module {
@@ -261,10 +288,13 @@ class CodeMaker {
           border-color: #cfe7ff;
           background: #f3f8ff;
         }
-        
         .summary-text.assign {
           border-color: #ffd8bd;
           background: #fff9f3;
+        }
+        .summary-text.double {
+          border-color: #ffc9c6;
+          background: #fff5f4;
         }
         
         .summary-row {
@@ -277,10 +307,13 @@ class CodeMaker {
         .summary-row {
           border-bottom: 1px solid #cfe7ff;
         }
-        
         .summary-text.assign 
         .summary-row {
           border-bottom: 1px solid #ffd8bd;
+        }
+        .summary-text.double 
+        .summary-row {
+          border-bottom: 1px solid #ffc9c6;
         }
         
         .summary-text .summary-row:last-of-type {
@@ -291,10 +324,13 @@ class CodeMaker {
         .summary-title {
           background: #e9f2ff;
         }
-        
         .summary-text.assign 
         .summary-title {
           background: #fff1e7;
+        }
+        .summary-text.double 
+        .summary-title {
+          background: #ffe9e7;
         }
         
         .summary-title {
@@ -313,6 +349,7 @@ class CodeMaker {
         <div class="mode-switch header-tabs">
           <span id="tab_normal" class="mode-tab blue" data-module="normal">普通规则</span>
           <span id="tab_assign" class="mode-tab orange" data-module="assign">指定规则</span>
+          <span id="tab_double" class="mode-tab red" data-module="double">翻倍规则</span>
         </div>
       </div>
       <div class="tc selectTab">
@@ -352,6 +389,23 @@ class CodeMaker {
               </tr>
             </thead>
             <tbody id="assign_tbody" class="fn-hover tc"></tbody>
+          </table>
+        </div>
+        <div name="module" id="double" class="m5 mt10">
+          <div class="summary-text double" id="double_summary"></div>
+          <table class="t-1">
+            <thead>
+              <tr class="bg2 tc">
+                <td>命中</td>
+                <td>时间</td>
+                <td>期号</td>
+                <td>开奖</td>
+                <td>动作</td>
+                <td>盈亏</td>
+                <td>倍数</td>
+              </tr>
+            </thead>
+            <tbody id="double_tbody" class="fn-hover tc"></tbody>
           </table>
         </div>
         <script type="text/html" id="tpl_summary_text">
@@ -411,6 +465,25 @@ class CodeMaker {
                 <td style='color:#008DFF'>
                 {{item.profit}}</td>
                 <td>{{item.forced ? '⚠️' : '-'}}</td>
+              </tr>
+            {{/each}}
+          {{/if}}
+        </script>
+        <script type="text/html" id="tpl_double">
+          {{if !Data.length}}
+          <tr>
+            <td colspan="7">暂无数据</td>
+          </tr>
+          {{else}}
+            {{each Data as item i}}
+              <tr>
+                <td>{{item.hit_icon}}</td>
+                <td>{{item.time}}</td>
+                <td>{{item.period_no}}</td>
+                <td><a>{{item.open_code}}</a></td>
+                <td>{{item.action}}</td>
+                <td style='color:#008DFF'>{{item.profit}}</td>
+                <td>{{item.double}}</td>
               </tr>
             {{/each}}
           {{/if}}
@@ -523,10 +596,12 @@ class CodeMaker {
         const posMatches = Array.from(group.matchAll(/第(\d)位选中/g));
         const posArray = [0,0,0,0];
         posMatches.forEach(m => {
-          const idx = Number(m[1]) - 1;
+          const idx = Number(m[1]) - 1
           if (idx >=0 && idx < 4) posArray[idx] = 1;
         });
-        o.remainFixedNumbers.push([posArray, content]);
+        o.remainFixedNumbers.push(
+          [posArray, content]
+        );
         o.remainFixedFilter = type === '取值' ? 0 : 1;
       });
       return o;
