@@ -1732,7 +1732,7 @@ const spanCapFor = span => {
 
 // 基于地理范围的自适应视口模型 + 少量针对固定组件视觉布局的经验校准。✅
 const getViewport = points => {
-  const typeZoom = setting.skin === 1 ? 3.5 : 3.48;
+  const typeZoom = setting.skin === 0 || (setting.skin === 3 && getIsDay()) ? 3.48 : 3.5;
   if (!points?.length) return { lng: 104.5, lat: 29.5, zoom: typeZoom };
   
   const TILE = 256;
