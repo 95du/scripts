@@ -349,7 +349,7 @@ class CodeMaker {
         <div class="mode-switch header-tabs">
           <span id="tab_normal" class="mode-tab blue" data-module="normal">普通规则</span>
           <span id="tab_assign" class="mode-tab orange" data-module="assign">指定规则</span>
-          <span id="tab_double" class="mode-tab red" data-module="double">翻倍规则</span>
+          <span id="tab_double" class="mode-tab red" data-module="double">倍投规则</span>
         </div>
       </div>
       <div class="tc selectTab">
@@ -464,7 +464,7 @@ class CodeMaker {
                 <td>{{item.action}}</td>
                 <td style='color:#008DFF'>
                 {{item.profit}}</td>
-                <td>{{item.forced ? '⚠️' : '-'}}</td>
+                <td>{{item.forced}}</td>
               </tr>
             {{/each}}
           {{/if}}
