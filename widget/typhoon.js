@@ -672,7 +672,7 @@ const getTyphoonLocation = (point) => {
 // 查看台风路径
 const viewTyphoon = async () => {
   const theme = setting.skin === 0 || (setting.skin !== 2 && getIsDay()) ? 'light' : 'dark';
-  const url = `https://tf03.istrongcloud.com/typhoonVisual/home?theme=light`;
+  const url = `https://tf02.istrongcloud.com/typhoonVisual/home?theme=light`;
   const content = await new Request(url).loadString();
   const typhoon =  content.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1]
   const html=`<html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1"><script>(function(w,d,s,q,i){w[q]=w[q]||[];})(window,document,'script','aplus_queue');</script><script>var GOLABEL_TYPHOON_INDEX={typhoonPopupConfig:{isShow:false}};</script><script>var typhoons_data=${typhoon};</script><link href=css/app.css rel=stylesheet></head><body><div id=app></div><script src=js/chunk-vendors.js></script><script src=js/app.js></script></body></html>`;
