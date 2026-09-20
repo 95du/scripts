@@ -3,10 +3,9 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.1.9
+ * 组件版本: Version 1.2.0
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
- * 支持中大号组件 ‼️
  *
  * 桌面组件输入参数:
  1，填写数字(2️⃣)展示热带扰动加台风。
@@ -14,8 +13,6 @@
  3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北') 展示对应地区的雷达拼图。
  4，华东分成上下，原图示例:
 https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH.gif
- * 
- * 新增主题皮肤，第四个皮肤日出日落 18:00 后展示卫星地图，白天展示第一种 😍
  */
 
 const fm = FileManager.local();
@@ -431,7 +428,7 @@ const speedChangeNotice = (tf, dist) => {
   if (oldSpeed !== speed) {
     notify(
       `⚠️ 台风 【${tf.name}】`, 
-      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置 ${dist || 0} 公里`
+      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置约 ${dist || 0} 公里`
     );
     setting.tf[id] = {
       ...oldData,
@@ -1183,7 +1180,7 @@ const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
   }
   if (!quad) return;
 
-  const SCALE = 1.8;
+  const SCALE = 1.5;
   const sectors = [
     { start: 0, end: 90, r: quad.ne * SCALE },  // 东北方向风圈
     { start: 90, end: 180, r: quad.se * SCALE }, // 东南方向风圈
@@ -1252,6 +1249,33 @@ const drawForecastPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
       ctx.setFillColor(new Color(pointHex, 1.0));
       ctx.fillEllipse(innerRect);
     }
+  }
+};
+
+// 绘制台风历史路径
+const drawHistoryPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
+  if (!typhoon.points || !typhoon.points.length) return;
+  const pointRadius = 4.5 * EXPORT_SCALE;
+  const strokeWidth = 1.0 * EXPORT_SCALE;
+  const historyPoints = typhoon.points.map(p => project(p.lat, p.lng));
+  const currentPos = project(typhoon.lat, typhoon.lng);
+  const allPathPoints = [...historyPoints, currentPos];
+  const LINE_COLOR = '#1E88E5'; 
+  const LINE_WIDTH = 4.0 * EXPORT_SCALE;
+  drawPathFn(allPathPoints, LINE_COLOR, LINE_WIDTH, 0.9, null);
+  
+  for (let i = 0; i < typhoon.points.length; i++) {
+    const p = typhoon.points[i];
+    const pt = historyPoints[i];
+    const level = p.strong?.match(/\((.*?)\)/)?.[1] || p.type || p.strong;
+    const pointHex = getLevelColor(level);
+    const outerRadius = pointRadius + strokeWidth;
+    const outerRect = new Rect(pt.x - outerRadius, pt.y - outerRadius, outerRadius * 2, outerRadius * 2);
+    ctx.setFillColor(new Color('#000000', 0.6));
+    ctx.fillEllipse(outerRect);
+    const innerRect = new Rect(pt.x - pointRadius, pt.y - pointRadius, pointRadius * 2, pointRadius * 2);
+    ctx.setFillColor(new Color(pointHex, 1.0));
+    ctx.fillEllipse(innerRect);
   }
 };
 
@@ -1911,6 +1935,7 @@ const generateMapImage = async (
   // 3. 点绘制台风风圈与预测路径
   for (const p of typhoonPoints) {
     if (p.isTyphoon) {
+      drawHistoryPath(ctx, p, project, EXPORT_SCALE, drawPath);
       drawWindCircles(ctx, p, project, EXPORT_SCALE);
       drawForecastPath(ctx, p, project, EXPORT_SCALE, drawPath);
     }
