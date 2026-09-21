@@ -349,12 +349,27 @@ const fetchGovData = async (tfbh) => {
   }
 };
 
+// 处理欧洲预测路径
+const mergeForecast = ({ forecast = [], points = [] }) => {
+  const map = new Map(forecast.map(fc => [fc.sets, fc]));
+  points.forEach(p => {
+    p.forecast?.forEach(fc => {
+      if (fc?.sets && !map.has(fc.sets)) {
+        map.set(fc.sets, fc);
+      }
+    });
+  });
+  return [...map.values()];
+};
+
 const mergeLatestData = async (tyItem, latest = []) => {
   const latestMap = new Map(latest.map(item => [item.tfbh, item]));
   await Promise.all(tyItem.map(async tf => {
     const point = tf.points?.at(-1);
-    const latestItem = latestMap.get(tf.tfbh);
+    const forecast = mergeForecast(tf);
     if (point) Object.assign(tf, point);
+    tf.forecast = forecast;
+    const latestItem = latestMap.get(tf.tfbh);
     if (!latestItem) return;
     const { strong, update_time, location, trend } = latestItem;
     const type = point?.strong?.match(/\((.*?)\)/)?.[1]
@@ -1127,6 +1142,7 @@ const customTiles = [
   ['webrd41158', '4/11/5/webrd/8'],
   ['webst3638', '3/6/3/webst/8'],
   ['transparent', '3/6/4/webst/8'],
+  ['transparent', '3/7/3/webst/8'],
   ['transparent', '4/13/9/webst/8'],
   ['webst3528', '3/5/2/webst/8'],
   ['webst3628', '3/6/2/webst/8'],
@@ -1950,14 +1966,14 @@ const generateMapImage = async (
       ctx.drawImageInRect(iconImage, new Rect(pos.x - ICON_SIZE / 2, pos.y - ICON_SIZE / 2, ICON_SIZE, ICON_SIZE));
     }
     
-    const name = p.isTyphoon ? p.name : p.ename;
-    if (name) {
+    if (!p.isTyphoon) {
       const fs = 11 * EXPORT_SCALE;
-      const textColor = new Color(isDay === 1 ? '#555555' : '#eeeeee');
+      const color = setting.skin === 0 || (setting.skin !== 2 && getIsDay()) ? '#555555' : '#eeeeee';
+      const textColor = new Color(color);
       ctx.setFont(Font.systemFont(fs))
       ctx.setTextColor(textColor);
       ctx.setTextAlignedCenter();
-      ctx.drawTextInRect(name, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
+      ctx.drawTextInRect(p.ename, new Rect(pos.x - 100, pos.y + ICON_SIZE / 2 + 2 * EXPORT_SCALE, 200, fs * 1.5));
     }
   }
   
@@ -2410,7 +2426,7 @@ const getTyphoonItem = data => data?.map(item => {
 const runWidget = async () => {
   getLocation();
   const { typhoons, tf } = await getTyphoonData() || {};
-  
+
   const regions = [
     '全国', '华南', '华东上', '华东下', 
     '西南', '华中', '华北', '东北', '西北'
