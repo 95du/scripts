@@ -307,6 +307,21 @@ const getNextItem = (arr, name) => {
   return arr[setting[name]];
 };
 
+// 热带扰动趋势
+const getSummary = (details) => {
+  const match = details.match(/<p><em>(.*?)<\/em><\/p>/s);
+  if (!match) return "";
+  return match[1].replace(/<[^>]+>/g, "").replace(/^.*?(在未来)/, "$1").replace(/[。;；.]$/, "").trim();
+};
+
+const getTCDetails = async (tc) => {
+  const id = tc.ename.toLowerCase();
+  const year = new Date().getFullYear();
+  const detailsUrl = `https://zoom.earth/data/storms/?details=${id}-${year}&lang=zh`;
+  const rawData = await getCacheData('typhoon_details.json', detailsUrl, 'json', 2); 
+  return getSummary(rawData?.details);
+};
+
 // 热带扰动
 const currMergerTC = async () => {
   try {
@@ -437,33 +452,29 @@ const speedChangeNotice = (tf, dist) => {
   setting.tf = setting.tf || {};
   const id = tf.tfbh || tf.ident;
   if (!id) return;
-  const oldData = setting.tf[id] || {};
-  const oldSpeed = oldData.speed;
+  const oldSpeed = setting.tf[id]?.speed;
   const speed = tf.speed || 0;
   if (oldSpeed !== speed) {
     notify(
       `⚠️ 台风 【${tf.name}】`, 
       `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置约 ${dist || 0} 公里`
     );
-    setting.tf[id] = {
-      ...oldData,
-      speed
-    };
+    setting.tf[id] = { ...setting.tf[id], speed };
     writeSettings(setting);
   }
 };
 
-const currMergerTCNotice = (tc) => {
+const currMergerTCNotice = (tc, summary) => {
   setting.tc = setting.tc || {};
   const id = tc.tfbh || tc.ident;
-  const oldSpeed = setting.tc[id];
+  const oldSummary = setting.tc[id];
   const tcLocation = getTyphoonLocation(tc);
-  if (oldSpeed !== tc.speed) {
+  if (oldSummary !== summary) {
     notify(
       `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
-      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation || '数据更新中...'}`
+      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation}\n${summary}`
     );
-    setting.tc[id] = tc.speed;
+    setting.tc[id] = summary;
     writeSettings(setting);
   }
 };
@@ -2458,7 +2469,8 @@ const runWidget = async () => {
   } else {
     const { tcItem, tc } = await currMergerTC();
     if (tcItem?.length) {
-      currMergerTCNotice(tc);
+      const summary = await getTCDetails(tc);
+      currMergerTCNotice(tc, summary);
       const typhoonItem = getTyphoonItem(typhoons || []);
       const tfItem = Number(param) === 2 ? typhoonItem : [];
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
