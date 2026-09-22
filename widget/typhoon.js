@@ -309,7 +309,7 @@ const getNextItem = (arr, name) => {
 
 // 热带扰动趋势
 const getSummary = (details) => {
-  const match = details.match(/<p><em>(.*?)<\/em><\/p>/s);
+  const match = details?.match(/<p><em>(.*?)<\/em><\/p>/s);
   if (!match) return "";
   return match[1].replace(/<[^>]+>/g, "").replace(/^.*?(在未来)/, "$1").replace(/[。;；.]$/, "").trim();
 };
