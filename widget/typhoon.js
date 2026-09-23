@@ -476,14 +476,17 @@ const speedChangeNotice = (tf, dist) => {
 const currMergerTCNotice = (tc, summary) => {
   setting.tc = setting.tc || {};
   const id = tc.tfbh || tc.ident;
-  const oldSummary = setting.tc[id];
-  const tcLocation = getTyphoonLocation(tc);
-  if (oldSummary !== summary) {
+  if (!id) return;
+  const oldData = setting.tc[id] || {}
+  const oldSummary = oldData.summary;
+  const oldSpeed = oldData.speed;
+  const speed = tc.speed || 0;
+  if (oldSummary !== summary || oldSpeed !== speed) {
     notify(
       `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
-      `风速 ${tc.speed || 0}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${tcLocation}\n${summary}`
+      `风速 ${speed}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${getTyphoonLocation(tc)}\n${summary}`
     );
-    setting.tc[id] = summary;
+    setting.tc[id] = { ...oldData, summary, speed };
     writeSettings(setting);
   }
 };
