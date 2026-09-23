@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.0
+ * 组件版本: Version 1.2.1
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
@@ -308,18 +308,27 @@ const getNextItem = (arr, name) => {
 };
 
 // 热带扰动趋势
-const getSummary = (details) => {
-  const match = details?.match(/<p><em>(.*?)<\/em><\/p>/s);
-  if (!match) return "";
-  return match[1].replace(/<[^>]+>/g, "").replace(/^.*?(在未来)/, "$1").replace(/[。;；.]$/, "").trim();
+const getSummary = details => {
+  const match = details?.match(/<p>(?:<em>)?(.*?)(?:<\/em>)?<\/p>/s);
+  if (!match) return '';
+  return match[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/^.*?(在未来)/, '$1')
+    .replace(/[。;；.]$/, '')
+    .trim();
 };
 
-const getTCDetails = async (tc) => {
-  const id = tc.ename.toLowerCase();
+const getTCDetails = async tcItem => {
   const year = new Date().getFullYear();
-  const detailsUrl = `https://zoom.earth/data/storms/?details=${id}-${year}&lang=zh`;
-  const rawData = await getCacheData('typhoon_details.json', detailsUrl, 'json', 2); 
-  return getSummary(rawData?.details);
+  for (const item of tcItem) {
+    const ename = String(item?.ename || '').trim();
+    const id = /^[a-zA-Z]$/.test(ename) ? `${90 + ename.toLowerCase().charCodeAt(0) - 97}w` : ename.toLowerCase();
+    if (!id) continue;
+    const detailsUrl = `https://zoom.earth/data/storms/?details=${id}-${year}&lang=zh`;
+    const rawData = await getCacheData(`typhoon_details_${id}.json`, detailsUrl, 'json', 2);
+    const summary = getSummary(rawData?.details);
+    currMergerTCNotice(item, summary);
+  }
 };
 
 // 热带扰动
@@ -492,6 +501,9 @@ const anchors = [
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
   { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
+  { id: "danang", name: "越南岘港", lat: 16.054, lng: 108.202, rx: 7, ry: 6 },
+  { id: "hochiminh", name: "越南胡志明市", lat: 10.823, lng: 106.630, rx: 8, ry: 7 },
+  { id: "camau", name: "越南金瓯", lat: 9.177, lng: 105.150, rx: 6, ry: 5 },
   { id: "luzon_ne", name: "菲律宾吕宋岛", lat: 18.5, lng: 125.0, rx: 7, ry: 6, isSea: true },
   { id: "saipan", name: "关岛塞班", lat: 15.177, lng: 145.75, rx: 8, ry: 7, group: "guam_archipelago" },
   { id: "manila", name: "菲律宾马尼拉", lat: 14.5995, lng: 120.9842, rx: 8, ry: 7 },
@@ -502,24 +514,27 @@ const anchors = [
 ];
 
 const relations = {
-  tokyo:     ["naha", "kagoshima", "saipan"],
+  tokyo: ["naha", "kagoshima", "saipan"],
   kagoshima: ["tokyo", "naha"],
-  naha:      ["tokyo", "kagoshima", "saipan", "yilan", "hualien", "kaohsiung", "taipei"],
-  taipei:    ["yilan", "hualien", "naha", "kaohsiung"],
-  yilan:     ["taipei", "hualien", "naha"],
-  hualien:   ["yilan", "taipei", "kaohsiung", "naha", "luzon_ne"],
+  naha: ["tokyo", "kagoshima", "saipan", "yilan", "hualien", "kaohsiung", "taipei"],
+  taipei: ["yilan", "hualien", "naha", "kaohsiung"],
+  yilan: ["taipei", "hualien", "naha"],
+  hualien: ["yilan", "taipei", "kaohsiung", "naha", "luzon_ne"],
   kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "taipei"],
-  hongkong:  ["kaohsiung", "wenchang", "qionghai", "dongfang", "manila"],
-  wenchang:  ["hongkong", "qionghai", "dongfang", "manila"],
-  qionghai:  ["wenchang", "hongkong", "dongfang", "manila"],
-  dongfang:  ["wenchang", "qionghai", "hongkong", "manila"],
-  luzon_ne:  ["manila", "naha", "kaohsiung", "hualien"],
-  saipan:    ["guam", "naha", "tokyo", "majuro"],
-  manila:    ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang"],
-  guam:      ["saipan", "naha", "manila", "tokyo", "majuro"],
+  hongkong: ["kaohsiung", "wenchang", "qionghai", "dongfang", "danang", "hochiminh", "manila"],
+  wenchang: ["hongkong", "qionghai", "dongfang", "danang", "hochiminh", "manila"],
+  qionghai: ["wenchang", "hongkong", "dongfang", "danang", "hochiminh", "manila"],
+  dongfang: ["wenchang", "qionghai", "hongkong", "danang", "hochiminh", "manila"],
+  danang: ["dongfang", "wenchang", "qionghai", "hongkong", "hochiminh", "camau", "manila"],
+  hochiminh: ["danang", "camau", "dongfang", "wenchang", "hongkong", "manila"],
+  camau: ["hochiminh", "danang", "dongfang", "manila"],
+  luzon_ne: ["manila", "naha", "kaohsiung", "hualien"],
+  saipan: ["guam", "naha", "tokyo", "majuro"],
+  manila: ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang", "danang", "hochiminh", "camau"],
+  guam: ["saipan", "naha", "manila", "tokyo", "majuro"],
   philippine_se: ["palau", "majuro"],
-  palau:     ["philippine_se", "majuro"],
-  majuro:    ["guam", "saipan", "palau", "philippine_se"]
+  palau: ["philippine_se", "majuro"],
+  majuro: ["guam", "saipan", "palau", "philippine_se"]
 };
 
 const rad = d => (d * Math.PI) / 180;
@@ -2469,12 +2484,11 @@ const runWidget = async () => {
   } else {
     const { tcItem, tc } = await currMergerTC();
     if (tcItem?.length) {
-      const summary = await getTCDetails(tc);
-      currMergerTCNotice(tc, summary);
       const typhoonItem = getTyphoonItem(typhoons || []);
       const tfItem = Number(param) === 2 ? typhoonItem : [];
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
       await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
+      await getTCDetails(tcItem);
     } else {
       const levels = levelAgency();
       const history = await getHistoryTyphoon();
