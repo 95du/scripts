@@ -1,27 +1,5 @@
 
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport"  content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
-    <link rel="preload"  href="/assets/css/app-zh.92a1c8f1.css"  as="style">
-    <link rel="stylesheet"  href="/assets/css/app-zh.92a1c8f1.css">
-    <style>
-      #custom-settings-btn{
-        position:fixed;
-        z-index:100;
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        border:0;
-        padding:0;
-        background:none;
-        cursor:pointer;
-      }
-      #custom-settings-btn .icon{
-        width:24px;
-        height:24px;
-      }
-    </style>
-  </head>
+
   <body>
     <main class="layer-radar ui-blur ui-clock">
       <section id="map"  tabindex="0">
@@ -1532,26 +1510,5 @@ setTimeout(function() {
   }
 }, 150);
     </script>
-    <script src="/assets/js/app.24434048.js">
-    </script>
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const btn = document.getElementById('custom-settings-btn');
-        const search = document.querySelector('button.search');
-        const settings = document.querySelector('button.settings:not(#custom-settings-btn)');
-        if (!btn || !search) return;
-        const update = () => {
-          const r = search.getBoundingClientRect();
-          btn.style.cssText = r.width && r.height ? \`left:\${r.left}px;top:\${r.top-r.height-8}px;width:\${r.width}px;height:\${r.height}px;display:flex\` : 'display:none';
-        };
-        setInterval(update, 150);
-        update();
-        btn.onclick = e => {
-          e.preventDefault();
-          e.stopPropagation();
-          settings?.click();
-        };
-      });
-    </script>
-  </body>
+
 
