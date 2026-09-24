@@ -3,13 +3,13 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.1
+ * 组件版本: Version 1.2.3
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
  * 桌面组件输入参数:
- 1，填写数字(2️⃣)展示热带扰动加台风。
- 2，其他数字只展示热带扰动。
+ 1，填写任意数字展示热带扰动加台风。
+ 2，不填写则展开台风 (无热带扰动)
  3，填写 ('全国', '华南', '华东上', '华东下', '西南', '华中', '华北', '东北', '西北') 展示对应地区的雷达拼图。
  4，华东分成上下，原图示例:
 https://upy.istrongcloud.com/radar/mingle/huadong/202609/02/202609020206yp650tkH.gif
@@ -281,6 +281,7 @@ const getRadarImage = async () => {
   }
 };
 
+// 出行推荐
 const getTravelData = async () => {
   const { data = [] } = await getCacheData(
     'travelRecommend.json',
@@ -309,7 +310,8 @@ const getNextItem = (arr, name) => {
 
 // 热带扰动趋势
 const getSummary = details => {
-  const match = details?.match(/<p>(?:<em>)?(.*?)(?:<\/em>)?<\/p>/s);
+  if (!details || !details.includes('24 小时')) return '';
+  const match = details.match(/<p>(?:<em>)?(.*?)(?:<\/em>)?<\/p>/s);
   if (!match) return '';
   return match[1]
     .replace(/<[^>]+>/g, '')
@@ -332,7 +334,7 @@ const getTCDetails = async tcItem => {
 };
 
 // 热带扰动
-const currMergerTC = async () => {
+const getCurrMergerTC = async () => {
   try {
     const rawTC = await getCacheData('currMergerTC.json', `https://tf03.istrongcloud.com/data/enComplex2/currMergerTC.json?random=${Date.now()}`, 'json', 1);
     for (const item of rawTC) {
@@ -350,29 +352,6 @@ const currMergerTC = async () => {
   }
 };
 
-// 补充参考位置和未来趋势数据
-const fetchGovData = async (tfbh) => {
-  const fallback = { location: '-----', trend: '-----' };
-  try {
-    const govUrl = 'https://typhoon.slt.zj.gov.cn/Api/TyhoonActivity';
-    const govList = await new Request(govUrl).loadJSON();
-    const targetGov = govList.find(govItem => govItem.tfid === tfbh) || govList[0];
-    if (!targetGov) return fallback;
-    const detailUrl = `https://typhoon.slt.zj.gov.cn/Api/TyphoonInfo/${targetGov.tfid}`;
-    const newData = await new Request(detailUrl).loadJSON();
-    const typhoon = newData.points?.at(-1);
-    if (!typhoon) return fallback;
-    console.log(typhoon.jl);
-    return {
-      location: typhoon.ckposition?.trim() || fallback.location,
-      trend: typhoon.jl?.trim() || fallback.trend
-    };
-  } catch (e) {
-    console.log(e);
-    return fallback;
-  }
-};
-
 // 处理欧洲预测路径
 const mergeForecast = ({ forecast = [], points = [] }) => {
   const map = new Map(forecast.map(fc => [fc.sets, fc]));
@@ -383,7 +362,7 @@ const mergeForecast = ({ forecast = [], points = [] }) => {
       }
     });
   });
-  return [...map.values()];
+  return [...map.values()].reverse();
 };
 
 const mergeLatestData = async (tyItem, latest = []) => {
@@ -399,7 +378,10 @@ const mergeLatestData = async (tyItem, latest = []) => {
     const type = point?.strong?.match(/\((.*?)\)/)?.[1]
     Object.assign(tf, { strong, type, update_time, location, trend });
     if (!location) {
-      Object.assign(tf, await fetchGovData(tf.tfbh));
+      Object.assign(tf, {
+        location: getTyphoonLocation(tf),
+        trend: '中国气象局数据更新中...'
+      });
     }
   }));
   return tyItem;
@@ -423,7 +405,7 @@ const getLatestData = async () => {
 };
 
 // 获取当前台风
-const getTyphoonData = async () => {
+const getCurrMerger = async () => {
   try {
     const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
     if (!TYPHOONS.length) return null;
@@ -465,8 +447,7 @@ const speedChangeNotice = (tf, dist) => {
   const speed = tf.speed || 0;
   if (oldSpeed !== speed) {
     notify(
-      `⚠️ 台风 【${tf.name}】`, 
-      `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong || "未知"})` + (tf.location ? `\n${tf.location}` : "") + `\n台风中心距离你的位置约 ${dist || 0} 公里`
+      `⚠️ 台风 【${tf.name}】`, `风速 ${speed}米/秒，${tf.power || 0}级 (${tf.strong})` + `\n台风中心距离你的位置约 ${dist} 公里` + (tf.location ? `\n${tf.location}` : "")
     );
     setting.tf[id] = { ...setting.tf[id], speed };
     writeSettings(setting);
@@ -482,10 +463,12 @@ const currMergerTCNotice = (tc, summary) => {
   const oldSpeed = oldData.speed;
   const speed = tc.speed || 0;
   if (oldSummary !== summary || oldSpeed !== speed) {
-    notify(
-      `⚠️ ${tc.name} ${tc.ename} - ${tc.strong}`,
-      `风速 ${speed}米/秒，${tc.power || 0}级，${tc.pressure || 0}百帕\n${getTyphoonLocation(tc)}\n${summary}`
-    );
+    const message = [
+      `${tc.strong}｜风速 ${speed} 米/秒｜${tc.pressure || 0} hPa`,
+      getTyphoonLocation(tc),
+      summary
+    ].filter(Boolean).join('\n');
+    notify(`⚠️ ${tc.name} ${tc.ename}`, message);
     setting.tc[id] = { ...oldData, summary, speed };
     writeSettings(setting);
   }
@@ -501,6 +484,7 @@ const anchors = [
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
+  { id: "bangkok", name: "泰国曼谷", lat: 13.756, lng: 100.502, rx: 7, ry: 6 },
   { id: "wenchang", name: "海南省文昌市", lat: 19.54, lng: 110.80, rx: 6.5, ry: 5.5 },
   { id: "qionghai", name: "海南省琼海市", lat: 19.25, lng: 110.47, rx: 6, ry: 5 },
   { id: "dongfang", name: "海南省东方市", lat: 19.09, lng: 108.65, rx: 6, ry: 5 },
@@ -524,16 +508,17 @@ const relations = {
   yilan: ["taipei", "hualien", "naha"],
   hualien: ["yilan", "taipei", "kaohsiung", "naha", "luzon_ne"],
   kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "taipei"],
-  hongkong: ["kaohsiung", "wenchang", "qionghai", "dongfang", "danang", "hochiminh", "manila"],
-  wenchang: ["hongkong", "qionghai", "dongfang", "danang", "hochiminh", "manila"],
-  qionghai: ["wenchang", "hongkong", "dongfang", "danang", "hochiminh", "manila"],
-  dongfang: ["wenchang", "qionghai", "hongkong", "danang", "hochiminh", "manila"],
-  danang: ["dongfang", "wenchang", "qionghai", "hongkong", "hochiminh", "camau", "manila"],
-  hochiminh: ["danang", "camau", "dongfang", "wenchang", "hongkong", "manila"],
-  camau: ["hochiminh", "danang", "dongfang", "manila"],
+  hongkong: ["kaohsiung", "wenchang", "qionghai", "dongfang", "danang", "hochiminh", "manila", "bangkok"],
+  bangkok: ["hongkong", "dongfang", "wenchang", "qionghai", "danang", "hochiminh", "camau", "manila"],
+  wenchang: ["hongkong", "qionghai", "dongfang", "danang", "hochiminh", "manila", "bangkok"],
+  qionghai: ["wenchang", "hongkong", "dongfang", "danang", "hochiminh", "manila", "bangkok"],
+  dongfang: ["wenchang", "qionghai", "hongkong", "danang", "hochiminh", "manila", "bangkok"],
+  danang: ["dongfang", "wenchang", "qionghai", "hongkong", "hochiminh", "camau", "manila", "bangkok"],
+  hochiminh: ["danang", "camau", "dongfang", "wenchang", "hongkong", "manila", "bangkok"],
+  camau: ["hochiminh", "danang", "dongfang", "manila", "bangkok"],
   luzon_ne: ["manila", "naha", "kaohsiung", "hualien"],
   saipan: ["guam", "naha", "tokyo", "majuro"],
-  manila: ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang", "danang", "hochiminh", "camau"],
+  manila: ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang", "danang", "hochiminh", "camau", "bangkok"],
   guam: ["saipan", "naha", "manila", "tokyo", "majuro"],
   philippine_se: ["palau", "majuro"],
   palau: ["philippine_se", "majuro"],
@@ -693,37 +678,102 @@ const getSeaSuffix = point => {
   return "洋面上";
 };
 
-const getTyphoonLocation = (point) => {
+const getTyphoonLocation = point => {
   const main = selectMain(point);
-  if (!main) return "";
+  if (!main) return '';
   const second = selectSecond(point, main);
   const mainText = formatAnchor(main, point);
   const seaSuffix = getSeaSuffix(point);
+  if (main.isLand) return `距离${mainText}`;
   const useOcean = !!second || main.isSea || main.distance >= 1200;
   if (second && isMeaningfulSecond(point, main, second)) {
     const secondText = formatAnchor(second, point);
     return `位于${mainText}、${secondText}的${seaSuffix}`;
   }
-  if (useOcean) {
-    return `位于${mainText}的${seaSuffix}`;
-  }
-  return `距离${mainText}`;
+  if (useOcean) return `位于${mainText}的${seaSuffix}`;
+  return main.isSea ? `位于${mainText}的${seaSuffix}` : `距离${mainText}`;
 };
 
-// 查看台风路径
+// 查看西北太平洋台风路径
 const viewTyphoon = async () => {
   const theme = setting.skin === 0 || (setting.skin !== 2 && getIsDay()) ? 'light' : 'dark';
   const url = `https://tf02.istrongcloud.com/typhoonVisual/home?theme=light`;
   const content = await new Request(url).loadString();
   const typhoon =  content.match(/typhoons_data = ([\s\S]*?)[;|<]/)?.[1]
-  const html=`<html lang=zh-CN><head><meta charset=utf-8><meta name=viewport content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1"><script>(function(w,d,s,q,i){w[q]=w[q]||[];})(window,document,'script','aplus_queue');</script><script>var GOLABEL_TYPHOON_INDEX={typhoonPopupConfig:{isShow:false}};</script><script>var typhoons_data=${typhoon};</script><link href=css/app.css rel=stylesheet></head><body><div id=app></div><script src=js/chunk-vendors.js></script><script src=js/app.js></script></body></html>`;
+  const html=`<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,user-scalable=no,minimum-scale=1.0,maximum-scale=1.0,shrink-to-fit=no,viewport-fit=cover"><style>.panel-top,.menu-wrap{transform:translateY(78px);}.tips-wrap__copyright,.menu-item:has(.icon-shijing),.boot-wrap__left-item{display:none!important;}</style><script>(function(w,d,s,q,i){w[q]=w[q]||[];})(window,document,'script','aplus_queue');</script><script>var GOLABEL_TYPHOON_INDEX={typhoonPopupConfig:{isShow:false}};</script><script>var typhoons_data=${typhoon};</script><link href="css/app.css" rel="stylesheet"></head><body><div id="app"></div><script src="js/chunk-vendors.js"></script><script src="js/app.js"></script></body></html>`;
   const webView = new WebView();
   webView.loadHTML(html, `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`);
-  webView.present();
+  webView.present(true);
+};
+
+// 查看全球台风路径
+const viewWorldTyphoon = async () => {
+  const htmlContent = await getCacheData('zoomEarth.html', 'https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 'string', 2);
+  
+  const html = `
+  <html lang="zh-Hans">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport"  content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+      <link rel="preload"  href="/assets/css/app-zh.92a1c8f1.css"  as="style">
+      <link rel="stylesheet"  href="/assets/css/app-zh.92a1c8f1.css">
+      <style>
+        #custom-settings-btn{
+          position:fixed;
+          z-index:100;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border:0;
+          padding:0;
+          background:none;
+          cursor:pointer;
+        }
+        #custom-settings-btn .icon{
+          width:24px;
+          height:24px;
+        }
+      </style>
+    </head>
+    ${htmlContent}
+      <script src="/assets/js/app.24434048.js">
+      </script>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const btn = document.getElementById('custom-settings-btn');
+          const search = document.querySelector('button.search');
+          const settings = document.querySelector('button.settings:not(#custom-settings-btn)');
+          if (!btn || !search) return;
+          const update = () => {
+            const r = search.getBoundingClientRect();
+            btn.style.cssText = r.width && r.height ? \`left:\${r.left}px;top:\${r.top-r.height-8}px;width:\${r.width}px;height:\${r.height}px;display:flex\` : 'display:none';
+          };
+          setInterval(update, 150);
+          update();
+          btn.onclick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            settings?.click();
+          };
+        });
+      </script>
+    </body>
+  </html>`
+  const webView = new WebView();
+  webView.loadHTML(html, "https://zoom.earth/maps/");
+  webView.present(true);
+};
+
+// 获取随机台风图标 Base64 的函数
+const getRandomTyphoonIcon = () => {
+  const keys = ['STY', 'SuperTY'];
+  const randomKey = keys[Math.floor(Math.random() * keys.length)];
+  return typhoonIcons[randomKey];
 };
 
 // 选择主题皮肤
 const selectSkin = async () => {
+  const randomIconBase64 = getRandomTyphoonIcon();
   const html = `
 <html>
 <head>
@@ -735,6 +785,10 @@ const selectSkin = async () => {
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      /* 禁用长按弹出菜单和文本选中 */
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     html, body {
       width: 100%;
@@ -777,6 +831,43 @@ const selectSkin = async () => {
       padding: 23px 23px;
       text-align: center;
       z-index: 10;
+    }
+    .theme-footer-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    /* 中间旋转台风图标容器与动画 */
+    .typhoon-spin-container {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .typhoon-spin-icon {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      animation: spin 2s linear infinite;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      0% {
+        transform: rotate(360deg);
+      }
+      100% {
+        transform: rotate(0deg);
+      }
+    }
+
+    #globalBtn {
+      background: #7B2AFC;
+      box-shadow: 0 2px 6px rgba(123, 42, 252, 0.3);
     }
     .theme-footer-title-btn {
       display: inline-flex;
@@ -916,11 +1007,17 @@ const selectSkin = async () => {
     }
   </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
   <div class="theme" id="tBox">
     <img class="theme-effect" id="themeEffect" src="" alt="">
     <div class="theme-footer">
-      <div class="theme-footer-title-btn" id="pathBtn">台风路径</div>
+      <div class="theme-footer-title">
+        <div class="theme-footer-title-btn" id="pathBtn">台风路径</div>
+        <div class="typhoon-spin-container">
+          <img class="typhoon-spin-icon" src="data:image/png;base64,${randomIconBase64}" alt="台风" draggable="false" />
+        </div>
+        <div class="theme-footer-title-btn" id="globalBtn">全球台风</div>
+      </div>
       <ul class="theme-footer-list" id="skinList"></ul>
       <div class="theme-footer-btn" id="vipBtn"> 使用 VIP 主题 <span>该皮肤为会员专属，已解锁</span>
       </div>
@@ -946,6 +1043,7 @@ const selectSkin = async () => {
     const submitBtn = document.getElementById('submitBtn');
     const vipBtn = document.getElementById('vipBtn');
     const pathBtn = document.getElementById('pathBtn');
+    const globalBtn = document.getElementById('globalBtn');
     
     function renderList() {
       let listHtml = '';
@@ -998,7 +1096,13 @@ const selectSkin = async () => {
         detail: { code: 'typhoon', data: currentIndex }
       }));
     });
-
+        globalBtn.addEventListener('click', function(e) {
+      triggerAnim(this, e);
+      window.dispatchEvent(new CustomEvent('JBridge', {
+        detail: { code: 'globalTyphoon', data: currentIndex }
+      }));
+    });
+    
     vipBtn.addEventListener('click', function() {
       triggerAnim(this);
       localStorage.setItem('THEME', themes[currentIndex].id);
@@ -1027,6 +1131,8 @@ const selectSkin = async () => {
       await runWidget();
     } else if (code === 'typhoon') {
       await viewTyphoon();
+    } else if (code === 'globalTyphoon') {
+      await viewWorldTyphoon();
     }
   };
   // 注入监听器
@@ -1339,6 +1445,27 @@ const drawLandingFlags = (ctx, typhoon, flagIcon, project, EXPORT_SCALE) => {
   }
 };
 
+// 计算台风登陆框的 Bounds 矩形，用于碰撞检测
+const getLandInfoBoxRect = (pos, text, iconSize, EXPORT_SCALE) => {
+  const fontSize = 14 * EXPORT_SCALE;
+  const paddingH = 10 * EXPORT_SCALE;
+  const paddingV = 5 * EXPORT_SCALE;
+  const arrowHeight = 8 * EXPORT_SCALE;
+  const boxHeight = fontSize * 1.3 + paddingV * 2;
+  const estimatedTextWidth = text.length * fontSize;
+  const boxWidth = estimatedTextWidth + paddingH * 2;
+  const arrowOffsetX = boxWidth * 0.25
+  const boxX = pos.x - arrowOffsetX;
+  const boxY = pos.y - iconSize / 2 - boxHeight - arrowHeight + (4 * EXPORT_SCALE);
+  // 包含主矩形 + 下方小三角的完整高度
+  return {
+    x: boxX,
+    y: boxY,
+    width: boxWidth,
+    height: boxHeight + arrowHeight
+  };
+};
+
 // 绘制台风登陆位置信息框
 const drawLandInfoBox = (ctx, pos, text, isDay, iconSize, EXPORT_SCALE) => {
   const fontSize = 14 * EXPORT_SCALE;
@@ -1461,7 +1588,8 @@ const drawFeedbackInfoBoxes = async (
   EXPORT_SCALE, 
   canvasW = 1000, 
   canvasH = 1000,
-  currentZoom = 3.5
+  currentZoom = 3.5,
+  initialOccupiedRects = []
 ) => {
   if (!feedbackData.length) return [];
 
@@ -1488,7 +1616,7 @@ const drawFeedbackInfoBoxes = async (
     [shuffledData[i], shuffledData[j]] = [shuffledData[j], shuffledData[i]];
   }
   
-  const drawnRects = [];
+  const drawnRects = [...initialOccupiedRects];
   const selItems = []; 
   const TARGET_COUNT = !tcPoints?.length ? 4 : currentZoom < 3.3 ? 2 : 3;
 
@@ -1970,8 +2098,20 @@ const generateMapImage = async (
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
   
-  // 1. 出行推荐提示框绘制
-  const occupiedRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom);
+   // 0，预收集登陆框矩形
+  const initialOccupiedRects = [];
+  for (const p of typhoonPoints) {
+    if (p.isTyphoon && p.land?.length > 0 && p.location) {
+      const pos = project(p.lat, p.lng);
+      const ICON_SIZE = 40 * EXPORT_SCALE;
+      initialOccupiedRects.push(
+        getLandInfoBoxRect(pos, p.location, ICON_SIZE, EXPORT_SCALE)
+      );
+    }
+  }
+
+  // 1. 出行推荐提示框绘制（带入 initialOccupiedRects）
+  const occupiedRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom, initialOccupiedRects);
   // 2，绘制风景图标
   if (!tcPoints.length) {
     await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
@@ -2073,7 +2213,7 @@ const getTyphoonImage = async (tfItem) => {
 const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
   const isDay = getIsDay();
   const theme = isDay === 1 ? 'light' : 'dark';
-  widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
+  widget.url = `https://tf03.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (type === 'tf') {
@@ -2454,7 +2594,7 @@ const getTyphoonItem = data => data?.map(item => {
 // 主函数
 const runWidget = async () => {
   getLocation();
-  const { typhoons, tf } = await getTyphoonData() || {};
+  const { typhoons, tf } = await getCurrMerger() || {};
 
   const regions = [
     '全国', '华南', '华东上', '华东下', 
@@ -2485,10 +2625,9 @@ const runWidget = async () => {
     widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], [], isLarge);
   } else {
-    const { tcItem, tc } = await currMergerTC();
+    const { tcItem, tc } = await getCurrMergerTC();
     if (tcItem?.length) {
-      const typhoonItem = getTyphoonItem(typhoons || []);
-      const tfItem = Number(param) === 2 ? typhoonItem : [];
+      const tfItem = getTyphoonItem(typhoons || []);
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
       await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
       await getTCDetails(tcItem);
