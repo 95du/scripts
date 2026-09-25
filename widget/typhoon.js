@@ -708,7 +708,7 @@ const viewTyphoon = async () => {
 
 // 查看全球台风路径
 const viewWorldTyphoon = async () => {
-  const htmlContent = await getCacheData('zoomEarth.html', 'https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 'string', 2);
+  const htmlContent = await getCacheData('zoomEarth.html', 'https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 'string', 720);
   
   const html = `
   <html lang="zh-Hans">
@@ -2292,7 +2292,7 @@ const generateTCItem = (tc, dist, tcLocation, begin_time, isLarge) => {
     { 
       label: "参考位置", 
       value: tcLocation,
-      color: '#F95BF9'
+      color: '#8C7CFF'
     }
   ];
 };
@@ -2343,7 +2343,7 @@ const createBarStack = (stack, barColor, radius = 7) => {
   barStack.layoutHorizontally();
   barStack.centerAlignContent();
   barStack.setPadding(3, 10, 3, 10);
-  barStack.size = new Size(0, 23);
+  barStack.size = new Size(0, 24);
   barStack.cornerRadius = radius;
   barStack.backgroundColor = barColor;
   return barStack;
@@ -2419,8 +2419,8 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.size = new Size(0, 23);
-  createButtonStack(topStack, tyIcon, (tc.name + tc.ename), new Color('#8C7CFF'));
+  topStack.size = new Size(0, 24);
+  createButtonStack(topStack, tyIcon, (tc.name + tc.ename), new Color('#7B2AFC'));
   topStack.addSpacer(8);
   const dateText = topStack.addText(date)
   dateText.font = Font.mediumSystemFont(14.5);
