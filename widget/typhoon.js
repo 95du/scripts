@@ -376,7 +376,8 @@ const mergeLatestData = async (tyItem, latest = []) => {
     if (!latestItem) return;
     const { strong, update_time, location, trend } = latestItem;
     const type = point?.strong?.match(/\((.*?)\)/)?.[1]?.replace(/\s+/g, '');
-    Object.assign(tf, { strong, type, update_time, location, trend });
+    const icon = typhoonIcons[type] ? Image.fromData(Data.fromBase64String(typhoonIcons[type])) : null;
+    Object.assign(tf, { strong, type, icon, update_time, location, trend });
     if (!location) {
       Object.assign(tf, {
         location: getTyphoonLocation(tf),
@@ -407,13 +408,13 @@ const getLatestData = async () => {
 // 获取当前台风
 const getCurrMerger = async () => {
   try {
-    const TYPHOONS = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
-    if (!TYPHOONS.length) return null;
-    const typhoons = await decryptData(TYPHOONS) ?? [];
+    const typhoons = await getCacheData('currMerger.json', 'https://tf03.istrongcloud.com/data/complex/currMerger.json', 'json', 1);
+    if (!typhoons.length) return null;
+    const tfItem = await decryptData(typhoons) ?? [];
     const latest = await getLatestData();
-    await mergeLatestData(typhoons, latest);
-    const tf = getNextItem(typhoons, 'tfIndex');
-    return { typhoons, tf };
+    await mergeLatestData(tfItem, latest);
+    const tf = getNextItem(tfItem, 'tfIndex');
+    return { tfItem, tf };
   } catch (e) {
     console.log(e);
     return null;
@@ -2363,7 +2364,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
   return barStack;
 };
 
-const createWidget = (typhoons, tf, date, land, dist, info, barColor, textColor, isLarge) => {
+const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
   const topStack = widget.addStack();
@@ -2377,11 +2378,11 @@ const createWidget = (typhoons, tf, date, land, dist, info, barColor, textColor,
   dateText.textColor = textColor;
   topStack.addSpacer();
   
-  typhoons.forEach((ty, i) => {
+  tfItem.forEach((ty, i) => {
     const icon = topStack.addImage(tyIcon);
     icon.imageSize = new Size(17, 17);
     icon.tintColor = getTyphoonColor(ty.speed);
-    if (i < typhoons.length - 1) {
+    if (i < tfItem.length - 1) {
       topStack.addSpacer(2);
     }
   });
@@ -2560,14 +2561,14 @@ const errorWidget = () => {
 };
 
 // 整合数据
-const createTyphoonData = async (typhoons, tf, textColor, isLarge) => {
+const createTyphoonData = async (tfItem, tf, textColor, isLarge) => {
   const barColor = getTyphoonColor(tf.speed);
   const date = formatDate(tf.update_time);
   const land = tf.land?.at(-1) ?? '';
   const dist = getDistance(setting.lat, setting.lon, tf.lat, tf.lng);
   const info = generateItem(isLarge, tf, land, dist);
   speedChangeNotice(tf, dist);
-  return createWidget(typhoons, tf, date, land, dist, info, barColor, textColor, isLarge);
+  return createWidget(tfItem, tf, date, land, dist, info, barColor, textColor, isLarge);
 };
 
 const createTcData = (tcItem, tc, textColor, isLarge) => {
@@ -2585,16 +2586,10 @@ const createTcData = (tcItem, tc, textColor, isLarge) => {
   );
 };
 
-// 提取台风等级 SuperTY
-const getTyphoonItem = data => data?.map(item => {
-  const type = item.type;
-  return {...item, icon: typhoonIcons[type] ? Image.fromData(Data.fromBase64String(typhoonIcons[type])) : null};
-});
-
 // 主函数
 const runWidget = async () => {
   getLocation();
-  const { typhoons, tf } = await getCurrMerger() || {};
+  const { tfItem, tf } = await getCurrMerger() || {};
 
   const regions = [
     '全国', '华南', '华东上', '华东下', 
@@ -2622,12 +2617,11 @@ const runWidget = async () => {
   } else if (hasRegion && isLarge) {
     widget = await createRadarWidget(param);
   } else if (tf && !isNumber && !shouldRandomBranch) {
-    widget = await createTyphoonData(typhoons, tf, textColor, isLarge);
+    widget = await createTyphoonData(tfItem, tf, textColor, isLarge);
     await setBackground(widget, 'tf', [], [], isLarge);
   } else {
     const { tcItem, tc } = await getCurrMergerTC();
     if (tcItem?.length) {
-      const tfItem = getTyphoonItem(typhoons || []);
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
       await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
       await getTCDetails(tcItem);
