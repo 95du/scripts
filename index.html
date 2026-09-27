@@ -9,7 +9,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, Georgia, serif;
       background-color: #f8f9fa;
       color: #333;
       padding: 12px;
@@ -33,7 +33,7 @@
       flex-wrap: wrap;
       gap: 6px;
       align-items: center;
-      font-size: 13px;
+      font: 13px Georgia, serif;
     }
 
     .level-row {
@@ -47,11 +47,10 @@
       background: #fff;
       color: #333;
       border: 1px solid #adb5bd;
-      padding: 6px 11.5px;
+      padding: 6px 11px;
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
-      user-select: none;
     }
 
     button:active, .btn-checkbox:active { background: #dee2e6; }
@@ -88,7 +87,7 @@
       border: 1px solid #ced4da;
       border-radius: 6px;
       padding: 8px;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-family: "Courier New", Courier, monospace;
       font-size: 13px;
       resize: vertical;
     }
@@ -98,7 +97,7 @@
       border: solid 1px #CECECE;
       border-radius: 6px;
       padding: 10px;
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+      font-family: "Courier New", Courier, monospace;
       font-size: 13px;
       line-height: 1.5;
       white-space: pre;
@@ -226,13 +225,13 @@
 
       str = str.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
       str = str.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
-      str = str.replace(/(")([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
-      str = str.replace(/(\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$3$4');
-      str = str.replace(/([\}\]])([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/(")([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/(\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$3$4');
+      str = str.replace(/([\}\]])([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
       str = str.replace(/,(\s*[\}\]])/g, '$1');
 
       let openBraces = (str.match(/\{/g) || []).length - (str.match(/\}/g) || []).length;
-      let openBrackets = (str.match(/\[/g) \vert{}\vert{} []).length - (str.match(/\]/g) || []).length;
+      let openBrackets = (str.match(/\[/g) || []).length - (str.match(/\]/g) || []).length;
       while (openBraces > 0) { str += '}'; openBraces--; }
       while (openBrackets > 0) { str += ']'; openBrackets--; }
       return str;
@@ -493,7 +492,7 @@
           alert('剪贴板为空！');
         }
       } catch (err) {
-        alert('读取剪贴板受限，请长按文本框选择粘贴！');
+        alert('读取剪贴板受限，请直接长按输入框选择粘贴！');
       }
     };
 
