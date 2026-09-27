@@ -1323,33 +1323,43 @@ const readTDTTile = async (z, x, y, layer, time = 24) => {
   return await getCacheData(name, url, null, time, dir);
 };
 
-// 绘制 7 级风圈
-const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
-  let quad = point.radius7_quad;
-  if (!quad && point.radius7) {
-    const r = point.radius7;
-    quad = { ne: r, se: r, sw: r, nw: r };
+// 绘制单个风圈路径（辅助函数）
+const renderSingleWindCircle = (
+  ctx, 
+  point, 
+  quadData, 
+  fallbackRadius, 
+  fillColor, 
+  strokeColor, 
+  project, 
+  EXPORT_SCALE
+) => {
+  let quad = quadData;
+  if (!quad && fallbackRadius) {
+    const r = fallbackRadius;
+    quad = { 
+      ne: r, se: r, 
+      sw: r, nw: r 
+    };
   }
   if (!quad) return;
-
-  const SCALE = 1.5;
+  const SCALE = 1.5; 
+  const kmToLng = (km, lat) => km / (111 * Math.cos((lat * Math.PI) / 180));
+  const kmToLat = (km) => km / 111;
   const sectors = [
-    { start: 0, end: 90, r: quad.ne * SCALE },  // 东北方向风圈
-    { start: 90, end: 180, r: quad.se * SCALE }, // 东南方向风圈
-    { start: 180, end: 270, r: quad.sw * SCALE },// 西南方向风圈
-    { start: 270, end: 360, r: quad.nw * SCALE } // 西北方向风圈
+    { start: 0, end: 90, r: (quad.ne || 0) * SCALE },   // 东北
+    { start: 90, end: 180, r: (quad.se || 0) * SCALE },  // 东南
+    { start: 180, end: 270, r: (quad.sw || 0) * SCALE }, // 西南
+    { start: 270, end: 360, r: (quad.nw || 0) * SCALE }  // 西北
   ];
 
-  const kmToLng = (km, lat) => km / (111 * Math.cos(lat * Math.PI / 180));
-  const kmToLat = (km) => km / 111;
   const path = new Path();
   let firstPoint = true;
-
-  sectors.forEach(sector => {
+  sectors.forEach((sector) => {
     if (!sector.r) return;
     const step = 5;
     for (let angle = sector.start; angle <= sector.end; angle += step) {
-      const rad = angle * Math.PI / 180;
+      const rad = (angle * Math.PI) / 180;
       const dLat = kmToLat(sector.r * Math.cos(rad));
       const dLng = kmToLng(sector.r * Math.sin(rad), point.lat);
       const pt = project(point.lat + dLat, point.lng + dLng);
@@ -1361,17 +1371,82 @@ const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
       }
     }
   });
-  
+
   if (!firstPoint) {
     path.closeSubpath();
-    ctx.setFillColor(new Color('#4caf50', 0.2));
+    ctx.setFillColor(fillColor);
     ctx.addPath(path);
     ctx.fillPath();
-    ctx.setStrokeColor(new Color('#4caf50', 0.6));
-    ctx.setLineWidth(1.2 * EXPORT_SCALE);
+    ctx.setStrokeColor(strokeColor);
+    ctx.setLineWidth(1.0 * EXPORT_SCALE);
     ctx.addPath(path);
     ctx.strokePath();
   }
+};
+
+// 绘制 7级、10级、12级风台风圈
+const drawWindCircles = (ctx, point, project, EXPORT_SCALE) => {
+  if (!point) return;
+  // 1. 7级风圈（绿色，最外层）
+  renderSingleWindCircle(
+    ctx,
+    point,
+    point.radius7_quad,
+    point.radius7,
+    new Color('#4caf50', 0.15),
+    new Color('#4caf50', 0.6),
+    project,
+    EXPORT_SCALE
+  );
+  // 2. 10级风圈（黄色，中间层）
+  renderSingleWindCircle(
+    ctx,
+    point,
+    point.radius10_quad,
+    point.radius10,
+    new Color('#F8D500', 0.2),
+    new Color('#F8D500', 0.8),
+    project,
+    EXPORT_SCALE
+  );
+  // 3. 12级风圈（红色，最内层）
+  renderSingleWindCircle(
+    ctx,
+    point,
+    point.radius12_quad,
+    point.radius12,
+    new Color('#f44336', 0.25),
+    new Color('#f44336', 0.8),
+    project,
+    EXPORT_SCALE
+  );
+};
+
+// 给每个台风的 7 级风圈加一个外接矩形
+const collectWindCircleRect = (rects, p, project, EXPORT_SCALE) => {
+  let quad = p.radius7_quad;
+  if (!quad && p.radius7) {
+    const r = p.radius7;
+    quad = { ne: r, se: r, sw: r, nw: r };
+  }
+  if (!quad) return;
+  const maxR = Math.max(
+    quad.ne || 0,
+    quad.se || 0,
+    quad.sw || 0,
+    quad.nw || 0
+  ) * 1.5;
+  const lat = p.lat;
+  const kmToLng = km => km / (111 * Math.cos(lat * Math.PI / 180));
+  const kmToLat = km => km / 111;
+  const ne = project(lat + kmToLat(maxR), p.lng + kmToLng(maxR));
+  const sw = project(lat - kmToLat(maxR), p.lng - kmToLng(maxR));
+  rects.push({
+    x: sw.x,
+    y: ne.y,
+    width: ne.x - sw.x,
+    height: sw.y - ne.y
+  });
 };
 
 // 绘制台风预测路径
@@ -1465,6 +1540,29 @@ const getLandInfoBoxRect = (pos, text, iconSize, EXPORT_SCALE) => {
     width: boxWidth,
     height: boxHeight + arrowHeight
   };
+};
+
+// 收集台风轨迹节点（历史点 + 预测点）的碰撞避让矩形
+const collectPathRects = (
+  rects,
+  typhoon,
+  project,
+  EXPORT_SCALE
+) => {
+  const r = 6 * EXPORT_SCALE;
+  const add = p => {
+    const pt = project(p.lat, p.lng);
+    rects.push({
+      x: pt.x - r,
+      y: pt.y - r,
+      width: r * 2,
+      height: r * 2
+    });
+  };
+  typhoon.points?.forEach(add);
+  typhoon.forecast?.forEach(f =>
+    f.points?.forEach(add)
+  );
 };
 
 // 绘制台风登陆位置信息框
@@ -1590,9 +1688,9 @@ const drawFeedbackInfoBoxes = async (
   canvasW = 1000, 
   canvasH = 1000,
   currentZoom = 3.5,
-  initialOccupiedRects = []
+  occupiedRects = []
 ) => {
-  if (!feedbackData.length) return [];
+  if (!feedbackData.length) return occupiedRects;
 
   // 1. 基础尺寸与配置
   const titleFS = 13 * EXPORT_SCALE;
@@ -1617,7 +1715,7 @@ const drawFeedbackInfoBoxes = async (
     [shuffledData[i], shuffledData[j]] = [shuffledData[j], shuffledData[i]];
   }
   
-  const drawnRects = [...initialOccupiedRects];
+  const drawnRects = [...occupiedRects];
   const selItems = []; 
   const TARGET_COUNT = !tcPoints?.length ? 4 : currentZoom < 3.3 ? 2 : 3;
 
@@ -2099,23 +2197,43 @@ const generateMapImage = async (
     drawPath(item.points.map(p => project(p[0], p[1])), item.color, item.weight, item.opacity, item.dashArray);
   }
   
-   // 0，预收集登陆框矩形
-  const initialOccupiedRects = [];
+  // 0，预收集登陆框矩形
+  const occupiedRects = [];
+
   for (const p of typhoonPoints) {
-    if (p.isTyphoon && p.land?.length > 0 && p.location) {
-      const pos = project(p.lat, p.lng);
-      const ICON_SIZE = 40 * EXPORT_SCALE;
-      initialOccupiedRects.push(
-        getLandInfoBoxRect(pos, p.location, ICON_SIZE, EXPORT_SCALE)
+    if (!p.isTyphoon) continue;
+    // 收集预测点历史点
+    collectPathRects(
+      occupiedRects, 
+      p, 
+      project, 
+      EXPORT_SCALE
+    );
+    // 收集风圈
+    collectWindCircleRect(
+      occupiedRects, 
+      p, 
+      project, 
+      EXPORT_SCALE
+    );
+    // 收集台风登陆点
+    if (p.land?.length > 0 && p.location) {
+      occupiedRects.push(
+        getLandInfoBoxRect(
+          project(p.lat, p.lng),
+          p.location,
+          40 * EXPORT_SCALE,
+          EXPORT_SCALE
+        )
       );
     }
   }
 
   // 1. 出行推荐提示框绘制（带入 initialOccupiedRects）
-  const occupiedRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom, initialOccupiedRects);
+  const drawnRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom, occupiedRects);
   // 2，绘制风景图标
   if (!tcPoints.length) {
-    await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, occupiedRects);
+    await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, drawnRects);
   }
   
   // 3. 点绘制台风风圈与预测路径
