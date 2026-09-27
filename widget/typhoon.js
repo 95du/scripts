@@ -375,7 +375,7 @@ const mergeLatestData = async (tyItem, latest = []) => {
     const latestItem = latestMap.get(tf.tfbh);
     if (!latestItem) return;
     const { strong, update_time, location, trend } = latestItem;
-    const type = point?.strong?.match(/\((.*?)\)/)?.[1]
+    const type = point?.strong?.match(/\((.*?)\)/)?.[1]?.replace(/\s+/g, '');
     Object.assign(tf, { strong, type, update_time, location, trend });
     if (!location) {
       Object.assign(tf, {
@@ -1917,13 +1917,13 @@ const invMercY = y =>
 const zoomCapFor = ({ lng }) => {
   if (lng <= 122) return 3.92;
   if (lng <= 130) return 3.85;
-  if (lng <= 145) return 3.49;
+  if (lng <= 145) return 3.48;
   return 3.15;
 };
 
 const spanCapFor = span => {
   if (span > 40) return 3.15;
-  if (span > 25) return 3.49;
+  if (span > 25) return 3.48;
   return Infinity;
 };
 
@@ -2213,7 +2213,7 @@ const getTyphoonImage = async (tfItem) => {
 const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
   const isDay = getIsDay();
   const theme = isDay === 1 ? 'light' : 'dark';
-  widget.url = `https://tf03.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
+  widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (type === 'tf') {
