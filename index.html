@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>JSON 格式化工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, Georgia, serif;
+      background-color: #f8f9fa;
+      color: #333;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 100vh;
+    }
+
+    .toolbar-container {
+      background: #e9ecef;
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font: 13px Georgia, serif;
+    }
+
+    .level-row {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 6px;
+      width: 100%;
+    }
+    
+    button, select, .btn-checkbox {
+      background: #fff;
+      color: #333;
+      border: 1px solid #adb5bd;
+      padding: 6px 11px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    button:active, .btn-checkbox:active { background: #dee2e6; }
+
+    .btn-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-checkbox input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .btn-level {
+      flex: 1;
+      background: #007AFF;
+      color: #fff;
+      border: none;
+      padding: 6px 0;
+      text-align: center;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .btn-level:active { background: #0056b3; }
+
+    textarea {
+      width: 100%;
+      height: 110px;
+      background: #fff;
+      color: #333;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      padding: 8px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    #output {
+      background-color: #ECECEC;
+      border: solid 1px #CECECE;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre;
+      word-break: normal;
+      overflow-x: auto;
+      color: #000000;
+    }
+
+    #output.wrap-enabled {
+      white-space: pre-wrap !important;
+      word-break: break-all;
+    }
+
+    .j-key { color: #CC0000; font-weight: bold; }
+    .j-string { color: #007777; }
+    .j-number { color: #AA00AA; }
+    .j-boolean { color: #0000FF; }
+    .j-null { color: #0000FF; }
+    .j-comma { color: #000000; font-weight: bold; }
+    .j-error { color: #dc3545; font-weight: bold; }
+    .j-success { color: #28a745; font-weight: bold; }
+
+    .j-brace { color: #00AA00; font-weight: bold; }
+    .j-bracket { color: #0033FF; font-weight: bold; }
+    
+    .j-ellipsis { color: #333; font-weight: bold; margin-left: 2px; }
+
+    .j-toggle {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      line-height: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-family: monospace;
+      border: 1px solid #999;
+      background: #f0f0f0;
+      color: #333;
+      cursor: pointer;
+      user-select: none;
+      margin: 0 3px;
+      border-radius: 2px;
+      vertical-align: middle;
+    }
+    .j-toggle:hover { background: #e0e0e0; }
+    .j-toggle::before { content: "-"; }
+    .j-toggle.collapsed::before { content: "+"; }
+
+    .hide-key-quotes .j-key-quote { display: none; }
+    .hide { display: none !important; }
+
+    .btn-green  { background: #00A400; color: #fff; border: none; }
+    .btn-blue   { background: #007AFF; color: #fff; border: none; }
+    .btn-orange { background: #FF6800; color: #fff; border: none; }
+    .btn-purple { background: #6A39FF; color: #fff; border: none; }
+    .btn-teal   { background: #17a2b8; color: #fff; border: none; }
+    .btn-dark   { background: #343a40; color: #fff; border: none; }
+    .btn-red    { background: #dc3545; color: #fff; border: none; }
+  </style>
+</head>
+<body>
+  <h3>JSON多功能格式化</h3>
+  <div class="toolbar-container">
+    <div class="toolbar-row">
+      <button class="btn-blue" onclick="formatJSON()">格式化</button>
+      <label>缩进 
+        <select id="indent" onchange="formatJSON()">
+          <option value="2" selected>2</option>
+          <option value="4">4</option>
+        </select>
+      </label>
+      <button class="btn-orange" onclick="compressJSON()">压缩</button>
+      <button id="copyBtn" class="btn-green" onclick="copyResult()">复制结果</button>
+      <button class="btn-red" onclick="clearAll()">清空</button>
+      <button class="btn-purple" onclick="pasteInput()">粘贴</button>
+      <button class="btn-purple" onclick="sortKeys('asc')">键升序</button>
+      <button class="btn-purple" onclick="sortKeys('desc')">键降序</button>
+      <button class="btn-dark" onclick="validateAndFixJSON()">校验/修复</button>
+      <button class="btn-teal" onclick="escapeJSON()">加转义</button>
+      <button class="btn-teal" onclick="unescapeJSON()">去转义</button>
+    </div>
+  </div>
+  <textarea id="input" placeholder="在此粘贴 JSON"></textarea>
+  <div class="toolbar-row">
+    <button onclick="expandAll()">展开全部</button>
+    <button onclick="collapseAll()">叠起全部</button>
+    <label class="btn-checkbox">
+      <input type="checkbox" id="quoteToggle" checked onchange="toggleQuotes()"> 引号
+    </label>
+    <label class="btn-checkbox">
+      <input type="checkbox" id="wrapToggle" onchange="toggleWrap()"> 自动换行
+    </label>
+  </div>
+  <div class="level-row">
+    <button class="btn-level" onclick="collapseLevel(2)">2级</button>
+    <button class="btn-level" onclick="collapseLevel(3)">3级</button>
+    <button class="btn-level" onclick="collapseLevel(4)">4级</button>
+    <button class="btn-level" onclick="collapseLevel(5)">5级</button>
+    <button class="btn-level" onclick="collapseLevel(6)">6级</button>
+    <button class="btn-level" onclick="collapseLevel(7)">7级</button>
+    <button class="btn-level" onclick="collapseLevel(8)">8级</button>
+  </div>
+  <div id="output">格式化结果</div>
+
+  <script>
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+
+    const escapeHTML = (str) => String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    const cleanAndFixJSONString = (raw) => {
+      let str = raw.trim();
+      if (!str) return '';
+
+      if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+        try {
+          const inner = JSON.parse(str);
+          if (typeof inner === 'string') str = inner.trim();
+        } catch(e) {}
+      }
+
+      str = str.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
+      str = str.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
+      str = str.replace(/(")([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/(\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$3$4');
+      str = str.replace(/([\}\]])([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/,(\s*[\}\]])/g, '$1');
+
+      let openBraces = (str.match(/\{/g) || []).length - (str.match(/\}/g) || []).length;
+      let openBrackets = (str.match(/\[/g) \vert{}\vert{} []).length - (str.match(/\]/g) || []).length;
+      while (openBraces > 0) { str += '}'; openBraces--; }
+      while (openBrackets > 0) { str += ']'; openBrackets--; }
+      return str;
+    };
+
+    const parseJSON = (silent = false) => {
+      const text = input.value.trim();
+      if (!text) {
+        if (!silent) output.innerHTML = '<span style="color:#888;">请输入 JSON 内容...</span>';
+        return null;
+      }
+
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        try {
+          const fixedText = cleanAndFixJSONString(text);
+          return JSON.parse(fixedText);
+        } catch (err) {
+          if (!silent) {
+            output.innerHTML = `<span class="j-error">❌ JSON 语法错误：<br>${escapeHTML(e.message)}</span>`;
+          }
+          return null;
+        }
+      }
+    };
+
+    const createSpan = (text, cls) => `<span class="${cls}">${text}</span>`;
+
+    const renderValue = (value, level = 1) => {
+      const indentSize = parseInt(document.getElementById('indent').value, 10) || 2;
+      const currentIndent = ' '.repeat((level - 1) * indentSize);
+      const nextIndent = ' '.repeat(level * indentSize);
+      if (value === null) return createSpan('null', 'j-null');
+
+      switch (typeof value) {
+        case 'string':
+          return createSpan(`"${escapeHTML(value)}"`, 'j-string');
+        case 'number':
+          return createSpan(value, 'j-number');
+        case 'boolean':
+          return createSpan(value, 'j-boolean');
+      }
+
+      const isArray = Array.isArray(value);
+      const keys = Object.keys(value);
+      if (!keys.length) {
+        return createSpan(isArray ? '[]' : '{}', isArray ? 'j-bracket' : 'j-brace');
+      }
+
+      const open = isArray ? '[' : '{';
+      const close = isArray ? ']' : '}';
+      let html = createSpan(open, isArray ? 'j-bracket' : 'j-brace');
+      html += '<span class="j-toggle"></span>';
+      html += `<span class="j-content" data-level="${level}">`;
+
+      keys.forEach((key, index) => {
+        html += '\n' + nextIndent;
+        if (!isArray) {
+          html += `<span class="j-key"><span class="j-key-quote">"</span>${escapeHTML(key)}<span class="j-key-quote">"</span></span>: `;
+        }
+        html += renderValue(value[key], level + 1);
+        if (index < keys.length - 1) html += createSpan(',', 'j-comma');
+      });
+
+      html += '\n' + currentIndent + '</span>';
+      html += '<span class="j-ellipsis hide">...</span>';
+      html += createSpan(close, isArray ? 'j-bracket' : 'j-brace');
+      return html;
+    };
+
+    const formatJSON = () => {
+      const data = parseJSON();
+      if (!data) return;
+      output.innerHTML = renderValue(data, 1);
+      toggleQuotes();
+      toggleWrap();
+    };
+
+    const compressJSON = () => {
+      const data = parseJSON();
+      if (!data) return;
+      output.innerHTML = syntaxHighlight(JSON.stringify(data));
+      toggleWrap();
+    };
+
+    const sortObjectKeys = (obj, order = 'asc') => {
+      if (typeof obj !== 'object' || obj === null) return obj;
+      if (Array.isArray(obj)) {
+        return obj.map(item => sortObjectKeys(item, order));
+      }
+      const sortedKeys = Object.keys(obj).sort((a, b) => {
+        return order === 'asc' ? a.localeCompare(b) : b.localeCompare(a);
+      });
+      const sortedObj = {};
+      sortedKeys.forEach(key => {
+        sortedObj[key] = sortObjectKeys(obj[key], order);
+      });
+      return sortedObj;
+    };
+
+    const sortKeys = (order) => {
+      const data = parseJSON();
+      if (!data) return;
+      const sortedData = sortObjectKeys(data, order);
+      input.value = JSON.stringify(sortedData, null, 2);
+      output.innerHTML = renderValue(sortedData, 1);
+      toggleQuotes();
+      toggleWrap();
+    };
+
+    const escapeJSON = () => {
+      const text = input.value;
+      if (!text) return;
+      const escaped = JSON.stringify(text);
+      output.innerHTML = createSpan(escapeHTML(escaped), 'j-string');
+      toggleWrap();
+    };
+
+    const unescapeJSON = () => {
+      let text = input.value.trim();
+      if (!text) return;
+
+      try {
+        if (text.startsWith('"') && text.endsWith('"')) {
+          text = JSON.parse(text);
+        } else {
+          text = text.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
+        }
+        
+        try {
+          const parsed = JSON.parse(text);
+          output.innerHTML = renderValue(parsed, 1);
+        } catch (e) {
+          output.innerText = text;
+        }
+      } catch (e) {
+        output.innerHTML = `<span class="j-error">❌ 去转义失败：<br>${escapeHTML(e.message)}</span>`;
+      }
+      toggleWrap();
+    };
+
+    const validateAndFixJSON = () => {
+      const text = input.value.trim();
+      if (!text) {
+        output.innerHTML = '<span style="color:#888;">请输入 JSON 内容...</span>';
+        return;
+      }
+
+      try {
+        JSON.parse(text);
+        output.innerHTML = '<span class="j-success">✅ JSON 格式完美且合规！无需修复。</span>';
+      } catch (e) {
+        try {
+          const fixedStr = cleanAndFixJSONString(text);
+          const parsed = JSON.parse(fixedStr);
+          input.value = JSON.stringify(parsed, null, 2);
+          output.innerHTML = '<span class="j-success">🔧 校验发现异常，已成功修复并更新至输入框</span>\n\n' + renderValue(parsed, 1);
+        } catch (err) {
+          output.innerHTML = `<span class="j-error">❌ 无法自动修复该 JSON，错误信息：<br>${escapeHTML(e.message)}</span>`;
+        }
+      }
+      toggleWrap();
+    };
+
+    const syntaxHighlight = (json) => escapeHTML(json).replace(
+      /("(?:\\.|[^"\\])*"\s*:|"(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.|\d+)?)/g,
+      (match) => {
+        let cls = 'j-number';
+        if (match.startsWith('"')) {
+          cls = match.endsWith(':') ? 'j-key' : 'j-string';
+        } else if (match === 'true' || match === 'false') {
+          cls = 'j-boolean';
+        } else if (match === 'null') {
+          cls = 'j-null';
+        }
+        return createSpan(match, cls);
+      }
+    );
+
+    const toggleNodeState = (contentEl, shouldHide) => {
+      const btn = contentEl.previousElementSibling;
+      const ellipsis = contentEl.nextElementSibling;
+      contentEl.classList.toggle('hide', shouldHide);
+      if (ellipsis) ellipsis.classList.toggle('hide', !shouldHide);
+      if (btn && btn.classList.contains('j-toggle')) {
+        btn.classList.toggle('collapsed', shouldHide);
+      }
+    };
+
+    output.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('j-toggle')) return;
+      const btn = e.target;
+      const content = btn.nextElementSibling;
+      const isHidden = content.classList.contains('hide');
+      toggleNodeState(content, !isHidden);
+    });
+
+    const expandAll = () => {
+      document.querySelectorAll('.j-content').forEach(el => toggleNodeState(el, false));
+    };
+
+    const collapseAll = () => {
+      document.querySelectorAll('.j-content').forEach(el => toggleNodeState(el, true));
+    };
+
+    const collapseLevel = (targetLevel) => {
+      document.querySelectorAll('.j-content').forEach(el => {
+        const currentLevel = parseInt(el.getAttribute('data-level'), 10) || 1;
+        if (currentLevel >= targetLevel) {
+          toggleNodeState(el, true);
+        } else {
+          toggleNodeState(el, false);
+        }
+      });
+    };
+
+    const toggleQuotes = () => {
+      const isChecked = document.getElementById('quoteToggle').checked;
+      output.classList.toggle('hide-key-quotes', !isChecked);
+    };
+
+    const toggleWrap = () => {
+      const isWrap = document.getElementById('wrapToggle').checked;
+      output.classList.toggle('wrap-enabled', isWrap);
+    };
+
+    const copyResult = () => {
+      const clone = output.cloneNode(true);
+      clone.querySelectorAll('.j-toggle, .j-ellipsis').forEach(el => el.remove());
+      const text = clone.innerText;
+      if (!text || text === '格式化结果' || text.startsWith('❌')) {
+        alert('没有可以复制的有效结果！');
+        return;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        const originalText = btn.innerText;
+        btn.innerText = '复制成功';
+        btn.style.background = '#777';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.background = '#00A400';
+        }, 1200);
+      }).catch(() => {
+        alert('复制失败，请手动选中复制。');
+      });
+    };
+
+    const pasteInput = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          input.value = text;
+          formatJSON();
+        } else {
+          alert('剪贴板为空！');
+        }
+      } catch (err) {
+        alert('读取剪贴板受限，请直接长按输入框选择粘贴！');
+      }
+    };
+
+    const clearAll = () => {
+      input.value = '';
+      output.innerHTML = '格式化结果';
+    };
+  </script>
+</body>
+</html>
