@@ -18,7 +18,6 @@
       gap: 10px;
       min-height: 100vh;
     }
-
     .toolbar-container {
       background: #e9ecef;
       padding: 8px;
@@ -27,7 +26,6 @@
       flex-direction: column;
       gap: 8px;
     }
-
     .toolbar-row {
       display: flex;
       flex-wrap: wrap;
@@ -35,7 +33,6 @@
       align-items: center;
       font: 13px Georgia, serif;
     }
-
     .level-row {
       display: flex;
       flex-wrap: nowrap;
@@ -52,9 +49,7 @@
       font-size: 13px;
       cursor: pointer;
     }
-
     button:active, .btn-checkbox:active { background: #dee2e6; }
-
     .btn-checkbox {
       display: flex;
       align-items: center;
@@ -66,7 +61,6 @@
       margin: 0;
       cursor: pointer;
     }
-
     .btn-level {
       flex: 1;
       background: #007AFF;
@@ -78,7 +72,6 @@
       min-width: 0;
     }
     .btn-level:active { background: #0056b3; }
-
     textarea {
       width: 100%;
       height: 110px;
@@ -91,7 +84,6 @@
       font-size: 13px;
       resize: vertical;
     }
-
     #output {
       background-color: #ECECEC;
       border: solid 1px #CECECE;
@@ -105,12 +97,10 @@
       overflow-x: auto;
       color: #000000;
     }
-
     #output.wrap-enabled {
       white-space: pre-wrap !important;
       word-break: break-all;
     }
-
     .j-key { color: #CC0000; font-weight: bold; }
     .j-string { color: #007777; }
     .j-number { color: #AA00AA; }
@@ -119,12 +109,10 @@
     .j-comma { color: #000000; font-weight: bold; }
     .j-error { color: #dc3545; font-weight: bold; }
     .j-success { color: #28a745; font-weight: bold; }
-
     .j-brace { color: #00AA00; font-weight: bold; }
     .j-bracket { color: #0033FF; font-weight: bold; }
     
     .j-ellipsis { color: #333; font-weight: bold; margin-left: 2px; }
-
     .j-toggle {
       display: inline-block;
       width: 12px;
@@ -145,10 +133,8 @@
     .j-toggle:hover { background: #e0e0e0; }
     .j-toggle::before { content: "-"; }
     .j-toggle.collapsed::before { content: "+"; }
-
     .hide-key-quotes .j-key-quote { display: none; }
     .hide { display: none !important; }
-
     .btn-green  { background: #00A400; color: #fff; border: none; }
     .btn-blue   { background: #007AFF; color: #fff; border: none; }
     .btn-orange { background: #FF6800; color: #fff; border: none; }
@@ -206,13 +192,15 @@
     const input = document.getElementById('input');
     const output = document.getElementById('output');
 
-    const escapeHTML = (str) => String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    function escapeHTML(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
 
-    const cleanAndFixJSONString = (raw) => {
+    function cleanAndFixJSONString(raw) {
       let str = raw.trim();
       if (!str) return '';
 
@@ -225,19 +213,19 @@
 
       str = str.replace(/'([^'\\]*(\\.[^'\\]*)*)'/g, '"$1"');
       str = str.replace(/([{,]\s*)([a-zA-Z0-9_$]+)\s*:/g, '$1"$2":');
-      str = str.replace(/(")([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
-      str = str.replace(/(\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$3$4');
-      str = str.replace(/([\}\]])([\s\r\n]+)("(?=[^:]+:)|[\{\[]"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/(")([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
+      str = str.replace(/(\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$3$4');
+      str = str.replace(/([\}\]])([\s\r\n]+)("(?=[^:]+:)|[\{\[]\vert{}"(?:[^"\\]|\\.)*")/g, '$1,$2$3');
       str = str.replace(/,(\s*[\}\]])/g, '$1');
 
       let openBraces = (str.match(/\{/g) || []).length - (str.match(/\}/g) || []).length;
-      let openBrackets = (str.match(/\[/g) || []).length - (str.match(/\]/g) || []).length;
+      let openBrackets = (str.match(/\[/g) \vert{}\vert{} []).length - (str.match(/\]/g) || []).length;
       while (openBraces > 0) { str += '}'; openBraces--; }
       while (openBrackets > 0) { str += ']'; openBrackets--; }
       return str;
-    };
+    }
 
-    const parseJSON = (silent = false) => {
+    function parseJSON(silent = false) {
       const text = input.value.trim();
       if (!text) {
         if (!silent) output.innerHTML = '<span style="color:#888;">请输入 JSON 内容...</span>';
@@ -257,11 +245,13 @@
           return null;
         }
       }
-    };
+    }
 
-    const createSpan = (text, cls) => `<span class="${cls}">${text}</span>`;
+    function createSpan(text, cls) {
+      return `<span class="${cls}">${text}</span>`;
+    }
 
-    const renderValue = (value, level = 1) => {
+    function renderValue(value, level = 1) {
       const indentSize = parseInt(document.getElementById('indent').value, 10) || 2;
       const currentIndent = ' '.repeat((level - 1) * indentSize);
       const nextIndent = ' '.repeat(level * indentSize);
@@ -301,24 +291,24 @@
       html += '<span class="j-ellipsis hide">...</span>';
       html += createSpan(close, isArray ? 'j-bracket' : 'j-brace');
       return html;
-    };
+    }
 
-    const formatJSON = () => {
+    function formatJSON() {
       const data = parseJSON();
       if (!data) return;
       output.innerHTML = renderValue(data, 1);
       toggleQuotes();
       toggleWrap();
-    };
+    }
 
-    const compressJSON = () => {
+    function compressJSON() {
       const data = parseJSON();
       if (!data) return;
       output.innerHTML = syntaxHighlight(JSON.stringify(data));
       toggleWrap();
-    };
+    }
 
-    const sortObjectKeys = (obj, order = 'asc') => {
+    function sortObjectKeys(obj, order = 'asc') {
       if (typeof obj !== 'object' || obj === null) return obj;
       if (Array.isArray(obj)) {
         return obj.map(item => sortObjectKeys(item, order));
@@ -331,9 +321,9 @@
         sortedObj[key] = sortObjectKeys(obj[key], order);
       });
       return sortedObj;
-    };
+    }
 
-    const sortKeys = (order) => {
+    function sortKeys(order) {
       const data = parseJSON();
       if (!data) return;
       const sortedData = sortObjectKeys(data, order);
@@ -341,17 +331,17 @@
       output.innerHTML = renderValue(sortedData, 1);
       toggleQuotes();
       toggleWrap();
-    };
+    }
 
-    const escapeJSON = () => {
+    function escapeJSON() {
       const text = input.value;
       if (!text) return;
       const escaped = JSON.stringify(text);
       output.innerHTML = createSpan(escapeHTML(escaped), 'j-string');
       toggleWrap();
-    };
+    }
 
-    const unescapeJSON = () => {
+    function unescapeJSON() {
       let text = input.value.trim();
       if (!text) return;
 
@@ -372,9 +362,9 @@
         output.innerHTML = `<span class="j-error">❌ 去转义失败：<br>${escapeHTML(e.message)}</span>`;
       }
       toggleWrap();
-    };
+    }
 
-    const validateAndFixJSON = () => {
+    function validateAndFixJSON() {
       const text = input.value.trim();
       if (!text) {
         output.innerHTML = '<span style="color:#888;">请输入 JSON 内容...</span>';
@@ -395,24 +385,26 @@
         }
       }
       toggleWrap();
-    };
+    }
 
-    const syntaxHighlight = (json) => escapeHTML(json).replace(
-      /("(?:\\.|[^"\\])*"\s*:|"(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.|\d+)?)/g,
-      (match) => {
-        let cls = 'j-number';
-        if (match.startsWith('"')) {
-          cls = match.endsWith(':') ? 'j-key' : 'j-string';
-        } else if (match === 'true' || match === 'false') {
-          cls = 'j-boolean';
-        } else if (match === 'null') {
-          cls = 'j-null';
+    function syntaxHighlight(json) {
+      return escapeHTML(json).replace(
+        /("(?:\\.|[^"\\])*"\s*:|"(?:\\.|[^"\\])*"|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.|\d+)?)/g,
+        (match) => {
+          let cls = 'j-number';
+          if (match.startsWith('"')) {
+            cls = match.endsWith(':') ? 'j-key' : 'j-string';
+          } else if (match === 'true' || match === 'false') {
+            cls = 'j-boolean';
+          } else if (match === 'null') {
+            cls = 'j-null';
+          }
+          return createSpan(match, cls);
         }
-        return createSpan(match, cls);
-      }
-    );
+      );
+    }
 
-    const toggleNodeState = (contentEl, shouldHide) => {
+    function toggleNodeState(contentEl, shouldHide) {
       const btn = contentEl.previousElementSibling;
       const ellipsis = contentEl.nextElementSibling;
       contentEl.classList.toggle('hide', shouldHide);
@@ -420,7 +412,7 @@
       if (btn && btn.classList.contains('j-toggle')) {
         btn.classList.toggle('collapsed', shouldHide);
       }
-    };
+    }
 
     output.addEventListener('click', (e) => {
       if (!e.target.classList.contains('j-toggle')) return;
@@ -430,15 +422,15 @@
       toggleNodeState(content, !isHidden);
     });
 
-    const expandAll = () => {
+    function expandAll() {
       document.querySelectorAll('.j-content').forEach(el => toggleNodeState(el, false));
-    };
+    }
 
-    const collapseAll = () => {
+    function collapseAll() {
       document.querySelectorAll('.j-content').forEach(el => toggleNodeState(el, true));
-    };
+    }
 
-    const collapseLevel = (targetLevel) => {
+    function collapseLevel(targetLevel) {
       document.querySelectorAll('.j-content').forEach(el => {
         const currentLevel = parseInt(el.getAttribute('data-level'), 10) || 1;
         if (currentLevel >= targetLevel) {
@@ -447,19 +439,19 @@
           toggleNodeState(el, false);
         }
       });
-    };
+    }
 
-    const toggleQuotes = () => {
+    function toggleQuotes() {
       const isChecked = document.getElementById('quoteToggle').checked;
       output.classList.toggle('hide-key-quotes', !isChecked);
-    };
+    }
 
-    const toggleWrap = () => {
+    function toggleWrap() {
       const isWrap = document.getElementById('wrapToggle').checked;
       output.classList.toggle('wrap-enabled', isWrap);
-    };
+    }
 
-    const copyResult = () => {
+    function copyResult() {
       const clone = output.cloneNode(true);
       clone.querySelectorAll('.j-toggle, .j-ellipsis').forEach(el => el.remove());
       const text = clone.innerText;
@@ -480,9 +472,9 @@
       }).catch(() => {
         alert('复制失败，请手动选中复制。');
       });
-    };
+    }
 
-    const pasteInput = async () => {
+    async function pasteInput() {
       try {
         const text = await navigator.clipboard.readText();
         if (text) {
@@ -494,12 +486,12 @@
       } catch (err) {
         alert('读取剪贴板受限，请直接长按输入框选择粘贴！');
       }
-    };
+    }
 
-    const clearAll = () => {
+    function clearAll() {
       input.value = '';
       output.innerHTML = '格式化结果';
-    };
+    }
   </script>
 </body>
 </html>
