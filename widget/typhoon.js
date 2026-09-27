@@ -1188,6 +1188,37 @@ const processImagePipeline = async (img, trim = { top: 1, right: 2, bottom: 1, l
   ]);
 };
 
+// 裁剪圆形头像
+const getCircleAvatar = async (title, imageUrl) => {
+  if (!imageUrl) return null;
+  const cache = useFileManager('image', travelPath);
+  const cacheName = `${title}_${imageUrl.split('/').pop()}`;
+  const cached = cache.read(cacheName);
+  if (cached && cached instanceof Image) return cached;
+  try {
+    const rawAvatar = await new Request(imageUrl).loadImage();
+    if (!rawAvatar) return null;
+    const html = `<canvas id="c"></canvas><script>const i=new Image();i.onload=()=>{const sz=Math.min(i.width,i.height),c=document.getElementById('c');c.width=c.height=sz;const x=c.getContext('2d'),s=Math.max(sz/i.width,sz/i.height),w=i.width*s,h=i.height*s;x.beginPath();x.arc(sz/2,sz/2,sz/2,0,Math.PI*2);x.clip();x.drawImage(i,(sz-w)/2,(sz-h)/2,w,h);document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`;
+    const wv = new WebView();
+    await wv.loadHTML(html);
+    let b64 = "";
+    for (let i = 0; i < 15; i++) {
+      b64 = await wv.evaluateJavaScript("document.body.getAttribute('d')");
+      if (b64) break;
+      await new Promise(r => setTimeout(r, 30));
+    }
+    if (!b64) return rawAvatar;
+    const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
+    if (img && img instanceof Image) {
+      cache.write(cacheName, img);
+      return img;
+    }
+    return rawAvatar;
+  } catch (e) {
+    return null;
+  }
+};
+
 // 日出 1，日落 0
 const getIsDay = () => {
   const now = new Date();
@@ -1249,6 +1280,75 @@ const prepareTiles = async (viewport, types, readFunc, hours = 24) => {
     tiles: valid, 
     images: ready
    };
+};
+
+// 高德地图瓦片辅助函数
+const drawAMapLayers = async (
+  ctx, 
+  viewport, 
+  styles, 
+  TILE, 
+  tileCacheHours, 
+  EXPORT_SCALE, 
+  fractionalScale, 
+  worldToScreen, 
+  worldSize, 
+  W
+) => {
+  await ensureTiles();
+  const { tiles, images } = await prepareTiles(viewport, styles, readTile, tileCacheHours);
+
+  const drawTiles = style => {
+    const OVERLAP = 0.75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
+    for (const tile of tiles) {
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`)
+      if (!image) continue;
+      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
+      while (x + size < 0) x += worldSize;
+      while (x > W) x -= worldSize;
+      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    }
+  };
+
+  drawTiles(styles[0]);
+  if (styles.length > 1) drawTiles(styles[1]);
+};
+
+// 天地图瓦片辅助函数
+const drawTDTLayers = async (
+  ctx, 
+  viewport, 
+  tileCacheHours, 
+  worldToScreen, 
+  worldSize, 
+  W, 
+  fractionalScale, 
+  EXPORT_SCALE,
+  TILE = 256
+) => {
+  const layers = ['ter', 'cta'];
+  const { tiles, images } = await prepareTiles(viewport, layers, readTDTTile, tileCacheHours);
+
+  const drawTDTLayer = layer => {
+    const OVERLAP = 0.75;
+    const ox = OVERLAP / 2;
+    const size = TILE * fractionalScale * EXPORT_SCALE;
+    for (const tile of tiles) {
+      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${layer}`)
+      if (!image) continue;
+      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
+      while (x + size < 0) x += worldSize;
+      while (x > W) x -= worldSize;
+      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
+    }
+  };
+
+  drawTDTLayer('ter');
+  drawTDTLayer('cta');
 };
 
 /** =======💜 高德地图 💜======= */
@@ -1506,6 +1606,29 @@ const drawHistoryPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
   }
 };
 
+// 收集台风轨迹节点（历史点 + 预测点）的碰撞避让矩形
+const collectPathRects = (
+  rects,
+  typhoon,
+  project,
+  EXPORT_SCALE
+) => {
+  const r = 6 * EXPORT_SCALE;
+  const add = p => {
+    const pt = project(p.lat, p.lng);
+    rects.push({
+      x: pt.x - r,
+      y: pt.y - r,
+      width: r * 2,
+      height: r * 2
+    });
+  };
+  typhoon.points?.forEach(add);
+  typhoon.forecast?.forEach(f =>
+    f.points?.forEach(add)
+  );
+};
+
 // 绘制单个台风的所有登陆点旗帜（一个台风可能多次登陆）
 const drawLandingFlags = (ctx, typhoon, flagIcon, project, EXPORT_SCALE) => {
   if (!flagIcon || !typhoon.land || !typhoon.land.length) return;
@@ -1540,29 +1663,6 @@ const getLandInfoBoxRect = (pos, text, iconSize, EXPORT_SCALE) => {
     width: boxWidth,
     height: boxHeight + arrowHeight
   };
-};
-
-// 收集台风轨迹节点（历史点 + 预测点）的碰撞避让矩形
-const collectPathRects = (
-  rects,
-  typhoon,
-  project,
-  EXPORT_SCALE
-) => {
-  const r = 6 * EXPORT_SCALE;
-  const add = p => {
-    const pt = project(p.lat, p.lng);
-    rects.push({
-      x: pt.x - r,
-      y: pt.y - r,
-      width: r * 2,
-      height: r * 2
-    });
-  };
-  typhoon.points?.forEach(add);
-  typhoon.forecast?.forEach(f =>
-    f.points?.forEach(add)
-  );
 };
 
 // 绘制台风登陆位置信息框
@@ -1645,40 +1745,7 @@ const drawBadge = (ctx, badgeText, subscriptType, boxX, boxY, boxW, badgeFS, EXP
   ctx.drawTextInRect(badgeText, new Rect(badgeX, badgeY + (badgeH - badgeFS) / 2 - EXPORT_SCALE, badgeW, badgeFS * 1.5));
 };
 
-// 裁剪圆形头像
-const getCircleAvatar = async (title, imageUrl) => {
-  if (!imageUrl) return null;
-  const cache = useFileManager('image', travelPath);
-  const cacheName = `${title}_${imageUrl.split('/').pop()}`;
-  const cached = cache.read(cacheName);
-  if (cached && cached instanceof Image) return cached;
-  try {
-    const rawAvatar = await new Request(imageUrl).loadImage();
-    if (!rawAvatar) return null;
-    const html = `<canvas id="c"></canvas><script>const i=new Image();i.onload=()=>{const sz=Math.min(i.width,i.height),c=document.getElementById('c');c.width=c.height=sz;const x=c.getContext('2d'),s=Math.max(sz/i.width,sz/i.height),w=i.width*s,h=i.height*s;x.beginPath();x.arc(sz/2,sz/2,sz/2,0,Math.PI*2);x.clip();x.drawImage(i,(sz-w)/2,(sz-h)/2,w,h);document.body.setAttribute('d',c.toDataURL('image/png'));};i.src="data:image/png;base64,${Data.fromPNG(rawAvatar).toBase64String()}";</script>`;
-    const wv = new WebView();
-    await wv.loadHTML(html);
-    let b64 = "";
-    for (let i = 0; i < 15; i++) {
-      b64 = await wv.evaluateJavaScript("document.body.getAttribute('d')");
-      if (b64) break;
-      await new Promise(r => setTimeout(r, 30));
-    }
-    if (!b64) return rawAvatar;
-    const img = Image.fromData(Data.fromBase64String(b64.replace(/^data:image\/\w+;base64,/, "")));
-    if (img && img instanceof Image) {
-      cache.write(cacheName, img);
-      return img;
-    }
-    return rawAvatar;
-  } catch (e) {
-    return null;
-  }
-};
-
-/**
- * 智能筛选并绘制最多 3 个互不重叠的卡片
- */
+// 智能筛选并绘制最多 3 个互不重叠的卡片
 const drawFeedbackInfoBoxes = async (
   ctx, 
   tcPoints, 
@@ -1933,75 +2000,6 @@ const drawLandmarkIcons = async (
   }
 };
 
-// 高德地图瓦片辅助函数
-const drawAMapLayers = async (
-  ctx, 
-  viewport, 
-  styles, 
-  TILE, 
-  tileCacheHours, 
-  EXPORT_SCALE, 
-  fractionalScale, 
-  worldToScreen, 
-  worldSize, 
-  W
-) => {
-  await ensureTiles();
-  const { tiles, images } = await prepareTiles(viewport, styles, readTile, tileCacheHours);
-
-  const drawTiles = style => {
-    const OVERLAP = 0.75, ox = OVERLAP / 2, size = TILE * fractionalScale * EXPORT_SCALE;
-    for (const tile of tiles) {
-      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${style}`)
-      if (!image) continue;
-      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
-      while (x + size < 0) x += worldSize;
-      while (x > W) x -= worldSize;
-      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
-    }
-  };
-
-  drawTiles(styles[0]);
-  if (styles.length > 1) drawTiles(styles[1]);
-};
-
-// 天地图瓦片辅助函数
-const drawTDTLayers = async (
-  ctx, 
-  viewport, 
-  tileCacheHours, 
-  worldToScreen, 
-  worldSize, 
-  W, 
-  fractionalScale, 
-  EXPORT_SCALE,
-  TILE = 256
-) => {
-  const layers = ['ter', 'cta'];
-  const { tiles, images } = await prepareTiles(viewport, layers, readTDTTile, tileCacheHours);
-
-  const drawTDTLayer = layer => {
-    const OVERLAP = 0.75;
-    const ox = OVERLAP / 2;
-    const size = TILE * fractionalScale * EXPORT_SCALE;
-    for (const tile of tiles) {
-      const image = images.get(`${tile.z}/${tile.x}/${tile.y}/${layer}`)
-      if (!image) continue;
-      let { x, y } = worldToScreen(tile.x * TILE, tile.y * TILE);
-      while (x + size < 0) x += worldSize;
-      while (x > W) x -= worldSize;
-      ctx.drawImageInRect(image, new Rect(x - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x + size < 0) ctx.drawImageInRect(image, new Rect(x + worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
-      if (x > W - size) ctx.drawImageInRect(image, new Rect(x - worldSize - ox, y - ox, size + OVERLAP, size + OVERLAP));
-    }
-  };
-
-  drawTDTLayer('ter');
-  drawTDTLayer('cta');
-};
-
 // 地理范围的自适应视口模型辅助函数
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
@@ -2141,7 +2139,8 @@ const generateMapImage = async (
       await drawAMapLayers(ctx, viewport, styles, TILE, TILE_CACHE_HOURS, EXPORT_SCALE, fractionalScale, worldToScreen, worldSize, W);
     }
   }
-
+  
+  // 绘制雷达图层
   if (radarImage) {
     const radarRange = [
       [12.316339, 69.646079],
@@ -2159,6 +2158,7 @@ const generateMapImage = async (
     ctx.drawImageInRect(radarImage, radarRect);
   }
   
+  // 绘制24/48小时警戒线
   const drawPath = (points, color, width, opacity, dash) => {
     if (points.length < 2) return;
     ctx.setStrokeColor(new Color(color, opacity));
@@ -2286,7 +2286,7 @@ const generateMapImage = async (
     }
   }
   
-  // 7. 绘制登陆 location 提示框（最顶层）
+  // 7. 绘制登陆点提示框（最顶层）
   for (const p of typhoonPoints) {
     if (p.isTyphoon && p.land?.length > 0 && p.location) {
       const pos = project(p.lat, p.lng);
@@ -2482,6 +2482,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
   return barStack;
 };
 
+// 台风组件 (仅台风)
 const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(0, 0, 0, 0);
@@ -2531,7 +2532,7 @@ const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, i
   return widget;
 };
 
-// 热带扰动组件
+// 热带扰动加台风组件
 const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
@@ -2612,7 +2613,7 @@ const createRadarWidget = async (param) => {
   return widget;
 };
 
-// 无台风组件
+// 台风名称组件
 const createLevelWidget = (levels, names, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
