@@ -109,6 +109,18 @@ const autoUpdate = async () => {
   if (script.includes('組件')) fm.writeString(module.filename, script)
 };
 
+const shadowImage = (img, text, name) => {
+  const ctx = new DrawContext();
+  ctx.size = img.size;
+  const w = img.size.width;
+  const h = img.size.height;
+  ctx.drawImageInRect(img, new Rect(0, 0, w, h));
+  ctx.setFillColor(new Color("#FFFFFF", 0.3));
+  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 8 : h * 0.61 + 13) : h * (text.length < 21 ? 0.75 : 0.69);
+  ctx.fillRect(new Rect(0, startY, w, h - startY));
+  return ctx.getImage();
+};
+
 // 解码 base64 编码图
 const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64));
 
@@ -310,14 +322,8 @@ const getNextItem = (arr, name) => {
 
 // 热带扰动趋势
 const getSummary = details => {
-  if (!details || !details.includes('24 小时')) return '';
-  const match = details.match(/<p>(?:<em>)?(.*?)(?:<\/em>)?<\/p>/s);
-  if (!match) return '';
-  return match[1]
-    .replace(/<[^>]+>/g, '')
-    .replace(/^.*?(在未来)/, '$1')
-    .replace(/[。;；.]$/, '')
-    .trim();
+  const chance = details?.match(/class="chance\s+(?:high|medium|low)">([^<]+)</)?.[1];
+  return chance ? `在未来24小时内发展为热带气旋的可能性为${chance}` : '';
 };
 
 const getTCDetails = async tcItem => {
@@ -1240,7 +1246,7 @@ const getLevelColor = gradeEname => ({
   STS: '#FBFF6B',
   TY: '#FDAC03',
   STY: '#F95AFF',
-  SUPERTY: '#FF0C0C',
+  SuperTY: '#FF0C0C',
 }[gradeEname] || '#68FF8C');
 
 /** ======💛 地图辅助函数 💛====== */
@@ -1566,7 +1572,7 @@ const drawForecastPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
     for (let i = 0; i < forecastSet.points.length; i++) {
       const p = forecastSet.points[i];
       const pt = forecastPoints[i];
-      const level = p.strong?.match(/\((.*?)\)/)?.[1] || p.type;
+      const level = p.strong?.match(/\((.*?)\)/)?.[1]?.replace(/\s+/g, '');
       const pointHex = getLevelColor(level);
       const outerRadius = pointRadius + strokeWidth;
       const outerRect = new Rect(pt.x - outerRadius, pt.y - outerRadius, outerRadius * 2, outerRadius * 2);
@@ -1594,7 +1600,7 @@ const drawHistoryPath = (ctx, typhoon, project, EXPORT_SCALE, drawPathFn) => {
   for (let i = 0; i < typhoon.points.length; i++) {
     const p = typhoon.points[i];
     const pt = historyPoints[i];
-    const level = p.strong?.match(/\((.*?)\)/)?.[1] || p.type || p.strong;
+    const level = p.strong?.match(/\((.*?)\)/)?.[1]?.replace(/\s+/g, '');
     const pointHex = getLevelColor(level);
     const outerRadius = pointRadius + strokeWidth;
     const outerRect = new Rect(pt.x - outerRadius, pt.y - outerRadius, outerRadius * 2, outerRadius * 2);
@@ -2325,22 +2331,25 @@ const getTyphoonImage = async (tfItem) => {
   ];
   const name = files[Math.floor(Math.random() * files.length)];
   const url = `https://upy.istrongcloud.com/applet/typhoon/screenshot/${name}?r=${Date.now()}`;
-  return await getCacheData(name, url, null, tfItem.length ? 1 : 4);
+  const img = await getCacheData(name, url, null, tfItem.length ? 1 : 4);
+  return { name, img };
 };
 
 // 设置背景
-const setBackground = async (widget, type, tcItem, tfItem, isLarge) => {
+const setBackground = async (widget, type, tcItem, tfItem, isLarge, locationText = '') => {
   const isDay = getIsDay();
   const theme = isDay === 1 ? 'light' : 'dark';
   widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (type === 'tf') {
-      widget.backgroundImage = await getTyphoonImage(tfItem);
+      const { img, name } = await getTyphoonImage(tfItem);
+      widget.backgroundImage = shadowImage(img, locationText, name);
     } else {
       const feedbackData = await getTravelData();
       const image = await generateMapImage(isDay, tcItem, tfItem, feedbackData, setting);
-      widget.backgroundImage = image;
+      const masking = shadowImage(image, locationText);
+      widget.backgroundImage = setting.skin === 1 ? masking : image;
     }
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
@@ -2371,12 +2380,12 @@ const generateItem = (isLarge, tf, land, dist = 0 ) => [
   }] : []),
   {
     label: "参考位置",
-    value: tf.location || '---',
+    value: tf.location,
     color: '#FF7800'
   },
   {
     label: "未来趋势",
-    value: tf.trend || '---',
+    value: tf.trend,
     color: '#8C7CFF'
   }
 ];
@@ -2485,11 +2494,11 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
 // 台风组件 (仅台风)
 const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, isLarge) => {
   const widget = new ListWidget();
-  widget.setPadding(0, 0, 0, 0);
+  widget.setPadding(15, 20, 15, 20);
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.centerAlignContent();
-  topStack.setPadding(isLarge ? 15 : 13, 20, isLarge ? 5 : 4, 20);
+  topStack.size = new Size(0, 24);
   createButtonStack(topStack, tyIcon, (tf.ident + tf.name), barColor);
   topStack.addSpacer(8);
   const dateText = topStack.addText(date);
@@ -2506,16 +2515,9 @@ const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, i
     }
   });
 
-  if (isLarge) widget.addSpacer();
-  const mainStack = widget.addStack();
-  mainStack.layoutVertically();
-  mainStack.setPadding(isLarge ? 15 : 4, 20, isLarge ? 15 : 13, 20);
-  if (isLarge) {
-    mainStack.backgroundColor = new Color('#FEFEFE', 0.2);
-  }
-  
+  widget.addSpacer();
   info.forEach((item, i) => {
-    const listStack = mainStack.addStack();
+    const listStack = widget.addStack();
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
     labelText.font = Font.boldSystemFont(13.5);
@@ -2524,9 +2526,10 @@ const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, i
     const valueText = listStack.addText(item.value);
     valueText.font = Font.mediumSystemFont(13.5);
     valueText.textColor = textColor;
-    if (isLarge) listStack.addSpacer();
     if (i < info.length - 1) {
-      mainStack.addSpacer(3);
+      widget.addSpacer(3);
+    } else if (isLarge && item.value.length > 20) {
+      listStack.size = new Size(0, 33)
     }
   });
   return widget;
@@ -2737,12 +2740,13 @@ const runWidget = async () => {
     widget = await createRadarWidget(param);
   } else if (tf && !isNumber && !shouldRandomBranch) {
     widget = await createTyphoonData(tfItem, tf, textColor, isLarge);
-    await setBackground(widget, 'tf', [], [], isLarge);
+    await setBackground(widget, 'tf', [], [], isLarge, tf.location);
   } else {
     const { tcItem, tc } = await getCurrMergerTC();
     if (tcItem?.length) {
       widget = createTcData(tcItem, tc, tcTextColor, isLarge);
-      await setBackground(widget, 'tc', tcItem, tfItem, isLarge);
+      const tcLoc = getTyphoonLocation(tc);
+      await setBackground(widget, 'tc', tcItem, tfItem, isLarge, tcLoc);
       await getTCDetails(tcItem);
     } else {
       const levels = levelAgency();
