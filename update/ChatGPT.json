@@ -3,12 +3,6 @@
   "results": [
     {
       "isGameCenterEnabled": false,
-      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
-      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e6/9a/0e/e69a0e54-a15f-4b2a-cb42-84788edb896e/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/60x60bb.jpg",
-      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e6/9a/0e/e69a0e54-a15f-4b2a-cb42-84788edb896e/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/100x100bb.jpg",
-      "features": [
-        "iosUniversal"
-      ],
       "supportedDevices": [
         "iPhone5s-iPhone5s",
         "iPadAir-iPadAir",
@@ -142,65 +136,68 @@
         "iPhoneDuo-iPhoneDuo"
       ],
       "advisories": [
-        "Infrequent/Mild Profanity or Crude Humor",
         "Infrequent/Mild Alcohol, Tobacco, or Drug Use or References",
+        "Infrequent/Mild Cartoon or Fantasy Violence",
+        "Infrequent/Mild Profanity or Crude Humor",
+        "Infrequent/Mild Realistic Violence",
         "Infrequent/Mild Sexual Content and Nudity",
         "Infrequent/Mild Medical/Treatment Information",
-        "Infrequent/Mild Horror/Fear Themes",
-        "Infrequent/Mild Cartoon or Fantasy Violence",
-        "Infrequent/Mild Realistic Violence"
+        "Infrequent/Mild Horror/Fear Themes"
       ],
       "kind": "software",
       "screenshotUrls": [
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/99/5a/b4/995ab402-cdb4-c977-7a7a-dd94892e200d/1_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/cb/55/49/cb5549db-34d7-4f83-b70d-2c2081ff92e4/2_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/48/67/d4/4867d488-cdae-d988-b948-223ca931dcbf/3_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/b1/12/2a/b1122aaa-517f-055c-6cec-d47f821fada2/4_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/95/ea/d9/95ead9d8-148b-b914-5e38-ca4fa308e129/5_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/84/2f/07/842f0710-8c02-211b-a5c3-083f3cb35168/6_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/2e/8e/8e/2e8e8e6b-9ffc-4b57-45ae-392357775937/7_iPhone.jpg/320x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/1a/9a/0c/1a9a0c96-60e8-865a-e80f-312a225d5494/8_iPhone.jpg/320x480bb.jpg"
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/e2/d4/88/e2d488ce-9162-60ae-2cc5-4dd588a25002/1_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/53/79/16/53791688-599b-7fc2-3d0d-807276c6f5b4/2_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/1f/34/4f/1f344fcc-5562-7eb1-113a-4c784b5d6769/3_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/53/ef/ff/53efff20-f5fa-a157-82f0-eb2c652a6ef4/4_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/4e/52/dd/4e52ddfa-3616-c268-88ce-c474487ad222/5_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/10/cd/4c/10cd4cbb-7b20-2bba-e505-62a413cd6ea0/6_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/cf/96/a4/cf96a4be-79c6-dd3e-bdf9-4f6fc4b534e4/7_iPhone.jpg/320x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/e2/99/0a/e2990a02-29e7-39b8-dea9-ced564e9a24b/8_iPhone.jpg/320x480bb.jpg"
       ],
       "ipadScreenshotUrls": [
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/01/85/b7/0185b74c-802c-ca74-dc1f-f6715b259137/1_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/27/16/52/27165232-bc03-744b-1d52-ab6b89cccd3e/2_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/89/c1/46/89c146c6-c501-1642-5e22-1bc86d6f29f3/3_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/51/81/c1/5181c1dd-3793-20e8-5f8b-ddd97cb174ac/4_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/a7/b1/4a/a7b14ae6-a2f0-fbaa-a295-049ff6535fe9/5_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/e8/26/db/e826db25-5a07-da8a-c3a3-eca05a760c59/6_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/33/48/ac/3348ac87-1701-e274-67a9-5929206fdbb6/7_iPad.jpg/360x480bb.jpg",
-        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/58/e8/73/58e873d7-9f29-1c89-3a2d-58852fbd667d/8_iPad.jpg/360x480bb.jpg"
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/76/f7/b5/76f7b501-65e8-8003-275f-af4dce4cea60/1_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/58/c1/c5/58c1c543-6922-1e93-3c02-fd57cdb231f4/2_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/de/1e/b2/de1eb254-ed8f-e998-e006-fd5e522c5a73/3_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/00/2a/d2/002ad2ae-d54a-6e4a-5809-733b528b54ee/4_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/cf/98/3b/cf983b77-76ac-2de0-da71-fb2da55abe07/5_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/a3/1c/5f/a31c5f7f-bd6e-5be3-8c56-acd9ec00e876/6_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/13/64/4d/13644d4d-91db-c177-69cb-1050a2e5d1e4/7_iPad.jpg/360x480bb.jpg",
+        "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/c3/5f/5b/c35f5bc9-37f9-aae0-f797-e4c9767040fc/8_iPad.jpg/360x480bb.jpg"
       ],
       "appletvScreenshotUrls": [],
-      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/e6/9a/0e/e69a0e54-a15f-4b2a-cb42-84788edb896e/AppIcon-0-0-1x_U007epad-0-0-0-1-0-P3-85-220.png/512x512bb.jpg",
-      "trackCensoredName": "ChatGPT",
-      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
-      "contentAdvisoryRating": "12+",
-      "averageUserRating": 4.82822,
+      "artworkUrl512": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/eb/c5/b3/ebc5b3a0-618f-6c84-492f-05d113191648/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/512x512bb.jpg",
+      "features": [
+        "iosUniversal"
+      ],
+      "artistViewUrl": "https://apps.apple.com/us/developer/openai-opco-llc/id1684349733?uo=4",
+      "artworkUrl60": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/eb/c5/b3/ebc5b3a0-618f-6c84-492f-05d113191648/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/60x60bb.jpg",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Purple211/v4/eb/c5/b3/ebc5b3a0-618f-6c84-492f-05d113191648/AppIcon-0-0-1x_U007epad-0-0-0-1-0-85-220.png/100x100bb.jpg",
+      "minimumOsVersion": "18.0",
+      "releaseNotes": "Bug fixes and small improvements.",
+      "artistId": 1684349733,
+      "artistName": "OpenAI OpCo, LLC",
       "genres": [
         "Productivity",
         "Utilities"
       ],
-      "price": 0,
-      "sellerName": "OpenAI OpCo, LLC",
-      "bundleId": "com.openai.chat",
-      "trackId": 6448311069,
-      "isVppDeviceBasedLicensingEnabled": true,
-      "releaseDate": "2023-05-18T07:00:00Z",
-      "currentVersionReleaseDate": "2026-09-23T09:36:36Z",
-      "trackName": "ChatGPT",
       "genreIds": [
         "6007",
         "6002"
       ],
+      "releaseDate": "2023-05-18T07:00:00Z",
+      "trackId": 6448311069,
+      "trackName": "ChatGPT",
       "primaryGenreName": "Productivity",
       "primaryGenreId": 6007,
-      "releaseNotes": "Bug fixes and small improvements.",
-      "version": "1.2026.258",
+      "sellerName": "OpenAI OpCo, LLC",
+      "isVppDeviceBasedLicensingEnabled": true,
+      "currentVersionReleaseDate": "2026-09-30T05:51:25Z",
+      "version": "1.2026.266",
       "wrapperType": "software",
       "currency": "USD",
       "description": "Introducing ChatGPT for iOS: OpenAI’s latest advancements at your fingertips.\n\nThis official app is free, syncs your history across devices, and brings you the latest from OpenAI, including the new image generator.\n\nWith ChatGPT in your pocket, you’ll find:\n\n· Image generation–Generate original images from a description, or transform existing ones with a few simple words. \n· Advanced Voice Mode–Tap the soundwave icon to have a real-time convo on the go. Settle a dinner table debate, or practice a new language. \n· Photo upload—Snap or upload a picture to transcribe a handwritten recipe or get info about a landmark. \n· Creative inspiration—Find custom birthday gift ideas or create a personalized greeting card.\n· Tailored advice—Talk through a tough situation, ask for a detailed travel itinerary, or get help crafting the perfect response. \n· Personalized learning—Explain electricity to a dinosaur-loving kid or easily brush up yourself on a historic event.\n· Professional input—Brainstorm marketing copy or map out a business plan.\n· Instant answers—Get recipe suggestions when you only have a few ingredients.\n\nJoin hundreds of millions of users and try the app captivating the world. Download ChatGPT today.\n\nTerms of service & privacy policy:\nhttps://openai.com/policies/terms-of-use\nhttps://openai.com/policies/privacy-policy",
-      "averageUserRatingForCurrentVersion": 4.82822,
+      "bundleId": "com.openai.chat",
       "sellerUrl": "https://openai.com/chatgpt",
       "languageCodesISO2A": [
         "SQ",
@@ -264,14 +261,17 @@
         "UR",
         "VI"
       ],
-      "fileSizeBytes": "238247936",
+      "fileSizeBytes": "271207424",
       "formattedPrice": "Free",
-      "userRatingCountForCurrentVersion": 10623132,
+      "userRatingCountForCurrentVersion": 10864258,
       "trackContentRating": "12+",
-      "minimumOsVersion": "18.0",
-      "artistId": 1684349733,
-      "artistName": "OpenAI OpCo, LLC",
-      "userRatingCount": 10623132
+      "averageUserRatingForCurrentVersion": 4.82754,
+      "trackCensoredName": "ChatGPT",
+      "trackViewUrl": "https://apps.apple.com/us/app/chatgpt/id6448311069?uo=4",
+      "contentAdvisoryRating": "12+",
+      "averageUserRating": 4.82754,
+      "price": 0,
+      "userRatingCount": 10864258
     }
   ]
 }
