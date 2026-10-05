@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.3
+ * 组件版本: Version 1.2.5
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
@@ -116,7 +116,7 @@ const shadowImage = (img, text, name) => {
   const h = img.size.height;
   ctx.drawImageInRect(img, new Rect(0, 0, w, h));
   ctx.setFillColor(new Color("#FFFFFF", 0.3));
-  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 8 : h * 0.61 + 13) : h * (text.length < 21 ? 0.75 : 0.69);
+  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 6 : h * 0.61 + 13) : h * (text.length < 21 ? 0.75 : 0.69);
   ctx.fillRect(new Rect(0, startY, w, h - startY));
   return ctx.getImage();
 };
@@ -194,56 +194,73 @@ const getLocation = async () => {
 };
 
 // 获取台风命名
-const getNextTyphoonNames = async (currentName, count = 6) => {
-  if (!currentName) return [];
+const getNextTyphoonNames = async (history, count = 6) => {
+  if (!history?.length) return [];
 
   const colors = [
-    ['#00C400', '#FF4050'],
+    ['#00C400', '#FF4050'], 
     ['#39A7F8', '#43FF4B'],
-    ['#FFD83A', '#669999'],
+    ['#FFD83A', '#669999'], 
     ['#FDAC03', '#40DDFF'],
-    ['#F95BF9', '#246ED4'],
+    ['#F95BF9', '#246ED4'], 
     ['#FF0000', '#FF66FF']
   ];
 
-  const url = 'https://www.nmc.cn/publish/typhoon/typhoon-name/index.html';
-  const html = await getCacheData('nexttyphoonNames.html', url, 'string', 2160);
+  const html = await getCacheData(
+    'nexttyphoonNames.html',
+    'https://www.nmc.cn/publish/typhoon/typhoon-name/index.html',
+    'string', 2160
+  );
 
   const parse = t => {
     t = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const [, name] = t.match(/中文名[：:]\s*(\S+)/) || [];
-    const [, ename] = t.match(/英文名[：:]\s*(\S+)/) || [];
-    const [, source] = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/) || [];
-    const [, meaning] = t.match(/意义[：:]\s*(.+)/) || [];
+    const name = t.match(/中文名[：:]\s*(\S+)/)?.[1];
+    const ename = t.match(/英文名[：:]\s*(\S+)/)?.[1];
+    const source = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/)?.[1];
+    const meaning = t.match(/意义[：:]\s*(.+)/)?.[1];
     return name && { name, ename, source, meaning };
   };
 
-  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)].map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
-    .filter((_, i) => !(i % 2))
-    .map(x => parse(x[1]))
-    .filter(Boolean)
-  ).filter(row => row.length === 5);
+  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
+    .map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+      .filter((_, i) => !(i % 2)).map(x => parse(x[1])).filter(Boolean))
+    .filter(x => x.length === 5);
 
-  const list = rows.flatMap((row, i) => rows.map(row => row[i]));
-  const index = list.findIndex(x => x.name === currentName);
+  const list = rows.flatMap((_, col) => rows.map(row => row[col]).filter(Boolean));
+  const same = (a, b) => a.name === b.name || a.ename?.toUpperCase() === b.ename?.toUpperCase();
+
+  let index = history.reduce((i, x) =>
+    i >= 0 ? i : list.findIndex(y => same(x, y)), -1);
+
+  if (index < 0) {
+    const next = history
+      .filter(x => /^\d{6}$/.test(x.tfbh))
+      .sort((a, b) => a.tfbh - b.tfbh)
+      .find(x => list.some(y => same(x, y)));
+    index = next ? list.findIndex(x => same(x, next)) : -1;
+  }
+
   if (index < 0) return [];
-  return Array.from({ length: count }, (_, i) => {
-    const item = list[(index + i + 1) % list.length];
-    const [iconColor, textColor] = colors[i % colors.length];
-    return { ...item, iconColor, textColor };
-  });
+  const current = new Set(history.map(x => x.name));
+  return Array.from({ length: count }, (_, i) =>
+    list[(index + i + 1) % list.length]
+  ).filter(x => !current.has(x.name)).map((x, i) => ({
+    ...x,
+    iconColor: colors[i % 6][0],
+    textColor: colors[i % 6][1]
+  }));
 };
 
 // 获取当年历史台风
 const getHistoryTyphoon = async (year = new Date().getFullYear()) => {
   try {
     const url = `https://tf02.istrongcloud.com/data/complex/${year}.json`;
-    const data = await getCacheData('historyTyphoon.json', url, 'json', 720);
-    if (!Array.isArray(data)) return null;
-    return data.find(item => item.is_current === 1) || null;
+    const data = await getCacheData('historyTyphoon.json', url, 'json', 6);
+    if (!data || !Array.isArray(data)) return [];
+    return data.filter(item => item.is_current === 1);
   } catch (e) {
     console.error(`历史台风失败: ${e}`);
-    return null;
+    return [];
   }
 };
 
@@ -781,6 +798,9 @@ const getRandomTyphoonIcon = () => {
 // 选择主题皮肤
 const selectSkin = async () => {
   const randomIconBase64 = getRandomTyphoonIcon();
+  const svgText = await getCacheData('layers.html', 'https://zoom.earth/assets/images/icons/layers.12.svg', 'string');
+  const svgBase64 = 'data:image/svg+xml;base64,' + Data.fromString(svgText).toBase64String();
+
   const html = `
 <html>
 <head>
@@ -792,7 +812,6 @@ const selectSkin = async () => {
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
-      /* 禁用长按弹出菜单和文本选中 */
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
@@ -854,6 +873,7 @@ const selectSkin = async () => {
       justify-content: center;
       align-items: center;
       flex-shrink: 0;
+      cursor: pointer;
     }
     .typhoon-spin-icon {
       width: 100%;
@@ -861,15 +881,10 @@ const selectSkin = async () => {
       object-fit: contain;
       animation: spin 2s linear infinite;
       -webkit-user-drag: none;
-      pointer-events: none;
     }
     @keyframes spin {
-      0% {
-        transform: rotate(360deg);
-      }
-      100% {
-        transform: rotate(0deg);
-      }
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
     }
 
     #globalBtn {
@@ -1012,6 +1027,163 @@ const selectSkin = async () => {
       0% { width: 0; height: 0; opacity: .65; }
       100% { width: 500px; height: 500px; opacity: 0; }
     }
+
+    /* 遮罩层 */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.41);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease-out;
+    }
+    .overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .blur-bg {
+      -webkit-backdrop-filter: saturate(5) blur(20px);
+      backdrop-filter: saturate(5) blur(20px);
+      background: rgba(255, 255, 255, 0.75);
+    }
+    .card {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 20px;
+      cursor: pointer;
+      border-radius: 25px;
+      width: 85%;
+      max-width: 360px;
+      transform: scale(0.9);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .overlay.active .card {
+      transform: scale(1);
+    }
+
+    /* 弹窗顶部标题样式 */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #000;
+    }
+
+    .setting-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    /* 左侧图标与文本组 */
+    .setting-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* 通用图标基础样式 */
+    .icon-symbol {
+      width: 26px;
+      height: 26px;
+      display: inline-block;
+      flex-shrink: 0;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+    }
+
+    /* 出行推荐 */
+    .icon-travel {
+      background-color: #ff7800;
+      -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="black" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM7.5 17c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>');
+    }
+
+    .icon-sprite {
+      width: 26px;
+      height: 26px;
+      display: inline-block;
+      flex-shrink: 0;
+      background-color: #007AFF;
+      -webkit-mask-image: url('${svgBase64}');
+      mask-image: url('${svgBase64}');
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: 26px auto;
+      mask-size: 26px auto;
+    }
+    
+    .icon-satellite {
+      background-color: #5856D6;
+      -webkit-mask-position: 0 -52px;
+      mask-position: 0 -52px;
+    }
+    
+    .icon-radar-sprite {
+      background-color: #007AFF; 
+      -webkit-mask-position: 0 -78px;
+      mask-position: 0 -78px;
+    }
+
+    .modal-text {
+      font-size: 16px;
+      font-weight: 500;
+      color: #000;
+    }
+    
+    .checkbox {
+      position: relative;
+      display: inline-block;
+      appearance: none;
+      -webkit-appearance: none;
+      width: 55px;
+      height: 28px;
+      border-radius: 28px;
+      background: #999;
+      cursor: pointer;
+      transition: 0.3s ease-in-out;
+      outline: none;
+    }
+    .checkbox::before {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      transition: 0.3s ease-in-out;
+    }
+    .checkbox:checked {
+      background: #34C759;
+    }
+    .checkbox:checked::before {
+      transform: translateX(27px);
+    }
+    .separ {
+      height: 0.5px;
+      margin: 10px -20px 10px 0;
+      background-color: #999;
+      border: none;
+    }
   </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1020,7 +1192,7 @@ const selectSkin = async () => {
     <div class="theme-footer">
       <div class="theme-footer-title">
         <div class="theme-footer-title-btn" id="pathBtn">台风路径</div>
-        <div class="typhoon-spin-container">
+        <div class="typhoon-spin-container" id="iconBtn">
           <img class="typhoon-spin-icon" src="data:image/png;base64,${randomIconBase64}" alt="台风" draggable="false" />
         </div>
         <div class="theme-footer-title-btn" id="globalBtn">全球台风</div>
@@ -1031,7 +1203,38 @@ const selectSkin = async () => {
       <div class="theme-footer-btn-own" id="submitBtn">立即使用</div>
     </div>
   </div>
+  <div class="overlay" id="overlay">
+    <div class="card blur-bg">
+      <div class="setting-row">
+        <div class="setting-label">
+          <i class="icon-sprite icon-satellite"></i>
+          <span class="modal-text">雷达降雨</span>
+        </div>
+        <input type="checkbox" class="checkbox" id="rain">
+      </div>
+      <hr class="separ">
+      <div class="setting-row">
+        <div class="setting-label">
+          <i class="icon-sprite icon-radar-sprite"></i>
+          <span class="modal-text">雷达图层</span>
+        </div>
+        <input type="checkbox" class="checkbox" id="radar">
+      </div>
+      <hr class="separ">
+      <div class="setting-row">
+        <div class="setting-label">
+          <i class="icon-symbol icon-travel"></i>
+          <span class="modal-text">出行推荐</span>
+        </div>
+        <input type="checkbox" class="checkbox" id="travel">
+      </div>
+    </div>
+  </div>
   <script>
+    window.invoke = (code, data) => {
+      window.dispatchEvent(new CustomEvent('JBridge', { detail: { code, data } })
+      );
+    };
     const LOCK_ICON = 'data:image/png;base64,${typhoonIcons.vip}';
 
     const themes = [
@@ -1052,6 +1255,38 @@ const selectSkin = async () => {
     const pathBtn = document.getElementById('pathBtn');
     const globalBtn = document.getElementById('globalBtn');
     
+    // 弹窗及开关 DOM 节点
+    const overlay = document.getElementById('overlay');
+    const iconBtn = document.getElementById('iconBtn');
+    const travel = document.getElementById('travel');
+    const radar = document.getElementById('radar');
+    const rain = document.getElementById('rain');
+
+    // 开关状态初始化与事件绑定
+    travel.checked = localStorage.getItem('travel') === 'true';
+    radar.checked = localStorage.getItem('radar') === 'true';
+    rain.checked = localStorage.getItem('rain') === 'true';
+
+    const bindSwitch = (el, key) => {
+      el.addEventListener('change', function() {
+        localStorage.setItem(key, this.checked);
+        invoke(key, this.checked);
+      });
+    };
+    bindSwitch(travel, 'travel');
+    bindSwitch(radar, 'radar');
+    bindSwitch(rain, 'rain');
+
+    // 显示 / 隐藏弹窗
+    const toggleModal = show => overlay.classList.toggle('active', show);
+    iconBtn.addEventListener('click', function(e) {
+      triggerAnim(this, e);
+      toggleModal(true);
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) toggleModal(false);
+    });
+
     function renderList() {
       let listHtml = '';
       for (let i = 0; i < themes.length; i++) {
@@ -1097,33 +1332,18 @@ const selectSkin = async () => {
       }
     }
 
-    pathBtn.addEventListener('click', function(e) {
-      triggerAnim(this, e);
-      window.dispatchEvent(new CustomEvent('JBridge', {
-        detail: { code: 'typhoon', data: currentIndex }
-      }));
-    });
-        globalBtn.addEventListener('click', function(e) {
-      triggerAnim(this, e);
-      window.dispatchEvent(new CustomEvent('JBridge', {
-        detail: { code: 'globalTyphoon', data: currentIndex }
-      }));
-    });
-    
-    vipBtn.addEventListener('click', function() {
-      triggerAnim(this);
-      localStorage.setItem('THEME', themes[currentIndex].id);
-      window.dispatchEvent(new CustomEvent('JBridge', {
-        detail: { code: 'skinSelected', data: currentIndex }
-      }));
-    });
-    submitBtn.addEventListener('click', function(e) {
-      triggerAnim(this, e);
-      localStorage.setItem('THEME', themes[currentIndex].id);
-      window.dispatchEvent(new CustomEvent('JBridge', {
-        detail: { code: 'skinSelected', data: currentIndex }
-      }));
-    });
+    const bindInvoke = (btn, code, saveTheme = false) => {
+      btn.addEventListener('click', function(e) {
+        triggerAnim(this, e);
+        if (saveTheme) localStorage.setItem('THEME', themes[currentIndex].id);
+        invoke(code, currentIndex);
+      });
+    };
+
+    bindInvoke(pathBtn, 'typhoon');
+    bindInvoke(globalBtn, 'globalTyphoon');
+    bindInvoke(vipBtn, 'skinSelected', true);
+    bindInvoke(submitBtn, 'skinSelected', true);
     renderList();
   </script>
 </body>
@@ -1131,17 +1351,35 @@ const selectSkin = async () => {
 
   const webView = new WebView();
   await webView.loadHTML(html, 'https://tf03.istrongcloud.com/typhoonVisual/custom-theme');
+  
   const handleEvent = async ({ code, data } = {}) => {
-    if (code === 'skinSelected') {
-      setting.skin = data;
-      writeSettings(setting);
-      await runWidget();
-    } else if (code === 'typhoon') {
-      await viewTyphoon();
-    } else if (code === 'globalTyphoon') {
-      await viewWorldTyphoon();
+    switch (code) {
+      case 'skinSelected':
+        setting.skin = data;
+        writeSettings(setting);
+        await runWidget();
+        break;
+      case 'typhoon':
+        await viewTyphoon();
+        break;
+      case 'globalTyphoon':
+        await viewWorldTyphoon();
+        break;
+      case 'travel':
+        setting.travel = data;
+        writeSettings(setting);
+        break;
+      case 'radar':
+        setting.radar = data;
+        writeSettings(setting);
+        break;
+      case 'rain':
+        setting.rain = data;
+        writeSettings(setting);
+        break;
     }
   };
+
   // 注入监听器
   const injectListener = async () => {
     const event = await webView.evaluateJavaScript(
@@ -1221,6 +1459,7 @@ const getCircleAvatar = async (title, imageUrl) => {
     }
     return rawAvatar;
   } catch (e) {
+    console.error('裁剪圆头像:' + e);
     return null;
   }
 };
@@ -1985,7 +2224,12 @@ const drawLandmarkIcons = async (
     if (boxX < -margin || boxX + ICON_W > canvasW + margin || boxY < -margin || boxY + ICON_H > canvasH + margin) {
       continue;
     }
-    const currentIconRect = { x: boxX, y: boxY, width: ICON_W, height: ICON_H };
+    const currentIconRect = { 
+      x: boxX, 
+      y: boxY, 
+      width: ICON_W, 
+      height: ICON_H 
+    };
     // 碰撞检测避让
     const hasCollision = drawnRects.some(rect => {
       return !(
@@ -1994,15 +2238,11 @@ const drawLandmarkIcons = async (
     });
     if (hasCollision) continue;
     // 缓存读取与绘制
-    try {
-      const key = `${item.title || 'landmark'}_${Data.fromString(item.iconUrl).toBase64String().slice(-12)}`;
-      const iconImg = await getCacheData(`landmark_${key}.png`, item.iconUrl, false, 24);
-      if (iconImg) {
-        ctx.drawImageInRect(iconImg, new Rect(boxX, boxY, ICON_W, ICON_H));
-        drawnRects.push(currentIconRect);
-        drawnCount++;
-      }
-    } catch (e) {}
+    const iconImg = await getCacheData(`landmark_scenery.png⁠`, item.iconUrl, false, 24);
+    if (!iconImg) continue;
+    ctx.drawImageInRect(iconImg, new Rect(boxX, boxY, ICON_W, ICON_H));
+    drawnRects.push(currentIconRect);
+    drawnCount++;
   }
 };
 
@@ -2147,7 +2387,7 @@ const generateMapImage = async (
   }
   
   // 绘制雷达图层
-  if (radarImage) {
+  if (radarImage && setting?.radar) {
     const radarRange = [
       [12.316339, 69.646079],
       [54.376029, 140.209411]
@@ -2235,11 +2475,13 @@ const generateMapImage = async (
     }
   }
 
-  // 1. 出行推荐提示框绘制（带入 initialOccupiedRects）
-  const drawnRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom, occupiedRects);
-  // 2，绘制风景图标
-  if (!tcPoints.length) {
-    await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, drawnRects);
+  // 1. 出行推荐提示框绘制
+  if (setting?.travel) {
+    const drawnRects = await drawFeedbackInfoBoxes(ctx, tcPoints, feedbackData, project, EXPORT_SCALE, 1000, 1000, viewport.zoom, occupiedRects);
+    // 2，绘制风景图标
+    if (!tcPoints.length) {
+      await drawLandmarkIcons(ctx, feedbackData, project, EXPORT_SCALE, 1000, 1000, drawnRects);
+    }
   }
   
   // 3. 点绘制台风风圈与预测路径
@@ -2751,7 +2993,7 @@ const runWidget = async () => {
     } else {
       const levels = levelAgency();
       const history = await getHistoryTyphoon();
-      const typhoonNames = await getNextTyphoonNames(history?.name);
+      const typhoonNames = await getNextTyphoonNames(history);
       widget = createLevelWidget(
         levels, typhoonNames, tcTextColor, isLarge
       );
