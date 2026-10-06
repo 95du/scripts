@@ -1,0 +1,36 @@
+name: Sync Lottery Cache
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync lottery cache
+        env:
+          MEMBER_API: ${{ secrets.MEMBER_API }}
+          MEMBER_COOKIE: ${{ secrets.MEMBER_COOKIE }}
+        run: node module/sync-cache.js
+
+      - name: Commit cache
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add module/records_cache.json
+          git diff --cached --quiet || git commit -m "Update lottery cache"
+          git push
