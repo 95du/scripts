@@ -116,7 +116,7 @@ const shadowImage = (img, text, name) => {
   const h = img.size.height;
   ctx.drawImageInRect(img, new Rect(0, 0, w, h));
   ctx.setFillColor(new Color("#FFFFFF", 0.3));
-  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 6 : h * 0.61 + 13) : h * (text.length < 21 ? 0.75 : 0.69);
+  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 7 : h * 0.61 + 12) : h * (text.length < 21 ? 0.75 : 0.69);
   ctx.fillRect(new Rect(0, startY, w, h - startY));
   return ctx.getImage();
 };
@@ -375,17 +375,17 @@ const getCurrMergerTC = async () => {
   }
 };
 
-// 处理欧洲预测路径
+// 处理欧洲预测路径，返回每个预测机构中，预测时间最远的一组数据
 const mergeForecast = ({ forecast = [], points = [] }) => {
-  const map = new Map(forecast.map(fc => [fc.sets, fc]));
-  points.forEach(p => {
-    p.forecast?.forEach(fc => {
-      if (fc?.sets && !map.has(fc.sets)) {
-        map.set(fc.sets, fc);
-      }
-    });
-  });
-  return [...map.values()].reverse();
+  const map = new Map();
+  for (const fc of [...forecast, ...points.flatMap(p => p.forecast || [])]) {
+    if (!fc?.sets || !fc.points?.length) continue;
+    const time = fc.points.at(-1)?.time || '';
+    const old = map.get(fc.sets);
+    if (!old || time > old.time) map.set(fc.sets, { ...fc, time });
+  }
+  return [...map.values()].reverse()
+    .map(({ time, ...fc }) => fc);
 };
 
 const mergeLatestData = async (tyItem, latest = []) => {
