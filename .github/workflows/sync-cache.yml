@@ -1,8 +1,8 @@
 name: Sync Lottery Cache
 
 on:
-  repository_dispatch:
-    types: [sync-cache]
+  schedule:
+    - cron: '10 7 * * *'   # 每天 UTC 07:10 = 北京时间 15:10
   workflow_dispatch:
 
 permissions:
