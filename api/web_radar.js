@@ -3,9 +3,9 @@
 // icon-color: deep-brown; icon-glyph: lightbulb;
 /**
  * 组件作者: 95du茅台
- * 组件名称: 体育赛事
- * 组件版本: Version 1.0.4
- * 发布时间: 2025-01-01
+ * 组件名称: 天气雷达
+ * 组件版本: Version 1.0.0
+ * 发布时间: 2026-10-09
  */
 
 
@@ -20,7 +20,6 @@ async function main(family) {
   const pathName = '95du_radar';
   const module = new _95du(pathName);
   const setting = module.settings;
-  const { count = 0 } = setting;
   const { 
     rootUrl,
     settingPath, 
@@ -40,6 +39,70 @@ async function main(family) {
     fm.writeString(settingPath, JSON.stringify(setting, null, 2));
   };
   
+  /**
+   * GPS 获取的位置通常是 WGS-84 坐标系
+   * 高德地图使用的是 GCJ-02（火星坐标系）
+   */
+  const wgs84ToGcj02 = (lng, lat) => {
+    const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
+    const outOfChina = (lng, lat) =>
+      lng < 72.004 || lng > 137.8347 ||
+      lat < 0.8293 || lat > 55.8271;
+    if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
+  
+    const transformLat = (x, y) => {
+      let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+      ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
+      ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
+      return ret;
+    };
+  
+    const transformLng = (x, y) => {
+      let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+      ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
+      ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
+      return ret;
+    };
+    
+    let dLat = transformLat(lng - 105, lat - 35);
+    let dLng = transformLng(lng - 105, lat - 35);
+    const radLat = lat * pi / 180;
+    let magic = Math.sin(radLat);
+    magic = 1 - ee * magic * magic;
+    const sqrtMagic = Math.sqrt(magic);
+    dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
+    dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
+    return {
+      longitude: lng + dLng,
+      latitude: lat + dLat
+    };
+  };
+  
+  // 获取当前位置经纬度
+  const getLocation = async () => {
+    if (setting?.lat && setting.updateTime) {
+      const hours = (Date.now() - setting.updateTime) / 3600000;
+      if (hours < 3) return setting;
+    }
+    try {
+      const loc = await Location.current();
+      const gcj = wgs84ToGcj02(
+        loc.longitude,
+        loc.latitude
+      );
+      setting.lng = gcj.longitude;
+      setting.lat = gcj.latitude;
+      setting.updateTime = Date.now();
+      writeSettings(setting);
+      return setting;
+    } catch (e) {
+      console.log(e);
+      return setting || null;
+    }
+  };
+  
   /* ============================ */
   // 1. 画布与分辨率配置
   /* ============================= */
@@ -54,8 +117,8 @@ async function main(family) {
   /* ============================ */
   // 2. 地理坐标与缩放配置
   /* ============================ */
-  const LAT = 19.996;
-  const LNG = 110.533;
+  const LAT = setting?.lat
+  const LNG = setting?.lng
   // 逻辑缩放层级
   const ZOOM = setting.zoom;
   const RZ = ZOOM + Math.log2(K);
@@ -1356,15 +1419,21 @@ async function main(family) {
   };
   
   // ========== 运行 ==========
-  const image = await buildCombinedImage();
-  const widget = new ListWidget();
-  widget.backgroundImage = image;
-  
-  if (config.runsInWidget) {
-    Script.setWidget(widget);
-  } else {
-    widget.presentLarge();
-  }
+  const runWidget = async () => {
+    getLocation();
+    const image = await buildCombinedImage();
+    const widget = new ListWidget();
+    widget.backgroundImage = image;
+    
+    if (config.runsInApp) {
+      await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
+    } else {
+      widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
+      Script.setWidget(widget);
+      Script.complete();
+    }
+  };
+  await runWidget();
 };
 
 module.exports = { main }
