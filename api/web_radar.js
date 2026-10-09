@@ -1488,7 +1488,7 @@ async function main(family) {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     
-    if (family !== 'small') {
+    if (setting.weatherWarning && family !== 'small') {
       const topStack = widget.addStack();
       topStack.layoutHorizontally();
       const barStack = createBarStack(topStack, barColor);
