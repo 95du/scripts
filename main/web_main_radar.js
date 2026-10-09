@@ -697,21 +697,30 @@ async function main() {
           name: 'preview',
           type: 'cell',
           family: 'small',
-          icon: `${rootUrl}/img/symbol/preview.png`
+          icon: {
+            name: 'rectangle.grid.1x2.fill',
+            color: '#007AFF'
+          }
         },
         {
           label: '中号组件',
           name: 'preview',
           type: 'cell',
           family: 'medium',
-          icon: `${rootUrl}/img/symbol/preview.png`
+          icon: {
+            name: 'rectangle.grid.2x2.fill',
+            color: '#34C759'
+          }
         },
         {
           label: '大号组件',
           name: 'preview',
           type: 'cell',
           family: 'large',
-          icon: `${rootUrl}/img/symbol/preview.png`
+          icon: {
+            name: 'square.grid.2x2.fill',
+            color: '#AF52DE'
+          }
         }
       ]
     },
