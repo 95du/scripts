@@ -38,99 +38,6 @@ async function main(family) {
   const writeSettings = setting => {
     fm.writeString(settingPath, JSON.stringify(setting, null, 2));
   };
-  
-  /**
-   * GPS 获取的位置通常是 WGS-84 坐标系
-   * 高德地图使用的是 GCJ-02（火星坐标系）
-   */
-  const wgs84ToGcj02 = (lng, lat) => {
-    const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
-    const outOfChina = (lng, lat) =>
-      lng < 72.004 || lng > 137.8347 ||
-      lat < 0.8293 || lat > 55.8271;
-    if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
-  
-    const transformLat = (x, y) => {
-      let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
-      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
-      ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
-      ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
-      return ret;
-    };
-  
-    const transformLng = (x, y) => {
-      let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
-      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
-      ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
-      ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
-      return ret;
-    };
-    
-    let dLat = transformLat(lng - 105, lat - 35);
-    let dLng = transformLng(lng - 105, lat - 35);
-    const radLat = lat * pi / 180;
-    let magic = Math.sin(radLat);
-    magic = 1 - ee * magic * magic;
-    const sqrtMagic = Math.sqrt(magic);
-    dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
-    dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
-    return {
-      longitude: lng + dLng,
-      latitude: lat + dLat
-    };
-  };
-  
-  // 获取当前位置经纬度
-  const getLocation = async () => {
-    if (setting?.lat && setting.updateTime) {
-      const hours = (Date.now() - setting.updateTime) / 3600000;
-      if (hours < 3) return setting;
-    }
-    try {
-      const loc = await Location.current();
-      const gcj = wgs84ToGcj02(
-        loc.longitude,
-        loc.latitude
-      );
-      setting.lng = gcj.longitude;
-      setting.lat = gcj.latitude;
-      setting.updateTime = Date.now();
-      writeSettings(setting);
-      return setting;
-    } catch (e) {
-      console.log(e);
-      return setting || null;
-    }
-  };
-  
-  const getFormattedTime = () => {
-    const df = new DateFormatter();
-    df.dateFormat = 'HH:mm';
-    return df.string(new Date());
-  };
-  
-  // 天气预警
-  const getAlert = async () => {
-    const params = { 
-      lon: setting?.lng, 
-      lat: setting?.lat 
-    };
-    const weather = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 1, cacheStr, 'POST', params);
-    if (!weather?.cityId) {
-      console.log('获取墨迹天气城市信息失败');
-      return null;
-    }
-    const res = await getCacheData(`weather_${weather.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${weather.cityId}`, 'json', 1, cacheStr);
-    return res?.data || null;
-  };
-  
-  // 天气预警文字颜色
-  const getAlertColor = (level) => {
-    if (level ==='红色') return Color.red();
-    if (level ==='橙色') return new Color('#FF7800');
-    if (level ==='黄色') return new Color('#EAC010');
-    return Color.blue();
-  };
     
   /* ============================ */
   // 1. 画布与分辨率配置
@@ -255,6 +162,103 @@ async function main(family) {
   const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
   const typhoonIcons = await module.getCacheData(tyIconUrl, 168, 'typhoon_icons.json') || {};
   const PALETTE_B64 = typhoonIcons.palette;
+  
+  /**
+   * GPS 获取的位置通常是 WGS-84 坐标系
+   * 高德地图使用的是 GCJ-02（火星坐标系）
+   */
+  const wgs84ToGcj02 = (lng, lat) => {
+    const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
+    const outOfChina = (lng, lat) =>
+      lng < 72.004 || lng > 137.8347 ||
+      lat < 0.8293 || lat > 55.8271;
+    if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
+  
+    const transformLat = (x, y) => {
+      let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+      ret += (20 * Math.sin(y * pi) + 40 * Math.sin(y * pi / 3)) * 2 / 3;
+      ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
+      return ret;
+    };
+  
+    const transformLng = (x, y) => {
+      let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+      ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
+      ret += (20 * Math.sin(x * pi) + 40 * Math.sin(x * pi / 3)) * 2 / 3;
+      ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
+      return ret;
+    };
+    
+    let dLat = transformLat(lng - 105, lat - 35);
+    let dLng = transformLng(lng - 105, lat - 35);
+    const radLat = lat * pi / 180;
+    let magic = Math.sin(radLat);
+    magic = 1 - ee * magic * magic;
+    const sqrtMagic = Math.sqrt(magic);
+    dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
+    dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
+    return {
+      longitude: lng + dLng,
+      latitude: lat + dLat
+    };
+  };
+  
+  // 获取当前位置经纬度
+  const getLocation = async () => {
+    if (setting?.lat && setting.updateTime) {
+      const hours = (Date.now() - setting.updateTime) / 3600000;
+      if (hours < 3) return setting;
+    }
+    try {
+      const loc = await Location.current();
+      const gcj = wgs84ToGcj02(
+        loc.longitude,
+        loc.latitude
+      );
+      setting.lng = gcj.longitude;
+      setting.lat = gcj.latitude;
+      setting.updateTime = Date.now();
+      writeSettings(setting);
+      return setting;
+    } catch (e) {
+      console.log(e);
+      return setting || null;
+    }
+  };
+  
+  const getFormattedTime = () => {
+    const df = new DateFormatter();
+    df.dateFormat = 'HH:mm';
+    return df.string(new Date());
+  };
+  
+  // 天气预警
+  const getAlert = async () => {
+    let cityInfo = { cityId: 285184 };
+    if (setting?.lng) {
+      const params = { 
+        lon: LNG, 
+        lat: LAT
+      };
+      cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 1, cacheStr, 'POST', params);
+    }
+    
+    if (!cityInfo?.cityId) {
+      console.log('获取墨迹天气城市信息失败');
+      return null;
+    }
+    const res = await getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr);
+    return res?.data || null;
+  };
+  
+  // 天气预警文字颜色
+  const getAlertColor = (level) => {
+    if (level ==='红色') return Color.red();
+    if (level ==='橙色') return new Color('#FF7800');
+    if (level ==='黄色') return new Color('#EAC010');
+    return Color.blue();
+  };
   
   /**
    * 创建指定类型的文件读写器（json / string / data / image）
