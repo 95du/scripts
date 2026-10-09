@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.5
+ * 组件版本: Version 1.2.6
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
@@ -2043,9 +2043,13 @@ const drawFeedbackInfoBoxes = async (
       continue;
     }
 
-    const titleText = item.title || "", subTitleText = item.subTitle || "";
-    const textW = Math.max(titleText.length * titleFS * 1.05, subTitleText.length * subFS * 1.05);
-    const boxW = avatarSize + textW + arrowSize + padH * 6;
+    const estimateTextWidth = (text, size) => [...text].reduce((w, c) => 
+      w + size * (/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(c) ? 0.96 : /[0-9a-zA-Z]/.test(c) ? 0.55 : 0.45), 0);
+    const textW = Math.max(
+      estimateTextWidth(item.title || '', titleFS),
+      estimateTextWidth(item.subTitle || '', subFS)
+    ) + 2 * EXPORT_SCALE;
+    const boxW = avatarSize + textW + arrowSize + padH * 5;
     const boxH = avatarSize + padV * 2;
     let boxX = pos.x - boxW / 2;
     let boxY = pos.y - boxH - triH - (pointerSize / 2); // 默认向上绘制
