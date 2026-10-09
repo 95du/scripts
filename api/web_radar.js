@@ -22,17 +22,17 @@ async function main(family) {
   const setting = module.settings;
   const { 
     rootUrl,
+    mainPath,
     settingPath, 
     cacheImg, 
     cacheStr,
   } = module;
   
-  // ========== 文件系统 ==========
   const ensureDir = path => (fm.fileExists(path) || fm.createDirectory(path, true), path);
   const [
     fillPath, bmPath, landPath,
     linePath, renderPath, radarPath, labelsPath
-  ] = ['fill', 'bm', 'land', 'line', 'render', 'radar', 'labels'].map(k => ensureDir(fm.joinPath(cacheStr, k))
+  ] = ['fill', 'bm', 'land', 'line', 'render', 'radar', 'labels'].map(k => ensureDir(fm.joinPath(mainPath, k))
   );
   
   const writeSettings = setting => {
@@ -103,6 +103,35 @@ async function main(family) {
     }
   };
   
+  const getFormattedTime = () => {
+    const df = new DateFormatter();
+    df.dateFormat = 'HH:mm';
+    return df.string(new Date());
+  };
+  
+  // 天气预警
+  const getAlert = async () => {
+    const params = { 
+      lon: setting?.lng, 
+      lat: setting?.lat 
+    };
+    const weather = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 1, cacheStr, 'POST', params);
+    if (!weather?.cityId) {
+      console.log('获取墨迹天气城市信息失败');
+      return null;
+    }
+    const res = await getCacheData(`weather_${weather.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${weather.cityId}`, 'json', 1, cacheStr);
+    return res?.data || null;
+  };
+  
+  // 天气预警文字颜色
+  const getAlertColor = (level) => {
+    if (level ==='红色') return Color.red();
+    if (level ==='橙色') return new Color('#FF7800');
+    if (level ==='黄色') return new Color('#EAC010');
+    return Color.blue();
+  };
+    
   /* ============================ */
   // 1. 画布与分辨率配置
   /* ============================= */
@@ -117,8 +146,8 @@ async function main(family) {
   /* ============================ */
   // 2. 地理坐标与缩放配置
   /* ============================ */
-  const LAT = setting?.lat
-  const LNG = setting?.lng
+  const LAT = setting?.lat ?? 20.047;
+  const LNG = setting?.lng ?? 110.192;
   // 逻辑缩放层级
   const ZOOM = setting.zoom;
   const RZ = ZOOM + Math.log2(K);
@@ -259,22 +288,34 @@ async function main(family) {
     };
   };
   
-  const getCacheData = async (name, url, type, cacheTime = 0, path = mainPath) => {
+  const getCacheData = async (
+    name,
+    url,
+    type,
+    cacheTime = 0,
+    path = mainPath,
+    method = 'GET',
+    body = null
+  ) => {
     const cache = useFileManager(type, path);
     const filePath = fm.joinPath(path, name);
-    const data = cache.read(name);
-    const expired =
-      cacheTime > 0 &&
-      (!fm.fileExists(filePath) ||
-        (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
-    if (data && !expired) return data;
+    const exists = fm.fileExists(filePath);
+    const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
+    const data = exists && !expired ? cache.read(name) : undefined;
+    if (data !== undefined && data !== null) return data;
+  
     try {
       const request = new Request(url);
-      request.timeoutInterval = 20; // 网络差时别一直挂着
+      request.method = method;
+      request.timeoutInterval = 20;
       request.headers = {
-        'User-Agent': 'Mozilla/5.0',
-        Referer: 'https://zoom.earth/',
+        'User-Agent': 'Mozilla/5.0'
       };
+      if (method === 'POST') {
+        request.headers['Content-Type'] = 'application/json';
+        request.body = JSON.stringify(body ?? {});
+      };
+      
       const response =
         type === 'json'
           ? await request.loadJSON()
@@ -283,21 +324,24 @@ async function main(family) {
             : type === 'data'
               ? await request.load()
               : await request.loadImage();
-      const sc = request.response && request.response.statusCode;
+  
+      const sc = request.response?.statusCode;
       if (type === 'data' && sc && sc !== 200) {
         if (sc === 404) {
           const empty = Data.fromString('');
           cache.write(name, empty);
           return empty;
         }
-        return data ?? null;
+        return null;
       }
-      if (response) {
+      if (response != null) {
         cache.write(name, response);
         return response;
       }
-    } catch (e) {}
-    return data ?? null;
+    } catch (e) {
+      console.log(`请求失败：${e}`);
+    }
+    return null;
   };
   
   const writeFresh = (path, content) => {
@@ -1418,12 +1462,60 @@ async function main(family) {
     return finalCtx.getImage();
   };
   
+  // 创建胶囊
+  const createBarStack = (stack, barColor, radius = 7) => {
+    const barStack = stack.addStack();
+    barStack.layoutHorizontally();
+    barStack.centerAlignContent();
+    barStack.setPadding(4, 10, 4, 10);
+    barStack.cornerRadius = radius;
+    barStack.backgroundColor = barColor;
+    return barStack;
+  };
+  
+  const createStackText = (stack, label) => {
+    const text = stack.addText(label);
+    text.textColor = Color.white();
+    text.font = Font.mediumSystemFont(14.5);
+  };
+  
+  // 雨雪雷达组件
+  const createWidget = (city, type = '', barColor) => {
+    const widget = new ListWidget();
+    widget.setPadding(15, 20, 15, 20);
+    const topStack = widget.addStack();
+    topStack.layoutHorizontally();
+    const barStack = createBarStack(topStack, barColor);
+    const cityStack = barStack.addStack();
+    const symbol = SFSymbol.named('location.fill');
+    const icon = cityStack.addImage(symbol.image);
+    icon.imageSize = new Size(17, 17);
+    icon.tintColor = Color.white();
+    cityStack.addSpacer(3);
+    createStackText(cityStack, city);
+    if (type) {
+      cityStack.addSpacer(10);
+      createStackText(cityStack, type + '预警');
+    }
+    topStack.addSpacer();
+    widget.addSpacer();
+    const bottomStack = widget.addStack();
+    bottomStack.layoutHorizontally();
+    bottomStack.addSpacer();
+    const timeStack = createBarStack(bottomStack, new Color('#000000', 0.5));
+    createStackText(timeStack, getFormattedTime());
+    
+    return widget;
+  };
+  
   // ========== 运行 ==========
   const runWidget = async () => {
     getLocation();
-    const image = await buildCombinedImage();
-    const widget = new ListWidget();
-    widget.backgroundImage = image;
+    const { city, alerts = [] } = await getAlert() || {};
+    const [{ type, level, update_time } = {}] = alerts;
+    const barColor = getAlertColor(level);
+    const widget = await createWidget(city, type, barColor);
+    widget.backgroundImage = await buildCombinedImage();
     
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
