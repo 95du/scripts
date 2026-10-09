@@ -260,6 +260,41 @@ async function main(family) {
     return Color.blue();
   };
   
+  // 渐变颜色 (雨/小/中/大/雪)
+  const stops = [
+    [0.000, '#92C5F4'],
+    [0.221, '#91C3F3'],
+    [0.247, '#7AADF1'],
+    [0.290, '#648FE7'],
+    [0.329, '#5469D6'],
+    [0.338, '#5561D0'],
+    [0.352, '#6E5CC0'],
+    [0.369, '#865DB4'],
+    [0.381, '#925EAB'],
+    [0.416, '#B96295'],
+    [0.475, '#E46576'],
+    [0.553, '#E89466'],
+    [0.648, '#F4DA5B'],
+    [0.682, '#F7EF5C'],
+    [0.723, '#FAF961'],
+    [0.7995, '#F9F762'],
+    [0.8005, '#DCF8F9'],
+    [0.833, '#C5F2F6'],
+    [0.872, '#AFEAF4'],
+    [0.948, '#7FC3D8'],
+    [0.976, '#70B8D0'],
+    [1.000, '#67B1CC']
+  ];
+  
+  const createGradient = () => {
+    const g = new LinearGradient();
+    g.startPoint = new Point(0, 0.5);
+    g.endPoint = new Point(1, 0.5);
+    g.locations = stops.map(s => s[0]);
+    g.colors = stops.map(s => new Color(s[1]));
+    return g;
+  };
+  
   /**
    * 创建指定类型的文件读写器（json / string / data / image）
    * @param {string} type - 数据类型
@@ -1509,6 +1544,13 @@ async function main(family) {
     widget.addSpacer();
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
+    bottomStack.centerAlignContent();
+    if (setting.showColorBar) {
+      const colorBar = bottomStack.addStack();
+      colorBar.size = new Size(setting?.barWidth ?? 250, setting?.height ?? 12);
+      colorBar.backgroundGradient = createGradient();
+      colorBar.cornerRadius = 6;
+    }
     bottomStack.addSpacer();
     const timeStack = createBarStack(bottomStack, new Color('#000000', 0.5));
     createStackText(timeStack, getFormattedTime());
