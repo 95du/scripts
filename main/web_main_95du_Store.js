@@ -427,6 +427,14 @@ async function main() {
       type: 'group',
       items: [
         {
+          label: '实时雨雪雷达',
+          desc: '全球降水云图与雷达走势',
+          version: '1.0.0',
+          type: 'button',
+          scrUrl: `${rootUrl}/run/web_module_radar.js`,
+          icon: `${rootUrl}/img/icon/zoomEarth.png`
+        },
+        {
           label: '台风路径',
           desc: '风速风力、位置、趋势等',
           version: '1.0.0',
