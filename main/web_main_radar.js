@@ -71,7 +71,9 @@ async function main() {
     rainUnitScale: 1.0,
     rainColumnKeep: 1.0,
     mapCacheHours: 30,
-    radarCacheTTL: 300
+    radarCacheTTL: 300,
+    showColorBar: true,
+    barWidth: 250
   };
   
   const initSettings = () => {
@@ -537,6 +539,41 @@ async function main() {
       type: 'group',
       items: [
         {
+          label: '显示色卡',
+          name: 'showColorBar',
+          type: 'switch',
+          icon: {
+            name: 'paintpalette.fill',
+            color: '#FF9500'
+          }
+        },
+        {
+          label: '色卡高度',
+          name: 'barHeight',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'ruler.fill',
+            color: '#30B0C7'
+          },
+          desc: settings.barHeight,
+          message: '底部雷达强度色条的高度/粗细\n推荐 10 - 14'
+        },
+        {
+          label: '色卡宽度',
+          name: 'barWidth',
+          type: 'cell',
+          input: true,
+          icon: `${rootUrl}/img/symbol/layout.png`,
+          desc: settings.barWidth,
+          message: '底部雷达强度色条的像素宽度\n推荐 200 - 250'
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
           label: '地图缩放',
           name: 'zoom',
           type: 'cell',
@@ -546,7 +583,7 @@ async function main() {
             color: '#BD7DFF'
           },
           message: '地图缩放层级（例如 7.3）\n数值越大视角越近，细节越丰富',
-          desc: settings.zoom ?? DEFAULT.zoom
+          desc: settings.zoom
         },
         {
           label: '调分辨率',
@@ -558,7 +595,7 @@ async function main() {
             color: '#00C7BE'
           },
           message: '画质清晰度 DPR（推荐 2.0 - 3.0）\n数值越高图像越清晰，但渲染耗时增加',
-          desc: settings.dpr ?? DEFAULT.dpr
+          desc: settings.dpr
         },
         {
           label: '定位图标',
@@ -568,7 +605,7 @@ async function main() {
             name: 'location.fill',
             color: '#007AFF'
           },
-          desc: settings.locColor ?? DEFAULT.locColor
+          desc: settings.locColor
         },
         {
           label: '定位尺寸',
@@ -580,7 +617,7 @@ async function main() {
             color: '#FF2D55'
           },
           message: '中心定位标记的大小（推荐 24 - 40）',
-          desc: settings.locIconSize ?? DEFAULT.locIconSize
+          desc: settings.locIconSize
         },
         {
           label: '雨丝亮度',
@@ -592,7 +629,7 @@ async function main() {
             color: '#FFCC00'
           },
           message: '雨丝的透明度与明暗倍率\n标准值为 1.15，数值越大雨丝越明显',
-          desc: settings.rainAlpha ?? DEFAULT.rainAlpha
+          desc: settings.rainAlpha
         },
         {
           label: '雨丝长度',
@@ -604,7 +641,7 @@ async function main() {
             color: '#32ADE6'
           },
           message: '雨丝的整体粗细和尾巴长度\n标准值为 1.0，数值越大雨丝越长',
-          desc: settings.rainUnitScale ?? DEFAULT.rainUnitScale
+          desc: settings.rainUnitScale
         },
         {
           label: '雨丝密度',
@@ -616,7 +653,7 @@ async function main() {
             color: '#5AC8FA'
           },
           message: '雨丝的列保留比例（0.1 - 1.0）\n1.0 为密集雨丝，0.5 为稀疏雨丝',
-          desc: settings.rainColumnKeep ?? DEFAULT.rainColumnKeep
+          desc: settings.rainColumnKeep
         },
         {
           label: '地图缓存',
@@ -628,7 +665,7 @@ async function main() {
             color: '#FF9500'
           },
           message: '静态底图瓦片的本地缓存时长\n单位：天',
-          desc: settings.mapCacheHours ?? DEFAULT.mapCacheHours
+          desc: settings.mapCacheHours
         },
         {
           label: '雷达缓存',
@@ -640,7 +677,7 @@ async function main() {
             color: '#AF52DE'
           },
           message: '雷达数据更新间隔/有效期\n单位：秒',
-          desc: settings.radarCacheTTL ?? DEFAULT.radarCacheTTL
+          desc: settings.radarCacheTTL
         }
       ]
     }
