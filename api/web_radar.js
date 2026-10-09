@@ -1486,22 +1486,26 @@ async function main(family) {
   // 雨雪雷达组件
   const createWidget = (city, type = '', barColor) => {
     const widget = new ListWidget();
-    widget.setPadding(15, 20, 15, 20);
-    const topStack = widget.addStack();
-    topStack.layoutHorizontally();
-    const barStack = createBarStack(topStack, barColor);
-    const cityStack = barStack.addStack();
-    const symbol = SFSymbol.named('location.fill');
-    const icon = cityStack.addImage(symbol.image);
-    icon.imageSize = new Size(17, 17);
-    icon.tintColor = Color.white();
-    cityStack.addSpacer(3);
-    createStackText(cityStack, city);
-    if (type) {
-      cityStack.addSpacer(10);
-      createStackText(cityStack, type + '预警');
+    widget.setPadding(12, 20, 12, 20);
+    
+    if (family !== 'small') {
+      const topStack = widget.addStack();
+      topStack.layoutHorizontally();
+      const barStack = createBarStack(topStack, barColor);
+      const stack = barStack.addStack();
+      const symbol = SFSymbol.named('location.fill');
+      const icon = stack.addImage(symbol.image);
+      icon.imageSize = new Size(17, 17);
+      icon.tintColor = Color.white();
+      stack.addSpacer(3);
+      createStackText(stack, city);
+      if (type) {
+        stack.addSpacer(10);
+        createStackText(stack, `${type}预警`);
+      }
+      topStack.addSpacer();
     }
-    topStack.addSpacer();
+    
     widget.addSpacer();
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
