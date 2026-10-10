@@ -1546,7 +1546,7 @@ async function main(family) {
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
-    if (setting.showColorBar) {
+    if (family !== 'small' && setting.showColorBar) {
       const colorBar = bottomStack.addStack();
       colorBar.size = new Size(setting?.barWidth ?? 250, setting?.height ?? 12);
       colorBar.backgroundGradient = createGradient();
