@@ -2583,9 +2583,7 @@ const getTyphoonImage = async (tfItem) => {
 
 // 设置背景
 const setBackground = async (widget, type, tcItem, tfItem, isLarge, locationText = '') => {
-  const isDay = getIsDay();
-  const theme = isDay === 1 ? 'light' : 'dark';
-  widget.url = `https://tf02.istrongcloud.com/typhoonApp/index.html#/home?theme=${theme}`;
+  widget.url = 'scriptable:///run/' + encodeURIComponent(Script.name());
   if (isLarge) {
     widget.backgroundColor = new Color('#A3CCFF');
     if (type === 'tf') {
@@ -2593,7 +2591,7 @@ const setBackground = async (widget, type, tcItem, tfItem, isLarge, locationText
       widget.backgroundImage = shadowImage(img, locationText, name);
     } else {
       const feedbackData = await getTravelData();
-      const image = await generateMapImage(isDay, tcItem, tfItem, feedbackData, setting);
+      const image = await generateMapImage(getIsDay(), tcItem, tfItem, feedbackData, setting);
       const masking = shadowImage(image, locationText);
       widget.backgroundImage = setting.skin === 1 ? masking : image;
     }
