@@ -257,7 +257,8 @@ async function main(family) {
     if (level ==='红色') return Color.red();
     if (level ==='橙色') return new Color('#FF7800');
     if (level ==='黄色') return new Color('#EAC010');
-    return Color.blue();
+    if (level ==='蓝色') return Color.blue();
+    return new Color('#000000', 0.5);
   };
   
   // 渐变颜色 (雨/小/中/大/雪)
