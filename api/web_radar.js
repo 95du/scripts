@@ -1523,8 +1523,11 @@ async function main(family) {
   const createWidget = (city, type = '', barColor) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
+    if (family === 'small') {
+      return widget;
+    }
     
-    if (setting.weatherWarning && family !== 'small') {
+    if (setting.weatherWarning) {
       const topStack = widget.addStack();
       topStack.layoutHorizontally();
       const barStack = createBarStack(topStack, barColor);
@@ -1546,7 +1549,7 @@ async function main(family) {
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
-    if (family !== 'small' && setting.showColorBar) {
+    if (setting.showColorBar) {
       const colorBar = bottomStack.addStack();
       colorBar.size = new Size(setting?.barWidth ?? 250, setting?.height ?? 12);
       colorBar.backgroundGradient = createGradient();
