@@ -3,9 +3,9 @@
 // icon-color: red; icon-glyph: rss;
 
 async function main() {
-  const scriptName = '天气雷达'
-  const version = '1.0.0'
-  const updateDate = '2026年10月9日'
+  const scriptName = '全球雨雪雷达'
+  const version = '1.0.1'
+  const updateDate = '2026年10月10日'
   const pathName = '95du_radar';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -115,7 +115,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，更`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
