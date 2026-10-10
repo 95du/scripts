@@ -1573,6 +1573,8 @@ async function main(family) {
       stack.addSpacer(3);
       const currentWeatherIcon = stack.addImage(weatherIcon);
       currentWeatherIcon.imageSize = new Size(18, 18);
+      stack.addSpacer(10);
+      createStackText(stack, temp.value + temp.unit);
     }
     
     topStack.addSpacer();
