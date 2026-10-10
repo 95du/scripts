@@ -540,7 +540,7 @@ async function main() {
       type: 'group',
       items: [
         {
-          label: '显示色卡',
+          label: '雷达色卡',
           name: 'showColorBar',
           type: 'switch',
           icon: {
