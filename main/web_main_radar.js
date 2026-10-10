@@ -54,6 +54,7 @@ async function main() {
    */
   const DEFAULT = {
     version,
+    update: true,
     updateTime: Date.now(),
     refresh: 20,
     animation: true,
@@ -775,9 +776,9 @@ async function main() {
           desc: settings.version
         },
         {
-          name: "updateCode",
-          label: "更新代码",
-          type: "cell",
+          name: "update",
+          label: "自动更新",
+          type: "switch",
           icon: `${rootUrl}/img/symbol/update.png`
         }
       ]
