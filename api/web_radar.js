@@ -261,6 +261,32 @@ async function main(family) {
     return new Color('#000000', 0.5);
   };
   
+  // 图标Url
+  const getWeatherIcon = (key, isDay = 1) => {
+    const iconMap = {
+      '晴': isDay ? 100 : 150, 
+      '多云': isDay ? 101 : 151, 
+      '少云': isDay ? 102 : 152, 
+      '晴间多云': isDay ? 103 : 153, 
+      '阵雨': isDay ? 300 : 350, 
+      '强阵雨': isDay ? 301 : 351, 
+      '阴': 104, '雷阵雨': 302, '强雷阵雨': 303, '冰雹': 304, '小雨': 305, '中雨': 306, '大雨': 307, '极端降雨': 308, '细雨': 309, '毛毛雨': 309, '暴雨': 310, '大暴雨': 311, '特大暴雨': 312, '冻雨': 313, '小到中雨': 314, '中到大雨': 315, '大到暴雨': 316, '暴雨到大暴雨': 317, '大暴雨到特大暴雨': 318, '雨': 399,
+      // 雪
+      '小雪': 400, '中雪': 401, '大雪': 402, '暴雪': 403, '雨夹雪': 404, '雨雪天气': 405, 
+      '阵雨夹雪': isDay ? 406 : 456, 
+      '阵雪': isDay ? 407 : 457, 
+      '小到中雪': 408, '中到大雪': 409, '大到暴雪': 410, '雪': 499,
+      // 雾霾
+      '薄雾': 500, '雾': 501, '霾': 502, '扬沙': 503, '浮尘': 504, '沙尘暴': 507, '强沙尘暴': 508, '浓雾': 509, '强浓雾': 510, '中度霾': 511, '重度霾': 512, '严重霾': 513, '大雾': 514, '特强浓雾': 515, '热': 900, '冷': 901
+    };
+  
+    const iconId = iconMap[key] ?? (isDay ? 101 : 151);
+    return {
+      id: String(iconId),
+      url: `https://static.qweather.com/img/common/icon/202106d/${iconId}.png`
+    };
+  };
+  
   // 渐变颜色 (雨/小/中/大/雪)
   const stops = [
     [0.000, '#92C5F4'],
@@ -1520,38 +1546,44 @@ async function main(family) {
   };
   
   // 雨雪雷达组件
-  const createWidget = (city, type = '', barColor) => {
+  const createWidget = (city, type = '', barColor, temp, weather_desc, weatherIcon) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     if (family === 'small') {
       return widget;
     }
     
-    if (setting.weatherWarning) {
-      const topStack = widget.addStack();
-      topStack.layoutHorizontally();
-      const barStack = createBarStack(topStack, barColor);
-      const stack = barStack.addStack();
-      const symbol = SFSymbol.named('location.fill');
-      const icon = stack.addImage(symbol.image);
-      icon.imageSize = new Size(17, 17);
-      icon.tintColor = Color.white();
+    const topStack = widget.addStack();
+    topStack.layoutHorizontally();
+    const barStack = createBarStack(topStack, barColor);
+    const stack = barStack.addStack();
+    createStackText(stack, city);
+    stack.addSpacer(3);
+    const symbol = SFSymbol.named('location.fill');
+    const icon = stack.addImage(symbol.image);
+    icon.imageSize = new Size(15, 15);
+    icon.tintColor = Color.white();
+
+    if (type) {
+      stack.addSpacer(10);
+      createStackText(stack, `${type}预警`);
+    } else {
+      stack.addSpacer(15);
+      createStackText(stack, weather_desc);
       stack.addSpacer(3);
-      createStackText(stack, city);
-      if (type) {
-        stack.addSpacer(10);
-        createStackText(stack, `${type}预警`);
-      }
-      topStack.addSpacer();
+      const currentWeatherIcon = stack.addImage(weatherIcon);
+      currentWeatherIcon.imageSize = new Size(18, 18);
     }
     
+    topStack.addSpacer();
     widget.addSpacer();
+    
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
     if (setting.showColorBar) {
       const colorBar = bottomStack.addStack();
-      colorBar.size = new Size(setting?.barWidth ?? 250, setting?.height ?? 12);
+      colorBar.size = new Size(setting?.barWidth ?? 250, setting?.barHeight ?? 12);
       colorBar.backgroundGradient = createGradient();
       colorBar.cornerRadius = 6;
     }
@@ -1565,10 +1597,12 @@ async function main(family) {
   // ========== 运行 ==========
   const runWidget = async () => {
     getLocation();
-    const { city, alerts = [] } = await getAlert() || {};
+    const { city, temp, sunset, weather_desc, alerts = [] } = await getAlert() || {};
     const [{ type, level, update_time } = {}] = alerts;
     const barColor = getAlertColor(level);
-    const widget = await createWidget(city, type, barColor);
+    const qweather = getWeatherIcon(weather_desc, sunset.is_day);
+    const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
+    const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon);
     widget.backgroundImage = await buildCombinedImage();
     
     if (config.runsInApp) {
