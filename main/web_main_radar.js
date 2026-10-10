@@ -59,7 +59,6 @@ async function main() {
     refresh: 20,
     animation: true,
     fadeInUp: 0.7,
-    weatherWarning: true,
     precipAutoTier: true,
     showPrecipInfo: true,
     showPrecipFx: true,
@@ -74,7 +73,8 @@ async function main() {
     mapCacheHours: 30,
     radarCacheTTL: 300,
     showColorBar: true,
-    barWidth: 250
+    barWidth: 250,
+    barHeight: 12
   };
   
   const initSettings = () => {
@@ -707,30 +707,6 @@ async function main() {
       type: 'group',
       items: [
         {
-          label: '天气预警',
-          name: 'weatherWarning',
-          type: "switch",
-          icon: {
-            name: 'exclamationmark.triangle.fill',
-            color: '#FF0022'
-          }
-        },
-        {
-          label: '组件设置',
-          name: 'preference',
-          type: 'page',
-          icon: {
-            name: 'gearshape.fill',
-            color: '#0096FF'
-          },
-          formItems: settingMenu
-        }
-      ]
-    },
-    {
-      type: 'group',
-      items: [
-        {
           label: '小号组件',
           name: 'preview',
           type: 'cell',
@@ -765,6 +741,16 @@ async function main() {
     {
       type: 'group',
       items: [
+        {
+          label: '组件设置',
+          name: 'preference',
+          type: 'page',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#0096FF'
+          },
+          formItems: settingMenu
+        },
         {
           name: "version",
           label: "组件版本",
