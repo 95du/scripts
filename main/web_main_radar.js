@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '全球雨雪雷达'
-  const version = '1.0.1'
-  const updateDate = '2026年10月10日'
+  const version = '1.0.2'
+  const updateDate = '2026年10月11日'
   const pathName = '95du_radar';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -59,6 +59,8 @@ async function main() {
     refresh: 20,
     animation: true,
     fadeInUp: 0.7,
+    locCache: 1,
+    autoLocation: true,
     precipAutoTier: true,
     showPrecipInfo: true,
     showPrecipFx: true,
@@ -115,7 +117,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，修复已知问题`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加全球坐标及缓存等`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -130,8 +132,7 @@ async function main() {
     const importedModule = importModule(modulePath);
     await Promise.all([
       importedModule.main(family), 
-      updateNotice(),
-      module.appleOS_update()
+      updateNotice()
     ]);
     if (settings.update) await updateString();
   };
@@ -168,14 +169,180 @@ async function main() {
     }
   };
   
-  /**
-   * 获取背景图片存储目录路径
-   * @returns {string} - 目录路径
-   */
-  const getBgImage = (image) => {
-    const filePath =  fm.joinPath(cacheImg, Script.name());
-    if (image) fm.writeImage(filePath, image);
-    return filePath;
+  // 页面注入脚本：监听网页中的地理位置变化、定位按钮点击及本地存储，获取经纬度和位置类型并回传
+  const pageScript = () => {
+    if (window.__coord !== undefined) return;
+    window.__coord = null;
+  
+    const push = (lat, lng, type = 'custom') => {
+      window.__coord = { 
+        lat: +lat.toFixed(6), 
+        lng: +lng.toFixed(6), 
+        locationType: type 
+      };
+      const wake = window.__wake;
+      window.__wake = null;
+      wake?.();
+    };
+  
+    const toDecimal = s => {
+      const n = s.match(/\d+(?:\.\d+)?/g);
+      if (!n) return null;
+      const v = n.reduce((sum, x, i) => sum + x / 60 ** i, 0);
+      return /[-−南西SW]/i.test(s) ? -v : v;
+    };
+  
+    let last = '';
+    const readPanel = () => {
+      const text = document.querySelector('h2.coordinate, .panel.weather .coordinate')?.textContent.trim();
+      if (!text?.includes('°') || text.includes('你的位置') || text === last) return;
+      const [lat, lng] = text.split(/[，,]/).map(toDecimal);
+      if (lat == null || lng == null) return;
+      last = text;
+      push(lat, lng, 'custom');
+    };
+  
+    new MutationObserver(readPanel).
+    observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  
+    let armed = false;
+    let timer;
+    const located = (lat, lng, type = 'gps') => {
+      if (!armed) return;
+      armed = false;
+      push(lat, lng, type);
+    };
+  
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.geolocation')) return;
+      last = '';
+      armed = true;
+      clearTimeout(timer);
+      timer = setTimeout(() => (armed = false), 3000);
+    }, true);
+  
+    const geo = window.Geolocation?.prototype;
+    for (const name of ['getCurrentPosition', 'watchPosition']) {
+      const orig = geo?.[name];
+      if (!orig) continue;
+      geo[name] = function (ok, ...rest) {
+        return orig.call(this, pos => {
+          located(pos.coords.latitude, pos.coords.longitude, 'gps');
+          ok?.(pos);
+        }, ...rest);
+      };
+    }
+  
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'ze_home') {
+        const [lng, lat] = String(value).split(',').map(Number);
+        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) located(lat, lng, 'gps');
+      }
+      return setItem.apply(this, arguments);
+    };
+  };
+  
+  const updateLocation = async (coord) => {
+    const index = await module.generateAlert(
+      '是否更新坐标❓',
+      `纬度 ${coord.lat}，经度 ${coord.lng}`,
+      options = ['取消', '更新']
+    );
+    if (index === 0) return;
+    writeSettings({ 
+      ...settings, ...coord 
+    });
+  };
+  
+  // 轮询等待网页中获取到有效的经纬度并回调
+  const waitScript = () => {
+    const take = () => {
+      if (!window.__coord) return (window.__wake = take);
+      const coord = window.__coord;
+      window.__coord = null;
+      completion(coord);
+    };
+    take();
+  };
+  
+  // 视图加载主函数：运行定位监听，最后返回获取到的坐标
+  const viewZoomEarth = async () => {
+    const htmlContent = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 168, 'ZoomEarth.html');
+    
+    const html = `
+    <html lang="zh-Hans">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no, viewport-fit=cover">
+        <link rel="preload" href="/assets/css/app-zh.92a1c8f1.css" as="style">
+        <link rel="stylesheet" href="/assets/css/app-zh.92a1c8f1.css">
+        <style>
+          #custom-settings-btn {
+            position: fixed;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+          }
+          #custom-settings-btn .icon {
+            width: 24px;
+            height: 24px;
+          }
+        </style>
+      </head>
+      ${htmlContent}
+      <script src="/assets/js/app.24434048.js"></script>
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const btn = document.getElementById('custom-settings-btn');
+          const search = document.querySelector('button.search')
+          const settings = document.querySelector('button.settings:not(#custom-settings-btn)');
+          if (!btn || !search) return;
+          const update = () => {
+            const r = search.getBoundingClientRect();
+            btn.style.cssText = r.width && r.height ? \`left:\${r.left}px;top:\${r.top-r.height-8}px;width:\${r.width}px;height:\${r.height}px;display:flex\` : 'display:none';
+          };
+          setInterval(update, 150);
+          update();
+          btn.onclick = e => {
+            e.preventDefault();
+            e.stopPropagation();
+            settings?.click();
+          };
+        });
+      </script>
+    </body>
+    </html>`;
+  
+    const webView = new WebView();
+    await webView.loadHTML(html, 'https://zoom.earth/maps/');
+    await webView.evaluateJavaScript(`(${pageScript})()`);
+  
+    let coord = null;
+    let open = true;
+    const listen = async () => {
+      while (open) {
+        try {
+          coord = await webView.evaluateJavaScript(`(${waitScript})()`, true);
+          await updateLocation(coord);
+        } catch (e) {
+          console.error(e);
+          break;
+        }
+      }
+    };
+    listen();
+    await webView.present(true);
+    open = false;
   };
   
   // ====== web start ======= //
@@ -272,7 +439,7 @@ async function main() {
       position: relative;
       width: auto;
       margin: ${screenSize < 926 ? (avatarInfo ? '62px' : '50px') : (avatarInfo ? '78px' : '65px')};
-      top: ${screenSize < 926 ? (avatarInfo ? '-8%' : '-2%') : (avatarInfo ? '-8%' : '-2%')};
+      top: ${screenSize < 926 ? (avatarInfo ? '-8%' : '-2%') : (avatarInfo ? '-7.5%' : '-3.5%')};
     }
     
     ${settings.animation ? `
@@ -319,18 +486,6 @@ async function main() {
           if (element) element.innerHTML = \`${newText}\`;
         })()`, false
       ).catch(console.error);
-    };
-    
-    // 背景图 innerText
-    const innerTextBgImage = () => {
-      const img = getBgImage();
-      const isSetBackground = fm.fileExists(img) ? '已添加' : '';
-      innerTextElementById(
-        'chooseBgImg',
-        isSetBackground
-      );
-      settings.chooseBgImg_status = isSetBackground;
-      writeSettings(settings);
     };
     
     /**
@@ -382,10 +537,8 @@ async function main() {
       1: async (data) => await installScript(data),
       telegram: () => Safari.openInApp('https://t.me/+CpAbO_q_SGo2ZWE1', false),
       website: () => Safari.openInApp('https://tiyu.baidu.com/al/matchlist', false),
-      updateCode: async () => await updateVersion(),
       period: async (data) => await period(data),
-      addSport: async (data) => await addSport(data),
-      removeSport: async (data) => await removeSport(data),
+      zoomEarth: async () => await await viewZoomEarth(),
       preview: async (data) => await previewWidget(data.family),
       setAvatar: async (data) => {
         const avatarImage = await module.drawSquare(Image.fromData(Data.fromBase64String(data)));
@@ -395,30 +548,9 @@ async function main() {
         Object.assign(settings, data);
         writeSettings(settings);
       },
-      chooseBgImg: async () => {
-        const image = await Photos.fromLibrary().catch((e) => console.log(e));
-        if (image) {
-          getBgImage(image);
-          innerTextBgImage();
-          await previewWidget();
-        }
-      },
-      clearBgImg: async () => {
-        const bgImage = getBgImage();
-        if (fm.fileExists(bgImage)) {
-          fm.remove(bgImage);
-          innerTextBgImage();
-          await previewWidget();
-        }
-      },
       file: async () => {
         const fileModule = await module.webModule(`${rootUrl}/module/local_dir.js`);
         await importModule(fileModule).main();
-      },
-      background: async () => {
-        const modulePath = await module.webModule(`${rootUrl}/main/main_background.js`);
-        await importModule(modulePath).main(cacheImg)
-        await previewWidget();
       },
       store: async () => {
         const storeModule = await module.webModule(`${rootUrl}/main/web_main_95du_Store.js`);
@@ -599,11 +731,23 @@ async function main() {
           desc: settings.dpr
         },
         {
+          label: '坐标缓存',
+          name: 'locCache',
+          type: 'cell',
+          input: true,
+          icon: {
+            name: 'internaldrive.fill',
+            color: '#FF9800'
+          },
+          message: '设置当前坐标的更新时长\n( 单位: 小时 )',
+          desc: settings.locCache
+        },
+        {
           label: '定位图标',
           name: 'locColor',
           type: 'color',
           icon: {
-            name: 'location.fill',
+            name: 'location',
             color: '#007AFF'
           },
           desc: settings.locColor
@@ -614,7 +758,7 @@ async function main() {
           type: 'cell',
           input: true,
           icon: {
-            name: 'mappin.and.ellipse',
+            name: 'pin.fill',
             color: '#FF2D55'
           },
           message: '中心定位标记的大小（推荐 24 - 40）',
@@ -681,7 +825,7 @@ async function main() {
           desc: settings.radarCacheTTL
         }
       ]
-    }
+    },
   ];
   
   // 主菜单
@@ -701,6 +845,39 @@ async function main() {
           type: 'cell',
           icon: `${rootUrl}/img/icon/Swiftgram.png`
         }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          name: "zoomEarth",
+          label: "全球定位",
+          type: "cell",
+          icon: {
+            name: 'mappin',
+            color: '#FF0000'
+          }
+        },
+        {
+          name: "autoLocation",
+          label: "自动定位",
+          type: "switch",
+          icon: {
+            name: 'location.fill',
+            color: '#Ff6800'
+          },
+        },
+        {
+          label: '组件设置',
+          name: 'preference',
+          type: 'page',
+          icon: {
+            name: 'gearshape.fill',
+            color: '#0096FF'
+          },
+          formItems: settingMenu
+        },
       ]
     },
     {
@@ -741,16 +918,6 @@ async function main() {
     {
       type: 'group',
       items: [
-        {
-          label: '组件设置',
-          name: 'preference',
-          type: 'page',
-          icon: {
-            name: 'gearshape.fill',
-            color: '#0096FF'
-          },
-          formItems: settingMenu
-        },
         {
           name: "version",
           label: "组件版本",
