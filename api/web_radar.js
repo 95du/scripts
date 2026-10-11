@@ -1541,7 +1541,7 @@ async function main(family) {
   const createStackText = (stack, label) => {
     const text = stack.addText(label);
     text.textColor = Color.white();
-    text.font = Font.mediumSystemFont(14.5);
+    text.font = Font.mediumSystemFont(14);
   };
   
   // 雨雪雷达组件
