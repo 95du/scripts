@@ -3,9 +3,9 @@
 // icon-color: deep-brown; icon-glyph: lightbulb;
 /**
  * 组件作者: 95du茅台
- * 组件名称: 天气雷达
- * 组件版本: Version 1.0.0
- * 发布时间: 2026-10-09
+ * 组件名称: 全球雨雪雷达
+ * 组件版本: Version 1.0.2
+ * 发布时间: 2026-10-11
  */
 
 
@@ -170,8 +170,7 @@ async function main(family) {
   const wgs84ToGcj02 = (lng, lat) => {
     const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
     const outOfChina = (lng, lat) =>
-      lng < 72.004 || lng > 137.8347 ||
-      lat < 0.8293 || lat > 55.8271;
+      lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
     if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
   
     const transformLat = (x, y) => {
@@ -208,7 +207,7 @@ async function main(family) {
   const getLocation = async () => {
     if (setting?.lat && setting.updateTime) {
       const hours = (Date.now() - setting.updateTime) / 3600000;
-      if (hours < 3) return setting;
+      if (hours < setting.locCache) return setting;
     }
     try {
       const loc = await Location.current();
@@ -1598,7 +1597,10 @@ async function main(family) {
   
   // ========== 运行 ==========
   const runWidget = async () => {
-    getLocation();
+    if (setting.autoLocation) {
+      getLocation();
+    }
+    
     const { city, temp, sunset, weather_desc, alerts = [] } = await getAlert() || {};
     const [{ type, level, update_time } = {}] = alerts;
     const barColor = getAlertColor(level);
