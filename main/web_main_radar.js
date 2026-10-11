@@ -250,7 +250,7 @@ async function main() {
   const updateLocation = async (coord) => {
     const index = await module.generateAlert(
       '是否更新坐标❓',
-      `纬度 ${coord.lat}，经度 ${coord.lng}`,
+      `【 纬度 ${coord.lat}，经度 ${coord.lng} 】\n如果使用自定义坐标，需关闭自动定位，否则缓存时长过后就会自动更新回当前坐标`,
       options = ['取消', '更新']
     );
     if (index === 0) return;
