@@ -1,6 +1,6 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
-// icon-color: red; icon-glyph: rss;
+// icon-color: deep-brown; icon-glyph: rss;
 
 async function main() {
   const scriptName = '全球雨雪雷达'
@@ -324,7 +324,7 @@ async function main() {
     </html>`;
   
     const webView = new WebView();
-    await webView.loadHTML(html, 'https://zoom.earth/maps/');
+    await webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},6.5z/overlays=coverage:off`);
     await webView.evaluateJavaScript(`(${pageScript})()`);
   
     let coord = null;
