@@ -324,7 +324,7 @@ async function main() {
     </html>`;
   
     const webView = new WebView();
-    await webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},6.5z/overlays=coverage:off`);
+    await webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},${settings.zoom}z/overlays=coverage:off`);
     await webView.evaluateJavaScript(`(${pageScript})()`);
   
     let coord = null;
