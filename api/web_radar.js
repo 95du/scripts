@@ -1566,7 +1566,7 @@ async function main(family) {
     if (type) {
       stack.addSpacer(10);
       createStackText(stack, `${type}预警`);
-    } else {
+    } else if (weather_desc) {
       stack.addSpacer(15);
       createStackText(stack, weather_desc);
       stack.addSpacer(3);
@@ -1604,7 +1604,7 @@ async function main(family) {
     const { city, temp, sunset, weather_desc, alerts = [] } = await getAlert() || {};
     const [{ type, level, update_time } = {}] = alerts;
     const barColor = getAlertColor(level);
-    const qweather = getWeatherIcon(weather_desc, sunset.is_day);
+    const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
     const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon);
     widget.backgroundImage = await buildCombinedImage();
