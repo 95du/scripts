@@ -784,7 +784,7 @@ const viewWorldTyphoon = async () => {
     </body>
   </html>`
   const webView = new WebView();
-  webView.loadHTML(html, "https://zoom.earth/maps/");
+  webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${setting.lat},${setting.lon},7z/overlays=coverage:off`);
   webView.present(true);
 };
 
