@@ -2731,7 +2731,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
   }
   const statusText = barStack.addText(name);
   statusText.textColor = Color.white();
-  statusText.font = Font.boldSystemFont(14.5);
+  statusText.font = Font.boldSystemFont(14);
   return barStack;
 };
 
@@ -2746,7 +2746,7 @@ const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, i
   createButtonStack(topStack, tyIcon, (tf.ident + tf.name), barColor);
   topStack.addSpacer(8);
   const dateText = topStack.addText(date);
-  dateText.font = Font.mediumSystemFont(14.5);
+  dateText.font = Font.mediumSystemFont(14);
   dateText.textColor = textColor;
   topStack.addSpacer();
   
@@ -2764,11 +2764,11 @@ const createWidget = (tfItem, tf, date, land, dist, info, barColor, textColor, i
     const listStack = widget.addStack();
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
-    labelText.font = Font.boldSystemFont(13.5);
+    labelText.font = Font.boldSystemFont(13);
     labelText.textColor = new Color(item.color);
     listStack.addSpacer(12);
     const valueText = listStack.addText(item.value);
-    valueText.font = Font.mediumSystemFont(13.5);
+    valueText.font = Font.mediumSystemFont(13);
     valueText.textColor = textColor;
     if (i < info.length - 1) {
       widget.addSpacer(3);
@@ -2790,7 +2790,7 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
   createButtonStack(topStack, tyIcon, (tc.name + tc.ename), new Color('#7B2AFC'));
   topStack.addSpacer(8);
   const dateText = topStack.addText(date)
-  dateText.font = Font.mediumSystemFont(14.5);
+  dateText.font = Font.mediumSystemFont(14);
   dateText.textColor = textColor;
   topStack.addSpacer();
   
@@ -2807,11 +2807,11 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
     const listStack = widget.addStack();
     listStack.layoutHorizontally();
     const labelText = listStack.addText(item.label);
-    labelText.font = Font.boldSystemFont(13.5);
+    labelText.font = Font.boldSystemFont(13);
     labelText.textColor = new Color(item.color);
     listStack.addSpacer(12);
     const valueText = listStack.addText(item.value);
-    valueText.font = Font.mediumSystemFont(13.5);
+    valueText.font = Font.mediumSystemFont(13);
     valueText.textColor = textColor;;
     if (i < info.length - 1) {
       widget.addSpacer(3);
@@ -2876,13 +2876,13 @@ const createLevelWidget = (levels, names, textColor, isLarge) => {
     bar.cornerRadius = 50;
     topStack.addSpacer(19);
     const levelText = topStack.addText('台风等级、预报机构');
-    levelText.font = Font.boldSystemFont(15);
+    levelText.font = Font.boldSystemFont(14);
     levelText.textColor = new Color('#00B388');
     topStack.addSpacer();
   }
   
   const timeText = topStack.addText(getFormattedTime());
-  timeText.font = Font.mediumSystemFont(16);
+  timeText.font = Font.mediumSystemFont(15);
   timeText.textColor = textColor;
   widget.addSpacer();
   
@@ -2897,11 +2897,11 @@ const createLevelWidget = (levels, names, textColor, isLarge) => {
     listStack.addSpacer(15);
     
     const labelText = listStack.addText(isLarge && names?.length ? item.name + `(${item.ename})` : item.label);
-    labelText.font = Font.mediumSystemFont(13.5);
+    labelText.font = Font.mediumSystemFont(13);
     labelText.textColor = textColor;
     listStack.addSpacer();
     const lineText = listStack.addText('---');
-    lineText.font = Font.mediumSystemFont(13.5);
+    lineText.font = Font.mediumSystemFont(13);
     lineText.textColor = new Color(item.textColor);
     
     const agencyStack = listStack.addStack();
@@ -2909,7 +2909,7 @@ const createLevelWidget = (levels, names, textColor, isLarge) => {
     agencyStack.size = new Size(95, 0);
     agencyStack.addSpacer();
     const agencyText = agencyStack.addText(isLarge && names?.length ? item.source : item.agency);
-    agencyText.font = Font.mediumSystemFont(13.5);
+    agencyText.font = Font.mediumSystemFont(13);
     agencyText.textColor = textColor;
     if (i < info.length - 1) {
       widget.addSpacer(3);
