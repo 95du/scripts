@@ -257,7 +257,7 @@ async function main(family) {
     if (level ==='橙色') return new Color('#FF7800');
     if (level ==='黄色') return new Color('#EAC010');
     if (level ==='蓝色') return Color.blue();
-    return new Color('#000000', 0.5);
+    return new Color('#000000', 0.35);
   };
   
   // 图标Url
@@ -1589,7 +1589,7 @@ async function main(family) {
       colorBar.cornerRadius = 6;
     }
     bottomStack.addSpacer();
-    const timeStack = createBarStack(bottomStack, new Color('#000000', 0.5));
+    const timeStack = createBarStack(bottomStack, new Color('#000000', 0.35));
     createStackText(timeStack, getFormattedTime());
     
     return widget;
