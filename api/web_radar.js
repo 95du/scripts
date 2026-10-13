@@ -232,6 +232,27 @@ async function main(family) {
     return df.string(new Date());
   };
   
+  // 未来两小时降雨提示
+  const getTwoHoursWeather = async () => {
+    try {
+      const params = {
+        common: {
+          platform: 'iPhone',
+          language: 'CN'
+        }, 
+        params: { lat: LAT, lon: LNG }
+      }
+      const { radarData } = await getCacheData('twoHoursWeather.json', 'https://ssfc.api.moji.com/sfc/json/nowcast', 'json', 0.5, cacheStr, 'POST', params);
+      if (!radarData || radarData.rain === 0) return null;
+      const { tips, title, content } = radarData;
+      console.log(tips)
+      return [title, content].filter(Boolean).join('，');
+    } catch (e) {
+      console.log('两小时天气错误' + e);
+      return null;
+    }
+  };
+  
   // 天气预警
   const getAlert = async () => {
     let cityInfo = { cityId: 285184 };
@@ -1545,7 +1566,7 @@ async function main(family) {
   };
   
   // 雨雪雷达组件
-  const createWidget = (city, type = '', barColor, temp, weather_desc, weatherIcon) => {
+  const createWidget = (city, type = '', barColor, temp, weather_desc, weatherIcon, twoHours = null) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     if (family === 'small') {
@@ -1577,6 +1598,11 @@ async function main(family) {
     }
     
     topStack.addSpacer();
+    if (twoHours) {
+      widget.addSpacer(5);
+      const twoHoursStack = createBarStack(widget, new Color('#000000', 0.35));
+      createStackText(twoHoursStack, twoHours);
+    }
     widget.addSpacer();
     
     const bottomStack = widget.addStack();
@@ -1606,7 +1632,8 @@ async function main(family) {
     const barColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
-    const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon);
+    const twoHours = await getTwoHoursWeather();
+    const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon, twoHours);
     widget.backgroundImage = await buildCombinedImage();
     
     if (config.runsInApp) {
