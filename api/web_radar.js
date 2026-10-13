@@ -1566,7 +1566,7 @@ async function main(family) {
   };
   
   // 雨雪雷达组件
-  const createWidget = (city, type = '', barColor, temp, weather_desc, weatherIcon, twoHours = null) => {
+  const createWidget = (city = '海洋', type = '', barColor, temp, weather_desc, weatherIcon, twoHours = null) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     if (family === 'small') {
