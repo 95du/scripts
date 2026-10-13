@@ -261,7 +261,7 @@ async function main(family) {
         lon: LNG, 
         lat: LAT
       };
-      cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 1, cacheStr, 'POST', params);
+      cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 2, cacheStr, 'POST', params);
     }
     
     if (!cityInfo?.cityId) {
