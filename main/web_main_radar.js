@@ -257,6 +257,9 @@ async function main() {
     writeSettings({ 
       ...settings, ...coord 
     });
+    const cityInfoPath = fm.joinPath(cacheStr, 'cityInfo.json');
+    fm.remove(cityInfoPath);
+    ScriptableRun();
   };
   
   // 轮询等待网页中获取到有效的经纬度并回调
