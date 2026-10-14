@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.6
+ * 组件版本: Version 1.2.7
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
@@ -732,8 +732,10 @@ const viewTyphoon = async () => {
 
 // 查看全球台风路径
 const viewWorldTyphoon = async () => {
-  const htmlContent = await getCacheData('zoomEarth.html', 'https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 'string', 720);
-  
+  const rawHtml = await getCacheData('zoomEarth.html', 'https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 'string', 720);
+  const htmlContent = rawHtml.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
+    return String.fromCharCode(parseInt(grp, 16))
+  });
   const html = `
   <html lang="zh-Hans">
     <head>
