@@ -275,8 +275,10 @@ async function main() {
   
   // 视图加载主函数：运行定位监听，最后返回获取到的坐标
   const viewZoomEarth = async () => {
-    const htmlContent = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 168, 'ZoomEarth.html');
-    
+    const rawHtml = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 168, 'zoomEarth.html');
+    const htmlContent = rawHtml.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
+      return String.fromCharCode(parseInt(grp, 16))
+    });
     const html = `
     <html lang="zh-Hans">
       <head>
