@@ -244,9 +244,12 @@ async function main(family) {
       }
       const { radarData } = await getCacheData('twoHoursWeather.json', 'https://ssfc.api.moji.com/sfc/json/nowcast', 'json', 0.5, cacheStr, 'POST', params);
       if (!radarData || radarData.rain === 0) return null;
-      const { tips, title, content } = radarData;
-      console.log(tips)
-      return [title, content].filter(Boolean).join('，');
+      const { rain, tips, title, content } = radarData;
+      if (rain === 1 && setting?.rain !== content) {
+        module.notify(title, content);
+        setting.rain = content;
+        writeSettings(setting);
+      }
     } catch (e) {
       console.log('两小时天气错误' + e);
       return null;
@@ -278,7 +281,7 @@ async function main(family) {
     if (level ==='橙色') return new Color('#FF7800');
     if (level ==='黄色') return new Color('#EAC010');
     if (level ==='蓝色') return Color.blue();
-    return new Color('#000000', 0.35);
+    return new Color('#000000', 0.4);
   };
   
   // 图标Url
@@ -1566,7 +1569,7 @@ async function main(family) {
   };
   
   // 雨雪雷达组件
-  const createWidget = (city = '海洋', type = '', barColor, temp, weather_desc, weatherIcon, twoHours = null) => {
+  const createWidget = (city = '海洋', type = '', barColor, temp, weather_desc, weatherIcon) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     if (family === 'small') {
@@ -1598,11 +1601,6 @@ async function main(family) {
     }
     
     topStack.addSpacer();
-    if (twoHours) {
-      widget.addSpacer(5);
-      const twoHoursStack = createBarStack(widget, new Color('#000000', 0.35));
-      createStackText(twoHoursStack, twoHours);
-    }
     widget.addSpacer();
     
     const bottomStack = widget.addStack();
@@ -1615,7 +1613,7 @@ async function main(family) {
       colorBar.cornerRadius = 6;
     }
     bottomStack.addSpacer();
-    const timeStack = createBarStack(bottomStack, new Color('#000000', 0.35));
+    const timeStack = createBarStack(bottomStack, new Color('#000000', 0.4));
     createStackText(timeStack, getFormattedTime());
     
     return widget;
@@ -1626,14 +1624,13 @@ async function main(family) {
     if (setting.autoLocation) {
       getLocation();
     }
-    
+    await getTwoHoursWeather();
     const { city, temp, sunset, weather_desc, alerts = [] } = await getAlert() || {};
     const [{ type, level, update_time } = {}] = alerts;
     const barColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
-    const twoHours = await getTwoHoursWeather();
-    const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon, twoHours);
+    const widget = await createWidget(city, type, barColor, temp, weather_desc, weatherIcon);
     widget.backgroundImage = await buildCombinedImage();
     
     if (config.runsInApp) {
