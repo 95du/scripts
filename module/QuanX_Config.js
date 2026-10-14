@@ -1,0 +1,168 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-brown; icon-glyph: magic;
+[general]
+profile_img_url = https://raw.githubusercontent.com/curtinp118/QuantumultX/refs/heads/main/icons/set.png
+resource_parser_url = https://fastly.jsdelivr.net/gh/KOP-XIAO/QuantumultX@master/Scripts/resource-parser.js
+geo_location_checker = http://ip-api.com/json/?lang=zh-CN, https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/IP_API.js
+server_check_url = http://www.gstatic.com/generate_204
+server_check_timeout = 2000
+
+dns_exclusion_list = *.cmpassport.com, *.jegotrip.com.cn, *.icitymobile.mobi, id6.me, *.pingan.com.cn, *.cmbchina.com, *.localnetwork.uop, *.icbc.com.cn
+dns_reject_domain_behavior = loopback
+excluded_routes = 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, 17.0.0.0/8, 239.255.255.250/32, 24.105.30.129/32, 185.60.112.157/32, 185.60.112.158/32, 182.162.132.1/32
+icmp_auto_reply = true
+udp_drop_list = 443, STUN, QUIC
+
+[dns]
+circumvent-ipv4-answer = 127.0.0.1, 0.0.0.0
+circumvent-ipv6-answer = ::1, ::0
+prefer-doh3
+no-system
+no-ipv6
+doh-server = https://223.5.5.5/dns-query, https://doh.pub/dns-query
+server = 223.5.5.5
+server = 223.6.6.6
+server = 119.29.29.29
+server = 119.28.28.28
+server = 180.76.76.76
+address = /mtalk.google.com/108.177.125.188
+
+[policy]
+# 基础策略
+static = Apple, direct, proxy, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/Apple_01.png
+static = AI, United States, US Dest, AI-Desthash, Japan, Singapore, ⚙️ Manual, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/ChatGPT.png
+static = Google, proxy, Singapore, United States, ⚙️ Manual, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Google_Search.png
+static = Microsoft, proxy, Singapore, United States, ⚙️ Manual, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Microsoft.png
+
+# 流媒体
+static = YouTube, Hong Kong, Taiwan, Japan, Korea, Singapore, United States, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/YouTube.png
+static = X, proxy, Hong Kong, Taiwan, Japan, Korea, Singapore, United States, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/X.png
+static = Telegram, Hong Kong, Taiwan, Japan, Singapore, United States, ⚙️ Manual, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Telegram.png
+
+# 通讯社交
+static = PayPal, United States, proxy, direct, ⚙️ Manual, Hong Kong, Japan, Taiwan, Korea, Singapore, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/Paypal.png
+static = Netflix, ⚙️ Manual, Hong Kong, Taiwan, Japan, Korea, Singapore, United States, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Netflix_Letter.png
+
+# 音乐
+static = Spotify, proxy, Singapore, Hong Kong, Japan, United States, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Spotify.png
+
+# 游戏&特殊
+static = GlobalMedia, proxy, direct, ⚙️ Manual, Hong Kong, United States, Japan, Taiwan, Korea, Singapore, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/HKMTMedia.png
+static = Gamer, proxy, direct, Hong Kong, United States, Singapore, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Game.png
+
+
+# 地区节点（自动测速）
+url-latency-benchmark = Hong Kong, server-tag-regex = (?=.*(港|HK|(?i)Hong))^((?!(台|本|坡|美|日|韩)).)*$, check-interval = 1200, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Hong_Kong.png
+url-latency-benchmark = Taiwan, server-tag-regex = (?=.*(台|TW|(?i)Taiwan))^((?!(港|本|坡|美|日|韩)).)*$, check-interval = 1200, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Taiwan.png
+url-latency-benchmark = Japan, server-tag-regex = (?=.*(本|JP|(?i)Japan))^((?!(港|台|坡|美|韩)).)*$, check-interval = 1200, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Japan.png
+url-latency-benchmark = Singapore, server-tag-regex = (?=.*(坡|狮|獅|SG|(?i)Singapore))^((?!(港|台|本|美|韩)).)*$, check-interval = 900, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Singapore.png
+url-latency-benchmark = United States, server-tag-regex = (?=.*(美|US|(?i)States|American))^((?!(港|台|本|坡|韩)).)*$, check-interval = 900, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/United_States.png
+url-latency-benchmark = Korea, server-tag-regex = (?=.*(韩|韓|KR|(?i)Korea))^((?!(港|台|本|坡|美)).)*$, check-interval = 1200, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Korea.png
+
+url-latency-benchmark = 节点选择, server-tag-regex = (港|HK|Hong|台|TW|Taiwan|本|JP|Japan|坡|SG|Singapore|美|US|States|韩|KR|Korea), check-interval = 600, tolerance = 50, alive-checking = true, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Global.png
+
+# 特殊策略
+dest-hash = US Dest, server-tag-regex = ^(?=.*(?:美国|美國|🇺🇸|US|United States|American))(?!.*(?:港|台|日|韩|新)).+$, img-url = https://raw.githubusercontent.com/Orz-3/mini/master/Color/US.png
+dest-hash = AI-Desthash, server-tag-regex = GPT$, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/apps/ChatGPT5.png
+
+# 工具
+static = ⚙️ Manual, server-tag-regex = ^(?!.*(港|台|本|坡|美|韩|HK|TW|JP|SG|US|KR|广告|售后|防失联|失联|官网|官方群|群|电报|TG|Telegram|客服|到期|续费|邀请|返利)).+$, img-url = https://raw.githubusercontent.com/fmz200/wool_scripts/main/icons/Twoandz9/Bigairport.png
+static = AdBlock, direct, reject, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Advertising.png
+static = Final, 节点选择, proxy, direct, img-url = https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Final.png
+
+[server_remote]
+https://conf1.hokkaido-toyoni.com/oosaka/f6f7da44f2dde71baf31e94abe355fe4, tag=Tag-1784704292, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Available.png, update-interval=172800, opt-parser=true, enabled=true
+
+[filter_remote]
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/Instagram/Instagram.list, tag=instagram, force-policy=proxy, update-interval=172800, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/refs/heads/master/rule/QuantumultX/DouYin/DouYin.list, tag=抖音, force-policy=proxy, update-interval=172800, opt-parser=false, enabled=true
+# ========== 国内直连 ==========
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/China/China.list, tag=Mainland, force-policy=direct, update-interval=604800, opt-parser=true, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/WeChat/WeChat.list, tag=WeChat, force-policy=direct, update-interval=2592000, opt-parser=true, enabled=false
+
+# ========== 国际服务 ==========
+https://raw.githubusercontent.com/curtinp118/QuantumultX/refs/heads/main/rules/AI.list, tag=AI, force-policy=AI, update-interval=172800, opt-parser=true, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Apple/Apple.list, tag=Apple, force-policy=Apple, update-interval=604800, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Google/Google.list, tag=Google, force-policy=Google, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Microsoft/Microsoft.list, tag=Microsoft, force-policy=Microsoft, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/PayPal/PayPal.list, tag=PayPal, force-policy=PayPal, update-interval=86400, opt-parser=false, enabled=true
+
+# ========== 流媒体 ==========
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Netflix/Netflix.list, tag=Netflix, force-policy=Netflix, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/YouTube/YouTube.list, tag=YouTube, force-policy=YouTube, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Spotify/Spotify.list, tag=Spotify, force-policy=Spotify, update-interval=86400, opt-parser=false, enabled=true
+
+# ========== 通讯社交 ==========
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Telegram/Telegram.list, tag=Telegram, force-policy=Telegram, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Twitter/Twitter.list, tag=Twitter, force-policy=X, update-interval=86400, opt-parser=false, enabled=true
+
+# ========== 游戏平台 ==========
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Steam/Steam.list, tag=Steam, force-policy=Gamer, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Epic/Epic.list, tag=Epic, force-policy=Gamer, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Sony/Sony.list, tag=Sony, force-policy=Gamer, update-interval=86400, opt-parser=false, enabled=true
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Nintendo/Nintendo.list, tag=Nintendo, force-policy=Gamer, update-interval=86400, opt-parser=false, enabled=true
+
+# ========== 国外代理（兜底） ==========
+https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/QuantumultX/Global/Global.list, tag=Outside, force-policy=proxy, update-interval=86400, opt-parser=true, enabled=true
+
+# ========== 广告拦截 ==========
+https://raw.githubusercontent.com/TG-Twilight/AWAvenue-Ads-Rule/main/Filters/AWAvenue-Ads-Rule-QuantumultX.list, tag=Ads, force-policy=AdBlock, update-interval=604800, opt-parser=false, enabled=true
+
+[server_local]
+
+
+
+
+[filter_local]
+host-suffix, gemini.google.com, AI
+host-suffix, googleai.googleapis.com, AI
+host-suffix, generativeai.googleapis.com, AI
+host-keyword, gemini, AI
+
+host-suffix, github.com, proxy
+host-suffix, githubusercontent.com, proxy
+host-keyword, github, proxy
+host-suffix, istrongcloud.com, direct
+host-suffix, qweather.com, direct
+host-suffix, ccluster.net, direct
+host-suffix, ownthink.com, direct
+host-suffix, 95598.csg.cn, direct
+host-suffix, sqb3.com, direct
+host-suffix, e761dszb.com, direct
+# DIY 代理
+host-suffix, cc.cd, proxy
+host-suffix, linux.do, proxy
+host-keyword, yattazen, proxy
+# 迅雷/版权保护
+host, hub5idx.v6.shub.sandai.net, reject
+host, hub5emu.v6.shub.sandai.net, reject
+host, hub5btmain.v6.shub.sandai.net, reject
+ip-cidr, 180.76.76.200/32, reject
+# 局域网与特殊 IP
+host-suffix, local, direct
+ip-cidr, 203.107.1.1/24, reject
+ip-cidr, 183.240.197.130/32, direct
+# 兜底分流
+final, Final
+
+[rewrite_remote]
+https://gist.githubusercontent.com/95du/22c8320c31d52d21dcd8cf2bb8753307/raw/95abc0793375f3d51d79cd804fb51b8a463d65dd/lucky_autoLogin_conf.js, tag=Lucky_Cookie_Body, update-interval=172800, opt-parser=true, enabled=true
+https://cdn.jsdelivr.net/gh/chavyleung/scripts@master/box/rewrite/boxjs.rewrite.quanx.conf, tag=boxjs, update-interval=172800, opt-parser=true, enabled=true
+
+[rewrite_local]
+^https?:\/\/(www.)?(g|google)\.cn url 302 https://www.google.com
+
+
+[task_local]
+45 */5 * * * * send_bet_notify_autoLogin.js, tag=Send_notify, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/GitHub.png, enabled=true
+38 */5 * * * * custom_betting_4.js, tag=自动投注, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Catnet.png, enabled=true
+
+[http_backend]
+
+
+[mitm]
+
+hostname = gist.githubusercontent.com, www.google.cn
+
+skip_validating_cert = true
