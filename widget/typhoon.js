@@ -116,7 +116,7 @@ const shadowImage = (img, text, name) => {
   const h = img.size.height;
   ctx.drawImageInRect(img, new Rect(0, 0, w, h));
   ctx.setFillColor(new Color("#FFFFFF", 0.3));
-  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 7 : h * 0.61 + 12) : h * (text.length < 21 ? 0.75 : 0.69);
+  const startY = name ? (name.includes('wxPosterAll') ? h * 0.61 - 5 : h * 0.61 + 14) : h * (text.length < 21 ? 0.75 : 0.69);
   ctx.fillRect(new Rect(0, startY, w, h - startY));
   return ctx.getImage();
 };
