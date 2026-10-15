@@ -2908,7 +2908,7 @@ const createLevelWidget = (levels, names, textColor, isLarge) => {
     
     const agencyStack = listStack.addStack();
     agencyStack.layoutHorizontally();
-    agencyStack.size = new Size(95, 0);
+    agencyStack.size = new Size(100, 0);
     agencyStack.addSpacer();
     const agencyText = agencyStack.addText(isLarge && names?.length ? item.source : item.agency);
     agencyText.font = Font.mediumSystemFont(13);
