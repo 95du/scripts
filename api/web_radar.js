@@ -243,7 +243,7 @@ async function main(family) {
       if (!radarData || radarData.rain === 0) return null;
       const { tips, title, content } = radarData;
       if (setting?.rain !== content) {
-        module.notify(title, content);
+        module.notify(title, content, 'https://html5.moji.com/tpd/mojiweatheraggr/index.html#/home');
         setting.rain = content;
         writeSettings(setting);
       }
