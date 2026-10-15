@@ -1585,20 +1585,19 @@ async function main(family) {
     icon.tintColor = Color.white();
 
     if (type) {
-      stack.addSpacer(10);
+      stack.addSpacer(15);
       const typeText = stack.addText(`${type}预警`);
       typeText.font = Font.mediumSystemFont(14);
       typeText.textColor = levelColor;
-    } else if (weather_desc) {
-      stack.addSpacer(15);
-      createStackText(stack, weather_desc);
-      stack.addSpacer(3);
-      const currentWeatherIcon = stack.addImage(weatherIcon);
-      currentWeatherIcon.imageSize = new Size(18, 18);
-      stack.addSpacer(10);
-      createStackText(stack, temp.value + temp.unit);
     }
     
+    stack.addSpacer(15);
+    createStackText(stack, weather_desc);
+    stack.addSpacer(3);
+    const currentWeatherIcon = stack.addImage(weatherIcon);
+    currentWeatherIcon.imageSize = new Size(18, 18);
+    stack.addSpacer(10);
+    createStackText(stack, temp.value + temp.unit);
     topStack.addSpacer();
     widget.addSpacer();
     
