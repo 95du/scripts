@@ -656,8 +656,12 @@ const selectSecond = (point, main) => {
 
   const JP_CHAIN = ["tokyo", "naha", "kagoshima"];
   const TW_CHAIN = ["yilan", "hualien", "taipei", "kaohsiung"];
+  if (main.id === "naha" && point.lat < main.lat && point.lat >= 22.5 && point.lat <= 25.3) {
+    const twPref = candidates.filter(c => TW_CHAIN.includes(c.id) && c.distance <= main.distance * 3.5 && getDistance(main.lat, main.lng, c.lat, c.lng) >= 300 && getIncludedAngle(point, main, c) >= 8 && getIncludedAngle(point, main, c) <= 175).sort((a, b) => a.distance - b.distance)[0];
+    if (twPref) return { ...twPref, relaxed: true };
+  }
+  
   const preferred = candidates.find(c => JP_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c));
-
   if (preferred) {
     const closestTw = candidates
       .filter(c => TW_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c))
@@ -710,7 +714,7 @@ const getTyphoonLocation = point => {
   const seaSuffix = getSeaSuffix(point);
   if (main.isLand) return `距离${mainText}`;
   const useOcean = !!second || main.isSea || main.distance >= 1200;
-  if (second && isMeaningfulSecond(point, main, second)) {
+    if (second && (second.relaxed || isMeaningfulSecond(point, main, second))) {
     const secondText = formatAnchor(second, point);
     return `位于${mainText}、${secondText}的${seaSuffix}`;
   }
