@@ -1514,25 +1514,11 @@ async function main(family) {
     finalCtx.setFillColor(new Color(LOC_COLOR));
     finalCtx.fillEllipse(new Rect(cx - ri, cy - ri, ri * 2, ri * 2));
   
-    // 6) 提示框画在最上层
-    try {
-      const tip = await buildTooltip(probe);
-      if (tip) {
-        finalCtx.drawImageInRect(
-          tip.image,
-          new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h)
-        );
-        // 全屏雨/雪效果
-        try {
-          const fx = await buildPrecip(probe);
-          if (fx) finalCtx.drawImageInRect(fx, full);
-        } catch (e) {
-          console.log('precip fx error: ' + (e.message || e));
-        }
-      }
-    } catch (e) {
-      console.log('tooltip error: ' + (e.message || e));
-    }
+    // 6) 雨雪➕提示框画在最上层
+    const tip = await buildTooltip(probe).catch(() => null);
+    const fx = await buildPrecip(probe).catch(() => null);
+    if (fx) finalCtx.drawImageInRect(fx, full);
+    if (tip) finalCtx.drawImageInRect(tip.image, new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h));
   
     try {
       writeSettings({
@@ -1622,8 +1608,10 @@ async function main(family) {
     if (setting.autoLocation) {
       getLocation();
     }
-    await getTwoHoursWeather();
-    const { city, temp, sunset, weather_desc, alerts = [] } = await getAlert() || {};
+    const [_, { city, temp, sunset, weather_desc, alerts = [] } = {}] = await Promise.all([
+      getTwoHoursWeather(),
+      getAlert()
+    ]);
     const [{ type, level, update_time } = {}] = alerts;
     const levelColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
