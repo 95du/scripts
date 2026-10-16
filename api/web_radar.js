@@ -255,18 +255,15 @@ async function main(family) {
   
   // 天气预警
   const getAlert = async () => {
-    let cityInfo = { cityId: 285184 };
-    if (setting?.lng) {
-      const params = { 
-        lon: LNG, 
-        lat: LAT
-      };
-      cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 2, cacheStr, 'POST', params);
-    }
-    
+    if (!setting?.lng) return {};
+    const params = { 
+      lon: LNG, 
+      lat: LAT
+    };
+    const cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 2, cacheStr, 'POST', params);
     if (!cityInfo?.cityId) {
       console.log('获取墨迹天气城市信息失败');
-      return null;
+      return {};
     }
     const res = await getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr);
     return res?.data || null;
@@ -689,9 +686,7 @@ async function main(family) {
   /** 最新雷达元数据（时间戳 + hash），100 秒缓存 */
   const getLatestRadar = async () => {
     const metaName = '_radar_meta.json';
-    const cached = await getCacheData(
-      metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath
-    );
+    const cached = await getCacheData(metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath);
     if (cached && cached.info) return cached.info; // 缓存命中，或网络失败时沿用旧值
   
     const ref = cached && cached.reflectivity;
@@ -1129,7 +1124,8 @@ async function main(family) {
   
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').
+    replace(/\./g, 'p') + '.png'
   );
   
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
@@ -1546,13 +1542,19 @@ async function main(family) {
   };
   
   const createStackText = (stack, label) => {
-    const text = stack.addText(label);
+    const text = stack.addText(`${label}`);
     text.textColor = Color.white();
     text.font = Font.mediumSystemFont(14);
   };
   
   // 雨雪雷达组件
-  const createWidget = (city = '海洋', type = '', levelColor, temp, weather_desc, weatherIcon) => {
+  const createWidget = (
+    city = '海洋', 
+    type = '', 
+    levelColor, 
+    temp = {}, 
+    weather_desc, weatherIcon
+  ) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
     if (family === 'small') {
@@ -1577,13 +1579,16 @@ async function main(family) {
       typeText.textColor = levelColor;
     }
     
-    stack.addSpacer(15);
-    createStackText(stack, weather_desc);
-    stack.addSpacer(3);
-    const currentWeatherIcon = stack.addImage(weatherIcon);
-    currentWeatherIcon.imageSize = new Size(18, 18);
-    stack.addSpacer(10);
-    createStackText(stack, temp.value + temp.unit);
+    if (weather_desc && temp) {
+      stack.addSpacer(15);
+      createStackText(stack, weather_desc);
+      stack.addSpacer(3);
+      const currentWeatherIcon = stack.addImage(weatherIcon);
+      currentWeatherIcon.imageSize = new Size(18, 18);
+      stack.addSpacer(10);
+      createStackText(stack, temp.value + temp.unit);
+    }
+    
     topStack.addSpacer();
     widget.addSpacer();
     
@@ -1608,25 +1613,27 @@ async function main(family) {
     if (setting.autoLocation) {
       getLocation();
     }
+  
     const [_, { city, temp, sunset, weather_desc, alerts = [] } = {}] = await Promise.all([
       getTwoHoursWeather(),
       getAlert()
     ]);
+    
     const [{ type, level, update_time } = {}] = alerts;
     const levelColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
+  
     const widget = await createWidget(city, type, levelColor, temp, weather_desc, weatherIcon);
     widget.backgroundImage = await buildCombinedImage();
-    
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
-      widget.refreshAfterDate = new Date(Date.now() + 1000 * 60 * Number(setting.refresh));
       Script.setWidget(widget);
       Script.complete();
     }
   };
+
   await runWidget();
 };
 
