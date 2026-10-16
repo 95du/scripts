@@ -1549,7 +1549,7 @@ async function main(family) {
   
   // 雨雪雷达组件
   const createWidget = (
-    city = '海洋', 
+    city = `东经${LNG}°‌   北纬${LAT}‌°‌`,
     type = '', 
     levelColor, 
     temp = {}, 
