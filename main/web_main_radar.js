@@ -76,7 +76,7 @@ async function main() {
     radarCacheTTL: 300,
     showColorBar: true,
     barWidth: 250,
-    barHeight: 10
+    barHeight: 10,
   };
   
   const initSettings = () => {
@@ -674,6 +674,15 @@ async function main() {
           icon: {
             name: 'tag.fill',
             color: '#5856D6'
+          }
+        },
+        {
+          label: '雷达帧数',
+          name: 'preferNowcast',
+          type: 'switch',
+          icon: {
+            name: 'photo.fill',
+            color: '#AF52DE'
           }
         }
       ]
