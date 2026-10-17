@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '全球雨雪雷达'
-  const version = '1.0.2'
-  const updateDate = '2026年10月11日'
+  const version = '1.0.3'
+  const updateDate = '2026年10月17日'
   const pathName = '95du_radar';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -76,7 +76,7 @@ async function main() {
     radarCacheTTL: 300,
     showColorBar: true,
     barWidth: 250,
-    barHeight: 12
+    barHeight: 10
   };
   
   const initSettings = () => {
@@ -117,7 +117,7 @@ async function main() {
     if (version !== settings.version && hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，增加全球坐标及缓存等`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重置所有再使用`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
     }
   };
   
@@ -258,7 +258,9 @@ async function main() {
       ...settings, ...coord 
     });
     const cityInfoPath = fm.joinPath(cacheStr, 'cityInfo.json');
-    fm.remove(cityInfoPath);
+    if (fm.fileExists(cityInfoPath)) {
+      fm.remove(cityInfoPath);
+    }
     ScriptableRun();
   };
   
