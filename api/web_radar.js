@@ -719,19 +719,26 @@ async function main(family) {
     const ref = cached && cached.reflectivity;
     if (!ref) throw new Error('radar.json 没有 reflectivity 数据');
   
-    const ts = Math.max(...Object.keys(ref).map(Number));
+    const nowSec = Math.floor(Date.now() / 1000);
+    const allTs = Object.keys(ref).map(Number).sort((a, b) => a - b);
+  
+    let ts;
+    if (setting.preferNowcast) {
+      ts = allTs[allTs.length - 1];
+    } else {
+      ts = allTs.filter(t => t <= nowSec).pop()  ?? allTs.find(t => t > nowSec) ?? allTs[allTs.length - 1];
+    }
+  
     const hash = ref[String(ts)];
     if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
   
     const d = new Date(ts * 1000);
     const p = n => String(n).padStart(2, '0');
-    const nowSec = Math.floor(Date.now() / 1000);
-    // 是否临近预报
     const isForecast = ts > nowSec;
   
     const info = {
       timestamp: ts,
-      ar: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + '/' +  p(d.getUTCHours()) + p(d.getUTCMinutes()),
+      ar: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + '/' + p(d.getUTCHours()) + p(d.getUTCMinutes()),
       hash,
       isForecast,
       localTimeStr: (() => {
@@ -1584,7 +1591,7 @@ async function main(family) {
   };
   
   const createStackText = (stack, label) => {
-    const text = stack.addText(`${label}`);
+    const text = stack.addText(label);
     text.textColor = Color.white();
     text.font = Font.mediumSystemFont(14);
   };
