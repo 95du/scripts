@@ -1549,10 +1549,10 @@ async function main(family) {
   
   // 雨雪雷达组件
   const createWidget = (
-    city = `东经${LNG}°‌   北纬${LAT}‌°‌`,
-    type = '', 
-    levelColor, 
-    temp = {}, 
+    city = `东经${Number(LNG).toFixed(3)}°   北纬${Number(LAT).toFixed(3)}°`,
+    type = '',
+    levelColor,
+    temp = {},
     weather_desc, weatherIcon
   ) => {
     const widget = new ListWidget();
