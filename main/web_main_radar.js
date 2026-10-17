@@ -254,6 +254,9 @@ async function main() {
       options = ['取消', '更新']
     );
     if (index === 0) return;
+    settings.gcjLng = coord.lng;
+    settings.gcjLat = coord.lat;
+    settings.updateTime = Date.now();
     writeSettings({ 
       ...settings, ...coord 
     });
