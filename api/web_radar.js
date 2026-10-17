@@ -4,8 +4,8 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 全球雨雪雷达
- * 组件版本: Version 1.0.2
- * 发布时间: 2026-10-11
+ * 组件版本: Version 1.0.3
+ * 发布时间: 2026-10-17
  */
 
 
@@ -211,12 +211,13 @@ async function main(family) {
     }
     try {
       const loc = await Location.current();
-      const gcj = wgs84ToGcj02(
-        loc.longitude,
-        loc.latitude
-      );
-      setting.lng = gcj.longitude;
-      setting.lat = gcj.latitude;
+      // 原始 WGS84（用于地图瓦片）
+      setting.lng = loc.longitude;
+      setting.lat = loc.latitude;
+      // 转换后的 GCJ-02（用于天气接口）
+      const gcj = wgs84ToGcj02(loc.longitude, loc.latitude);
+      setting.gcjLng = gcj.longitude;
+      setting.gcjLat = gcj.latitude;
       setting.updateTime = Date.now();
       writeSettings(setting);
       return setting;
@@ -236,11 +237,19 @@ async function main(family) {
   const getTwoHoursWeather = async () => {
     try {
       const params = {
-        common: { platform: 'iPhone', language: 'CN' }, 
-        params: { lat: LAT, lon: LNG }
-      }
-      const { radarData } = await getCacheData('twoHoursWeather.json', 'https://ssfc.api.moji.com/sfc/json/nowcast', 'json', 0.5, cacheStr, 'POST', params);
-      if (!radarData || radarData.rain === 0) return null;
+        common: { platform: 'iPhone', language: 'CN' },
+        params: {
+          lat: setting.gcjLat,
+          lon: setting.gcjLng
+        }
+      };
+      const { radarData } = await getCacheData(
+        'twoHoursWeather.json',
+        'https://ssfc.api.moji.com/sfc/json/nowcast',
+        'json',  0.5, cacheStr,
+        'POST', params
+      );
+      if (!radarData) return null;
       const { tips, title, content } = radarData;
       if (setting?.rain !== content) {
         module.notify(title, content, 'https://html5.moji.com/tpd/mojiweatheraggr/index.html#/home');
@@ -255,17 +264,26 @@ async function main(family) {
   
   // 天气预警
   const getAlert = async () => {
-    if (!setting?.lng) return {};
-    const params = { 
-      lon: LNG, 
-      lat: LAT
+    if (!setting?.gcjLng) return {};
+    const params = {
+      lon: setting.gcjLng,
+      lat: setting.gcjLat
     };
-    const cityInfo = await getCacheData('cityInfo.json', 'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo', 'json', 2, cacheStr, 'POST', params);
+    const cityInfo = await getCacheData(
+      'cityInfo.json',
+      'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo',
+      'json', 2, cacheStr,
+      'POST', params
+    );
     if (!cityInfo?.cityId) {
       console.log('获取墨迹天气城市信息失败');
       return {};
     }
-    const res = await getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr);
+    const res = await getCacheData(
+      `weather_${cityInfo.cityId}.json`,
+      `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`,
+      'json', 1, cacheStr
+    );
     return res?.data || null;
   };
   
@@ -378,7 +396,8 @@ async function main(family) {
     cacheTime = 0,
     path = mainPath,
     method = 'GET',
-    body = null
+    body = null,
+    staleFallback = false
   ) => {
     const cache = useFileManager(type, path);
     const filePath = fm.joinPath(path, name);
@@ -386,6 +405,8 @@ async function main(family) {
     const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
     const data = exists && !expired ? cache.read(name) : undefined;
     if (data !== undefined && data !== null) return data;
+    // 网络失败时的回退：过期的缓存数据（仅 staleFallback = true 的调用启用）
+    const stale = staleFallback && exists ? cache.read(name) : undefined;
   
     try {
       const request = new Request(url);
@@ -399,16 +420,19 @@ async function main(family) {
         request.body = JSON.stringify(body ?? {});
       };
       
-      const response =
-        type === 'json'
-          ? await request.loadJSON()
-          : type === 'string'
-            ? await request.loadString()
-            : type === 'data'
-              ? await request.load()
-              : await request.loadImage();
-  
+      const response = type === 'json'
+        ? await request.loadJSON()
+        : type === 'string'
+        ? await request.loadString()
+        : type === 'data'
+        ? await request.load()
+        : await request.loadImage();
+
+      // 启用过期回退的调用：非 2xx 一律视为失败，不写入缓存，直接走回退
       const sc = request.response?.statusCode;
+      if (staleFallback && sc && (sc < 200 || sc >= 300)) {
+        throw new Error(`HTTP ${sc}`);
+      }
       if (type === 'data' && sc && sc !== 200) {
         if (sc === 404) {
           const empty = Data.fromString('');
@@ -424,9 +448,12 @@ async function main(family) {
     } catch (e) {
       console.log(`请求失败：${e}`);
     }
+    
+    if (stale !== undefined && stale !== null) return stale;
     return null;
   };
   
+  // 处理标签文件
   const writeFresh = (path, content) => {
     if (fm.fileExists(path)) fm.remove(path);
     if (typeof content === 'string') fm.writeString(path, content);
@@ -529,7 +556,7 @@ async function main(family) {
       for (let y = minTileY; y <= maxTileY; y++) {
         if (y < 0 || y >= n) continue;
         for (let x = minTileX; x <= maxTileX; x++) {
-          const cx = ((x % n) + n) % n;
+          const cx = ((x % n) + n) % n
           let image = null;
           if (ENABLE_RENDER_CACHE) {
             const name = getRenderName(tileZ, cx, y);
@@ -683,12 +710,11 @@ async function main(family) {
   };
   
   // ========== 雷达 ==========
-  /** 最新雷达元数据（时间戳 + hash），100 秒缓存 */
+  /** 最新雷达元数据（时间戳 + hash）。缓存过期且网络失败时，回退到上一次成功的缓存 */
   const getLatestRadar = async () => {
     const metaName = '_radar_meta.json';
-    const cached = await getCacheData(metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath);
+    const cached = await getCacheData(metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath, 'GET', null, true);
     if (cached && cached.info) return cached.info; // 缓存命中，或网络失败时沿用旧值
-  
     const ref = cached && cached.reflectivity;
     if (!ref) throw new Error('radar.json 没有 reflectivity 数据');
     const ts = Math.max(...Object.keys(ref).map(Number));
@@ -1137,7 +1163,8 @@ async function main(family) {
   };
   
   const drawLabelOverlay = async items => {
-    const out = await runWV(wvLabels, {
+    const out = await runWV(
+      wvLabels, {
       items, ow: TARGET_WIDTH, oh: TARGET_HEIGHT, fs: LABEL_FONT_SCALE * K, max: MAX_LABELS
     });
     console.log('labels drawn=' + out.n + '/' + items.length);
@@ -1246,7 +1273,10 @@ async function main(family) {
     let e, name = null;
     if (isSnow) {
       e = Math.sqrt(10 ** (snow / 10) / 75);
-      name = e >= 2.5 ? '大雪' : e >= 1.5 ? '中雪' : e >= 0.025 ? '小雪' : null;
+      name = e >= 2.5 
+        ? '大雪' : e >= 1.5 
+        ? '中雪' : e >= 0.025 
+        ? '小雪' : null;
     } else {
       e = (10 ** (rain / 10) / 200) ** 0.625;
       name =
@@ -1312,7 +1342,8 @@ async function main(family) {
           colOn[x] = E(ci + 0.5) < A.keep ? 1 : 0;
         }
         for (let y = 0; y < OH; y++) {
-          const ay = ((OH - y - 0.5) / U + yoff) * 4e-3; // 屏幕向上 = 原版 y 增大
+          // 屏幕向上 = 原版 y 增大
+          const ay = ((OH - y - 0.5) / U + yoff) * 4e-3;
           for (let x = 0; x < OW; x++) {
             if (!colOn[x]) continue;
             let f = ay + T * colB[x];
@@ -1321,8 +1352,7 @@ async function main(family) {
           }
         }
       } else {
-        // 原版雪：11 层网格，每格一朵雪花（圆点，中心在格内随机偏移），各层网格大小/偏移不同
-        const dt = T * 0.2;                              // 原版 d = time*0.2
+        const dt = T * 0.2;
         const acc = new Float32Array(OW * OH);
         const x0 = xoff, x1 = xoff + OW / U, y0 = yoff, y1 = yoff + OH / U;
         const rIn = 0.02 * A.size, rOut = 0.04 * A.size; // 单位：格子宽度
