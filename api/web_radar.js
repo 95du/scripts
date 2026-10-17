@@ -710,25 +710,37 @@ async function main(family) {
   };
   
   // ========== 雷达 ==========
-  /** 最新雷达元数据（时间戳 + hash）。缓存过期且网络失败时，回退到上一次成功的缓存 */
+  // 最新雷达元数据（时间戳 + hash）。缓存过期且网络失败时，回退到上一次成功的缓存
   const getLatestRadar = async () => {
     const metaName = '_radar_meta.json';
     const cached = await getCacheData(metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath, 'GET', null, true);
-    if (cached && cached.info) return cached.info; // 缓存命中，或网络失败时沿用旧值
+    if (cached && cached.info) return cached.info;
+  
     const ref = cached && cached.reflectivity;
     if (!ref) throw new Error('radar.json 没有 reflectivity 数据');
+  
     const ts = Math.max(...Object.keys(ref).map(Number));
     const hash = ref[String(ts)];
     if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
   
     const d = new Date(ts * 1000);
     const p = n => String(n).padStart(2, '0');
+    const nowSec = Math.floor(Date.now() / 1000);
+    // 是否临近预报
+    const isForecast = ts > nowSec;
+  
     const info = {
       timestamp: ts,
-      ar: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + '/' +
-        p(d.getUTCHours()) + p(d.getUTCMinutes()),
-      hash
+      ar: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + '/' +  p(d.getUTCHours()) + p(d.getUTCMinutes()),
+      hash,
+      isForecast,
+      localTimeStr: (() => {
+        const df = new DateFormatter();
+        df.dateFormat = 'HH:mm';
+        return df.string(d);
+      })()
     };
+  
     useFileManager('json', radarPath).write(metaName, { savedAt: Date.now(), info });
     return info;
   };
@@ -1583,7 +1595,9 @@ async function main(family) {
     type = '',
     levelColor,
     temp = {},
-    weather_desc, weatherIcon
+    weather_desc, 
+    weatherIcon,
+    radarInfo = {}
   ) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
@@ -1630,6 +1644,9 @@ async function main(family) {
       colorBar.size = new Size(setting?.barWidth ?? 250, setting?.barHeight ?? 12);
       colorBar.backgroundGradient = createGradient();
       colorBar.cornerRadius = 6;
+    } else if (radarInfo) {
+      const radarInfoStack = createBarStack(bottomStack);
+      createStackText(radarInfoStack, `雷达帧实际时间: ${radarInfo.isForecast ? '临近预报' : '今天'} ${radarInfo.localTimeStr}`);
     }
     bottomStack.addSpacer();
     const timeStack = createBarStack(bottomStack);
@@ -1644,17 +1661,19 @@ async function main(family) {
       getLocation();
     }
   
-    const [_, { city, temp, sunset, weather_desc, alerts = [] } = {}] = await Promise.all([
+    const [_, weatherData, radarInfo] = await Promise.all([
       getTwoHoursWeather(),
-      getAlert()
+      getAlert(),
+      getLatestRadar()
     ]);
     
-    const [{ type, level, update_time } = {}] = alerts;
+    const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
+    const [{ type, level } = {}] = alerts;
     const levelColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
   
-    const widget = await createWidget(city, type, levelColor, temp, weather_desc, weatherIcon);
+    const widget = await createWidget(city, type, levelColor, temp, weather_desc, weatherIcon, radarInfo);
     widget.backgroundImage = await buildCombinedImage();
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
