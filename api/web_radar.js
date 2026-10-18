@@ -1499,7 +1499,7 @@ async function main(family) {
       // 选中且为现在 = 蓝；选中 = 白；整点 = 灰(0.7)；其余 = 灰(0.6)
       tick.backgroundColor = frame.isSelected
         ? new Color(frame.isNow ? '#38BCFF' : '#FFFFFF')
-        : new Color('#8E8E93', frame.isMajor ? 0.7 : 0.6);
+        : new Color('#8E8E93', frame.isMajor ? 0.75 : 0.65);
     });
   };
 
@@ -1564,7 +1564,7 @@ async function main(family) {
       const img = radarStack.addImage(satellite);
       img.imageSize = new Size(16, 16)
       img.tintColor = new Color('#38BCFF');
-      radarStack.addSpacer(8);
+      radarStack.addSpacer(10);
       createScaleTicks(radarStack, radarInfo);
     }
 
