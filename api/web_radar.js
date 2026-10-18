@@ -12,36 +12,30 @@
 async function main(family) {
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
-  const isDev = false
-  
+  const isDev = false;
+
   if (typeof require === 'undefined') require = importModule;
   const { _95du } = require(isDev ? './_95du' : `${depPath}/_95du`);
-  
+
   const pathName = '95du_radar';
   const module = new _95du(pathName);
   const setting = module.settings;
-  const { 
-    rootUrl,
-    mainPath,
-    settingPath, 
-    cacheImg, 
-    cacheStr,
-  } = module;
-  
+  const { rootUrl, mainPath, settingPath, cacheStr } = module;
+
   const ensureDir = path => (fm.fileExists(path) || fm.createDirectory(path, true), path);
   const [
     fillPath, bmPath, landPath,
     linePath, renderPath, radarPath, labelsPath
-  ] = ['fill', 'bm', 'land', 'line', 'render', 'radar', 'labels'].map(k => ensureDir(fm.joinPath(mainPath, k))
-  );
-  
-  const writeSettings = setting => {
-    fm.writeString(settingPath, JSON.stringify(setting, null, 2));
-  };
-    
+  ] = ['fill', 'bm', 'land', 'line', 'render', 'radar', 'labels'].map(k => ensureDir(fm.joinPath(mainPath, k)));
+
+  const writeSettings = data => fm.writeString(settingPath, JSON.stringify(data, null, 2));
+
+  const pad = n => String(n).padStart(2, '0');
+  const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
   /* ============================ */
-  // 1. 画布与分辨率配置
-  /* ============================= */
+  // 1. 画布与分辨率
+  /* ============================ */
   // 输出分辨率系数：桌面偏糊选 3，追求速度/内存小选 2
   const DPR = setting.dpr;
   const TARGET_WIDTH = Math.round(364 * DPR);
@@ -49,46 +43,36 @@ async function main(family) {
   // UI/字号/图标/边距的相对缩放比例 (基准为 728×764)
   const K = DPR / 2;
   const CONCURRENCY = 8;
-  
+
   /* ============================ */
-  // 2. 地理坐标与缩放配置
+  // 2. 地理坐标与缩放
   /* ============================ */
   const LAT = setting?.lat ?? 20.047;
   const LNG = setting?.lng ?? 110.192;
-  // 逻辑缩放层级
   const ZOOM = setting.zoom;
   const RZ = ZOOM + Math.log2(K);
   const WORLD_M = 20037508.342789244;
-  
+
   /* ============================ */
   // 3. 底图样式与缓存
   /* ============================ */
   // 修改底图样式/调色时 +1 以清除旧渲染缓存
   const MAP_RENDER_VERSION = 8;
-  // 海洋颜色
   const OCEAN_COLOR = '#1a3c5a';
-  // 陆地颜色
   const LAND_COLOR = '#2f6e48';
-  // 边界线/海岸线颜色
   const LINE_COLOR = '#000000';
-  // 边界线透明度
   const LINE_OPACITY = 0.18;
-  // 整体遮罩/压暗透明度
+  // 整体压暗透明度
   const DIM_ALPHA = 0.08;
-  
-  // --- 瓦片预算与缓存配置 ---
+
   const TILE_SIZE = 256;
   const MAP_TILE_BUDGET = 24;
   const ENABLE_RENDER_CACHE = true;
-  // 底图渲染缓存有效期 (30天)
   const MAP_CACHE_SECONDS = 86400 * setting.mapCacheHours;
-  // 陆地填充瓦片缓存 (30天)
   const FILL_CACHE_HOURS = 24 * setting.mapCacheHours;
-  // Blue Marble 瓦片缓存 (365天)
-  const BM_CACHE_HOURS = 24 * 365;
-  // 边界线瓦片缓存 (30天)
   const LINE_CACHE_HOURS = 24 * setting.mapCacheHours;
-  
+  const BM_CACHE_HOURS = 24 * 365;
+
   /* ============================ */
   // 4. 雷达图层与色板
   /* ============================ */
@@ -96,8 +80,7 @@ async function main(family) {
   const NATIVE_MAX_Z = 7;
   // 雷达元数据 TTL (秒)
   const RADAR_META_TTL = setting.radarCacheTTL;
-  
-  // --- 着色器/色板调节参数 ---
+
   const RADAR_SCALE = 1.35;
   const RADAR_POWER = 5.5;
   const PALETTE_OFFSET = 0.00275;
@@ -106,75 +89,62 @@ async function main(family) {
   const PALETTE_FLIP_Y = false;
   const RADAR_DBZ_MIN = -32;
   const RADAR_DBZ_SPAN = 127.5;
-  
+
   /* ============================ */
   // 5. 城市与地名标签
   /* ============================ */
-  // 是否显示文本标签
   const SHOW_LABELS = setting.showLabels;
   const LABELS_LANG = 'zh';
   const LABELS_VERSION = 'v12';
-  // 标签数据缓存 (30天)
   const LABELS_CACHE_HOURS = 24 * setting.mapCacheHours;
-  // 最多显示标签数量
   const MAX_LABELS = 400;
-  // 字体缩放系数
   const LABEL_FONT_SCALE = 1.15;
-  // 视口外扩展外延距离，避免边缘标签切割缺失
+  // 视口外扩距离，避免边缘标签被切掉
   const LABEL_MARGIN = 120 * K;
-  
+
   /* ============================ */
-  // 6. 中心定位点与气象提示框
+  // 6. 定位点与降水提示框
   /* ============================ */
-  // 定位点原生绘制颜色
   const LOC_COLOR = setting.locColor;
-  // 定位点图标基础尺寸
   const LOC_ICON_SIZE = setting.locIconSize;
-  
-  // 是否显示降水提示框
   const SHOW_RAIN_TOOLTIP = setting.showPrecipInfo;
-  // 提示框整体缩放比
   const TOOLTIP_SCALE = 1.25;
-  // 箭头尖端到中心点的像素距离 (会按 K 缩放)
+  // 箭头尖端到中心点的像素距离 (按 K 缩放)
   const TOOLTIP_GAP = 18;
-  
+
   /* ============================ */
   // 7. 雨雪特效
   /* ============================ */
-  // 是否启用雨雪特效
   const SHOW_PRECIP_FX = setting.showPrecipFx;
-  const PRECIP_FORCE = null;
-  // 特效整体缩放比
   const PRECIP_FX_SCALE = 1;
   // 雨丝粗细和长度比 (越大越粗长)
   const RAIN_UNIT_SCALE = setting.rainUnitScale;
   // 雨丝列保留密度 (1.0 = 满密度, 0.6 = 稀疏)
   const RAIN_COLUMN_KEEP = setting.rainColumnKeep;
-  // 雨丝透明度/明暗倍率
   const RAIN_ALPHA = setting.rainAlpha;
-  // 是否按 雨/雪 量级自动调节特效强度
+  // 按雨/雪量级自动调节特效强度
   const PRECIP_AUTO_TIER = setting.precipAutoTier;
   const RAIN_TIER_IDX = { '微雨': 0, '小雨': 1, '中雨': 2, '大雨': 3, '特大雨': 4, '特大雨 / 冰雹': 4 };
   const SNOW_TIER_IDX = { '小雪': 0, '中雪': 1, '大雪': 2 };
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
-  
+
   const [typhoonIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
     module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, 'satellite.png')
   ]);
   const PALETTE_B64 = typhoonIcons.palette;
-  
-  /**
-   * GPS 获取的位置通常是 WGS-84 坐标系
-   * 高德地图使用的是 GCJ-02（火星坐标系）
-   */
+
+  /* ============================ */
+  // 定位与天气
+  /* ============================ */
+  // GPS 为 WGS-84，天气接口使用 GCJ-02
   const wgs84ToGcj02 = (lng, lat) => {
     const pi = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
-    const outOfChina = (lng, lat) =>
-      lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
-    if (outOfChina(lng, lat)) return { longitude: lng, latitude: lat };
-  
+    if (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271) {
+      return { longitude: lng, latitude: lat };
+    }
+
     const transformLat = (x, y) => {
       let ret = -100 + 2 * x + 3 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
       ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
@@ -182,7 +152,7 @@ async function main(family) {
       ret += (160 * Math.sin(y * pi / 12) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
       return ret;
     };
-  
+
     const transformLng = (x, y) => {
       let ret = 300 + x + 2 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
       ret += (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3;
@@ -190,7 +160,7 @@ async function main(family) {
       ret += (150 * Math.sin(x * pi / 12) + 300 * Math.sin(x * pi / 30)) * 2 / 3;
       return ret;
     };
-    
+
     let dLat = transformLat(lng - 105, lat - 35);
     let dLng = transformLng(lng - 105, lat - 35);
     const radLat = lat * pi / 180;
@@ -199,88 +169,63 @@ async function main(family) {
     const sqrtMagic = Math.sqrt(magic);
     dLat = dLat * 180 / (((a * (1 - ee)) / (magic * sqrtMagic)) * pi);
     dLng = dLng * 180 / ((a / sqrtMagic * Math.cos(radLat)) * pi);
-    return {
-      longitude: lng + dLng,
-      latitude: lat + dLat
-    };
+    return { longitude: lng + dLng, latitude: lat + dLat };
   };
-  
-  // 获取当前位置经纬度
+
+  // 后台更新位置，下次运行生效
   const getLocation = async () => {
     if (setting?.lat && setting.updateTime) {
       const hours = (Date.now() - setting.updateTime) / 3600000;
-      if (hours < setting.locCache) return setting;
+      if (hours < setting.locCache) return;
     }
     try {
       const loc = await Location.current();
-      // 原始 WGS84（用于地图瓦片）
       setting.lng = loc.longitude;
       setting.lat = loc.latitude;
-      // 转换后的 GCJ-02（用于天气接口）
       const gcj = wgs84ToGcj02(loc.longitude, loc.latitude);
       setting.gcjLng = gcj.longitude;
       setting.gcjLat = gcj.latitude;
       setting.updateTime = Date.now();
       writeSettings(setting);
-      return setting;
     } catch (e) {
-      console.log(e);
-      return setting || null;
+      console.log('定位失败: ' + e);
     }
   };
-  
-  const getFormattedTime = () => {
-    const df = new DateFormatter();
-    df.dateFormat = 'HH:mm';
-    return df.string(new Date());
-  };
-  
+
   // 未来两小时降雨提示
   const getTwoHoursWeather = async () => {
     try {
       const params = {
         common: { platform: 'iPhone', language: 'CN' },
-        params: {
-          lat: setting.gcjLat,
-          lon: setting.gcjLng
-        }
+        params: { lat: setting.gcjLat, lon: setting.gcjLng }
       };
       const { radarData } = await getCacheData(
         'twoHoursWeather.json',
         'https://ssfc.api.moji.com/sfc/json/nowcast',
-        'json',  0.5, cacheStr,
+        'json', 0.5, cacheStr,
         'POST', params
-      );
-      if (!radarData) return null;
-      const { tips, title, content } = radarData;
-      if (setting?.rain !== content) {
-        module.notify(title, content, 'https://html5.moji.com/tpd/mojiweatheraggr/index.html#/home');
-        setting.rain = content;
-        writeSettings(setting);
-      }
+      ) || {};
+      if (!radarData) return;
+      const { title, content } = radarData;
+      if (setting?.rain === content || title === '不会下雨') return;
+      module.notify(title, content, 'https://html5.moji.com/tpd/mojiweatheraggr/index.html#/home');
+      setting.rain = content;
+      writeSettings(setting);
     } catch (e) {
-      console.log('两小时天气错误' + e);
-      return null;
+      console.log(`天气错误: ${e}`);
     }
   };
-  
-  // 天气预警
+
+  // 天气与预警
   const getAlert = async () => {
     if (!setting?.gcjLng) return {};
-    const params = {
-      lon: setting.gcjLng,
-      lat: setting.gcjLat
-    };
     const cityInfo = await getCacheData(
       'cityInfo.json',
       'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo',
       'json', 2, cacheStr,
-      'POST', params
+      'POST', { lon: setting.gcjLng, lat: setting.gcjLat }
     );
-    if (!cityInfo?.cityId) {
-      console.log('获取墨迹天气城市信息失败');
-      return {};
-    }
+    if (!cityInfo?.cityId) return {};
     const res = await getCacheData(
       `weather_${cityInfo.cityId}.json`,
       `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`,
@@ -288,68 +233,52 @@ async function main(family) {
     );
     return res?.data || null;
   };
-  
-  // 天气预警文字颜色
-  const getAlertColor = (level) => {
-    if (level ==='红色') return Color.red();
-    if (level ==='橙色') return new Color('#FF7800');
-    if (level ==='黄色') return new Color('#EAC010');
-    if (level ==='蓝色') return Color.blue();
+
+  const getAlertColor = level => {
+    if (level === '红色') return Color.red();
+    if (level === '橙色') return new Color('#FF7800');
+    if (level === '黄色') return new Color('#EAC010');
+    if (level === '蓝色') return Color.blue();
     return new Color('#000000', 0.4);
   };
-  
-  // 图标Url
+
   const getWeatherIcon = (key, isDay = 1) => {
     const iconMap = {
-      '晴': isDay ? 100 : 150, 
-      '多云': isDay ? 101 : 151, 
-      '少云': isDay ? 102 : 152, 
-      '晴间多云': isDay ? 103 : 153, 
-      '阵雨': isDay ? 300 : 350, 
-      '强阵雨': isDay ? 301 : 351, 
-      '阴': 104, '雷阵雨': 302, '强雷阵雨': 303, '冰雹': 304, '小雨': 305, '中雨': 306, '大雨': 307, '极端降雨': 308, '细雨': 309, '毛毛雨': 309, '暴雨': 310, '大暴雨': 311, '特大暴雨': 312, '冻雨': 313, '小到中雨': 314, '中到大雨': 315, '大到暴雨': 316, '暴雨到大暴雨': 317, '大暴雨到特大暴雨': 318, '雨': 399,
-      // 雪
-      '小雪': 400, '中雪': 401, '大雪': 402, '暴雪': 403, '雨夹雪': 404, '雨雪天气': 405, 
-      '阵雨夹雪': isDay ? 406 : 456, 
-      '阵雪': isDay ? 407 : 457, 
+      '晴': isDay ? 100 : 150,
+      '多云': isDay ? 101 : 151,
+      '少云': isDay ? 102 : 152,
+      '晴间多云': isDay ? 103 : 153,
+      '阵雨': isDay ? 300 : 350,
+      '强阵雨': isDay ? 301 : 351,
+      '阴': 104, '雷阵雨': 302, '强雷阵雨': 303, '冰雹': 304, '小雨': 305, '中雨': 306, '大雨': 307,
+      '极端降雨': 308, '细雨': 309, '毛毛雨': 309, '暴雨': 310, '大暴雨': 311, '特大暴雨': 312,
+      '冻雨': 313, '小到中雨': 314, '中到大雨': 315, '大到暴雨': 316, '暴雨到大暴雨': 317,
+      '大暴雨到特大暴雨': 318, '雨': 399,
+      '小雪': 400, '中雪': 401, '大雪': 402, '暴雪': 403, '雨夹雪': 404, '雨雪天气': 405,
+      '阵雨夹雪': isDay ? 406 : 456,
+      '阵雪': isDay ? 407 : 457,
       '小到中雪': 408, '中到大雪': 409, '大到暴雪': 410, '雪': 499,
-      // 雾霾
-      '薄雾': 500, '雾': 501, '霾': 502, '扬沙': 503, '浮尘': 504, '沙尘暴': 507, '强沙尘暴': 508, '浓雾': 509, '强浓雾': 510, '中度霾': 511, '重度霾': 512, '严重霾': 513, '大雾': 514, '特强浓雾': 515, '热': 900, '冷': 901
+      '薄雾': 500, '雾': 501, '霾': 502, '扬沙': 503, '浮尘': 504, '沙尘暴': 507, '强沙尘暴': 508,
+      '浓雾': 509, '强浓雾': 510, '中度霾': 511, '重度霾': 512, '严重霾': 513, '大雾': 514,
+      '特强浓雾': 515, '热': 900, '冷': 901
     };
-  
     const iconId = iconMap[key] ?? (isDay ? 101 : 151);
     return {
       id: String(iconId),
       url: `https://static.qweather.com/img/common/icon/202106d/${iconId}.png`
     };
   };
-  
-  // 渐变颜色 (雨/小/中/大/雪)
+
+  // 色条渐变 (雨/小/中/大/雪)
   const stops = [
-    [0.000, '#92C5F4'],
-    [0.221, '#91C3F3'],
-    [0.247, '#7AADF1'],
-    [0.290, '#648FE7'],
-    [0.329, '#5469D6'],
-    [0.338, '#5561D0'],
-    [0.352, '#6E5CC0'],
-    [0.369, '#865DB4'],
-    [0.381, '#925EAB'],
-    [0.416, '#B96295'],
-    [0.475, '#E46576'],
-    [0.553, '#E89466'],
-    [0.648, '#F4DA5B'],
-    [0.682, '#F7EF5C'],
-    [0.723, '#FAF961'],
-    [0.7995, '#F9F762'],
-    [0.8005, '#DCF8F9'],
-    [0.833, '#C5F2F6'],
-    [0.872, '#AFEAF4'],
-    [0.948, '#7FC3D8'],
-    [0.976, '#70B8D0'],
-    [1.000, '#67B1CC']
+    [0.000, '#92C5F4'], [0.221, '#91C3F3'], [0.247, '#7AADF1'], [0.290, '#648FE7'],
+    [0.329, '#5469D6'], [0.338, '#5561D0'], [0.352, '#6E5CC0'], [0.369, '#865DB4'],
+    [0.381, '#925EAB'], [0.416, '#B96295'], [0.475, '#E46576'], [0.553, '#E89466'],
+    [0.648, '#F4DA5B'], [0.682, '#F7EF5C'], [0.723, '#FAF961'], [0.7995, '#F9F762'],
+    [0.8005, '#DCF8F9'], [0.833, '#C5F2F6'], [0.872, '#AFEAF4'], [0.948, '#7FC3D8'],
+    [0.976, '#70B8D0'], [1.000, '#67B1CC']
   ];
-  
+
   const createGradient = () => {
     const g = new LinearGradient();
     g.startPoint = new Point(0, 0.5);
@@ -358,13 +287,11 @@ async function main(family) {
     g.colors = stops.map(s => new Color(s[1]));
     return g;
   };
-  
-  /**
-   * 创建指定类型的文件读写器（json / string / data / image）
-   * @param {string} type - 数据类型
-   * @param {string} path - 目录路径
-   * @returns {{read: Function, write: Function}}
-   */
+
+  /* ============================ */
+  // 文件与网络工具
+  /* ============================ */
+  /** 按类型（json / string / data / image）读写文件；写入前先删除，以刷新创建时间（缓存过期依据） */
   const useFileManager = (type, path = mainPath) => {
     const getPath = name => fm.joinPath(path, name);
     return {
@@ -390,7 +317,11 @@ async function main(family) {
       }
     };
   };
-  
+
+  /**
+   * 带缓存的请求。cacheTime 单位小时，0 = 永不过期
+   * staleFallback = true：网络失败或非 2xx 时回退到过期缓存
+   */
   const getCacheData = async (
     name,
     url,
@@ -407,21 +338,18 @@ async function main(family) {
     const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
     const data = exists && !expired ? cache.read(name) : undefined;
     if (data !== undefined && data !== null) return data;
-    // 网络失败时的回退：过期的缓存数据（仅 staleFallback = true 的调用启用）
     const stale = staleFallback && exists ? cache.read(name) : undefined;
-  
+
     try {
       const request = new Request(url);
       request.method = method;
       request.timeoutInterval = 20;
-      request.headers = {
-        'User-Agent': 'Mozilla/5.0'
-      };
+      request.headers = { 'User-Agent': 'Mozilla/5.0' };
       if (method === 'POST') {
         request.headers['Content-Type'] = 'application/json';
         request.body = JSON.stringify(body ?? {});
-      };
-      
+      }
+
       const response = type === 'json'
         ? await request.loadJSON()
         : type === 'string'
@@ -430,7 +358,6 @@ async function main(family) {
         ? await request.load()
         : await request.loadImage();
 
-      // 启用过期回退的调用：非 2xx 一律视为失败，不写入缓存，直接走回退
       const sc = request.response?.statusCode;
       if (staleFallback && sc && (sc < 200 || sc >= 300)) {
         throw new Error(`HTTP ${sc}`);
@@ -450,19 +377,16 @@ async function main(family) {
     } catch (e) {
       console.log(`请求失败：${e}`);
     }
-    
-    if (stale !== undefined && stale !== null) return stale;
-    return null;
+
+    return stale ?? null;
   };
-  
-  // 处理标签文件
+
   const writeFresh = (path, content) => {
     if (fm.fileExists(path)) fm.remove(path);
     if (typeof content === 'string') fm.writeString(path, content);
     else fm.write(path, content);
   };
-  
-  // Data 转 Base64 字符串
+
   const toB64 = data => {
     try {
       return data.toBase64String();
@@ -471,7 +395,23 @@ async function main(family) {
     }
   };
   
-  // 共享 WebView：地图 / 雷达 / 标签 / 提示框共用，只创建一次
+  const base64ToImage = data => {
+    try {
+      return data ? Image.fromData(Data.fromBase64String(data)) : null;
+    } catch {
+      return null;
+    }
+  };
+  
+  const newCtx = (w, h) => {
+    const ctx = new DrawContext();
+    ctx.size = new Size(w, h);
+    ctx.opaque = true;
+    ctx.respectScreenScale = false;
+    return ctx;
+  };
+
+  // 共享 WebView：地图 / 雷达 / 标签 / 提示框 / 雨雪共用
   let _wv = null;
   const getWV = async () => {
     if (!_wv) {
@@ -480,7 +420,7 @@ async function main(family) {
     }
     return _wv;
   };
-  
+
   /** 在 WebView 里执行 fn(args)，fn 通过 completion(JSON 字符串) 返回；'ERR:' 开头视为失败 */
   const runWV = async (fn, args) => {
     const wv = await getWV();
@@ -489,10 +429,8 @@ async function main(family) {
     if (res.startsWith('ERR:')) throw new Error(res.slice(4));
     return JSON.parse(res);
   };
-  
-  /**
-   * 并发池：限制同时执行的任务数量
-   */
+
+  /** 并发池 */
   const mapPool = async (items, limit, fn) => {
     const out = new Array(items.length);
     let i = 0;
@@ -507,10 +445,12 @@ async function main(family) {
     );
     return out;
   };
-  
-  // ========== 坐标（地图与雷达共用同一套 Web Mercator） ==========
+
+  /* ============================ */
+  // 地图底图
+  /* ============================ */
   const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][new Date().getUTCMonth()];
-  
+
   /** 经纬度 → z 级别（可为小数）的世界像素坐标 */
   const worldPx = (lat, lng, z) => {
     const n = 2 ** z * TILE_SIZE;
@@ -520,28 +460,23 @@ async function main(family) {
       y: ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n
     };
   };
-  
-  // ========== 地图底图 ==========
-  
+
   const getTileUrls = (z, x, y) => ({
     fill: `https://tiles.zoom.earth/static/fill/v1/1x/webp/${z}/${y}/${x}.webp`,
     line: `https://tiles.zoom.earth/static/line/v1/1x/webp/${z}/${y}/${x}.webp`,
     land: `https://tiles.zoom.earth/static/land/v1/1x/webp/${z}/${y}/${x}.webp`
   });
-  
+
   const getRenderName = (z, x, y) =>
     `${month}_${z}_${x}_${y}_lo${Math.round(LINE_OPACITY * 100)}_v${MAP_RENDER_VERSION}.png`;
-  
-  /**
-   * 构建地图视口。瓦片级别：从 ceil(RZ) 起逐级降低，直到瓦片数 ≤ MAP_TILE_BUDGET
-   * （旧版用 round()，在 x.5 附近瓦片数会翻倍；预算法在任何缩放下都有上限）
-   */
+
+  /** 构建地图视口：从 ceil(RZ) 起逐级降低瓦片级别，直到瓦片数 ≤ MAP_TILE_BUDGET */
   const buildViewport = () => {
     const c = worldPx(LAT, LNG, RZ);
     const renderCache = useFileManager('image', renderPath);
-  
+
     for (let tileZ = Math.min(12, Math.ceil(RZ)); tileZ >= 0; tileZ--) {
-      const zoomScale = 2 ** (RZ - tileZ); // 输出像素 / 瓦片像素
+      const zoomScale = 2 ** (RZ - tileZ);
       const cropWidth = TARGET_WIDTH / zoomScale;
       const cropHeight = TARGET_HEIGHT / zoomScale;
       const cropLeft = c.x * 2 ** (tileZ - RZ) - cropWidth / 2;
@@ -552,13 +487,13 @@ async function main(family) {
       const maxTileY = Math.floor((cropTop + cropHeight - 1e-6) / TILE_SIZE);
       const count = (maxTileX - minTileX + 1) * (maxTileY - minTileY + 1);
       if (count > MAP_TILE_BUDGET && tileZ > 0) continue;
-  
+
       const n = 2 ** tileZ;
       const tiles = [];
       for (let y = minTileY; y <= maxTileY; y++) {
         if (y < 0 || y >= n) continue;
         for (let x = minTileX; x <= maxTileX; x++) {
-          const cx = ((x % n) + n) % n
+          const cx = ((x % n) + n) % n;
           let image = null;
           if (ENABLE_RENDER_CACHE) {
             const name = getRenderName(tileZ, cx, y);
@@ -578,8 +513,8 @@ async function main(family) {
       };
     }
   };
-  
-  // Blue Marble：同名文件并发时只请求一次；记住「最深存在的级别」，避免反复探测不存在的级别
+
+  // Blue Marble：同名文件并发时只请求一次；记住最深存在的级别，避免反复探测
   const bmInflight = new Map();
   const loadBM = async (tileZ, x, y) => {
     const top = Math.min(tileZ, setting.bmMaxZ ?? tileZ);
@@ -596,16 +531,16 @@ async function main(family) {
         ));
       }
       const d = await bmInflight.get(name);
-      if (!d) continue; // 网络失败，试更低级别
+      if (!d) continue;
       const len = toB64(d).length;
       if (len > 1000) return { data: d, dz };
-      if (len === 0 && z > 0) setting.bmMaxZ = z - 1; // 404：该级别不存在
+      if (len === 0 && z > 0) setting.bmMaxZ = z - 1;
     }
     return null;
   };
-  
-  /** 并行加载单个瓦片所需的 fill / BM / line / land（null = 网络失败，Data 为空 = 服务器 404） */
-  const loadTileAssets = async tile => {
+
+  /** 并行加载单个瓦片的 fill / BM / line / land（null = 网络失败，空 Data = 404） */
+  const loadTileAssets = async (tile) => {
     const { tileZ: z, cacheX: x, y } = tile;
     const name = `${z}_${x}_${y}.webp`;
     const urls = getTileUrls(z, x, y);
@@ -617,12 +552,12 @@ async function main(family) {
     ]);
     Object.assign(tile, { fill, bm: bmObj ? bmObj.data : null, bmDz: bmObj ? bmObj.dz : 0, line, land });
   };
-  
+
   const prepareTiles = list =>
     mapPool(list, CONCURRENCY, async tile => {
       try { await loadTileAssets(tile); } catch (e) {}
     });
-  
+
   /** WebView：把一批原始瓦片合成为 256 级 PNG（填色 → BM → 压暗 → 陆地 → 线） */
   const wvTiles = async A => {
     const loadImage = (data, type) => new Promise(res => {
@@ -639,14 +574,14 @@ async function main(family) {
         const fill = t.f && t.f.length > 0 ? await loadImage(t.f, 'webp') : null;
         const land = t.d && t.d.length > 80 ? await loadImage(t.d, 'webp') : null;
         const line = t.l && t.l.length > 80 ? await loadImage(t.l, 'webp') : null;
-  
+
         const w = bm ? (bm.naturalWidth || 256) : fill ? (fill.naturalWidth || 256) : 256;
         const h = bm ? (bm.naturalHeight || 256) : fill ? (fill.naturalHeight || 256) : 256;
         const cv = document.createElement('canvas');
         cv.width = w;
         cv.height = h;
         const ctx = cv.getContext('2d');
-  
+
         if (fill) {
           ctx.drawImage(fill, 0, 0, w, h);
           ctx.globalCompositeOperation = 'source-in';
@@ -660,7 +595,7 @@ async function main(family) {
           ctx.fillStyle = cfg.ocean;
           ctx.fillRect(0, 0, w, h);
         }
-  
+
         if (bm) {
           const s = Math.pow(2, t.bz || 0);
           const sw = bm.naturalWidth / s;
@@ -699,7 +634,7 @@ async function main(family) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
   };
-  
+
   const renderTiles = async list => {
     const res = await runWV(wvTiles, {
       cfg: { ocean: OCEAN_COLOR, land: LAND_COLOR, lineColor: LINE_COLOR, lineOpacity: LINE_OPACITY, dim: DIM_ALPHA },
@@ -710,54 +645,102 @@ async function main(family) {
     });
     return new Map(res.map(x => [x.k, x.d]));
   };
-  
-  // ========== 雷达 ==========
-  // 最新雷达元数据（时间戳 + hash）。缓存过期且网络失败时，回退到上一次成功的缓存
-  const getLatestRadar = async () => {
-    const metaName = '_radar_meta.json';
-    const cached = await getCacheData(metaName, 'https://tiles.zoom.earth/times/radar.json', 'json', RADAR_META_TTL / 3600, radarPath, 'GET', null, true);
-    if (cached && cached.info) return cached.info;
-  
-    const ref = cached && cached.reflectivity;
-    if (!ref) throw new Error('radar.json 没有 reflectivity 数据');
-  
-    const nowSec = Math.floor(Date.now() / 1000);
-    const allTs = Object.keys(ref).map(Number).sort((a, b) => a - b);
-  
-    let ts;
-    if (setting.preferNowcast) {
-      ts = allTs[allTs.length - 1];
-    } else {
-      ts = allTs.filter(t => t <= nowSec).pop()  ?? allTs.find(t => t > nowSec) ?? allTs[allTs.length - 1];
+
+  /** 底图：缓存瓦片 + 新渲染瓦片 → 拼接 → 裁剪缩放到输出尺寸 */
+  const renderBaseMap = async (vp, missing) => {
+    const mapCtx = newCtx(vp.sourceWidth, vp.sourceHeight);
+    mapCtx.setFillColor(new Color(OCEAN_COLOR));
+    mapCtx.fillRect(new Rect(0, 0, vp.sourceWidth, vp.sourceHeight));
+    const drawTile = (t, img) => mapCtx.drawImageInRect(
+      img,
+      new Rect((t.x - vp.minTileX) * TILE_SIZE, (t.y - vp.minTileY) * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    );
+    vp.tiles.filter(t => t.image).forEach(t => drawTile(t, t.image));
+
+    if (missing.length) {
+      const rendered = await renderTiles(missing);
+      const renderCache = useFileManager('image', renderPath);
+      for (const t of missing) {
+        try {
+          const data = rendered.get(t.key);
+          if (!data) continue;
+          const img = base64ToImage(data);
+          drawTile(t, img);
+          // 原始资源下载失败（null）时不缓存，避免缓存残缺瓦片
+          if (ENABLE_RENDER_CACHE && t.fill && t.land) {
+            renderCache.write(
+              getRenderName(t.tileZ, t.cacheX, t.y), img
+            );
+          }
+        } catch (e) {
+          console.log('地图瓦片渲染失败 ' + t.key + ' ' + (e.message || e));
+        }
+      }
     }
-  
-    const hash = ref[String(ts)];
-    if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
-  
-    const d = new Date(ts * 1000);
-    const p = n => String(n).padStart(2, '0');
-    const isForecast = ts > nowSec;
-  
-    const info = {
-      timestamp: ts,
-      ar: d.getUTCFullYear() + '-' + p(d.getUTCMonth() + 1) + '-' + p(d.getUTCDate()) + '/' + p(d.getUTCHours()) + p(d.getUTCMinutes()),
-      hash,
-      isForecast,
-      localTimeStr: (() => {
-        const df = new DateFormatter();
-        df.dateFormat = 'HH:mm';
-        return df.string(d);
-      })()
-    };
-  
-    useFileManager('json', radarPath).write(metaName, { savedAt: Date.now(), info });
-    return info;
+
+    const finalCtx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
+    const scaleX = TARGET_WIDTH / vp.cropWidth;
+    const scaleY = TARGET_HEIGHT / vp.cropHeight;
+    finalCtx.drawImageInRect(
+      mapCtx.getImage(),
+      new Rect(
+        -(vp.cropLeft - vp.minTileX * TILE_SIZE) * scaleX,
+        -(vp.cropTop - vp.minTileY * TILE_SIZE) * scaleY,
+        vp.sourceWidth * scaleX,
+        vp.sourceHeight * scaleY
+      )
+    );
+    return finalCtx.getImage();
   };
-  
+
+  /* ============================ */
+  // 雷达
+  /* ============================ */
+  /** 最新雷达元数据。缓存过期且网络失败时回退到上一次成功的缓存 */
+  const getLatestRadar = async () => {
+    const cached = await getCacheData(
+      '_radar_meta.json', 'https://tiles.zoom.earth/times/radar.json',
+      'json', RADAR_META_TTL / 3600, radarPath, 'GET', null, true
+    );
+    const reflectivity = cached?.reflectivity;
+    if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
+    const past = allTs.filter(t => t <= nowSec);
+    const ts = setting.preferNowcast
+      ? allTs[allTs.length - 1]
+      : (past.length ? past[past.length - 1] : allTs[0]);
+    const hash = reflectivity[String(ts)];
+    if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
+
+    const isForecast = !!setting.preferNowcast && ts > nowSec;
+
+    const frames = allTs.slice(-22).map(t => {
+      const d = new Date(t * 1000);
+      const time = hm(d);
+      return {
+        isMajor: d.getMinutes() === 0,
+        isSelected: t === ts,
+        isNow: !isForecast && time === hm(new Date())
+      };
+    });
+
+    const sel = frames.find(f => f.isSelected);
+    const u = new Date(ts * 1000);
+    return {
+      hash,
+      ar: `${u.getUTCFullYear()}-${pad(u.getUTCMonth() + 1)}-${pad(u.getUTCDate())}/${pad(u.getUTCHours())}${pad(u.getUTCMinutes())}`,
+      frames,
+      timeType: isForecast ? 'forecast' : sel?.isNow ? 'now' : 'today',
+      localTimeStr: hm(u)
+    };
+  };
+
   const radarTileURL = (info, z, x, y) => `https://tiles.zoom.earth/radar/reflectivity/${info.ar}/${info.hash}/${z}/${y}/${x}.webp`;
-  const radarCacheName = (hash, z, x, y) => hash + '_' + z + '_' + x + '_' + y + '.webp';
-  
-  /** 清理过期的雷达缓存文件，只保留当前 hash 相关文件 */
+  const radarCacheName = (hash, z, x, y) => `${hash}_${z}_${x}_${y}.webp`;
+
+  /** 清理过期雷达瓦片，只保留当前 hash */
   const cleanOldRadarCache = hash => {
     try {
       for (const name of fm.listContents(radarPath)) {
@@ -767,7 +750,7 @@ async function main(family) {
       }
     } catch (e) {}
   };
-  
+
   /** 雷达在原生级别下的视口（与地图中心对齐，支持亚像素裁剪） */
   const computeViewportAtNative = nativeZ => {
     const c = worldPx(LAT, LNG, RZ);
@@ -781,7 +764,7 @@ async function main(family) {
     const tileMinY = Math.floor(nTop / TILE_SIZE);
     const tileMaxX = Math.floor((nRight - 1e-9) / TILE_SIZE);
     const tileMaxY = Math.floor((nBottom - 1e-9) / TILE_SIZE);
-  
+
     const tiles = [];
     for (let y = tileMinY; y <= tileMaxY; y++) {
       for (let x = tileMinX; x <= tileMaxX; x++) {
@@ -798,7 +781,7 @@ async function main(family) {
       cropH: nBottom - nTop
     };
   };
-  
+
   /**
    * WebView 内高清雷达渲染：拼接原始瓦片 → 浮点双线性插值到输出分辨率 → 查色板着色
    * 此函数逻辑已完美，请勿修改
@@ -926,21 +909,21 @@ async function main(family) {
       completion('ERR:' + (e?.message || String(e)));
     }
   };
-  
-  /** 取雷达数据（纯网络，不碰 WebView）：元数据 + 视口内的原始瓦片 */
-  const fetchRadar = async () => {
+
+  /** 取雷达瓦片（纯网络，不碰 WebView） */
+  const fetchRadar = async info => {
+    if (!info) throw new Error('雷达元数据为空');
     const nativeZ = Math.min(NATIVE_MAX_Z, Math.max(0, Math.floor(RZ)));
     const vp = computeViewportAtNative(nativeZ);
     if (!vp.tiles.length) throw new Error('视口瓦片计算为空');
     if (vp.tiles.length > MAX_TILES) throw new Error('需要瓦片过多 (' + vp.tiles.length + ')');
-  
-    const info = await getLatestRadar();
+
     const loaded = await Promise.all(vp.tiles.map(async (tile) => {
       const d = await getCacheData(
         radarCacheName(info.hash, nativeZ, tile.x, tile.y),
         radarTileURL(info, nativeZ, tile.x, tile.y),
         'data',
-        0, // 原始瓦片不设过期，由 cleanOldRadarCache 管理
+        0, // 不设过期，由 cleanOldRadarCache 管理
         radarPath
       );
       const b64 = d ? toB64(d) : '';
@@ -948,12 +931,9 @@ async function main(family) {
         ? { px: (tile.x - vp.tileMinX) * TILE_SIZE, py: (tile.y - vp.tileMinY) * TILE_SIZE, b64 }
         : null;
     }));
-    const tiles = loaded.filter(Boolean);
-    console.log('radar tiles total=' + vp.tiles.length + ' ok=' + tiles.length + ' nativeZ=' + nativeZ + ' hash=' + info.hash);
-    return { info, vp, tiles };
+    return { info, vp, tiles: loaded.filter(Boolean) };
   };
-  
-  /** 渲染雷达图层（WebView） */
+
   const renderRadar = async ({ info, vp, tiles }) => {
     const out = await runWV(wvRender, {
       pal: PALETTE_B64, tiles, ts: TILE_SIZE,
@@ -965,20 +945,21 @@ async function main(family) {
       probe: { x: TARGET_WIDTH / 2, y: TARGET_HEIGHT / 2 }
     });
     cleanOldRadarCache(info.hash);
-    setting.lastRadarTime = Date.now();
-    setting.lastRadarHash = info.hash;
-    return { image: Image.fromData(Data.fromBase64String(out.p)), probe: out.probe };
+    return { 
+      image: base64ToImage(out.p), 
+      probe: out.probe 
+    };
   };
-  
-  // ========== 地图标签 ==========
-  // 标签只在「位置/缩放/样式」变化时才在 WebView 里画一次，存成透明 PNG 覆盖层，
-  // 之后每次刷新直接读这张图（零网络、零排版）
-  
+
+  /* ============================ */
+  // 地图标签
+  // 仅在「位置/缩放/样式」变化时在 WebView 绘制一次，存成透明 PNG 覆盖层，之后直接读图
+  /* ============================ */
   const getLabelView = () => {
     const c = worldPx(LAT, LNG, RZ);
     return { worldSize: TILE_SIZE * 2 ** RZ, left: c.x - TARGET_WIDTH / 2, top: c.y - TARGET_HEIGHT / 2 };
   };
-  
+
   const labelTilesAt = (Lz, V) => {
     const n = 2 ** Lz;
     const x0 = Math.floor((V.left - LABEL_MARGIN) / V.worldSize * n);
@@ -991,23 +972,20 @@ async function main(family) {
       for (let x = x0; x <= x1; x++) {
         const cx = ((x % n) + n) % n;
         const k = cx + '/' + y;
-        if (!seen.has(k)) { 
-          seen.add(k); 
-          out.push({ x: cx, y }); 
+        if (!seen.has(k)) {
+          seen.add(k);
+          out.push({ x: cx, y });
         }
       }
     }
     return out;
   };
-  
-  // 标签自带 z 数组：用「逻辑 ZOOM」判断当前缩放是否应显示
+
+  // 标签自带 z 数组：用逻辑 ZOOM 判断当前缩放是否应显示
   const labelZOK = z =>
     !Array.isArray(z) || !z.length || (ZOOM >= Math.min(...z) && ZOOM < Math.max(...z) + 1);
-  
-  /**
-   * 读取一个标签瓦片
-   * 返回：数组=有数据；null=该瓦片不存在（404/204 会缓存空文件）；undefined=网络错误
-   */
+
+  /** 读取一个标签瓦片。数组 = 有数据；null = 瓦片不存在；undefined = 网络错误 */
   const getLabelTile = async (z, x, y) => {
     const path = fm.joinPath(labelsPath, `${LABELS_LANG}_${LABELS_VERSION}_${z}_${x}_${y}.json`);
     if (fm.fileExists(path)) {
@@ -1021,61 +999,53 @@ async function main(family) {
         } catch (e) {}
       }
     }
-    let why = '';
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const req = new Request(`https://tiles.zoom.earth/static/labels/${LABELS_VERSION}/${LABELS_LANG}/${z}/${y}/${x}.json`);
         req.timeoutInterval = 20;
         req.headers = { 'User-Agent': 'Mozilla/5.0', Referer: 'https://zoom.earth/' };
         const s = await req.loadString();
-        const sc = req.response && req.response.statusCode;
+        const sc = req.response?.statusCode;
         if (sc === 404 || sc === 204) { writeFresh(path, ''); return null; }
         if (sc === 403 || sc === 410) return null; // 该级别不存在（不缓存）
-        if (sc && sc !== 200) { why = 'http ' + sc; continue; }
+        if (sc && sc !== 200) continue;
         if (!String(s).trim()) { writeFresh(path, '[]'); return []; }
         const j = JSON.parse(s);
         if (Array.isArray(j)) { writeFresh(path, s); return j; }
-        why = 'not array';
-      } catch (e) {
-        why = String((e && e.message) || e);
-      }
+      } catch (e) {}
     }
-    console.log('label tile fail ' + z + '/' + y + '/' + x + ' ' + why);
+    console.log(`标签瓦片请求失败 ${z}/${y}/${x}`);
     return undefined;
   };
-  
+
   /**
-   * 收集可见标签（屏幕坐标，纯网络）。
-   * 瓦片级别依次尝试：ceil(ZOOM) → +1（整数缩放时标签可能在上一级）→ 逐级向下，取第一个有可显示内容的级别
+   * 收集可见标签（屏幕坐标，纯网络）
+   * 瓦片级别依次尝试：ceil(ZOOM) → +1 → 逐级向下，取第一个有可显示内容的级别
    */
   const collectLabels = async () => {
     const V = getLabelView();
     const Zi = Math.min(12, Math.ceil(ZOOM));
-    const levels = [Zi, ...(Zi < 12 
-      ? [Zi + 1] 
-      : []), ...Array.from({ length: Zi }, (_, i) => Zi - 1 - i)];
-  
+    const levels = [Zi, ...(Zi < 12 ? [Zi + 1] : []), ...Array.from({ length: Zi }, (_, i) => Zi - 1 - i)];
+
     for (const Lz of levels) {
       const tiles = labelTilesAt(Lz, V);
       if (!tiles.length) continue;
-      // 先探测最靠近中心的一块：不存在 → 换级别
+      // 先探测最靠近中心的一块：不存在则换级别
       const n = 2 ** Lz;
       const cxT = V.left + TARGET_WIDTH / 2, cyT = V.top + TARGET_HEIGHT / 2;
       const dist = t => Math.hypot((t.x + 0.5) / n * V.worldSize - cxT, (t.y + 0.5) / n * V.worldSize - cyT);
       const mid = tiles.slice().sort((a, b) => dist(a) - dist(b))[0];
       const first = await getLabelTile(Lz, mid.x, mid.y);
-      if (first === undefined) return []; // 网络错误，下次再试
-      if (first === null) { console.log('labels Lz=' + Lz + ' missing'); continue; }
-  
+      if (first === undefined) return [];
+      if (first === null) continue;
+
       const rest = await mapPool(tiles.filter(t => t !== mid), CONCURRENCY, t => getLabelTile(Lz, t.x, t.y));
-      const raw = [first].concat(rest.filter(Array.isArray)).flat();
+      const raw = [first, ...rest.filter(Array.isArray)].flat();
       const items = raw.filter(it =>
         it && it.text && Number.isFinite(it.x) && Number.isFinite(it.y) && labelZOK(it.z)
       );
-      console.log('labels Lz=' + Lz + ' tiles=' + tiles.length + ' raw=' + raw.length + ' pass=' + items.length +
-        ' z0=' + JSON.stringify(raw[0] && raw[0].z));
       if (!items.length) continue;
-  
+
       const seen = new Set();
       const out = [];
       for (const it of items) {
@@ -1091,16 +1061,13 @@ async function main(family) {
         out.push({ t: it.text, x, y, k: dot ? 'p' : st[0] === 'a' ? 'a' : st[0] === 'c' ? 'c' : 'r' });
       }
       // 城市点优先参与碰撞检测
-      const ordered = out.map((o, i) => [o, i])
-        .sort((a, b) => ((a[0].k === 'p' ? 0 : 1) - (b[0].k === 'p' ? 0 : 1)) || (a[1] - b[1]))
-        .map(a => a[0]);
+      const ordered = [...out.filter(o => o.k === 'p'), ...out.filter(o => o.k !== 'p')];
       ordered.complete = !rest.some(r => r === undefined);
-      console.log('labels inView=' + ordered.length + (ordered.complete ? '' : ' (INCOMPLETE)'));
       return ordered;
     }
     return [];
   };
-  
+
   /** WebView 内排版并绘制标签：测量文字 → 贪心碰撞检测 → 描边+填充 → 透明 PNG */
   const wvLabels = A => {
     try {
@@ -1168,13 +1135,13 @@ async function main(family) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
   };
-  
+
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').
-    replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE]
+      .join('_').replace(/\./g, 'p') + '.png'
   );
-  
+
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
   const readOverlay = () => {
     const path = overlayPath();
@@ -1182,20 +1149,20 @@ async function main(family) {
     const ageH = (Date.now() - fm.creationDate(path).getTime()) / 36e5;
     return ageH <= LABELS_CACHE_HOURS ? fm.readImage(path) : null;
   };
-  
-  const drawLabelOverlay = async items => {
-    const out = await runWV(
-      wvLabels, {
+
+  const drawLabelOverlay = async (items) => {
+    const out = await runWV(wvLabels, {
       items, ow: TARGET_WIDTH, oh: TARGET_HEIGHT, fs: LABEL_FONT_SCALE * K, max: MAX_LABELS
     });
-    console.log('labels drawn=' + out.n + '/' + items.length);
     const data = Data.fromBase64String(out.p);
-    if (items.complete !== false) writeFresh(overlayPath(), data); // 有标签瓦片因网络失败缺失时不缓存
+    // 有标签瓦片因网络失败缺失时不缓存
+    if (items.complete !== false) writeFresh(overlayPath(), data);
     return Image.fromData(data);
   };
-  
-  // ========== 降水提示框 ==========
-  
+
+  /* ============================ */
+  // 降水提示框与雨雪特效
+  /* ============================ */
   /** 提示框气泡（WebView 绘制）：云+雨滴图标 + 等级 + 雨量 */
   const wvTooltip = A => {
     try {
@@ -1281,17 +1248,17 @@ async function main(family) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
   };
-  
+
   /**
-   * 原版雷达分支还原：
+   * 由探针值解码降水类型与强度
    *   rain = -32 + G×127.5 (dBZ)，snow = -32 + B×127.5 (dBZ)；snow > rain 视为雪
    *   雨：e = (10^(dBZ/10) / 200)^0.625 (mm/h)；雪：e = sqrt(10^(dBZ/10) / 75)
    */
-  const decodeRadarTooltip = probe => {
+  const decodeRadarTooltip = (probe) => {
     const rain = RADAR_DBZ_MIN + probe.g * RADAR_DBZ_SPAN;
     const snow = RADAR_DBZ_MIN + probe.b * RADAR_DBZ_SPAN;
     const isSnow = snow > rain;
-    let e, name = null;
+    let e, name;
     if (isSnow) {
       e = Math.sqrt(10 ** (snow / 10) / 75);
       name = e >= 2.5 
@@ -1313,24 +1280,20 @@ async function main(family) {
     const text = v < 1 ? String(Math.round(v * f) / f) : String(Math.round(v));
     return { isSnow, e, name, text };
   };
-  
-  /** 根据雷达探针值生成提示框。无降水时返回 null */
-  const buildTooltip = async probe => {
-    if (!SHOW_RAIN_TOOLTIP || !probe) return null;
-    const d = decodeRadarTooltip(probe);
-    console.log('probe g=' + probe.g.toFixed(4) + ' b=' + probe.b.toFixed(4) + ' -> ' + (d.name ? d.name + ' ' + d.text : 'none'));
-    if (!d.name) return null;
-  
+
+  /** 无降水时返回 null */
+  const buildTooltip = async d => {
+    if (!SHOW_RAIN_TOOLTIP || !d?.name) return null;
     const o = await runWV(wvTooltip, {
-      title: d.name || '无降水',
-      sub: (d.name ? d.text : '0') + ' 毫米/小时',
-      snow: !!(d.name && d.isSnow),
+      title: d.name,
+      sub: d.text + ' 毫米/小时',
+      snow: d.isSnow,
       s: TOOLTIP_SCALE * K
     });
-    return { image: Image.fromData(Data.fromBase64String(o.p)), w: o.w, h: o.h, ax: o.ax, ay: o.ay };
+    return { image: base64ToImage(o.p), w: o.w, h: o.h, ax: o.ax, ay: o.ay };
   };
-  
-  // 雨雪绘制函数
+
+  /** 雨雪绘制（WebView）。雨：竖直雨丝；雪：多层随机雪花 */
   const wvPrecip = A => {
     try {
       const OW = A.ow, OH = A.oh;
@@ -1409,180 +1372,94 @@ async function main(family) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
   };
-  
-  const buildPrecip = async probe => {
-    if (!SHOW_PRECIP_FX) return null;
-    const d = probe ? decodeRadarTooltip(probe) : null;
-    const kind = PRECIP_FORCE || (d && d.name ? (d.isSnow ? 'snow' : 'rain') : null);
-    if (!kind) return null;
-    const isSnow = kind === 'snow';
-    let c = probe ? (isSnow ? probe.b : probe.g) : 0; // 原版用的雷达雨/雪通道
-    if (PRECIP_FORCE && c < 0.15) c = isSnow ? 0.35 : 0.5;  // 调试强制显示时给默认强度
-    if (!PRECIP_FORCE && c <= 0.05) return null;  // 和原版一样：通道太弱不画
-  
-    const sameKind = d && d.name && d.isSnow === isSnow;
-    const idx = sameKind ? (isSnow ? SNOW_TIER_IDX : RAIN_TIER_IDX)[d.name] : (isSnow ? 1 : 2);
+
+  const buildPrecip = async (probe, d) => {
+    if (!SHOW_PRECIP_FX || !d?.name) return null;
+    const isSnow = d.isSnow;
+    const c = isSnow ? probe.b : probe.g;
+    if (c <= 0.05) return null; // 雷达通道太弱不画
+    const idx = (isSnow ? SNOW_TIER_IDX : RAIN_TIER_IDX)[d.name];
     const t = (PRECIP_AUTO_TIER && (isSnow ? SNOW_TIERS : RAIN_TIERS)[idx]) || [1, 1, 1];
-  
+
     const o = await runWV(wvPrecip, {
-      kind, c, ow: TARGET_WIDTH, oh: TARGET_HEIGHT,
+      kind: isSnow ? 'snow' : 'rain', c, ow: TARGET_WIDTH, oh: TARGET_HEIGHT,
       unit: 2 * K * RAIN_UNIT_SCALE,
       keep: Math.min(1, t[0] * (isSnow ? PRECIP_FX_SCALE : RAIN_COLUMN_KEEP)),
       gain: t[1] * RAIN_ALPHA,
       len: t[2], size: t[2],
       seed: Date.now() & 0xffffff
     });
-    console.log('precip fx ' + kind + ' tier=' + idx + ' c=' + c.toFixed(2));
-    return Image.fromData(
-      Data.fromBase64String(o.p)
-    );
+    return base64ToImage(o.p);
   };
-  
-  // ========== 主绘制：地图 + 雷达 + 标签 + 定位 + 雨雪效果 + 提示框 ==========
-  
-  /** 底图：缓存瓦片 + 新渲染瓦片 → 马赛克 → 裁剪缩放到输出尺寸 */
-  const renderBaseMap = async (vp, missing) => {
-    const mapCtx = new DrawContext();
-    mapCtx.size = new Size(vp.sourceWidth, vp.sourceHeight);
-    mapCtx.opaque = true;
-    mapCtx.respectScreenScale = false;
-    mapCtx.setFillColor(new Color(OCEAN_COLOR));
-    mapCtx.fillRect(new Rect(0, 0, vp.sourceWidth, vp.sourceHeight));
-    const drawTile = (t, img) => mapCtx.drawImageInRect(
-      img,
-      new Rect((t.x - vp.minTileX) * TILE_SIZE, (t.y - vp.minTileY) * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-    );
-    vp.tiles.filter(t => t.image).forEach(t => drawTile(t, t.image));
-  
-    if (missing.length) {
-      const rendered = await renderTiles(missing);
-      const renderCache = useFileManager('image', renderPath);
-      for (const t of missing) {
-        try {
-          const data = rendered.get(t.key);
-          if (!data) continue;
-          const img = Image.fromData(Data.fromBase64String(data));
-          drawTile(t, img);
-          // 原始资源下载失败（null）时不缓存，避免把残缺瓦片缓存很久
-          if (ENABLE_RENDER_CACHE && t.fill && t.land) {
-            renderCache.write(getRenderName(t.tileZ, t.cacheX, t.y), img);
-          }
-        } catch (e) {
-          console.log('map render fail ' + t.key + ' ' + (e.message || e));
-        }
-      }
-    }
-  
-    const finalCtx = new DrawContext();
-    finalCtx.size = new Size(TARGET_WIDTH, TARGET_HEIGHT);
-    finalCtx.opaque = true;
-    finalCtx.respectScreenScale = false;
-    const scaleX = TARGET_WIDTH / vp.cropWidth;
-    const scaleY = TARGET_HEIGHT / vp.cropHeight;
-    finalCtx.drawImageInRect(
-      mapCtx.getImage(),
-      new Rect(
-        -(vp.cropLeft - vp.minTileX * TILE_SIZE) * scaleX,
-        -(vp.cropTop - vp.minTileY * TILE_SIZE) * scaleY,
-        vp.sourceWidth * scaleX,
-        vp.sourceHeight * scaleY
-      )
-    );
-    return finalCtx.getImage();
-  };
-  
-  // ========== 主绘制：地图 + 雷达 + 标签 + 定位 + 提示框 ==========
-  
-  const buildCombinedImage = async () => {
-    const t0 = Date.now();
-    const lap = s => console.log('⏱ ' + s + ' ' + (Date.now() - t0) + 'ms');
-  
+
+  /* ============================ */
+  // 主绘制：底图 → 雷达 → 标签 → 定位点 → 雨雪 → 提示框
+  /* ============================ */
+  const buildCombinedImage = async radarInfo => {
     const vp = buildViewport();
     if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
     const missing = vp.tiles.filter(t => !t.image);
     const overlayCached = SHOW_LABELS ? readOverlay() : null;
-    console.log(
-      `map zoom=${ZOOM} rz=${RZ.toFixed(3)} tileZ=${vp.tileZ} scale=${vp.zoomScale.toFixed(3)} ` +
-      `total=${vp.tiles.length} miss=${missing.length} overlayCache=${!!overlayCached}`
-    );
-  
-    // 1) 并行取数据：只做网络 / 文件 IO，不碰 WebView（WebView 同时预热）
+
+    // 并行取数据：只做网络 / 文件 IO，WebView 同时预热
     const [, radarData, labelItems] = await Promise.all([
       prepareTiles(missing),
-      fetchRadar().catch(e => (console.log('radar fetch error: ' + (e.message || e)), null)),
+      fetchRadar(radarInfo).catch(e => (console.log('雷达数据错误: ' + (e.message || e)), null)),
       SHOW_LABELS && !overlayCached
-        ? collectLabels().catch(e => (console.log('labels fetch error: ' + (e.message || e)), []))
+        ? collectLabels().catch(e => (console.log('标签数据错误: ' + (e.message || e)), []))
         : null,
       getWV()
     ]);
-    lap('fetched');
-  
+
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
-    const finalCtx = new DrawContext();
-    finalCtx.size = new Size(TARGET_WIDTH, TARGET_HEIGHT);
-    finalCtx.opaque = true;
-    finalCtx.respectScreenScale = false;
-  
-    // 2) 底图
-    finalCtx.drawImageInRect(await renderBaseMap(vp, missing), full);
-    lap('map');
-  
-    // 3) 雷达
+    const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
+    ctx.drawImageInRect(await renderBaseMap(vp, missing), full);
+
     let probe = null;
     if (radarData) {
       try {
         const radar = await renderRadar(radarData);
-        finalCtx.drawImageInRect(
+        ctx.drawImageInRect(
           radar.image, full
         );
         probe = radar.probe;
       } catch (e) {
-        console.log('radar overlay error: ' + (e.message || e));
+        console.log('雷达渲染错误: ' + (e.message || e));
       }
     }
-    lap('radar');
-  
-    // 4) 标签覆盖层
+
     try {
-      const overlay = overlayCached || (labelItems && labelItems.length ? await drawLabelOverlay(labelItems) : null);
-      if (overlay) finalCtx.drawImageInRect(overlay, full);
+      const overlay = overlayCached || (labelItems?.length ? await drawLabelOverlay(labelItems) : null);
+      if (overlay) ctx.drawImageInRect(overlay, full);
     } catch (e) {
       console.log('地图标签错误: ' + (e.message || e));
     }
-    lap('labels');
-    
-    // 5) 中心定位点（原生绘制，不依赖远程图标）
+
+    // 中心定位点（原生绘制）
     const cx = TARGET_WIDTH / 2;
     const cy = TARGET_HEIGHT / 2;
-    const ro = (LOC_ICON_SIZE * K) / 2;
+    const ro = (LOC_ICON_SIZE * K) / 2
     const ri = ro * 0.72;
-    finalCtx.setFillColor(Color.white())
-    finalCtx.fillEllipse(new Rect(cx - ro, cy - ro, ro * 2, ro * 2));
-    finalCtx.setFillColor(new Color(LOC_COLOR));
-    finalCtx.fillEllipse(new Rect(cx - ri, cy - ri, ri * 2, ri * 2));
-  
-    // 6) 雨雪➕提示框画在最上层
-    const tip = await buildTooltip(probe).catch(() => null);
-    const fx = await buildPrecip(probe).catch(() => null);
-    if (fx) finalCtx.drawImageInRect(fx, full);
-    if (tip) finalCtx.drawImageInRect(tip.image, new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h));
-  
-    try {
-      writeSettings({
-        ...setting,
-        lastZoom: ZOOM,
-        lastTileZ: vp.tileZ,
-        lastLat: LAT,
-        lastLng: LNG,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (e) {}
-    lap('done');
-    return finalCtx.getImage();
+    ctx.setFillColor(Color.white());
+    ctx.fillEllipse(new Rect(cx - ro, cy - ro, ro * 2, ro * 2));
+    ctx.setFillColor(new Color(LOC_COLOR));
+    ctx.fillEllipse(new Rect(cx - ri, cy - ri, ri * 2, ri * 2));
+
+    // 雨雪与提示框画在最上层
+    const decoded = probe ? decodeRadarTooltip(probe) : null;
+    const fx = await buildPrecip(probe, decoded).catch(() => null);
+    const tip = await buildTooltip(decoded).catch(() => null);
+    if (fx) ctx.drawImageInRect(fx, full);
+    if (tip) ctx.drawImageInRect(tip.image, new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h));
+    // 持久化 bmMaxZ 等运行期状态
+    try { writeSettings(setting); } catch (e) {}
+    return ctx.getImage();
   };
-  
-  // 创建胶囊
-  const createBarStack = (stack) => {
+
+  /* ============================ */
+  // 组件界面
+  /* ============================ */
+  const createBarStack = stack => {
     const barStack = stack.addStack();
     barStack.layoutHorizontally();
     barStack.centerAlignContent();
@@ -1591,38 +1468,60 @@ async function main(family) {
     barStack.backgroundColor = new Color('#000000', 0.4);
     return barStack;
   };
-  
-  const createStackText = (stack, label, opacity) => {
+
+  const createStackText = (stack, label) => {
     const text = stack.addText(label);
     text.textColor = Color.white();
     text.font = Font.mediumSystemFont(14);
-    if (opacity) text.textOpacity = opacity;
   };
-  
-  // 雨雪雷达组件
+
+  // 雷达帧刻度线
+  const createScaleTicks = (stack, radarInfo) => {
+    const { frames = [], timeType, localTimeStr } = radarInfo;
+    if (!frames.length) return;
+
+    const prefix = { forecast: '临近', now: '现在', today: '今天' }[timeType];
+    const labelText = stack.addText(`雷达帧: ${prefix} ${localTimeStr}`);
+    labelText.textColor = Color.white();
+    labelText.font = Font.mediumSystemFont(14);
+    labelText.textOpacity = 0.9;
+    stack.addSpacer(10);
+
+    const ticksStack = stack.addStack();
+    ticksStack.layoutHorizontally();
+    ticksStack.bottomAlignContent();
+    ticksStack.spacing = 5;
+
+    frames.forEach(frame => {
+      const tick = ticksStack.addStack();
+      tick.size = new Size(1.5, frame.isSelected || frame.isMajor ? 12 : 8);
+      tick.cornerRadius = 1;
+      // 选中且为现在 = 蓝；选中 = 白；整点 = 灰(0.7)；其余 = 灰(0.6)
+      tick.backgroundColor = frame.isSelected
+        ? new Color(frame.isNow ? '#38BCFF' : '#FFFFFF')
+        : new Color('#8E8E93', frame.isMajor ? 0.7 : 0.6);
+    });
+  };
+
   const createWidget = (
     city = `东经${Number(LNG).toFixed(3)}°   北纬${Number(LAT).toFixed(3)}°`,
     type = '',
     levelColor,
     temp = {},
-    weather_desc, 
+    weather_desc,
     weatherIcon,
-    radarInfo = {}
+    radarInfo
   ) => {
     const widget = new ListWidget();
     widget.setPadding(12, 20, 12, 20);
-    if (family === 'small') {
-      return widget;
-    }
-    
+    if (family === 'small') return widget;
+
     const topStack = widget.addStack();
     topStack.layoutHorizontally();
-    const barStack = createBarStack(topStack);
-    const stack = barStack.addStack();
+    const stack = createBarStack(topStack).addStack();
     createStackText(stack, city);
     stack.addSpacer(3);
-    const symbol = SFSymbol.named('location.fill');
-    const icon = stack.addImage(symbol.image);
+    const icon = stack.addImage(SFSymbol.named('location.fill').image);
     icon.imageSize = new Size(15, 15);
     icon.tintColor = Color.white();
 
@@ -1632,64 +1531,65 @@ async function main(family) {
       typeText.font = Font.mediumSystemFont(14);
       typeText.textColor = levelColor;
     }
-    
+
     if (weather_desc && temp) {
       stack.addSpacer(15);
       createStackText(stack, weather_desc);
       stack.addSpacer(3);
-      const currentWeatherIcon = stack.addImage(weatherIcon);
-      currentWeatherIcon.imageSize = new Size(18, 18);
+      stack.addImage(weatherIcon)
+        .imageSize = new Size(18, 18);
       stack.addSpacer(10);
       createStackText(stack, temp.value + temp.unit);
     }
-    
+
     topStack.addSpacer();
     widget.addSpacer();
-    
+
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
-    
+
     if (setting.showColorBar) {
       const colorBar = bottomStack.addStack();
       colorBar.size = new Size(setting?.barWidth ?? 250, setting?.barHeight ?? 12);
       colorBar.backgroundGradient = createGradient();
       colorBar.cornerRadius = 6;
       bottomStack.addSpacer();
-      const timeStack = createBarStack(bottomStack);
-      createStackText(timeStack, getFormattedTime());
+      createStackText(
+        createBarStack(bottomStack), 
+        hm(new Date())
+      );
     } else if (radarInfo) {
       const radarStack = createBarStack(bottomStack);
       const img = radarStack.addImage(satellite);
-      img.imageSize = new Size(18, 18)
+      img.imageSize = new Size(16, 16)
       img.tintColor = new Color('#38BCFF');
-      radarStack.addSpacer(10);
-      createStackText(radarStack, `雷达帧实际时间: ${radarInfo.isForecast ? '临近预报' : '今天'} ${radarInfo.localTimeStr}`, 0.9);
+      radarStack.addSpacer(8);
+      createScaleTicks(radarStack, radarInfo);
     }
-    
+
     return widget;
   };
-  
-  // ========== 运行 ==========
+
+  /* ============================ */
+  // 运行
+  /* ============================ */
   const runWidget = async () => {
-    if (setting.autoLocation) {
-      getLocation();
-    }
-  
-    const [_, weatherData, radarInfo] = await Promise.all([
+    if (setting.autoLocation) getLocation();
+
+    const [, weatherData, radarInfo] = await Promise.all([
       getTwoHoursWeather(),
       getAlert(),
-      getLatestRadar()
+      getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null))
     ]);
-    
+
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
     const [{ type, level } = {}] = alerts;
-    const levelColor = getAlertColor(level);
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
-  
-    const widget = createWidget(city, type, levelColor, temp, weather_desc, weatherIcon, radarInfo);
-    widget.backgroundImage = await buildCombinedImage();
+
+    const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
+    widget.backgroundImage = await buildCombinedImage(radarInfo);
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
