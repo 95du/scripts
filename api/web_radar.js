@@ -159,9 +159,10 @@ async function main(family) {
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
   
-  const tyIconUrl = `${rootUrl}/update/typhoon_icons.json`
-  const typhoonIcons = await module.getCacheData(tyIconUrl, 168, 'typhoon_icons.json') || {};
-  const satelliteIcon = await module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, `satellite.png`);
+  const [typhoonIcons, satellite] = await Promise.all([
+    module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
+    module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, 'satellite.png')
+  ]);
   const PALETTE_B64 = typhoonIcons.palette;
   
   /**
@@ -1659,7 +1660,7 @@ async function main(family) {
       createStackText(timeStack, getFormattedTime());
     } else if (radarInfo) {
       const radarStack = createBarStack(bottomStack);
-      const img = radarStack.addImage(satelliteIcon);
+      const img = radarStack.addImage(satellite);
       img.imageSize = new Size(18, 18)
       img.tintColor = new Color('#38BCFF');
       radarStack.addSpacer(10);
