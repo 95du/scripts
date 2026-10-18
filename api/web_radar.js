@@ -708,13 +708,12 @@ async function main(family) {
     const nowSec = Math.floor(Date.now() / 1000);
     const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
     const past = allTs.filter(t => t <= nowSec);
-    const ts = setting.preferNowcast
-      ? allTs[allTs.length - 1]
-      : (past.length ? past[past.length - 1] : allTs[0]);
+    const ts = past.length ? past[past.length - 1] : allTs[0];
     const hash = reflectivity[String(ts)];
     if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
 
-    const isForecast = !!setting.preferNowcast && ts > nowSec;
+    const isForecast = ts > nowSec;
+    const nowKey = hm(new Date());
 
     const frames = allTs.slice(-22).map(t => {
       const d = new Date(t * 1000);
@@ -722,7 +721,7 @@ async function main(family) {
       return {
         isMajor: d.getMinutes() === 0,
         isSelected: t === ts,
-        isNow: !isForecast && time === hm(new Date())
+        isNow: !isForecast && time === nowKey
       };
     });
 
