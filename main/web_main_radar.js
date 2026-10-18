@@ -676,15 +676,6 @@ async function main() {
             color: '#5856D6'
           }
         },
-        {
-          label: '雷达帧数',
-          name: 'preferNowcast',
-          type: 'switch',
-          icon: {
-            name: 'photo.fill',
-            color: '#AF52DE'
-          }
-        }
       ]
     },
     {
