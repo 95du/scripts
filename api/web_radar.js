@@ -159,8 +159,9 @@ async function main(family) {
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
   
-  const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
+  const tyIconUrl = `${rootUrl}/update/typhoon_icons.json`
   const typhoonIcons = await module.getCacheData(tyIconUrl, 168, 'typhoon_icons.json') || {};
+  const satelliteIcon = await module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, `satellite.png`);
   const PALETTE_B64 = typhoonIcons.palette;
   
   /**
@@ -1590,10 +1591,11 @@ async function main(family) {
     return barStack;
   };
   
-  const createStackText = (stack, label) => {
+  const createStackText = (stack, label, opacity) => {
     const text = stack.addText(label);
     text.textColor = Color.white();
     text.font = Font.mediumSystemFont(14);
+    if (opacity) text.textOpacity = opacity;
   };
   
   // 雨雪雷达组件
@@ -1646,18 +1648,23 @@ async function main(family) {
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
+    
     if (setting.showColorBar) {
       const colorBar = bottomStack.addStack();
       colorBar.size = new Size(setting?.barWidth ?? 250, setting?.barHeight ?? 12);
       colorBar.backgroundGradient = createGradient();
       colorBar.cornerRadius = 6;
+      bottomStack.addSpacer();
+      const timeStack = createBarStack(bottomStack);
+      createStackText(timeStack, getFormattedTime());
     } else if (radarInfo) {
-      const radarInfoStack = createBarStack(bottomStack);
-      createStackText(radarInfoStack, `雷达帧实际时间: ${radarInfo.isForecast ? '临近预报' : '今天'} ${radarInfo.localTimeStr}`);
+      const radarStack = createBarStack(bottomStack);
+      const img = radarStack.addImage(satelliteIcon);
+      img.imageSize = new Size(18, 18)
+      img.tintColor = new Color('#38BCFF');
+      radarStack.addSpacer(10);
+      createStackText(radarStack, `雷达帧实际时间: ${radarInfo.isForecast ? '临近预报' : '今天'} ${radarInfo.localTimeStr}`, 0.9);
     }
-    bottomStack.addSpacer();
-    const timeStack = createBarStack(bottomStack);
-    createStackText(timeStack, getFormattedTime());
     
     return widget;
   };
@@ -1680,7 +1687,7 @@ async function main(family) {
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
   
-    const widget = await createWidget(city, type, levelColor, temp, weather_desc, weatherIcon, radarInfo);
+    const widget = createWidget(city, type, levelColor, temp, weather_desc, weatherIcon, radarInfo);
     widget.backgroundImage = await buildCombinedImage();
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
