@@ -124,8 +124,7 @@ const shadowImage = (img, text, name) => {
 // 解码 base64 编码图
 const decodeBase64Image = base64 => Image.fromData(Data.fromBase64String(base64));
 
-const tyIconUrl = 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json';
-const typhoonIcons = await getCacheData('typhoon_icons.json', tyIconUrl, 'json', 24);
+const typhoonIcons = await getCacheData('typhoon_icons.json', 'https://raw.githubusercontent.com/95du/scripts/master/update/typhoon_icons.json', 'json', 24);
 const tyIcon = decodeBase64Image(typhoonIcons.tf);
 const tcIcon = decodeBase64Image(typhoonIcons.tc);
 
@@ -506,6 +505,7 @@ const anchors = [
   { id: "taipei", name: "台湾台北市", lat: 25.033, lng: 121.565, rx: 6.5, ry: 5.5 },
   { id: "yilan", name: "台湾省宜兰县", lat: 24.702, lng: 121.738, rx: 6, ry: 5 },
   { id: "hualien", name: "台湾花莲", lat: 23.977, lng: 121.604, rx: 6, ry: 5 },
+  { id: "taitung", name: "台湾省台东县", lat: 22.7583, lng: 121.1444, rx: 6, ry: 5 },
   { id: "kaohsiung", name: "台湾省高雄市", lat: 22.627, lng: 120.301, rx: 7, ry: 6 },
   { id: "hongkong", name: "香港", lat: 22.3193, lng: 114.1694, rx: 7, ry: 6 },
   { id: "bangkok", name: "泰国曼谷", lat: 13.756, lng: 100.502, rx: 7, ry: 6 },
@@ -527,11 +527,12 @@ const anchors = [
 const relations = {
   tokyo: ["naha", "kagoshima", "saipan"],
   kagoshima: ["tokyo", "naha"],
-  naha: ["tokyo", "kagoshima", "saipan", "yilan", "hualien", "kaohsiung", "taipei"],
+  naha: ["tokyo", "kagoshima", "saipan", "yilan", "hualien", "taitung", "kaohsiung", "taipei"],
   taipei: ["yilan", "hualien", "naha", "kaohsiung"],
   yilan: ["taipei", "hualien", "naha"],
-  hualien: ["yilan", "taipei", "kaohsiung", "naha", "luzon_ne"],
-  kaohsiung: ["hualien", "hongkong", "manila", "luzon_ne", "taipei"],
+  hualien: ["yilan", "taipei", "kaohsiung", "taitung", "naha", "luzon_ne"],
+  taitung: ["hualien", "kaohsiung", "taipei", "yilan", "naha", "luzon_ne"],
+  kaohsiung: ["hualien", "taitung", "hongkong", "manila", "luzon_ne", "taipei"],
   hongkong: ["kaohsiung", "wenchang", "qionghai", "dongfang", "danang", "hochiminh", "manila", "bangkok"],
   bangkok: ["hongkong", "dongfang", "wenchang", "qionghai", "danang", "hochiminh", "camau", "manila"],
   wenchang: ["hongkong", "qionghai", "dongfang", "danang", "hochiminh", "manila", "bangkok"],
@@ -540,7 +541,7 @@ const relations = {
   danang: ["dongfang", "wenchang", "qionghai", "hongkong", "hochiminh", "camau", "manila", "bangkok"],
   hochiminh: ["danang", "camau", "dongfang", "wenchang", "hongkong", "manila", "bangkok"],
   camau: ["hochiminh", "danang", "dongfang", "manila", "bangkok"],
-  luzon_ne: ["manila", "naha", "kaohsiung", "hualien"],
+  luzon_ne: ["manila", "naha", "kaohsiung", "hualien", "taitung"],
   saipan: ["guam", "naha", "tokyo", "majuro"],
   manila: ["luzon_ne", "kaohsiung", "hongkong", "guam", "wenchang", "danang", "hochiminh", "camau", "bangkok"],
   guam: ["saipan", "naha", "manila", "tokyo", "majuro"],
@@ -655,13 +656,13 @@ const selectSecond = (point, main) => {
     .sort((a, b) => a.score - b.score);
 
   const JP_CHAIN = ["tokyo", "naha", "kagoshima"];
-  const TW_CHAIN = ["yilan", "hualien", "taipei", "kaohsiung"];
+  const TW_CHAIN = ["yilan", "hualien", "taipei", "taitung", "kaohsiung"];
   if (main.id === "naha" && point.lat < main.lat && point.lat >= 22.5 && point.lat <= 25.3) {
     const twPref = candidates.filter(c => TW_CHAIN.includes(c.id) && c.distance <= main.distance * 3.5 && getDistance(main.lat, main.lng, c.lat, c.lng) >= 300 && getIncludedAngle(point, main, c) >= 8 && getIncludedAngle(point, main, c) <= 175).sort((a, b) => a.distance - b.distance)[0];
     if (twPref) return { ...twPref, relaxed: true };
   }
-  
   const preferred = candidates.find(c => JP_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c));
+
   if (preferred) {
     const closestTw = candidates
       .filter(c => TW_CHAIN.includes(c.id) && isMeaningfulSecond(point, main, c))
@@ -683,13 +684,13 @@ const selectSecond = (point, main) => {
 const getDirection = (lat1, lng1, lat2, lng2) => {
   const angle = getBearing(lat1, lng1, lat2, lng2);
   const dirs = [
-    "偏北", "北偏东", "东北偏北", 
-    "东北", "东北偏东", "东偏北", 
-    "偏东", "东偏南", "东南偏东", 
+    "偏北", "北偏东", "东北偏北",
+    "东北", "东北偏东", "东偏北",
+    "偏东", "东偏南", "东南偏东",
     "东南", "东南偏南", "南偏东",
-    "偏南", "南偏西", "西南偏南", 
-    "西南", "西南偏西", "西偏南", 
-    "偏西", "西偏北", "西北偏西", 
+    "偏南", "南偏西", "西南偏南",
+    "西南", "西南偏西", "西偏南",
+    "偏西", "西偏北", "西北偏西",
     "西北", "西北偏北", "北偏西"
   ];
   return dirs[Math.floor((angle + 7.5) / 15) % 24];
@@ -714,7 +715,7 @@ const getTyphoonLocation = point => {
   const seaSuffix = getSeaSuffix(point);
   if (main.isLand) return `距离${mainText}`;
   const useOcean = !!second || main.isSea || main.distance >= 1200;
-    if (second && (second.relaxed || isMeaningfulSecond(point, main, second))) {
+  if (second && (second.relaxed || isMeaningfulSecond(point, main, second))) {
     const secondText = formatAnchor(second, point);
     return `位于${mainText}、${secondText}的${seaSuffix}`;
   }
@@ -1895,7 +1896,7 @@ const drawLandingFlags = (ctx, typhoon, flagIcon, project, EXPORT_SCALE) => {
   }
 };
 
-// 计算台风登陆框的 Bounds 矩形，用于碰撞检测
+// 计算台风登陆框的Bounds矩形，用于碰撞检测
 const getLandInfoBoxRect = (pos, text, iconSize, EXPORT_SCALE) => {
   const fontSize = 14 * EXPORT_SCALE;
   const paddingH = 10 * EXPORT_SCALE;
@@ -2280,7 +2281,7 @@ const spanCapFor = span => {
   return Infinity;
 };
 
-// 基于地理范围的自适应视口模型 + 少量针对固定组件视觉布局的经验校准。✅
+// 基于地理范围的自适应视口模型 + 少量针对固定组件视觉布局的经验校准
 const getViewport = points => {
   const typeZoom = setting.skin === 0 || (setting.skin === 3 && getIsDay()) ? 3.48 : 3.49;
   if (!points?.length) return { lng: 104.5, lat: 29.5, zoom: typeZoom };
@@ -2494,7 +2495,7 @@ const generateMapImage = async (
     }
   }
   
-  // 3. 点绘制台风风圈与预测路径
+  // 3. 点绘制台风风圈与预测/历史路径
   for (const p of typhoonPoints) {
     if (p.isTyphoon) {
       drawHistoryPath(ctx, p, project, EXPORT_SCALE, drawPath);
@@ -2866,7 +2867,7 @@ const createRadarWidget = async (param) => {
   return widget;
 };
 
-// 台风名称组件
+// 未来台风名称/台风等级组件
 const createLevelWidget = (levels, names, textColor, isLarge) => {
   const widget = new ListWidget();
   widget.setPadding(15, 20, 15, 20);
@@ -2970,6 +2971,7 @@ const runWidget = async () => {
   const param = args.widgetParameter;
   const hasRegion = regions.some(i => param?.includes(i));
   const isNumber = param && !isNaN(Number(param));
+  
   const family = config.runsInWidget ? config.widgetFamily : 'large' ;
   const isLarge = family === 'large';
   const isSmall = family === 'small';
