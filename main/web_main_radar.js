@@ -169,7 +169,7 @@ async function main() {
     }
   };
   
-  // 页面注入脚本：监听网页中的地理位置变化、定位按钮点击及本地存储，获取经纬度和位置类型并回传
+  // 监听网页中的地理位置变化获取经纬度
   const pageScript = () => {
     if (window.__coord !== undefined) return;
     window.__coord = null;
@@ -250,7 +250,7 @@ async function main() {
   const updateLocation = async (coord) => {
     const index = await module.generateAlert(
       '是否更新坐标❓',
-      `【 纬度 ${coord.lat}，经度 ${coord.lng} 】\n如果使用自定义坐标，需关闭自动定位，否则缓存时长过后就会自动更新回当前坐标`,
+      `【纬度 ${coord.lat}，经度 ${coord.lng}】\n使用自定义坐标前，请先关闭自动定位。否则缓存过期后，系统将重新获取当前位置并覆盖自定义坐标。`,
       options = ['取消', '更新']
     );
     if (index === 0) return;
@@ -650,7 +650,7 @@ async function main() {
         },
         {
           header: true,
-          label: '雨雪信息',
+          label: '雨雪窗口',
           name: 'showPrecipInfo',
           type: 'switch',
           icon: {
