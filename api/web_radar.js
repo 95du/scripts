@@ -176,7 +176,7 @@ async function main(family) {
   const getLocation = async () => {
     if (setting?.lat && setting.updateTime) {
       const hours = (Date.now() - setting.updateTime) / 3600000;
-      if (hours < setting.locCache) return;
+      if (hours < setting.locCache) return setting;
     }
     try {
       const loc = await Location.current();
