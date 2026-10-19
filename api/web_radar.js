@@ -1025,7 +1025,9 @@ async function main(family) {
   const collectLabels = async () => {
     const V = getLabelView();
     const Zi = Math.min(12, Math.ceil(ZOOM));
-    const levels = [Zi, ...(Zi < 12 ? [Zi + 1] : []), ...Array.from({ length: Zi }, (_, i) => Zi - 1 - i)];
+    const levels = [Zi, ...(Zi < 12 
+      ? [Zi + 1] 
+      : []), ...Array.from({ length: Zi }, (_, i) => Zi - 1 - i)];
 
     for (const Lz of levels) {
       const tiles = labelTilesAt(Lz, V);
@@ -1496,7 +1498,6 @@ async function main(family) {
       const tick = ticksStack.addStack();
       tick.size = new Size(1.5, frame.isSelected || frame.isMajor ? 12 : 8);
       tick.cornerRadius = 1;
-      // 选中且为现在 = 蓝；选中 = 白；整点 = 灰(0.7)；其余 = 灰(0.6)
       tick.backgroundColor = frame.isSelected
         ? new Color(frame.isNow ? '#38BCFF' : '#FFFFFF')
         : new Color('#EEEEEE', frame.isMajor ? 0.48 : 0.42);
