@@ -698,9 +698,10 @@ async function main(family) {
   /* ============================ */
   /** 最新雷达元数据。缓存过期且网络失败时回退到上一次成功的缓存 */
   const getLatestRadar = async () => {
+    const radarCacheTime = Math.max(Number(RADAR_META_TTL) || 0, 1) / 3600;
     const cached = await getCacheData(
       '_radar_meta.json', 'https://tiles.zoom.earth/times/radar.json',
-      'json', RADAR_META_TTL / 3600, radarPath, 'GET', null, true
+      'json', radarCacheTime, radarPath, 'GET', null, true
     );
     const reflectivity = cached?.reflectivity;
     if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
@@ -1498,7 +1499,7 @@ async function main(family) {
       // 选中且为现在 = 蓝；选中 = 白；整点 = 灰(0.7)；其余 = 灰(0.6)
       tick.backgroundColor = frame.isSelected
         ? new Color(frame.isNow ? '#38BCFF' : '#FFFFFF')
-        : new Color('#8E8E93', frame.isMajor ? 0.75 : 0.65);
+        : new Color('#EEEEEE', frame.isMajor ? 0.48 : 0.42);
     });
   };
 
