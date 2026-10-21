@@ -98,9 +98,7 @@ async function main() {
     const modulePath = fm.joinPath(depPath, '_95du.js');
     const timestampPath = fm.joinPath(depPath, 'lastUpdated.txt');
     const currentDate = new Date().toISOString().slice(0, 13);
-  
     const lastUpdatedDate = fm.fileExists(timestampPath) ? fm.readString(timestampPath) : '';
-  
     if (!fm.fileExists(modulePath) || lastUpdatedDate !== currentDate) {
       const moduleJs = await new Request(`${rootUrl}/module/_95du.js`).load();
       fm.write(modulePath, moduleJs);
@@ -114,7 +112,7 @@ async function main() {
   // 组件版本通知
   const updateNotice = () => {
     const hours = (Date.now() - settings.updateTime) / (3600 * 1000);
-    if (version !== settings.version && hours >= 12) {
+    if (hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
       module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重置所有再使用`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
@@ -130,10 +128,8 @@ async function main() {
   const previewWidget = async (family = 'large') => {
     const modulePath = await module.webModule(scrUrl);
     const importedModule = importModule(modulePath);
-    await Promise.all([
-      importedModule.main(family), 
-      updateNotice()
-    ]);
+    await importedModule.main(family);
+    if (version !== settings.version) updateNotice()
     if (settings.update) await updateString();
   };
   
