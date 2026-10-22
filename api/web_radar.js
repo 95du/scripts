@@ -4,8 +4,8 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 全球雨雪雷达
- * 组件版本: Version 1.0.3
- * 发布时间: 2026-10-17
+ * 组件版本: Version 1.0.4
+ * 发布时间: 2026-10-22
  */
 
 
@@ -85,8 +85,8 @@ async function main(family) {
   const RADAR_POWER = 5.5;
   const PALETTE_OFFSET = 0.00275;
   const ALPHA_EDGE = 0.00025;
-  const PALETTE_Y_MODE = 0;
-  const PALETTE_FLIP_Y = false;
+  const PALETTE_Y_MODE = 1;
+  const PALETTE_FLIP_Y = true;
   const RADAR_DBZ_MIN = -32;
   const RADAR_DBZ_SPAN = 127.5;
 
@@ -133,6 +133,7 @@ async function main(family) {
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
     module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, 'satellite.png')
   ]);
+  // 原版 Zoom Earth 降水色板 (512x2)：第 1 行 = 雨，第 2 行 = 雪
   const PALETTE_B64 = typhoonIcons.palette;
 
   /* ============================ */
