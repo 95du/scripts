@@ -364,11 +364,8 @@ async function main(family) {
       }
       if (type === 'data' && sc && sc !== 200) {
         if (sc === 404) {
-          const empty = Data.fromString('');
-          cache.write(name, empty);
-          return empty;
+          return stale ?? null;
         }
-        return null;
       }
       if (response != null) {
         cache.write(name, response);
@@ -377,7 +374,6 @@ async function main(family) {
     } catch (e) {
       console.log(`请求失败：${e}`);
     }
-
     return stale ?? null;
   };
 
@@ -705,34 +701,31 @@ async function main(family) {
     );
     const reflectivity = cached?.reflectivity;
     if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
-
+  
     const nowSec = Math.floor(Date.now() / 1000);
     const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
     const past = allTs.filter(t => t <= nowSec);
     const ts = past.length ? past[past.length - 1] : allTs[0];
     const hash = reflectivity[String(ts)];
     if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
-
-    const isForecast = ts > nowSec;
-    const nowKey = hm(new Date());
-
+  
     const frames = allTs.slice(-22).map(t => {
       const d = new Date(t * 1000);
       const time = hm(d);
       return {
         isMajor: d.getMinutes() === 0,
         isSelected: t === ts,
-        isNow: !isForecast && time === nowKey
+        isNow: time === hm(new Date())
       };
     });
-
+  
     const sel = frames.find(f => f.isSelected);
     const u = new Date(ts * 1000);
     return {
       hash,
       ar: `${u.getUTCFullYear()}-${pad(u.getUTCMonth() + 1)}-${pad(u.getUTCDate())}/${pad(u.getUTCHours())}${pad(u.getUTCMinutes())}`,
       frames,
-      timeType: isForecast ? 'forecast' : sel?.isNow ? 'now' : 'today',
+      timeType: sel?.isNow ? 'now' : 'today',
       localTimeStr: hm(u)
     };
   };
@@ -1481,8 +1474,8 @@ async function main(family) {
   const createScaleTicks = (stack, radarInfo) => {
     const { frames = [], timeType, localTimeStr } = radarInfo;
     if (!frames.length) return;
-
-    const prefix = { forecast: '临近', now: '现在', today: '今天' }[timeType];
+    const prefix = { now: '现在', today: '今天' }[timeType];
+    
     const labelText = stack.addText(`雷达帧: ${prefix} ${localTimeStr}`);
     labelText.textColor = Color.white();
     labelText.font = Font.mediumSystemFont(14);
