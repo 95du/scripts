@@ -256,9 +256,11 @@ async function main() {
     writeSettings({ 
       ...settings, ...coord 
     });
+    
     const cityInfoPath = fm.joinPath(cacheStr, 'cityInfo.json');
-    if (fm.fileExists(cityInfoPath)) {
-      fm.remove(cityInfoPath);
+    if (fm.fileExists(cityInfoPath)) fm.remove(cityInfoPath);
+    for (const file of fm.listContents(cacheStr)) {
+      if (/^weather_.+\.json$/.test(file)) fm.remove(fm.joinPath(cacheStr, file));
     }
     ScriptableRun();
   };
