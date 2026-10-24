@@ -4,8 +4,8 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 全球雨雪雷达
- * 组件版本: Version 1.0.4
- * 发布时间: 2026-10-22
+ * 组件版本: Version 1.0.5
+ * 发布时间: 2026-10-24
  */
 
 
@@ -129,8 +129,9 @@ async function main(family) {
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
 
-  const [typhoonIcons, satellite] = await Promise.all([
+  const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
+    module.getCacheData(`${rootUrl}/update/zoomEarth_icons.json`, 720, 'zoomEarth_icons.json'),
     module.getCacheData(`${rootUrl}/img/weather/satellite.png`, 720, 'satellite.png')
   ]);
   // 原版 Zoom Earth 降水色板 (512x2)：第 1 行 = 雨，第 2 行 = 雪
@@ -192,7 +193,106 @@ async function main(family) {
       console.log('定位失败: ' + e);
     }
   };
+  
+  /* ============================ */
+  // 文件与网络工具
+  /* ============================ */
+  /** 按类型（json / string / data / image）读写文件；写入前先删除，以刷新创建时间（缓存过期依据） */
+  const useFileManager = (type, path = mainPath) => {
+    const getPath = name => fm.joinPath(path, name);
+    return {
+      read: name => {
+        const filePath = getPath(name);
+        if (!fm.fileExists(filePath)) return null;
+        try {
+          if (type === 'json') return JSON.parse(fm.readString(filePath));
+          if (type === 'string') return fm.readString(filePath);
+          if (type === 'data') return fm.read(filePath);
+          return fm.readImage(filePath);
+        } catch (e) {
+          return null;
+        }
+      },
+      write: (name, content) => {
+        const filePath = getPath(name);
+        if (fm.fileExists(filePath)) fm.remove(filePath);
+        if (type === 'json') fm.writeString(filePath, JSON.stringify(content));
+        else if (type === 'string') fm.writeString(filePath, content);
+        else if (type === 'data') fm.write(filePath, content);
+        else fm.writeImage(filePath, content);
+      }
+    };
+  };
 
+  /**
+   * 带缓存的请求。cacheTime 单位小时，0 = 永不过期
+   * staleFallback = true：网络失败或非 2xx 时回退到过期缓存
+   */
+  const getCacheData = async (
+    name,
+    url,
+    type,
+    cacheTime = 0,
+    path = mainPath,
+    method = 'GET',
+    body = null,
+    staleFallback = false
+  ) => {
+    const cache = useFileManager(type, path);
+    const filePath = fm.joinPath(path, name);
+    const exists = fm.fileExists(filePath);
+    const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
+    const data = exists && !expired ? cache.read(name) : undefined;
+    if (data !== undefined && data !== null) return data;
+    const stale = staleFallback && exists ? cache.read(name) : undefined;
+
+    try {
+      const request = new Request(url);
+      request.method = method;
+      request.timeoutInterval = 20;
+      request.headers = { 'User-Agent': 'Mozilla/5.0' };
+      if (method === 'POST') {
+        request.headers['Content-Type'] = 'application/json';
+        request.body = JSON.stringify(body ?? {});
+      }
+
+      const response = type === 'json'
+        ? await request.loadJSON()
+        : type === 'string'
+        ? await request.loadString()
+        : type === 'data'
+        ? await request.load()
+        : await request.loadImage();
+
+      const sc = request.response?.statusCode;
+      if (staleFallback && sc && (sc < 200 || sc >= 300)) {
+        throw new Error(`HTTP ${sc}`);
+      }
+      if (type === 'data' && sc && sc !== 200) {
+        if (sc === 404) {
+          return stale ?? null;
+        }
+      }
+      if (response != null) {
+        cache.write(name, response);
+        return response;
+      }
+    } catch (e) {
+      console.log(`请求失败：${e}`);
+    }
+    return stale ?? null;
+  };
+  
+  // 地图瓦片/标签缓存
+  const writeFresh = (path, content) => {
+    if (fm.fileExists(path)) fm.remove(path);
+    if (typeof content === 'string') fm.writeString(path, content);
+    else fm.write(path, content);
+  };
+  
+  /* ============================ */
+  // 请求天气数据
+  /* ============================ */
   // 未来两小时降雨提示
   const getTwoHoursWeather = async () => {
     try {
@@ -290,100 +390,75 @@ async function main(family) {
   };
 
   /* ============================ */
-  // 文件与网络工具
+  // 全球台风详情
   /* ============================ */
-  /** 按类型（json / string / data / image）读写文件；写入前先删除，以刷新创建时间（缓存过期依据） */
-  const useFileManager = (type, path = mainPath) => {
-    const getPath = name => fm.joinPath(path, name);
-    return {
-      read: name => {
-        const filePath = getPath(name);
-        if (!fm.fileExists(filePath)) return null;
-        try {
-          if (type === 'json') return JSON.parse(fm.readString(filePath));
-          if (type === 'string') return fm.readString(filePath);
-          if (type === 'data') return fm.read(filePath);
-          return fm.readImage(filePath);
-        } catch (e) {
-          return null;
-        }
-      },
-      write: (name, content) => {
-        const filePath = getPath(name);
-        if (fm.fileExists(filePath)) fm.remove(filePath);
-        if (type === 'json') fm.writeString(filePath, JSON.stringify(content));
-        else if (type === 'string') fm.writeString(filePath, content);
-        else if (type === 'data') fm.write(filePath, content);
-        else fm.writeImage(filePath, content);
-      }
-    };
+  const getActiveStormIds = async () => {
+    const date = `${new Date().toISOString().slice(0, 13)}:00Z`;
+    const url = `https://zoom.earth/data/storms/?date=${encodeURIComponent(date)}&to=24&lang=zh`;
+    const data = await getCacheData(
+      'active_storms.json',
+      url, 'json', 1.5, cacheStr
+    );
+    return data?.storms || [];
   };
-
-  /**
-   * 带缓存的请求。cacheTime 单位小时，0 = 永不过期
-   * staleFallback = true：网络失败或非 2xx 时回退到过期缓存
-   */
-  const getCacheData = async (
-    name,
-    url,
-    type,
-    cacheTime = 0,
-    path = mainPath,
-    method = 'GET',
-    body = null,
-    staleFallback = false
-  ) => {
-    const cache = useFileManager(type, path);
-    const filePath = fm.joinPath(path, name);
-    const exists = fm.fileExists(filePath);
-    const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
-    const data = exists && !expired ? cache.read(name) : undefined;
-    if (data !== undefined && data !== null) return data;
-    const stale = staleFallback && exists ? cache.read(name) : undefined;
-
+  
+  const getStormDetail = async id => {
+    if (!id) return null;
     try {
-      const request = new Request(url);
-      request.method = method;
-      request.timeoutInterval = 20;
-      request.headers = { 'User-Agent': 'Mozilla/5.0' };
-      if (method === 'POST') {
-        request.headers['Content-Type'] = 'application/json';
-        request.body = JSON.stringify(body ?? {});
-      }
-
-      const response = type === 'json'
-        ? await request.loadJSON()
-        : type === 'string'
-        ? await request.loadString()
-        : type === 'data'
-        ? await request.load()
-        : await request.loadImage();
-
-      const sc = request.response?.statusCode;
-      if (staleFallback && sc && (sc < 200 || sc >= 300)) {
-        throw new Error(`HTTP ${sc}`);
-      }
-      if (type === 'data' && sc && sc !== 200) {
-        if (sc === 404) {
-          return stale ?? null;
+      const data = await getCacheData(
+        `storm_detail_${id}.json`,
+        `https://zoom.earth/data/storms/?id=${encodeURIComponent(id)}&lang=zh`,
+        'json', 0.6, cacheStr
+      );
+      if (!data?.id) return null;
+  
+      const valid = p => p?.coordinates?.length >= 2 && Number.isFinite(p.coordinates[0]) && Number.isFinite(p.coordinates[1]) && Math.abs(p.coordinates[0]) <= 180 && Math.abs(p.coordinates[1]) <= 90 && Number.isFinite(Date.parse(p.date));
+  
+      const pts = (data.track ?? []).filter(valid)
+        .map(p => ({ ...p, t: Date.parse(p.date) }))
+        .sort((a, b) => a.t - b.t);
+  
+      const lastObs = pts.filter(p => !p.forecast).pop();
+      const future_ = pts.filter(p => p.forecast && (!lastObs || p.t > lastObs.t));
+      const path = lastObs ? [lastObs, ...future_] : future_;
+      if (!path.length) return null;
+  
+      const now = Date.now();
+      let last = path[0];
+      if (now >= path.at(-1).t) {
+        last = path.at(-1);
+      } else if (now > path[0].t) {
+        const i = path.findIndex(p => p.t > now);
+        const a = path[i - 1], b = path[i];
+        const r = (now - a.t) / (b.t - a.t);
+        const [lng0, lat0] = a.coordinates, [lng1, lat1] = b.coordinates;
+        const dLng = ((lng1 - lng0 + 540) % 360) - 180;   // 跨日界线取短弧
+        last = {
+          ...a,
+          coordinates: [((lng0 + dLng * r + 540) % 360) - 180, lat0 + (lat1 - lat0) * r],
+          code: r < 0.5 ? a.code : b.code
+        };
+        if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
+          last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
         }
       }
-      if (response != null) {
-        cache.write(name, response);
-        return response;
-      }
+      
+      const history = pts.filter(p => !p.forecast && p.t <= now);
+      const future = future_.filter(p => p.t > now);
+      return { 
+        name: data.name || id, 
+        last, 
+        history, 
+        future, 
+        cone: data.cone 
+      };
     } catch (e) {
-      console.log(`请求失败：${e}`);
+      console.log(`台风详情获取失败 [${id}]: ${e.message || e}`);
+      return null;
     }
-    return stale ?? null;
   };
-
-  const writeFresh = (path, content) => {
-    if (fm.fileExists(path)) fm.remove(path);
-    if (typeof content === 'string') fm.writeString(path, content);
-    else fm.write(path, content);
-  };
-
+  
+  // 编码转换
   const toB64 = data => {
     try {
       return data.toBase64String();
@@ -1387,23 +1462,180 @@ async function main(family) {
     });
     return base64ToImage(o.p);
   };
+  
+  /* ============================ */
+  // 验证与精确绘制全球台风图标
+  /* ============================ */
+  const toScreen = (lat, lng) => {
+    const world = TILE_SIZE * 2 ** RZ;
+    const c = worldPx(LAT, LNG, RZ);
+    const p = worldPx(Math.max(-85, Math.min(85, lat)), lng, RZ);
+    const dx = ((p.x - c.x + world / 2) % world + world) % world - world / 2;
+    return { x: TARGET_WIDTH / 2 + dx, y: TARGET_HEIGHT / 2 + (p.y - c.y) };
+  };
+
+  const STORM_CODE_MAP = {
+    D: 'D', S: 'S', SS: 'SS', T: 'T', ST: 'ST', VT: 'VT', SU: 'SU',
+    H1: 'SS', H2: 'T', H3: 'ST', H4: 'VT', H5: 'SU',
+    E: 'E', X: 'D', US: 'S', SD: 'D'
+  };
+  
+  const SHOW_ALL_HISTORY = false;
+  const HISTORY_HOURS = 72;
+  
+  const LEVEL_COLORS = {
+    D: '#3B82F6', S: '#66E86B', E: '#7B2FF7', SS: '#F5C63D',
+    T: '#F5922B', ST: '#EF5A2A', VT: '#E53935', SU: '#F06292'
+  };
+  const levelColor = code => LEVEL_COLORS[STORM_CODE_MAP[code] || 'E'];
+  
+  /* ---------- 绘图原语 ---------- */
+  const strokeLine = (ctx, pts, color, width, alpha) => {
+    if (pts.length < 2) return;
+    const path = new Path();
+    path.move(new Point(pts[0].x, pts[0].y));
+    for (let i = 1; i < pts.length; i++) path.addLine(new Point(pts[i].x, pts[i].y));
+    ctx.addPath(path);
+    ctx.setStrokeColor(new Color(color, alpha));
+    ctx.setLineWidth(width);
+    ctx.strokePath();
+  };
+  
+  // 分段着色，每段末端补圆头避免接缝
+  const strokeSegments = (ctx, segs, width, alpha) => {
+    const r = width / 2;
+    for (const { pts, code } of segs) {
+      const color = levelColor(code);
+      strokeLine(ctx, pts, color, width, alpha);
+      const end = pts[pts.length - 1];
+      ctx.setFillColor(new Color(color, alpha));
+      ctx.fillEllipse(new Rect(end.x - r, end.y - r, r * 2, r * 2));
+    }
+  };
+  
+  const drawDot = (ctx, pt, r, ring, color, ringAlpha) => {
+    const o = r + ring;
+    ctx.setFillColor(new Color('#000000', ringAlpha));
+    ctx.fillEllipse(new Rect(pt.x - o, pt.y - o, o * 2, o * 2));
+    ctx.setFillColor(new Color(color));
+    ctx.fillEllipse(new Rect(pt.x - r, pt.y - r, r * 2, r * 2));
+  };
+  
+  /* ---------- 线段构建 ---------- */
+  // 优先用点自带的 spline 坐标，没有则直线连接
+  const segmentOf = (p, prev) => {
+    const toPt = c => toScreen(c[1], c[0]);
+    const pts = Array.isArray(p.spline) && p.spline.length > 1
+      ? p.spline.map(toPt)
+      : [toPt(prev.coordinates), toPt(p.coordinates)];
+    return { pts, code: p.code };
+  };
+  
+  // last 是插值位置，与前一点的 spline 不一致，所以 last 作为终点时走直线
+  const buildHistSegments = (hist, last) => {
+    const all = [...hist, { ...last, spline: null }];
+    return all.slice(1).map((p, i) => segmentOf(p, all[i]));
+  };
+  
+  // 预测段：首段（last → 首个预测点）走直线，其余用 spline
+  const buildFutureSegments = (last, future) => {
+    const all = [last, ...future];
+    return future.map((p, i) => segmentOf(i === 0 ? { ...p, spline: null } : p, all[i]));
+  };
+  
+  /* ---------- 预测锥 ---------- */
+  const drawCone = (ctx, cone) => {
+    if (!Array.isArray(cone) || cone.length < 3) return;
+    const pts = cone
+      .filter(c => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]))
+      .map(c => toScreen(c[1], c[0]));
+    if (pts.length < 3) return;
+  
+    const path = new Path();
+    path.move(new Point(pts[0].x, pts[0].y));
+    for (let i = 1; i < pts.length; i++) path.addLine(new Point(pts[i].x, pts[i].y));
+    path.closeSubpath();
+  
+    ctx.addPath(path);
+    ctx.setFillColor(new Color('#FFFFFF', 0.24));
+    ctx.fillPath();
+    ctx.addPath(path);
+    ctx.setStrokeColor(new Color('#FFFFFF', 0.4));
+    ctx.setLineWidth(1.2 * K);
+    ctx.strokePath();
+  };
+  
+  /* ---------- 主函数 ---------- */
+  const drawStormTracks = (ctx, storms) => {
+    if (!storms?.length) return;
+    const R = 8 * K, ring = 1.2 * K, lineW = 5 * K;
+    const inView = p => p.x > -20 && p.x < TARGET_WIDTH + 20 && p.y > -20 && p.y < TARGET_HEIGHT + 20;
+    const dot = p => {
+      const s = toScreen(p.coordinates[1], p.coordinates[0]);
+      if (inView(s)) drawDot(ctx, s, R, ring, levelColor(p.code), 0.45);
+    };
+    const since = Date.now() - HISTORY_HOURS * 36e5;
+    // 所有喇叭先画，保证在所有线和点下面
+    storms.forEach(s => drawCone(ctx, s.cone));
+  
+    for (const { last, history = [], future = [] } of storms) {
+      const hist = SHOW_ALL_HISTORY ? history : history.filter(p => p.t >= since);
+      strokeSegments(ctx, buildHistSegments(hist, last), lineW, 0.95);
+      strokeSegments(ctx, buildFutureSegments(last, future), lineW, 0.95);
+      hist.forEach(dot);
+      future.forEach(dot);
+    }
+  };
+
+  // 绘制台风图标
+  const stormImageCache = new Map();
+  const drawStormIcons = (ctx, storms) => {
+    if (!storms?.length || !zoomEarthIcons) return;
+    const size = Math.round(42 * K), half = size / 2;
+    const world = TILE_SIZE * 2 ** RZ;
+    const c = worldPx(LAT, LNG, RZ);
+  
+    for (const { last } of storms) {
+      const [lng, lat] = last.coordinates;
+      const p = worldPx(lat, lng, RZ);
+      // 经度方向环绕到离中心最近的一份
+      const dx = ((p.x - c.x + world / 2) % world + world) % world - world / 2;
+      const { x, y } = toScreen(lat, lng);
+      const left = x - half;
+      const top = y - half;
+      if (left + size < 0 || left > TARGET_WIDTH || top + size < 0 || top > TARGET_HEIGHT) continue;
+  
+      let code = STORM_CODE_MAP[last.code];
+      if (!code) { 
+        console.log('未知台风代码: ' + last.code); code = 'D'; 
+      }
+      let img = stormImageCache.get(code);
+      if (!img) {
+        img = base64ToImage(zoomEarthIcons[code]);
+        if (!img) continue;
+        stormImageCache.set(code, img);
+      }
+      ctx.drawImageInRect(img, new Rect(left, top, size, size));
+    }
+  };
 
   /* ============================ */
   // 主绘制：底图 → 雷达 → 标签 → 定位点 → 雨雪 → 提示框
   /* ============================ */
-  const buildCombinedImage = async radarInfo => {
+  const buildCombinedImage = async (radarInfo, stormIds) => {
     const vp = buildViewport();
     if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
     const missing = vp.tiles.filter(t => !t.image);
     const overlayCached = SHOW_LABELS ? readOverlay() : null;
 
     // 并行取数据：只做网络 / 文件 IO，WebView 同时预热
-    const [, radarData, labelItems] = await Promise.all([
+    const [, radarData, labelItems, stormDetails] = await Promise.all([
       prepareTiles(missing),
       fetchRadar(radarInfo).catch(e => (console.log('雷达数据错误: ' + (e.message || e)), null)),
       SHOW_LABELS && !overlayCached
         ? collectLabels().catch(e => (console.log('标签数据错误: ' + (e.message || e)), []))
         : null,
+      Promise.all(stormIds.map(id => getStormDetail(id))).then(r => r.filter(Boolean)),
       getWV()
     ]);
 
@@ -1430,6 +1662,11 @@ async function main(family) {
     } catch (e) {
       console.log('地图标签错误: ' + (e.message || e));
     }
+    
+    // 绘制台风路径
+    drawStormTracks(ctx, stormDetails);
+    // 绘制台风图标
+    drawStormIcons(ctx, stormDetails);
 
     // 中心定位点（原生绘制）
     const cx = TARGET_WIDTH / 2;
@@ -1447,6 +1684,7 @@ async function main(family) {
     const tip = await buildTooltip(decoded).catch(() => null);
     if (fx) ctx.drawImageInRect(fx, full);
     if (tip) ctx.drawImageInRect(tip.image, new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h));
+    
     // 持久化 bmMaxZ 等运行期状态
     try { writeSettings(setting); } catch (e) {}
     return ctx.getImage();
@@ -1572,9 +1810,10 @@ async function main(family) {
   const runWidget = async () => {
     if (setting.autoLocation) getLocation();
 
-    const [, weatherData, radarInfo] = await Promise.all([
+    const [, weatherData, stormIds, radarInfo] = await Promise.all([
       getTwoHoursWeather(),
       getAlert(),
+      getActiveStormIds(),
       getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null))
     ]);
 
@@ -1582,9 +1821,9 @@ async function main(family) {
     const [{ type, level } = {}] = alerts;
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
-
+    
     const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
-    widget.backgroundImage = await buildCombinedImage(radarInfo);
+    widget.backgroundImage = await buildCombinedImage(radarInfo, stormIds);
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
