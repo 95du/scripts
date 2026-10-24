@@ -3,7 +3,7 @@
 // icon-color: red; icon-glyph: spinner;
 /**
  * 组件作者: 95du茅台
- * 组件版本: Version 1.2.7
+ * 组件版本: Version 1.2.8
  * 数据来源: 四创科技台风路径 App
  * https://t.me/+CpAbO_q_SGo2ZWE1
  *
@@ -192,6 +192,16 @@ const getLocation = async () => {
   }
 };
 
+// 解析台风数据
+const parse = t => {
+  t = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const name = t.match(/中文名[：:]\s*(\S+)/)?.[1];
+  const ename = t.match(/英文名[：:]\s*(\S+)/)?.[1];
+  const source = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/)?.[1];
+  const meaning = t.match(/意义[：:]\s*(.+)/)?.[1];
+  return name && { name, ename, source, meaning };
+};
+  
 // 获取台风命名
 const getNextTyphoonNames = async (history, count = 6) => {
   if (!history?.length) return [];
@@ -211,15 +221,6 @@ const getNextTyphoonNames = async (history, count = 6) => {
     'string', 2160
   );
 
-  const parse = t => {
-    t = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    const name = t.match(/中文名[：:]\s*(\S+)/)?.[1];
-    const ename = t.match(/英文名[：:]\s*(\S+)/)?.[1];
-    const source = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/)?.[1];
-    const meaning = t.match(/意义[：:]\s*(.+)/)?.[1];
-    return name && { name, ename, source, meaning };
-  };
-
   const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
     .map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
       .filter((_, i) => !(i % 2)).map(x => parse(x[1])).filter(Boolean))
@@ -227,7 +228,6 @@ const getNextTyphoonNames = async (history, count = 6) => {
 
   const list = rows.flatMap((_, col) => rows.map(row => row[col]).filter(Boolean));
   const same = (a, b) => a.name === b.name || a.ename?.toUpperCase() === b.ename?.toUpperCase();
-
   let index = history.reduce((i, x) =>
     i >= 0 ? i : list.findIndex(y => same(x, y)), -1);
 
@@ -304,7 +304,7 @@ const getRadarImage = async () => {
     const radar = item.at(-1);
     return await getCacheData(`radar.png`, radar.url, null, 2);
   } catch (e) {
-    console.log(`Radar failed: ${e}`);
+    console.log(`雷达图层: ${e}`);
     return null;
   }
 };
@@ -339,8 +339,21 @@ const getNextItem = (arr, name) => {
 // 热带扰动趋势
 const getSummary = details => {
   const chance = details?.match(/class="chance\s+(?:high|medium|low)">([^<]+)</)?.[1];
-  return chance ? `在未来24小时内发展为热带气旋的可能性为${chance}` : '';
+  return chance ? {
+    level: chance,
+    summary: `在未来24小时内发展为热带气旋的可能性为${chance}`
+  } : {};
 };
+
+const chanceColor = (label) => {
+  switch (label) {
+    case '高': return new Color('#FF1800');
+    case '中等': return new Color('#FF9400');
+    default:   return new Color('#FFD400');
+  }
+};
+
+const chanceTextColor = (label) => (label === '高' ? new Color('#FFFFFF') : new Color('#000000'));
 
 const getTCDetails = async tcItem => {
   const year = new Date().getFullYear();
@@ -350,8 +363,8 @@ const getTCDetails = async tcItem => {
     if (!id) continue;
     const detailsUrl = `https://zoom.earth/data/storms/?details=${id}-${year}&lang=zh`;
     const rawData = await getCacheData(`typhoon_details_${id}.json`, detailsUrl, 'json', 2);
-    const summary = getSummary(rawData?.details);
-    currMergerTCNotice(item, summary);
+    const details = getSummary(rawData?.details);
+    currMergerTCNotice(item, details);
   }
 };
 
@@ -477,7 +490,8 @@ const speedChangeNotice = (tf, dist) => {
   }
 };
 
-const currMergerTCNotice = (tc, summary) => {
+const currMergerTCNotice = (tc, details) => {
+  const { level, summary } = details;
   setting.tc = setting.tc || {};
   const id = tc.tfbh || tc.ident;
   if (!id) return;
@@ -492,7 +506,7 @@ const currMergerTCNotice = (tc, summary) => {
       summary
     ].filter(Boolean).join('\n');
     notify(`⚠️ ${tc.name} ${tc.ename}`, message);
-    setting.tc[id] = { ...oldData, summary, speed };
+    setting.tc[id] = { ...oldData, ...details, speed };
     writeSettings(setting);
   }
 };
@@ -2823,6 +2837,19 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
     labelText.textColor = new Color(item.color);
     listStack.addSpacer(12);
     const valueText = listStack.addText(item.value);
+    
+    const chance = setting?.tc[tc.ident];
+    if (i === 1 && chance) {
+      listStack.addSpacer(6);
+      const badge = listStack.addStack();
+      badge.setPadding(1, 6, 1, 6);
+      badge.cornerRadius = 4;
+      badge.backgroundColor = chanceColor(chance.level);
+      const levelText = badge.addText(chance.level);
+      levelText.font = Font.boldSystemFont(11);
+      levelText.textColor = chanceTextColor(chance.level);
+    }
+    
     valueText.font = Font.mediumSystemFont(13);
     valueText.textColor = textColor;;
     if (i < info.length - 1) {
@@ -2831,49 +2858,6 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
       listStack.size = new Size(0, 33)
     }
   });
-  return widget;
-};
-
-// 雷达拼图组件
-const createRadarWidget = async (param) => {
-  const parameter = param.includes('华东') ? '华东' : param;
-  const { url, name } = await getRadarImageData(parameter) || {};
-  const summary = await getMinutelySummary(setting.lon, setting.lat);
-
-  const widget = new ListWidget();
-  widget.setPadding(18, 20, 18, 20);
-  const topStack = widget.addStack();
-  topStack.layoutHorizontally();
-  topStack.addSpacer();
-  createButtonStack(topStack, '', name ?? '暂无数据', new Color('#8C7CFF'));
-  topStack.addSpacer();
-  if (!summary.includes('无')) {
-    widget.addSpacer(10);
-    const weatherStack = widget.addStack();
-    weatherStack.layoutHorizontally();
-    weatherStack.addSpacer();
-    createButtonStack(weatherStack, '', summary, new Color('#38ABFF'));
-    weatherStack.addSpacer();
-  }
-  widget.addSpacer();
-  
-  if (!url || !name) {
-    widget.backgroundImage = await generateMapImage(getIsDay(), [], [], [], setting);
-    return widget;
-  }
-  
-  const image = param.includes('华东')
-    ? await new Request(url).load()
-    : await new Request(url).loadImage();
-  
-  if (param.includes('华东')) {
-    const rawImg = Image.fromData(image);
-    const [imgTop, imgBottom] = await processImagePipeline(rawImg);
-    widget.backgroundImage = param === '华东上' ? imgTop : imgBottom;
-  } else {
-    widget.backgroundImage = image;
-  }
-
   return widget;
 };
 
@@ -2935,6 +2919,45 @@ const createLevelWidget = (levels, names, textColor, isLarge) => {
   return widget;
 };
 
+// 雷达拼图组件
+const createRadarWidget = async (param) => {
+  const parameter = param.includes('华东') ? '华东' : param;
+  const { url, name } = await getRadarImageData(parameter) || {};
+  const image = param.includes('华东')
+    ? await new Request(url).load()
+    : await new Request(url).loadImage();
+  const summary = await getMinutelySummary(setting.lon, setting.lat);
+
+  const widget = new ListWidget();
+  widget.setPadding(18, 20, 18, 20);
+  const topStack = widget.addStack();
+  topStack.layoutHorizontally();
+  topStack.addSpacer();
+  createButtonStack(topStack, '', name ?? '暂无数据', new Color('#8C7CFF'));
+  topStack.addSpacer();
+  if (!summary.includes('无')) {
+    widget.addSpacer(10);
+    const weatherStack = widget.addStack();
+    weatherStack.layoutHorizontally();
+    weatherStack.addSpacer();
+    createButtonStack(weatherStack, '', summary, new Color('#38ABFF'));
+    weatherStack.addSpacer();
+  }
+  widget.addSpacer();
+  
+  if (!url || !name) {
+    widget.backgroundImage = await generateMapImage(getIsDay(), [], [], [], setting);
+  } else if (param.includes('华东')) {
+    const rawImg = Image.fromData(image);
+    const [imgTop, imgBottom] = await processImagePipeline(rawImg);
+    widget.backgroundImage = param === '华东上' ? imgTop : imgBottom;
+  } else {
+    widget.backgroundImage = image;
+  }
+
+  return widget;
+};
+
 const errorWidget = () => {
   const widget = new ListWidget();
   const text = widget.addText('仅支持中大号');
@@ -2969,17 +2992,18 @@ const createTcData = (tcItem, tc, textColor, isLarge) => {
   );
 };
 
+const isRegionParam = param => [
+  '全国', '华南', '华东上', '华东下',
+  '西南', '华中', '华北', '东北', '西北'
+].includes(param);
+
 // 主函数
 const runWidget = async () => {
   getLocation();
   const { tfItem, tf } = await getCurrMerger() || {};
 
-  const regions = [
-    '全国', '华南', '华东上', '华东下', 
-    '西南', '华中', '华北', '东北', '西北'
-  ];
   const param = args.widgetParameter;
-  const hasRegion = regions.some(i => param?.includes(i));
+  const isRegion = isRegionParam(param);
   const isNumber = param && !isNaN(Number(param));
   
   const family = config.runsInWidget ? config.widgetFamily : 'large' ;
@@ -2998,7 +3022,7 @@ const runWidget = async () => {
   let widget;
   if (isSmall) {
     widget = errorWidget();
-  } else if (hasRegion && isLarge) {
+  } else if (isRegion && isLarge) {
     widget = await createRadarWidget(param);
   } else if (tf && !isNumber && !shouldRandomBranch) {
     widget = await createTyphoonData(tfItem, tf, textColor, isLarge);
