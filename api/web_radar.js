@@ -392,6 +392,19 @@ async function main(family) {
   /* ============================ */
   // 全球台风详情
   /* ============================ */
+  const cleanStormCache = (activeIds, maxHours = 6) => {
+    try {
+      const keep = new Set(activeIds.map(id => `storm_detail_${id}.json`));
+      for (const name of fm.listContents(cacheStr)) {
+        if (!name.startsWith('storm_detail_') || !name.endsWith('.json')) continue;
+        if (keep.has(name)) continue;
+        const p = fm.joinPath(cacheStr, name);
+        const ageH = (Date.now() - fm.creationDate(p).getTime()) / 36e5;
+        if (ageH > maxHours) try { fm.remove(p); } catch (e) {}
+      }
+    } catch (e) {}
+  };
+
   const getActiveStormIds = async () => {
     const date = `${new Date().toISOString().slice(0, 13)}:00Z`;
     const url = `https://zoom.earth/data/storms/?date=${encodeURIComponent(date)}&to=24&lang=zh`;
@@ -1638,7 +1651,10 @@ async function main(family) {
       Promise.all(stormIds.map(id => getStormDetail(id))).then(r => r.filter(Boolean)),
       getWV()
     ]);
-
+    //清理过期台风 json
+    const ids = stormIds.map(s => typeof s === 'string' ? s : s?.id).filter(Boolean);
+    cleanStormCache(ids);
+    
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
     const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
     ctx.drawImageInRect(await renderBaseMap(vp, missing), full);
