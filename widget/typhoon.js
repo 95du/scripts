@@ -2619,6 +2619,11 @@ const generateItem = (isLarge, tf, land, dist = 0 ) => [
     value: `${tf.speed}米/秒，${tf.power}级 ( ${tf.strong} )`,
     color: '#39A7F8'
   },
+  ...(!isLarge && tf.trend && !land?.length && tf.trend.includes('原地少动') ? [{ 
+    label: "中心气压", 
+    value: `${tf.pressure} 百帕`, 
+    color: '#FFD83A'
+  }] : []),
   ...(land?.length ? [{
     label: "登陆位置",
     value: `${formatDate(land[0].land_time, true)}，在${land[0].position}登陆`,
@@ -2736,7 +2741,7 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
     icon.tintColor = Color.white();
     barStack.addSpacer(6);
   }
-  const statusText = barStack.addText(name);
+  const statusText = barStack.addText(name ?? '');
   statusText.textColor = Color.white();
   statusText.font = Font.boldSystemFont(14);
   return barStack;
@@ -2832,7 +2837,7 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
 // 雷达拼图组件
 const createRadarWidget = async (param) => {
   const parameter = param.includes('华东') ? '华东' : param;
-  const { url, name } = await getRadarImageData(parameter);
+  const { url, name } = await getRadarImageData(parameter) || {};
   const summary = await getMinutelySummary(setting.lon, setting.lat);
 
   const widget = new ListWidget();
@@ -2840,7 +2845,7 @@ const createRadarWidget = async (param) => {
   const topStack = widget.addStack();
   topStack.layoutHorizontally();
   topStack.addSpacer();
-  createButtonStack(topStack, '', name, new Color('#8C7CFF'));
+  createButtonStack(topStack, '', name ?? '暂无数据', new Color('#8C7CFF'));
   topStack.addSpacer();
   if (!summary.includes('无')) {
     widget.addSpacer(10);
@@ -2851,11 +2856,16 @@ const createRadarWidget = async (param) => {
     weatherStack.addSpacer();
   }
   widget.addSpacer();
-
+  
+  if (!url || !name) {
+    widget.backgroundImage = await generateMapImage(getIsDay(), [], [], [], setting);
+    return widget;
+  }
+  
   const image = param.includes('华东')
     ? await new Request(url).load()
     : await new Request(url).loadImage();
-    
+  
   if (param.includes('华东')) {
     const rawImg = Image.fromData(image);
     const [imgTop, imgBottom] = await processImagePipeline(rawImg);
