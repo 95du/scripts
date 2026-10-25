@@ -705,6 +705,15 @@ async function main() {
       type: 'group',
       items: [
         {
+          label: '热带系统',
+          name: 'showTropicalSystem',
+          type: 'switch',
+          icon: {
+            name: 'wind',
+            color: '#FF7800'
+          }
+        },
+        {
           label: '全部历史',
           name: 'showAllHistory',
           type: 'switch',
