@@ -415,6 +415,45 @@ async function main(family) {
     return data?.storms || [];
   };
   
+  const wrapLng = x => ((x + 540) % 360) - 180;
+
+  // 取某点的 spline（从 prev 到 p），经度展开避免跨日界线跳变
+  const splineOf = (p, prev) => {
+    const raw = Array.isArray(p.spline) && p.spline.length > 1
+      ? p.spline : [prev.coordinates, p.coordinates];
+    const out = [raw[0]];
+    for (let i = 1; i < raw.length; i++) {
+      const q = raw[i], pr = out[i - 1];
+      out.push([pr[0] + ((q[0] - pr[0] + 540) % 360) - 180, q[1]]);
+    }
+    return out;
+  };
+  
+  // 按弧长比例 f0~f1 截取折线
+  const sliceSpline = (pts, f0, f1) => {
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) {
+      cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    }
+    const total = cum[cum.length - 1];
+    if (!total) return [pts[0], pts[pts.length - 1]];
+    const at = d => {
+      let i = 1;
+      while (i < pts.length - 1 && cum[i] < d) i++;
+      const seg = cum[i] - cum[i - 1] || 1;
+      const r = Math.min(1, Math.max(0, (d - cum[i - 1]) / seg));
+      return [
+        pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * r,
+        pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * r
+      ];
+    };
+    const d0 = total * f0, d1 = total * f1;
+    const out = [at(d0)];
+    for (let i = 0; i < pts.length; i++) if (cum[i] > d0 && cum[i] < d1) out.push(pts[i]);
+    out.push(at(d1));
+    return out;
+  };
+  
   const getStormDetail = async id => {
     if (!id) return null;
     try {
@@ -437,34 +476,28 @@ async function main(family) {
       if (!path.length) return null;
   
       const now = Date.now();
-      let last = path[0];
-      if (now >= path.at(-1).t) {
-        last = path.at(-1);
-      } else if (now > path[0].t) {
-        const i = path.findIndex(p => p.t > now);
-        const a = path[i - 1], b = path[i];
-        const r = (now - a.t) / (b.t - a.t);
-        const [lng0, lat0] = a.coordinates, [lng1, lat1] = b.coordinates;
-        const dLng = ((lng1 - lng0 + 540) % 360) - 180;   // 跨日界线取短弧
-        last = {
-          ...a,
-          coordinates: [((lng0 + dLng * r + 540) % 360) - 180, lat0 + (lat1 - lat0) * r],
-          code: r < 0.5 ? a.code : b.code
-        };
-        if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
-          last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
-        }
-      }
-      
-      const history = pts.filter(p => !p.forecast && p.t <= now);
-      const future = future_.filter(p => p.t > now);
-      return { 
-        name: data.name || id, 
-        last, 
-        history, 
-        future, 
-        cone: data.cone 
-      };
+let last = path[0], split = null;
+if (now >= path.at(-1).t) {
+  last = path.at(-1);
+} else if (now > path[0].t) {
+  const i = path.findIndex(p => p.t > now);
+  const a = path[i - 1], b = path[i];
+  const r = (now - a.t) / (b.t - a.t);
+  const curve = splineOf(b, a);
+  const head = sliceSpline(curve, 0, r);   // a → 当前位置
+  const tail = sliceSpline(curve, r, 1);   // 当前位置 → b
+  const [lng, lat] = tail[0];
+  last = { ...a, coordinates: [wrapLng(lng), lat], code: r < 0.5 ? a.code : b.code };
+  if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
+    last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
+  }
+  split = { head, tail, code: b.code };
+}
+
+// 历史 = 所有已过时间的点（含已过期的预报点）
+const history = pts.filter(p => p.t <= now);
+const future = future_.filter(p => p.t > now && p !== last);
+return { name: data.name || id, last, history, future, cone: data.cone, split };
     } catch (e) {
       console.log(`台风详情获取失败 [${id}]: ${e.message || e}`);
       return null;
@@ -1490,7 +1523,7 @@ async function main(family) {
   const STORM_CODE_MAP = {
     D: 'D', S: 'S', SS: 'SS', T: 'T', ST: 'ST', VT: 'VT', SU: 'SU',
     H1: 'SS', H2: 'T', H3: 'ST', H4: 'VT', H5: 'SU',
-    E: 'E', X: 'D', US: 'S', SD: 'D'
+    E: 'E', X: 'E', US: 'S', SD: 'D'
   };
   
   const SHOW_ALL_HISTORY = false;
@@ -1544,16 +1577,22 @@ async function main(family) {
     return { pts, code: p.code };
   };
   
-  // last 是插值位置，与前一点的 spline 不一致，所以 last 作为终点时走直线
-  const buildHistSegments = (hist, last) => {
-    const all = [...hist, { ...last, spline: null }];
-    return all.slice(1).map((p, i) => segmentOf(p, all[i]));
+  const buildHistSegments = (hist, split) => {
+    const segs = hist.slice(1).map((p, i) => segmentOf(p, hist[i]));
+    if (split) segs.push({ pts: split.head.map(c => toScreen(c[1], c[0])), code: split.code });
+    return segs;
   };
   
-  // 预测段：首段（last → 首个预测点）走直线，其余用 spline
-  const buildFutureSegments = (last, future) => {
-    const all = [last, ...future];
-    return future.map((p, i) => segmentOf(i === 0 ? { ...p, spline: null } : p, all[i]));
+  const buildFutureSegments = (last, future, split) => {
+    const segs = [];
+    let prev = last, list = future;
+    if (split) {
+      segs.push({ pts: split.tail.map(c => toScreen(c[1], c[0])), code: split.code });
+      prev = future[0];
+      list = future.slice(1);
+    }
+    for (const p of list) { segs.push(segmentOf(p, prev)); prev = p; }
+    return segs;
   };
   
   /* ---------- 预测锥 ---------- */
@@ -1591,10 +1630,10 @@ async function main(family) {
     // 所有喇叭先画，保证在所有线和点下面
     storms.forEach(s => drawCone(ctx, s.cone));
   
-    for (const { last, history = [], future = [] } of storms) {
+    for (const { last, history = [], future = [], split } of storms) {
       const hist = SHOW_ALL_HISTORY ? history : history.filter(p => p.t >= since);
-      strokeSegments(ctx, buildHistSegments(hist, last), lineW, 0.95);
-      strokeSegments(ctx, buildFutureSegments(last, future), lineW, 0.95);
+      strokeSegments(ctx, buildHistSegments(hist, split), lineW, 0.95);
+      strokeSegments(ctx, buildFutureSegments(last, future, split), lineW, 0.95);
       hist.forEach(dot);
       future.forEach(dot);
     }
@@ -1604,7 +1643,7 @@ async function main(family) {
   const stormImageCache = new Map();
   const drawStormIcons = (ctx, storms) => {
     if (!storms?.length || !zoomEarthIcons) return;
-    const size = Math.round(42 * K), half = size / 2;
+    const size = Math.round(45 * K), half = size / 2;
     const world = TILE_SIZE * 2 ** RZ;
     const c = worldPx(LAT, LNG, RZ);
   
@@ -1620,7 +1659,7 @@ async function main(family) {
   
       let code = STORM_CODE_MAP[last.code];
       if (!code) { 
-        console.log('未知台风代码: ' + last.code); code = 'D'; 
+        console.log('未知台风代码: ' + last.code); code = 'E'; 
       }
       let img = stormImageCache.get(code);
       if (!img) {
