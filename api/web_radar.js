@@ -3,8 +3,8 @@
 // icon-color: deep-brown; icon-glyph: lightbulb;
 /**
  * 组件作者: 95du茅台
- * 组件名称: 全球雨雪雷达
- * 组件版本: Version 1.0.5
+ * 组件名称: 全球台风雨雪雷达
+ * 组件版本: Version 1.0.6
  * 发布时间: 2026-10-25
  */
 
@@ -275,9 +275,13 @@ async function main(family) {
         throw new Error(`HTTP ${sc}`);
       }
       if (type === 'data' && sc && sc !== 200) {
+        // 404：写入空 Data 作为「不存在」标记，下次直接命中缓存，不再反复请求
         if (sc === 404) {
-          return stale ?? null;
+          const empty = Data.fromString('');
+          cache.write(name, empty);
+          return empty;
         }
+        return stale ?? null;
       }
       if (response != null) {
         cache.write(name, response);
@@ -418,7 +422,7 @@ async function main(family) {
       'active_storms.json',
       url, 'json', 1.5, cacheStr
     );
-    return data?.storms || [];
+    return (data?.storms || []).map(x => typeof x === 'string' ? x : x?.id).filter(Boolean);
   };
   
   const wrapLng = x => ((x + 540) % 360) - 180;
@@ -552,23 +556,34 @@ async function main(family) {
     return ctx;
   };
 
-  // 共享 WebView：地图 / 雷达 / 标签 / 提示框 / 雨雪共用
-  let _wv = null;
-  const getWV = async () => {
-    if (!_wv) {
-      _wv = new WebView();
-      await _wv.loadHTML('<html><body></body></html>');
+  // 共享 WebView：地图 / 雷达 / 标签 / 气泡 / 雨雪共用同一页面
+  let _wvP = null;
+  const getWV = () => {
+    if (!_wvP) {
+      _wvP = (async () => {
+        const wv = new WebView();
+        await wv.loadHTML('<html><body></body></html>');
+        return wv;
+      })();
     }
-    return _wv;
+    return _wvP;
   };
 
-  /** 在 WebView 里执行 fn(args)，fn 通过 completion(JSON 字符串) 返回；'ERR:' 开头视为失败 */
-  const runWV = async (fn, args) => {
-    const wv = await getWV();
-    const res = await wv.evaluateJavaScript('void (' + fn.toString() + ')(' + JSON.stringify(args) + ');', true);
-    if (typeof res !== 'string') throw new Error('WebView 返回类型错误');
-    if (res.startsWith('ERR:')) throw new Error(res.slice(4));
-    return JSON.parse(res);
+  /**
+   * 在 WebView 里执行 fn(args)，fn 通过 completion(JSON 字符串) 返回；'ERR:' 开头视为失败
+   * completion 回调不能并发：所有调用排队串行，网络 IO 仍可与之并行
+   */
+  let _wvQueue = Promise.resolve();
+  const runWV = (fn, args) => {
+    const job = _wvQueue.then(async () => {
+      const wv = await getWV();
+      const res = await wv.evaluateJavaScript('void (' + fn.toString() + ')(' + JSON.stringify(args) + ');', true);
+      if (typeof res !== 'string') throw new Error('WebView 返回类型错误');
+      if (res.startsWith('ERR:')) throw new Error(res.slice(4));
+      return JSON.parse(res);
+    });
+    _wvQueue = job.catch(() => {});
+    return job;
   };
 
   /** 并发池 */
@@ -655,7 +670,7 @@ async function main(family) {
     }
   };
 
-  // Blue Marble：同名文件并发时只请求一次；记住最深存在的级别，避免反复探测
+  // Blue Marble：同名文件并发时只请求（并转 base64）一次；记住最深存在的级别，避免反复探测
   const bmInflight = new Map();
   const loadBM = async (tileZ, x, y) => {
     const top = Math.min(tileZ, setting.bmMaxZ ?? tileZ);
@@ -669,18 +684,17 @@ async function main(family) {
           'data',
           BM_CACHE_HOURS,
           bmPath
-        ));
+        ).then(d => d ? toB64(d) : null));
       }
-      const d = await bmInflight.get(name);
-      if (!d) continue;
-      const len = toB64(d).length;
-      if (len > 1000) return { data: d, dz };
-      if (len === 0 && z > 0) setting.bmMaxZ = z - 1;
+      const b64 = await bmInflight.get(name);
+      if (b64 == null) continue;
+      if (b64.length > 1000) return { b64, dz };
+      if (b64.length === 0 && z > 0) setting.bmMaxZ = z - 1;
     }
     return null;
   };
 
-  /** 并行加载单个瓦片的 fill / BM / line / land（null = 网络失败，空 Data = 404） */
+  /** 并行加载单个瓦片的 fill / BM / line / land（null = 网络失败，空 Data = 404 不存在） */
   const loadTileAssets = async (tile) => {
     const { tileZ: z, cacheX: x, y } = tile;
     const name = `${z}_${x}_${y}.webp`;
@@ -691,7 +705,7 @@ async function main(family) {
       getCacheData(name, urls.line, 'data', LINE_CACHE_HOURS, linePath),
       getCacheData(name, urls.land, 'data', FILL_CACHE_HOURS, landPath)
     ]);
-    Object.assign(tile, { fill, bm: bmObj ? bmObj.data : null, bmDz: bmObj ? bmObj.dz : 0, line, land });
+    Object.assign(tile, { fill, bm: bmObj ? bmObj.b64 : '', bmDz: bmObj ? bmObj.dz : 0, line, land });
   };
 
   const prepareTiles = list =>
@@ -711,10 +725,12 @@ async function main(family) {
       const cfg = A.cfg;
       const out = [];
       for (const t of A.tiles) {
-        const bm = t.b && t.b.length > 1000 ? await loadImage(t.b, 'jpeg') : null;
-        const fill = t.f && t.f.length > 0 ? await loadImage(t.f, 'webp') : null;
-        const land = t.d && t.d.length > 80 ? await loadImage(t.d, 'webp') : null;
-        const line = t.l && t.l.length > 80 ? await loadImage(t.l, 'webp') : null;
+        const [bm, fill, land, line] = await Promise.all([
+          t.b && t.b.length > 1000 ? loadImage(t.b, 'jpeg') : null,
+          t.f && t.f.length > 0 ? loadImage(t.f, 'webp') : null,
+          t.d && t.d.length > 80 ? loadImage(t.d, 'webp') : null,
+          t.l && t.l.length > 80 ? loadImage(t.l, 'webp') : null
+        ]);
 
         const w = bm ? (bm.naturalWidth || 256) : fill ? (fill.naturalWidth || 256) : 256;
         const h = bm ? (bm.naturalHeight || 256) : fill ? (fill.naturalHeight || 256) : 256;
@@ -780,15 +796,16 @@ async function main(family) {
     const res = await runWV(wvTiles, {
       cfg: { ocean: OCEAN_COLOR, land: LAND_COLOR, lineColor: LINE_COLOR, lineOpacity: LINE_OPACITY, dim: DIM_ALPHA },
       tiles: list.map(t => ({
-        k: t.key, f: toB64(t.fill), b: toB64(t.bm), bz: t.bmDz || 0,
+        k: t.key, f: toB64(t.fill), b: t.bm || '', bz: t.bmDz || 0,
         bx: t.cacheX, by: t.y, d: toB64(t.land), l: toB64(t.line)
       }))
     });
     return new Map(res.map(x => [x.k, x.d]));
   };
 
-  /** 底图：缓存瓦片 + 新渲染瓦片 → 拼接 → 裁剪缩放到输出尺寸 */
+  /** 底图：缓存瓦片 + 新渲染瓦片 → 拼接 → 裁剪缩放到输出尺寸。complete = 所有瓦片资源齐全，可整图缓存 */
   const renderBaseMap = async (vp, missing) => {
+    let complete = true;
     const mapCtx = newCtx(vp.sourceWidth, vp.sourceHeight);
     mapCtx.setFillColor(new Color(OCEAN_COLOR));
     mapCtx.fillRect(new Rect(0, 0, vp.sourceWidth, vp.sourceHeight));
@@ -799,21 +816,28 @@ async function main(family) {
     vp.tiles.filter(t => t.image).forEach(t => drawTile(t, t.image));
 
     if (missing.length) {
-      const rendered = await renderTiles(missing);
+      let rendered = new Map();
+      try {
+        rendered = await renderTiles(missing);
+      } catch (e) {
+        complete = false;
+        console.log('地图瓦片渲染失败: ' + (e.message || e));
+      }
       const renderCache = useFileManager('image', renderPath);
       for (const t of missing) {
         try {
           const data = rendered.get(t.key);
-          if (!data) continue;
-          const img = base64ToImage(data);
+          const img = data ? base64ToImage(data) : null;
+          if (!img) { complete = false; continue; }
           drawTile(t, img);
           // 原始资源下载失败（null）时不缓存，避免缓存残缺瓦片
-          if (ENABLE_RENDER_CACHE && t.fill && t.land) {
-            renderCache.write(
-              getRenderName(t.tileZ, t.cacheX, t.y), img
-            );
+          if (t.fill && t.land) {
+            if (ENABLE_RENDER_CACHE) renderCache.write(getRenderName(t.tileZ, t.cacheX, t.y), img);
+          } else {
+            complete = false;
           }
         } catch (e) {
+          complete = false;
           console.log('地图瓦片渲染失败 ' + t.key + ' ' + (e.message || e));
         }
       }
@@ -831,7 +855,49 @@ async function main(family) {
         vp.sourceHeight * scaleY
       )
     );
-    return finalCtx.getImage();
+    return { image: finalCtx.getImage(), complete };
+  };
+
+  // 整张底图缓存：位置 / 缩放 / 月份 / 样式不变时，直接读一张图，跳过瓦片读取、WebView 合成与二次拼接
+  const baseCacheName = () => `base_${month}_` +
+    [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, Math.round(LINE_OPACITY * 100), MAP_RENDER_VERSION]
+      .join('_').replace(/\./g, 'p') + '.png';
+
+  /** 清理其他月份 / 旧版本 / 旧位置的底图缓存，避免磁盘持续增长 */
+  const cleanStaleMapCache = keepBase => {
+    try {
+      for (const name of fm.listContents(renderPath)) {
+        const stale = name.startsWith('base_')
+          ? name !== keepBase
+          : !name.startsWith(month + '_') || !name.endsWith(`_v${MAP_RENDER_VERSION}.png`);
+        if (stale) try { fm.remove(fm.joinPath(renderPath, name)); } catch (e) {}
+      }
+      for (const name of fm.listContents(bmPath)) {
+        if (!name.startsWith(month + '_')) try { fm.remove(fm.joinPath(bmPath, name)); } catch (e) {}
+      }
+    } catch (e) {}
+  };
+
+  const getBaseMap = async () => {
+    const name = baseCacheName();
+    const p = fm.joinPath(renderPath, name);
+    if (ENABLE_RENDER_CACHE && fm.fileExists(p) &&
+        (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
+      try {
+        const cached = fm.readImage(p);
+        if (cached) return cached;
+      } catch (e) {}
+    }
+    const vp = buildViewport();
+    if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
+    const missing = vp.tiles.filter(t => !t.image);
+    await prepareTiles(missing);
+    const { image, complete } = await renderBaseMap(vp, missing);
+    if (ENABLE_RENDER_CACHE && complete) {
+      useFileManager('image', renderPath).write(name, image);
+      cleanStaleMapCache(name);
+    }
+    return image;
   };
 
   /* ============================ */
@@ -1303,87 +1369,168 @@ async function main(family) {
   /* ============================ */
   // 降水提示框与雨雪特效
   /* ============================ */
-  /** 提示框气泡（WebView 绘制）：云+雨滴图标 + 等级 + 雨量 */
-  const wvTooltip = A => {
+  /**
+   * 气泡布局 + 绘制（WebView，一次调用处理全部气泡：降水提示框 + 各台风信息框）
+   *
+   * 每个气泡有上 / 下 / 左 / 右四个锚点（箭头尖端位置）。按优先级逐个放置：
+   * 候选顺序 = 上方 → 下方（居中，再左右平移）→ 右侧 → 左侧（居中，再上下平移）；箭头始终指向锚点。
+   * 取第一个与「已放置气泡 + 障碍物（台风图标、定位点）」都不重叠且在画面内的位置，
+   * 全部冲突时取重叠面积最小的。每个气泡输出为一张小图 + 位置，由原生侧直接贴图。
+   */
+  const wvBubbles = A => {
     try {
       const S = A.s;
       const FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif';
       const m = document.createElement('canvas').getContext('2d');
-      m.font = '600 ' + 22 * S + 'px ' + FONT;
-      const tw = m.measureText(A.title).width;
-      m.font = '500 ' + 20 * S + 'px ' + FONT;
-      const sw = m.measureText(A.sub).width;
-  
-      const icon = 26 * S, gap = 8 * S, padX = 16 * S, padY = 12 * S, lineGap = 6 * S;
-      const row1W = icon + gap + tw, row1H = 26 * S, row2H = 22 * S;
-      const bodyW = Math.ceil(Math.max(row1W, sw) + padX * 2);
-      const bodyH = Math.ceil(padY * 2 + row1H + lineGap + row2H);
-      const arrowH = 10 * S, arrowW = 20 * S, M = Math.ceil(4 * S);
-      const W = bodyW + M * 2, H = Math.ceil(bodyH + arrowH + M * 2);
-  
-      const cv = document.createElement('canvas');
-      cv.width = W;
-      cv.height = H;
-      const ctx = cv.getContext('2d');
-  
-      const r = 14 * S, x0 = M, y0 = M, x1 = M + bodyW, y1 = M + bodyH, cx = W / 2;
-      ctx.beginPath();
-      ctx.moveTo(x0 + r, y0);
-      ctx.arcTo(x1, y0, x1, y1, r);
-      ctx.arcTo(x1, y1, x0, y1, r);
-      ctx.lineTo(cx + arrowW / 2, y1);
-      ctx.lineTo(cx, y1 + arrowH);
-      ctx.lineTo(cx - arrowW / 2, y1);
-      ctx.arcTo(x0, y1, x0, y0, r);
-      ctx.arcTo(x0, y0, x1, y0, r);
-      ctx.closePath();
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur = 4 * S;
-      ctx.fillStyle = 'rgba(0,0,0,0.52)';
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-      ctx.lineWidth = 0.8 * S;
-      ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-      ctx.stroke();
-  
-      // 图标：云 + 三滴雨 / 三点雪
-      const ix = M + (bodyW - row1W) / 2, iy = M + padY + (row1H - icon) / 2, s = icon;
-      ctx.fillStyle = '#e8edf5';
-      ctx.beginPath();
-      ctx.arc(ix + 0.30 * s, iy + 0.42 * s, 0.20 * s, Math.PI * 0.5, Math.PI * 1.5);
-      ctx.arc(ix + 0.52 * s, iy + 0.28 * s, 0.26 * s, Math.PI * 1.1, Math.PI * 1.95);
-      ctx.arc(ix + 0.76 * s, iy + 0.42 * s, 0.17 * s, Math.PI * 1.5, Math.PI * 0.5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#7fb2ff';
-      ctx.fillStyle = '#bcd8ff';
-      ctx.lineWidth = 1.8 * S;
-      ctx.lineCap = 'round';
-      [0.30, 0.50, 0.70].forEach(function (px) {
-        if (A.snow) {
-          ctx.beginPath();
-          ctx.arc(ix + px * s, iy + 0.84 * s, 0.07 * s, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.beginPath();
-          ctx.moveTo(ix + px * s, iy + 0.72 * s);
-          ctx.lineTo(ix + (px - 0.06) * s, iy + 0.94 * s);
+      const textW = (font, t) => (m.font = font, m.measureText(t).width);
+      const area = (a, b) =>
+        Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+        Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      const screen = { x: 0, y: 0, w: A.ow, h: A.oh };
+      const pad = 3 * S;                       // 气泡之间保留的最小间距
+      const inflate = r => ({ x: r.x - pad, y: r.y - pad, w: r.w + pad * 2, h: r.h + pad * 2 });
+      const placed = [];
+      const out = [];
+
+      for (const it of A.items) {
+        const rain = it.kind === 'rain';
+        const padX = 16 * S, padY = (rain ? 12 : 10) * S, lineGap = (rain ? 6 : 4) * S;
+        const row1H = 26 * S, row2H = (rain ? 22 : 24) * S;
+        const icon = rain ? 26 * S : 0, iGap = rain ? 8 * S : 0;
+        const tw = textW('600 ' + 22 * S + 'px ' + FONT, it.title);
+        const sw = it.sub ? textW('500 ' + 20 * S + 'px ' + FONT, it.sub) : 0;
+        const row1W = icon + iGap + tw;
+        const bodyW = Math.ceil(Math.max(row1W, sw) + padX * 2);
+        const bodyH = Math.ceil(padY * 2 + row1H + (it.sub ? lineGap + row2H : 0));
+        const arrowH = 10 * S, arrowW = 20 * S, M = Math.ceil(4 * S), r = 14 * S;
+        const minOff = r + arrowW / 2;                       // 箭头中心离气泡左右边缘的最小距离
+        const reach = Math.max(0, bodyW / 2 - minOff);       // 气泡中心相对锚点可平移的最大距离
+
+        // ---- 选位：dir = 气泡位于目标的哪一侧（箭头在对侧边缘指向锚点）----
+        const reachV = Math.max(0, bodyH / 2 - minOff);
+        const cands = [];
+        for (const [k, sg] of [[0, 0], [0.5, -1], [0.5, 1], [1, -1], [1, 1]]) {
+          cands.push(['up', k * sg * reach], ['down', k * sg * reach]);
+        }
+        for (const [k, sg] of [[0, 0], [1, -1], [1, 1]]) {
+          cands.push(['right', k * sg * reachV], ['left', k * sg * reachV]);
+        }
+        let best = null;
+        for (const [dir, sh] of cands) {
+          const tip = it[dir];
+          let bx, by, rect;                                    // bx/by = 气泡主体左上角（屏幕坐标）；rect = 主体 + 箭头
+          if (dir === 'up' || dir === 'down') {
+            bx = Math.max(2, Math.min(A.ow - bodyW - 2, tip.x + sh - bodyW / 2));
+            by = dir === 'up' ? tip.y - arrowH - bodyH : tip.y + arrowH;
+            rect = { x: bx, y: dir === 'up' ? by : tip.y, w: bodyW, h: bodyH + arrowH };
+          } else {
+            by = Math.max(2, Math.min(A.oh - bodyH - 2, tip.y + sh - bodyH / 2));
+            bx = dir === 'left' ? tip.x - arrowH - bodyW : tip.x + arrowH;
+            rect = { x: dir === 'left' ? bx : tip.x, y: by, w: bodyW + arrowH, h: bodyH };
+          }
+          const probe = inflate(rect);
+          let cost = 4 * (rect.w * rect.h - area(rect, screen));      // 超出画面的面积
+          for (const q of placed) cost += area(probe, q);
+          for (const o of A.obstacles) if (!(it.ignore || []).includes(o.id)) cost += area(rect, o);
+          cost = Math.round(cost);                                    // 抹平浮点误差，平局时保持候选优先级
+          if (!best || cost < best.cost) best = { cost, dir, tip, bx, by, rect };
+          if (cost === 0) break;
+        }
+        const { dir, tip, bx, by, rect } = best;
+        placed.push(rect);
+
+        // ---- 绘制 ----
+        const horiz = dir === 'left' || dir === 'right';
+        const side = { up: 'bottom', down: 'top', left: 'right', right: 'left' }[dir];   // 箭头所在的边
+        const W = Math.ceil(bodyW + M * 2 + (horiz ? arrowH : 0)), H = Math.ceil(bodyH + M * 2 + (horiz ? 0 : arrowH));
+        const ox = Math.round(rect.x - M), oy = Math.round(rect.y - M);                  // 画布左上角（屏幕坐标）
+        const x0 = bx - ox, y0 = by - oy, x1 = x0 + bodyW, y1 = y0 + bodyH;            // 主体（画布坐标）
+        const ac = horiz
+          ? Math.max(by + minOff, Math.min(by + bodyH - minOff, tip.y)) - oy
+          : Math.max(bx + minOff, Math.min(bx + bodyW - minOff, tip.x)) - ox;           // 箭头中心
+
+        const cv = document.createElement('canvas');
+        cv.width = W;
+        cv.height = H;
+        const ctx = cv.getContext('2d');
+        const aw = arrowW / 2;
+        ctx.beginPath();
+        ctx.moveTo(x0 + r, y0);
+        if (side === 'top') { ctx.lineTo(ac - aw, y0); ctx.lineTo(ac, y0 - arrowH); ctx.lineTo(ac + aw, y0); }
+        ctx.lineTo(x1 - r, y0);
+        ctx.arcTo(x1, y0, x1, y0 + r, r);
+        if (side === 'right') { ctx.lineTo(x1, ac - aw); ctx.lineTo(x1 + arrowH, ac); ctx.lineTo(x1, ac + aw); }
+        ctx.lineTo(x1, y1 - r);
+        ctx.arcTo(x1, y1, x1 - r, y1, r);
+        if (side === 'bottom') { ctx.lineTo(ac + aw, y1); ctx.lineTo(ac, y1 + arrowH); ctx.lineTo(ac - aw, y1); }
+        ctx.lineTo(x0 + r, y1);
+        ctx.arcTo(x0, y1, x0, y1 - r, r);
+        if (side === 'left') { ctx.lineTo(x0, ac + aw); ctx.lineTo(x0 - arrowH, ac); ctx.lineTo(x0, ac - aw); }
+        ctx.lineTo(x0, y0 + r);
+        ctx.arcTo(x0, y0, x0 + r, y0, r);
+        ctx.closePath();
+        ctx.shadowColor = rain ? 'rgba(0,0,0,0.35)' : 'rgba(0,0,0,0.30)';
+        ctx.shadowBlur = 4 * S;
+        ctx.fillStyle = rain ? 'rgba(0,0,0,0.52)' : it.bg;
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        if (rain) {
+          ctx.lineWidth = 0.8 * S;
+          ctx.strokeStyle = 'rgba(255,255,255,0.10)';
           ctx.stroke();
         }
-      });
-      ctx.fillStyle = '#f6ecc4';
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'left';
-      ctx.font = '600 ' + 22 * S + 'px ' + FONT;
-      ctx.fillText(A.title, ix + icon + gap, M + padY + row1H / 2);
-      ctx.textAlign = 'center';
-      ctx.font = '500 ' + 20 * S + 'px ' + FONT;
-      ctx.fillText(A.sub, cx, M + padY + row1H + lineGap + row2H / 2);
-  
-      completion(JSON.stringify({
-        p: cv.toDataURL('image/png').split(',')[1],
-        w: W, h: H, ax: cx, ay: y1 + arrowH
-      }));
+
+        const cx = (x0 + x1) / 2;
+        const r1y = y0 + padY + row1H / 2;
+        ctx.textBaseline = 'middle';
+        if (rain) {
+          // 图标：云 + 三滴雨 / 三点雪
+          const ix = x0 + (bodyW - row1W) / 2, iy = y0 + padY + (row1H - icon) / 2, s = icon;
+          ctx.fillStyle = '#e8edf5';
+          ctx.beginPath();
+          ctx.arc(ix + 0.30 * s, iy + 0.42 * s, 0.20 * s, Math.PI * 0.5, Math.PI * 1.5);
+          ctx.arc(ix + 0.52 * s, iy + 0.28 * s, 0.26 * s, Math.PI * 1.1, Math.PI * 1.95);
+          ctx.arc(ix + 0.76 * s, iy + 0.42 * s, 0.17 * s, Math.PI * 1.5, Math.PI * 0.5);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = '#7fb2ff';
+          ctx.fillStyle = '#bcd8ff';
+          ctx.lineWidth = 1.8 * S;
+          ctx.lineCap = 'round';
+          [0.30, 0.50, 0.70].forEach(function (px) {
+            if (it.snow) {
+              ctx.beginPath();
+              ctx.arc(ix + px * s, iy + 0.84 * s, 0.07 * s, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.beginPath();
+              ctx.moveTo(ix + px * s, iy + 0.72 * s);
+              ctx.lineTo(ix + (px - 0.06) * s, iy + 0.94 * s);
+              ctx.stroke();
+            }
+          });
+          ctx.fillStyle = '#f6ecc4';
+          ctx.textAlign = 'left';
+          ctx.font = '600 ' + 22 * S + 'px ' + FONT;
+          ctx.fillText(it.title, ix + icon + iGap, r1y);
+        } else {
+          ctx.fillStyle = it.fg;
+          ctx.textAlign = 'center';
+          ctx.font = '600 ' + 22 * S + 'px ' + FONT;
+          ctx.fillText(it.title, cx, r1y);
+        }
+        if (it.sub) {
+          ctx.textAlign = 'center';
+          ctx.font = '500 ' + 20 * S + 'px ' + FONT;
+          ctx.fillText(it.sub, cx, y0 + padY + row1H + lineGap + row2H / 2);
+        }
+
+        out.push({
+          p: cv.toDataURL('image/png').split(',')[1],
+          x: ox, y: oy, w: W, h: H, dir: dir, cost: best.cost
+        });
+      }
+      completion(JSON.stringify({ list: out }));
     } catch (e) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
@@ -1419,18 +1566,6 @@ async function main(family) {
     const f = v < 0.1 ? 100 : 10;
     const text = v < 1 ? String(Math.round(v * f) / f) : String(Math.round(v));
     return { isSnow, e, name, text };
-  };
-
-  /** 无降水时返回 null */
-  const buildTooltip = async d => {
-    if (!SHOW_RAIN_TOOLTIP || !d?.name) return null;
-    const o = await runWV(wvTooltip, {
-      title: d.name,
-      sub: d.text + ' 毫米/小时',
-      snow: d.isSnow,
-      s: TOOLTIP_SCALE * K
-    });
-    return { image: base64ToImage(o.p), w: o.w, h: o.h, ax: o.ax, ay: o.ay };
   };
 
   /** 雨雪绘制（WebView）。雨：竖直雨丝；雪：多层随机雪花 */
@@ -1678,107 +1813,68 @@ async function main(family) {
     return lum > 0.6 ? '#12301a' : '#FFFFFF';
   };
   
-  // 台风气泡（WebView 绘制）：等级色底 + 名称 + 风速，箭头朝下
-  const wvStormTip = A => {
-    try {
-      const S = A.s;
-      const FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif';
-      const m = document.createElement('canvas').getContext('2d');
-      m.font = '600 ' + 22 * S + 'px ' + FONT;
-      const tw = m.measureText(A.title).width;
-      m.font = '500 ' + 20 * S + 'px ' + FONT;
-      const sw = m.measureText(A.sub).width;
-  
-      const padX = 16 * S, padY = 10 * S, lineGap = 4 * S, row1H = 26 * S, row2H = 24 * S;
-      const bodyW = Math.ceil(Math.max(tw, sw) + padX * 2);
-      const bodyH = Math.ceil(padY * 2 + row1H + lineGap + row2H);
-      const arrowH = 10 * S, arrowW = 20 * S, M = Math.ceil(4 * S);
-      const W = bodyW + M * 2, H = Math.ceil(bodyH + arrowH + M * 2);
-  
-      const cv = document.createElement('canvas');
-      cv.width = W;
-      cv.height = H;
-      const ctx = cv.getContext('2d');
-  
-      const r = 14 * S, x0 = M, y0 = M, x1 = M + bodyW, y1 = M + bodyH, cx = W / 2;
-      ctx.beginPath();
-      ctx.moveTo(x0 + r, y0);
-      ctx.arcTo(x1, y0, x1, y1, r);
-      ctx.arcTo(x1, y1, x0, y1, r);
-      ctx.lineTo(cx + arrowW / 2, y1);
-      ctx.lineTo(cx, y1 + arrowH);
-      ctx.lineTo(cx - arrowW / 2, y1);
-      ctx.arcTo(x0, y1, x0, y0, r);
-      ctx.arcTo(x0, y0, x1, y0, r);
-      ctx.closePath();
-      ctx.shadowColor = 'rgba(0,0,0,0.30)';
-      ctx.shadowBlur = 4 * S;
-      ctx.fillStyle = A.bg;
-      ctx.fill();
-      ctx.shadowColor = 'transparent';
-  
-      ctx.fillStyle = A.fg;
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'center';
-      ctx.font = '600 ' + 22 * S + 'px ' + FONT;
-      ctx.fillText(A.title, cx, M + padY + row1H / 2);
-      ctx.font = '500 ' + 20 * S + 'px ' + FONT;
-      ctx.fillText(A.sub, cx, M + padY + row1H + lineGap + row2H / 2);
-  
-      completion(JSON.stringify({
-        p: cv.toDataURL('image/png').split(',')[1],
-        w: W, h: H, ax: cx, ay: y1 + arrowH
-      }));
-    } catch (e) {
-      completion('ERR:' + (e && e.message ? e.message : String(e)));
+  // 台风屏幕坐标（只算一次，图标 / 气泡共用）
+  const attachScreen = storms => storms.forEach(st => {
+    const [lng, lat] = st.last.coordinates;
+    st.screen = toScreen(lat, lng);
+  });
+
+  const STORM_ICON = () => Math.round(45 * K);
+
+  /**
+   * 收集所有气泡与障碍物，交给 WebView 一次性布局 + 绘制
+   * 优先级：降水提示框（定位点）> 各台风气泡
+   */
+  const buildBubbles = async (decoded, storms) => {
+    const cx = TARGET_WIDTH / 2, cy = TARGET_HEIGHT / 2;
+    const items = [];
+    const ro = (LOC_ICON_SIZE * K) / 2 + 3 * K;
+    const obstacles = [{ id: 'loc', x: cx - ro, y: cy - ro, w: ro * 2, h: ro * 2 }];
+
+    if (SHOW_RAIN_TOOLTIP && decoded?.name) {
+      items.push({
+        kind: 'rain', title: decoded.name, sub: `${decoded.text} 毫米/小时`, snow: decoded.isSnow,
+        up: { x: cx, y: cy - TOOLTIP_GAP * K }, down: { x: cx, y: cy + TOOLTIP_GAP * K },
+        left: { x: cx - TOOLTIP_GAP * K, y: cy }, right: { x: cx + TOOLTIP_GAP * K, y: cy },
+        ignore: ['loc']
+      });
     }
-  };
-  
-  const drawStormTips = async (ctx, storms) => {
-    if (!SHOW_STORM_TIP || !storms?.length) return;
-    const half = Math.round(45 * K) / 2;   // 图标半径，气泡箭头尖落在图标上沿
-    for (const st of storms) {
-      const { last } = st;
-      if (!last?.coordinates) continue;
-      const { x, y } = toScreen(last.coordinates[1], last.coordinates[0]);
-      if (x < 0 || x > TARGET_WIDTH || y < 0 || y > TARGET_HEIGHT) continue;
-      const bg = levelColor(last.rank);
-      try {
-        const o = await runWV(wvStormTip, {
-          title: st.title || st.name,
-          sub: Number.isFinite(last.wind) ? `${windKmh(last.wind)} 公里/小时` : '',
-          bg,
-          fg: tipTextColor(bg),
-          s: TOOLTIP_SCALE * K
+
+    if (SHOW_TROPICAL_SYSTEM) {
+      const half = STORM_ICON() / 2, gap = 3 * K;
+      // 强度高的台风优先占位（排序后先放置）
+      for (const st of [...storms].sort((p, q) => (q.last.rank ?? -9) - (p.last.rank ?? -9))) {
+        const { x, y } = st.screen;
+        if (x < -half || x > TARGET_WIDTH + half || y < -half || y > TARGET_HEIGHT + half) continue;
+        obstacles.push({ id: 'storm', x: x - half, y: y - half, w: half * 2, h: half * 2 });
+        if (!SHOW_STORM_TIP || x < 0 || x > TARGET_WIDTH || y < 0 || y > TARGET_HEIGHT) continue;
+        const bg = levelColor(st.last.rank);
+        items.push({
+          kind: 'storm', title: st.title || st.name,
+          sub: Number.isFinite(st.last.wind) ? `${windKmh(st.last.wind)} 公里/小时` : '',
+          bg, fg: tipTextColor(bg),
+          up: { x, y: y - half - gap }, down: { x, y: y + half + gap },
+          left: { x: x - half - gap, y }, right: { x: x + half + gap, y }
         });
-        ctx.drawImageInRect(
-          base64ToImage(o.p), 
-          new Rect(x - o.ax, y - half - 3 * K - o.ay, o.w, o.h)
-        );
-      } catch (e) {
-        console.log('台风气泡错误: ' + (e.message || e));
       }
     }
+    if (!items.length) return [];
+    const o = await runWV(wvBubbles, {
+      items, obstacles, s: TOOLTIP_SCALE * K, ow: TARGET_WIDTH, oh: TARGET_HEIGHT
+    });
+    return o.list;
   };
-  
+
   // 绘制台风图标
   const stormImageCache = new Map();
   const drawStormIcons = (ctx, storms) => {
     if (!storms?.length || !zoomEarthIcons) return;
-    const size = Math.round(45 * K), half = size / 2;
-    const world = TILE_SIZE * 2 ** RZ;
-    const c = worldPx(LAT, LNG, RZ);
-  
-    for (const { last } of storms) {
-      const [lng, lat] = last.coordinates;
-      const p = worldPx(lat, lng, RZ);
-      // 经度方向环绕到离中心最近的一份
-      const dx = ((p.x - c.x + world / 2) % world + world) % world - world / 2;
-      const { x, y } = toScreen(lat, lng);
-      const left = x - half;
-      const top = y - half;
+    const size = STORM_ICON(), half = size / 2;
+    for (const { last, screen } of storms) {
+      const left = screen.x - half;
+      const top = screen.y - half;
       if (left + size < 0 || left > TARGET_WIDTH || top + size < 0 || top > TARGET_HEIGHT) continue;
-  
+
       const code = RANK_LEVEL[last.rank] || 'E';
       let img = stormImageCache.get(code);
       if (!img) {
@@ -1793,59 +1889,46 @@ async function main(family) {
   /* ============================ */
   // 主绘制：底图 → 雷达 → 标签 → 定位点 → 雨雪 → 提示框
   /* ============================ */
-  const buildCombinedImage = async (radarInfo, stormIds) => {
-    const vp = buildViewport();
-    if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
-    const missing = vp.tiles.filter(t => !t.image);
-    const overlayCached = SHOW_LABELS ? readOverlay() : null;
+  /**
+   * 所有网络 IO 同时发起（底图瓦片 / 雷达瓦片 / 标签 / 台风详情），WebView 调用经队列串行。
+   * 合成顺序：底图 → 雷达 → 标签 → 台风 → 定位点 → 雨雪 → 气泡（最上层）
+   */
+  const buildCombinedImage = async (radarInfoP, stormIdsP) => {
+    getWV().catch(() => {});
 
-    // 并行取数据：只做网络 / 文件 IO，WebView 同时预热
-    const [, radarData, labelItems, stormDetails] = await Promise.all([
-      prepareTiles(missing),
-      fetchRadar(radarInfo).catch(e => (console.log('雷达数据错误: ' + (e.message || e)), null)),
-      SHOW_LABELS && !overlayCached
-        ? collectLabels().catch(e => (console.log('标签数据错误: ' + (e.message || e)), []))
-        : null,
-      Promise.all(stormIds.map(id => getStormDetail(id))).then(r => r.filter(Boolean)),
-      getWV()
-    ]);
-    //清理过期台风 json
-    const ids = stormIds.map(s => typeof s === 'string' ? s : s?.id).filter(Boolean);
-    cleanStormCache(ids);
-    
+    const radarP = radarInfoP
+      .then(info => fetchRadar(info))
+      .then(data => renderRadar(data))
+      .catch(e => (console.log('雷达错误: ' + (e.message || e)), null));
+
+    const overlayP = (async () => {
+      if (!SHOW_LABELS) return null;
+      const cached = readOverlay();
+      if (cached) return cached;
+      const items = await collectLabels();
+      return items?.length ? await drawLabelOverlay(items) : null;
+    })().catch(e => (console.log('地图标签错误: ' + (e.message || e)), null));
+
+    const stormsP = stormIdsP.then(async ids => {
+      const list = (await Promise.all(ids.map(getStormDetail))).filter(Boolean);
+      cleanStormCache(ids);
+      return list;
+    }).catch(e => (console.log('台风数据错误: ' + (e.message || e)), []));
+
+    const [baseImg, radar, overlay, storms] = await Promise.all([getBaseMap(), radarP, overlayP, stormsP]);
+
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
     const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
-    ctx.drawImageInRect(await renderBaseMap(vp, missing), full);
+    ctx.drawImageInRect(baseImg, full);
+    if (radar?.image) ctx.drawImageInRect(radar.image, full);
+    if (overlay) ctx.drawImageInRect(overlay, full);
 
-    let probe = null;
-    if (radarData) {
-      try {
-        const radar = await renderRadar(radarData);
-        ctx.drawImageInRect(
-          radar.image, full
-        );
-        probe = radar.probe;
-      } catch (e) {
-        console.log('雷达渲染错误: ' + (e.message || e));
-      }
-    }
-
-    try {
-      const overlay = overlayCached || (labelItems?.length ? await drawLabelOverlay(labelItems) : null);
-      if (overlay) ctx.drawImageInRect(overlay, full);
-    } catch (e) {
-      console.log('地图标签错误: ' + (e.message || e));
-    }
-    
     if (SHOW_TROPICAL_SYSTEM) {
-      // 绘制台风路径
-      drawStormTracks(ctx, stormDetails);
-      // 绘制台风图标
-      drawStormIcons(ctx, stormDetails);
-      // 台风信息框
-      await drawStormTips(ctx, stormDetails);
+      attachScreen(storms);
+      drawStormTracks(ctx, storms);
+      drawStormIcons(ctx, storms);
     }
-    
+
     // 中心定位点（原生绘制）
     const cx = TARGET_WIDTH / 2;
     const cy = TARGET_HEIGHT / 2;
@@ -1856,13 +1939,19 @@ async function main(family) {
     ctx.setFillColor(new Color(LOC_COLOR));
     ctx.fillEllipse(new Rect(cx - ri, cy - ri, ri * 2, ri * 2));
 
-    // 雨雪与提示框画在最上层
+    // 雨雪特效、气泡画在最上层
+    const probe = radar?.probe ?? null;
     const decoded = probe ? decodeRadarTooltip(probe) : null;
-    const fx = await buildPrecip(probe, decoded).catch(() => null);
-    const tip = await buildTooltip(decoded).catch(() => null);
+    const fx = await buildPrecip(probe, decoded).catch(e => (console.log('雨雪特效错误: ' + (e.message || e)), null));
     if (fx) ctx.drawImageInRect(fx, full);
-    if (tip) ctx.drawImageInRect(tip.image, new Rect(cx - tip.ax, cy - TOOLTIP_GAP * K - tip.ay, tip.w, tip.h));
-    
+
+    const bubbles = await buildBubbles(decoded, SHOW_TROPICAL_SYSTEM ? storms : [])
+      .catch(e => (console.log('气泡错误: ' + (e.message || e)), []));
+    for (const b of bubbles) {
+      const img = base64ToImage(b.p);
+      if (img) ctx.drawImageInRect(img, new Rect(b.x, b.y, b.w, b.h));
+    }
+
     // 持久化 bmMaxZ 等运行期状态
     try { writeSettings(setting); } catch (e) {}
     return ctx.getImage();
@@ -1986,12 +2075,14 @@ async function main(family) {
   /* ============================ */
   const runWidget = async () => {
     if (setting.autoLocation) getLocation();
+    const radarInfoP = getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null));
+    const stormIdsP = SHOW_TROPICAL_SYSTEM ? getActiveStormIds().catch(() => []) : Promise.resolve([]);
 
-    const [, weatherData, stormIds, radarInfo] = await Promise.all([
-      getTwoHoursWeather(),
+    const [bgImage, radarInfo, weatherData] = await Promise.all([
+      buildCombinedImage(radarInfoP, stormIdsP),
+      radarInfoP,
       getAlert(),
-      getActiveStormIds(),
-      getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null))
+      getTwoHoursWeather()
     ]);
 
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
@@ -2000,7 +2091,7 @@ async function main(family) {
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
     
     const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
-    widget.backgroundImage = await buildCombinedImage(radarInfo, stormIds);
+    widget.backgroundImage = bgImage;
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
