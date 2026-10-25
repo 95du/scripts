@@ -132,6 +132,8 @@ async function main(family) {
   const SHOW_ALL_HISTORY = setting.showAllHistory;
   // 显示台风信息框
   const SHOW_STORM_TIP = setting.showTyphoonInfo;
+  // 显示热带系统
+  const SHOW_TROPICAL_SYSTEM = setting.showTropicalSystem ?? true;
   
   const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
@@ -1835,12 +1837,14 @@ async function main(family) {
       console.log('地图标签错误: ' + (e.message || e));
     }
     
-    // 绘制台风路径
-    drawStormTracks(ctx, stormDetails);
-    // 绘制台风图标
-    drawStormIcons(ctx, stormDetails);
-    // 台风信息框
-    await drawStormTips(ctx, stormDetails);
+    if (SHOW_TROPICAL_SYSTEM) {
+      // 绘制台风路径
+      drawStormTracks(ctx, stormDetails);
+      // 绘制台风图标
+      drawStormIcons(ctx, stormDetails);
+      // 台风信息框
+      await drawStormTips(ctx, stormDetails);
+    }
     
     // 中心定位点（原生绘制）
     const cx = TARGET_WIDTH / 2;
@@ -1894,7 +1898,6 @@ async function main(family) {
     labelText.font = Font.mediumSystemFont(14);
     labelText.textOpacity = 0.9;
     stack.addSpacer(10);
-
     const ticksStack = stack.addStack();
     ticksStack.layoutHorizontally();
     ticksStack.bottomAlignContent();
