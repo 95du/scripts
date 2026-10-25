@@ -3,7 +3,7 @@
 // icon-color: deep-brown; icon-glyph: rss;
 
 async function main() {
-  const scriptName = '全球雨雪雷达'
+  const scriptName = '全球台风雨雪雷达'
   const version = '1.0.5'
   const updateDate = '2026年10月25日'
   const pathName = '95du_radar';
