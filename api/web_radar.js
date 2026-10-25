@@ -128,7 +128,9 @@ async function main(family) {
   const SNOW_TIER_IDX = { '小雪': 0, '中雪': 1, '大雪': 2 };
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
-
+  // 显示全部历史路径
+  const SHOW_ALL_HISTORY = setting.showAllHistory;
+  
   const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
     module.getCacheData(`${rootUrl}/update/zoomEarth_icons.json`, 720, 'zoomEarth_icons.json'),
@@ -497,7 +499,7 @@ async function main(family) {
       const history = pts.filter(p => p.t <= now);
       const future = future_.filter(p => p.t > now && p !== last);
       const isInvest = !!(data.invest || data.disturbance);
-      const hide = !!data.active && !isInvest;
+      const hide = !SHOW_ALL_HISTORY && !!data.active && !isInvest;
       let l = -1;
       if (hide) {
         const target = now - 36 * 36e5;
