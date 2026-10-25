@@ -5,7 +5,7 @@
  * 组件作者: 95du茅台
  * 组件名称: 全球雨雪雷达
  * 组件版本: Version 1.0.5
- * 发布时间: 2026-10-24
+ * 发布时间: 2026-10-25
  */
 
 
@@ -130,6 +130,8 @@ async function main(family) {
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
   // 显示全部历史路径
   const SHOW_ALL_HISTORY = setting.showAllHistory;
+  // 显示台风信息框
+  const SHOW_STORM_TIP = setting.showTyphoonInfo;
   
   const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
@@ -419,7 +421,7 @@ async function main(family) {
   
   const wrapLng = x => ((x + 540) % 360) - 180;
 
-  // 取某点的 spline（从 prev 到 p），经度展开避免跨日界线跳变
+  // 经度展开避免跨日界线跳变
   const splineOf = (p, prev) => {
     const raw = Array.isArray(p.spline) && p.spline.length > 1
       ? p.spline : [prev.coordinates, p.coordinates];
@@ -490,9 +492,6 @@ async function main(family) {
         const tail = sliceSpline(curve, r, 1);
         const [lng, lat] = tail[0];
         last = { ...a, coordinates: [wrapLng(lng), lat] };
-        if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
-          last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
-        }
         split = { head, tail, rank: a.rank };
       }
 
@@ -513,14 +512,20 @@ async function main(family) {
         p.hideSeg = hide && !p.forecast && i <= l;
         p.hideDot = hide && i < l && !(pts[i + 1] ?? p).forecast;
       });
-      return { name: data.name || id, last, history, future, cone: data.cone, split };
+      return { 
+        name: data.name || id, title: isInvest ? (data.title || data.name || id) : (data.name || id),
+        last, history, future, 
+        cone: data.cone, split 
+      };
     } catch (e) {
       console.log(`台风详情获取失败 [${id}]: ${e.message || e}`);
       return null;
     }
   };
   
-  // 编码转换
+  /* ============================ */
+  // 辅助编码转换等小函数
+  /* ============================ */
   const toB64 = data => {
     try {
       return data.toBase64String();
@@ -1658,6 +1663,101 @@ async function main(family) {
       future.forEach(dot);
     }
   };
+
+  /* ============================ */
+  // 台风信息框 (公里/小时)
+  /* ============================ */
+  const windKmh = kt => Math.round(kt * 1.852 / 5) * 5;
+  
+  // 气泡文字颜色：浅色底用深字，深色底用白字
+  const tipTextColor = hex => {
+    const n = parseInt(hex.slice(1), 16);
+    const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+    return lum > 0.6 ? '#12301a' : '#FFFFFF';
+  };
+  
+  // 台风气泡（WebView 绘制）：等级色底 + 名称 + 风速，箭头朝下
+  const wvStormTip = A => {
+    try {
+      const S = A.s;
+      const FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif';
+      const m = document.createElement('canvas').getContext('2d');
+      m.font = '600 ' + 22 * S + 'px ' + FONT;
+      const tw = m.measureText(A.title).width;
+      m.font = '500 ' + 20 * S + 'px ' + FONT;
+      const sw = m.measureText(A.sub).width;
+  
+      const padX = 16 * S, padY = 10 * S, lineGap = 4 * S, row1H = 26 * S, row2H = 24 * S;
+      const bodyW = Math.ceil(Math.max(tw, sw) + padX * 2);
+      const bodyH = Math.ceil(padY * 2 + row1H + lineGap + row2H);
+      const arrowH = 10 * S, arrowW = 20 * S, M = Math.ceil(4 * S);
+      const W = bodyW + M * 2, H = Math.ceil(bodyH + arrowH + M * 2);
+  
+      const cv = document.createElement('canvas');
+      cv.width = W;
+      cv.height = H;
+      const ctx = cv.getContext('2d');
+  
+      const r = 14 * S, x0 = M, y0 = M, x1 = M + bodyW, y1 = M + bodyH, cx = W / 2;
+      ctx.beginPath();
+      ctx.moveTo(x0 + r, y0);
+      ctx.arcTo(x1, y0, x1, y1, r);
+      ctx.arcTo(x1, y1, x0, y1, r);
+      ctx.lineTo(cx + arrowW / 2, y1);
+      ctx.lineTo(cx, y1 + arrowH);
+      ctx.lineTo(cx - arrowW / 2, y1);
+      ctx.arcTo(x0, y1, x0, y0, r);
+      ctx.arcTo(x0, y0, x1, y0, r);
+      ctx.closePath();
+      ctx.shadowColor = 'rgba(0,0,0,0.30)';
+      ctx.shadowBlur = 4 * S;
+      ctx.fillStyle = A.bg;
+      ctx.fill();
+      ctx.shadowColor = 'transparent';
+  
+      ctx.fillStyle = A.fg;
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.font = '600 ' + 22 * S + 'px ' + FONT;
+      ctx.fillText(A.title, cx, M + padY + row1H / 2);
+      ctx.font = '500 ' + 20 * S + 'px ' + FONT;
+      ctx.fillText(A.sub, cx, M + padY + row1H + lineGap + row2H / 2);
+  
+      completion(JSON.stringify({
+        p: cv.toDataURL('image/png').split(',')[1],
+        w: W, h: H, ax: cx, ay: y1 + arrowH
+      }));
+    } catch (e) {
+      completion('ERR:' + (e && e.message ? e.message : String(e)));
+    }
+  };
+  
+  const drawStormTips = async (ctx, storms) => {
+    if (!SHOW_STORM_TIP || !storms?.length) return;
+    const half = Math.round(45 * K) / 2;   // 图标半径，气泡箭头尖落在图标上沿
+    for (const st of storms) {
+      const { last } = st;
+      if (!last?.coordinates) continue;
+      const { x, y } = toScreen(last.coordinates[1], last.coordinates[0]);
+      if (x < 0 || x > TARGET_WIDTH || y < 0 || y > TARGET_HEIGHT) continue;
+      const bg = levelColor(last.rank);
+      try {
+        const o = await runWV(wvStormTip, {
+          title: st.title || st.name,
+          sub: Number.isFinite(last.wind) ? `${windKmh(last.wind)} 公里/小时` : '',
+          bg,
+          fg: tipTextColor(bg),
+          s: TOOLTIP_SCALE * K
+        });
+        ctx.drawImageInRect(
+          base64ToImage(o.p), 
+          new Rect(x - o.ax, y - half - 3 * K - o.ay, o.w, o.h)
+        );
+      } catch (e) {
+        console.log('台风气泡错误: ' + (e.message || e));
+      }
+    }
+  };
   
   // 绘制台风图标
   const stormImageCache = new Map();
@@ -1739,7 +1839,9 @@ async function main(family) {
     drawStormTracks(ctx, stormDetails);
     // 绘制台风图标
     drawStormIcons(ctx, stormDetails);
-
+    // 台风信息框
+    await drawStormTips(ctx, stormDetails);
+    
     // 中心定位点（原生绘制）
     const cx = TARGET_WIDTH / 2;
     const cy = TARGET_HEIGHT / 2;
