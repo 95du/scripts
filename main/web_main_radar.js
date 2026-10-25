@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '全球雨雪雷达'
-  const version = '1.0.3'
-  const updateDate = '2026年10月17日'
+  const version = '1.0.5'
+  const updateDate = '2026年10月25日'
   const pathName = '95du_radar';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -115,7 +115,11 @@ async function main() {
     if (hours >= 12) {
       settings.updateTime = Date.now();
       writeSettings(settings);
-      module.notify(`${scriptName}❗️`, `新版本更新 Version ${version}，重置所有再使用`, 'scriptable:///run/' + encodeURIComponent(Script.name()));
+      module.notify(
+        `${scriptName}❗️`, 
+        `新版本更新 Version ${version}，修复已知问题，增加显示全部台风`, 
+        'scriptable:///run/' + encodeURIComponent(Script.name())
+      );
     }
   };
   
@@ -232,7 +236,18 @@ async function main() {
         }, ...rest);
       };
     }
-  
+    
+    // 点击收藏星标后返回该地点坐标
+    document.addEventListener('click', e => {
+      if (!e.target.closest('button.save')) return;
+      const before = JSON.parse(localStorage.getItem('ze_favorites') || '{}').locations || [];
+      setTimeout(() => {
+        const after = JSON.parse(localStorage.getItem('ze_favorites') || '{}').locations || [];
+        const item = after.find(n => !before.some(o => o.place === n.place && o.lat === n.lat && o.lon === n.lon));
+        if (item) push(item.lat, item.lon);
+      }, 100);
+    }, true);
+    
     const setItem = Storage.prototype.setItem;
     Storage.prototype.setItem = function (key, value) {
       if (key === 'ze_home') {
@@ -282,6 +297,15 @@ async function main() {
     const htmlContent = rawHtml.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
       return String.fromCharCode(parseInt(grp, 16))
     });
+    
+    let appScript = await module.getCacheData('https://zoom.earth/assets/js/app.24434048.js', 72, 'app.js');
+    // 解除收藏数量限制
+    const readLimit = 'Yt(){return(this.Vt.locations||[]).slice(-(no.st?30:3))}';
+    const countLimit = 'get Kt(){return this.Jt>=(no.st?30:3)}';
+    appScript = appScript
+      .replace(readLimit, 'Yt(){return(this.Vt.locations||[])}')
+      .replace(countLimit, 'get Kt(){return false}');
+
     const html = `
     <html lang="zh-Hans">
       <head>
@@ -308,7 +332,7 @@ async function main() {
         </style>
       </head>
       ${htmlContent}
-      <script src="/assets/js/app.24434048.js"></script>
+      <script>${appScript.replace(/<\/script/gi, '<\\/script')}</script>
       <script>
         document.addEventListener('DOMContentLoaded', () => {
           const btn = document.getElementById('custom-settings-btn');
@@ -333,8 +357,9 @@ async function main() {
   
     const webView = new WebView();
     await webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},${settings.zoom}z/overlays=coverage:off`);
+    // const locations = await webView.evaluateJavaScript(`JSON.parse(localStorage.getItem('ze_favorites') || '{}').locations || []`);
     await webView.evaluateJavaScript(`(${pageScript})()`);
-  
+    
     let coord = null;
     let open = true;
     const listen = async () => {
@@ -391,7 +416,7 @@ async function main() {
     const listItems = [
       `<li>${updateDate}</li>`,
       `<li>新组件发布 🔥</li>`,
-      `<li>全球卖雨雪雷达，小中大号组件注意设置分辨率</li>`
+      `<li>全球台风、雨雪雷达，小中大号组件注意设置分辨率</li>`
     ].join('\n');
     
     const mainMenu = module.mainMenuTop(
@@ -680,6 +705,29 @@ async function main() {
       type: 'group',
       items: [
         {
+          label: '全部历史',
+          name: 'showAllHistory',
+          type: 'switch',
+          icon: {
+            name: 'video.fill',
+            color: '#FF2D55'
+          }
+        },
+        {
+          label: '台风信息',
+          name: 'showTyphoonInfo',
+          type: 'switch',
+          icon: {
+            name: 'hurricane',
+            color: '#7B2FF7'
+          }
+        },
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
           label: '雷达色卡',
           name: 'showColorBar',
           type: 'switch',
@@ -761,7 +809,7 @@ async function main() {
           desc: settings.locColor
         },
         {
-          label: '定位尺寸',
+          label: '图标尺寸',
           name: 'locIconSize',
           type: 'cell',
           input: true,
@@ -892,13 +940,13 @@ async function main() {
       type: 'group',
       items: [
         {
-          label: '小号组件',
+          label: '大号组件',
           name: 'preview',
           type: 'cell',
-          family: 'small',
+          family: 'large',
           icon: {
-            name: 'rectangle.grid.1x2.fill',
-            color: '#007AFF'
+            name: 'square.grid.2x2.fill',
+            color: '#AF52DE'
           }
         },
         {
@@ -912,15 +960,15 @@ async function main() {
           }
         },
         {
-          label: '大号组件',
+          label: '小号组件',
           name: 'preview',
           type: 'cell',
-          family: 'large',
+          family: 'small',
           icon: {
-            name: 'square.grid.2x2.fill',
-            color: '#AF52DE'
+            name: 'rectangle.grid.1x2.fill',
+            color: '#007AFF'
           }
-        }
+        },
       ]
     },
     {
