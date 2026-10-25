@@ -428,12 +428,16 @@ async function main(family) {
     }
     return out;
   };
-  
-  // 按弧长比例 f0~f1 截取折线
+
+  // 按弧长比例 f0~f1 截取折线（弧长在墨卡托坐标里算，和原版一致）
+  const mercY = lat => Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
   const sliceSpline = (pts, f0, f1) => {
     const cum = [0];
     for (let i = 1; i < pts.length; i++) {
-      cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+      cum.push(cum[i - 1] + Math.hypot(
+        (pts[i][0] - pts[i - 1][0]) * Math.PI / 180,
+        mercY(pts[i][1]) - mercY(pts[i - 1][1])
+      ));
     }
     const total = cum[cum.length - 1];
     if (!total) return [pts[0], pts[pts.length - 1]];
@@ -453,15 +457,11 @@ async function main(family) {
     out.push(at(d1));
     return out;
   };
-  
+
   const getStormDetail = async id => {
     if (!id) return null;
     try {
-      const data = await getCacheData(
-        `storm_detail_${id}.json`,
-        `https://zoom.earth/data/storms/?id=${encodeURIComponent(id)}&lang=zh`,
-        'json', 0.6, cacheStr
-      );
+      const data = await getCacheData(`storm_detail_${id}.json`, `https://zoom.earth/data/storms/?id=${encodeURIComponent(id)}&lang=zh`, 'json', 0.6, cacheStr);
       if (!data?.id) return null;
   
       const valid = p => p?.coordinates?.length >= 2 && Number.isFinite(p.coordinates[0]) && Number.isFinite(p.coordinates[1]) && Math.abs(p.coordinates[0]) <= 180 && Math.abs(p.coordinates[1]) <= 90 && Number.isFinite(Date.parse(p.date));
@@ -476,28 +476,42 @@ async function main(family) {
       if (!path.length) return null;
   
       const now = Date.now();
-let last = path[0], split = null;
-if (now >= path.at(-1).t) {
-  last = path.at(-1);
-} else if (now > path[0].t) {
-  const i = path.findIndex(p => p.t > now);
-  const a = path[i - 1], b = path[i];
-  const r = (now - a.t) / (b.t - a.t);
-  const curve = splineOf(b, a);
-  const head = sliceSpline(curve, 0, r);   // a → 当前位置
-  const tail = sliceSpline(curve, r, 1);   // 当前位置 → b
-  const [lng, lat] = tail[0];
-  last = { ...a, coordinates: [wrapLng(lng), lat], code: r < 0.5 ? a.code : b.code };
-  if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
-    last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
-  }
-  split = { head, tail, code: b.code };
-}
+      let last = path[0], split = null;
+      if (now >= path.at(-1).t) {
+        last = path.at(-1);
+      } else if (now > path[0].t) {
+        const i = path.findIndex(p => p.t > now);
+        const a = path[i - 1], b = path[i];
+        const r = (now - a.t) / (b.t - a.t);
+        const curve = splineOf(b, a);
+        const head = sliceSpline(curve, 0, r);
+        const tail = sliceSpline(curve, r, 1);
+        const [lng, lat] = tail[0];
+        last = { ...a, coordinates: [wrapLng(lng), lat] };
+        if (Number.isFinite(a.wind) && Number.isFinite(b.wind)) {
+          last.wind = Math.round(a.wind + (b.wind - a.wind) * r);
+        }
+        split = { head, tail, rank: a.rank };
+      }
 
-// 历史 = 所有已过时间的点（含已过期的预报点）
-const history = pts.filter(p => p.t <= now);
-const future = future_.filter(p => p.t > now && p !== last);
-return { name: data.name || id, last, history, future, cone: data.cone, split };
+      const history = pts.filter(p => p.t <= now);
+      const future = future_.filter(p => p.t > now && p !== last);
+      const isInvest = !!(data.invest || data.disturbance);
+      const hide = !!data.active && !isInvest;
+      let l = -1;
+      if (hide) {
+        const target = now - 36 * 36e5;
+        let best = Infinity;
+        pts.forEach((p, i) => {
+          const d = Math.abs(p.t - target);
+          if (d < best) { best = d; l = i; }
+        });
+      }
+      pts.forEach((p, i) => {
+        p.hideSeg = hide && !p.forecast && i <= l;
+        p.hideDot = hide && i < l && !(pts[i + 1] ?? p).forecast;
+      });
+      return { name: data.name || id, last, history, future, cone: data.cone, split };
     } catch (e) {
       console.log(`台风详情获取失败 [${id}]: ${e.message || e}`);
       return null;
@@ -1519,22 +1533,32 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
     const dx = ((p.x - c.x + world / 2) % world + world) % world - world / 2;
     return { x: TARGET_WIDTH / 2 + dx, y: TARGET_HEIGHT / 2 + (p.y - c.y) };
   };
-
-  const STORM_CODE_MAP = {
-    D: 'D', S: 'S', SS: 'SS', T: 'T', ST: 'ST', VT: 'VT', SU: 'SU',
-    H1: 'SS', H2: 'T', H3: 'ST', H4: 'VT', H5: 'SU',
-    E: 'E', X: 'E', US: 'S', SD: 'D'
+  
+  // 不做环绕的投影，配合 projectPath 沿折线连续展开经度
+  const toScreenRaw = (lat, lng) => {
+    const c = worldPx(LAT, LNG, RZ);
+    const p = worldPx(Math.max(-85, Math.min(85, lat)), lng, RZ);
+    return { x: TARGET_WIDTH / 2 + (p.x - c.x), y: TARGET_HEIGHT / 2 + (p.y - c.y) };
   };
   
-  const SHOW_ALL_HISTORY = false;
-  const HISTORY_HOURS = 72;
-  
+  // coords: [[lng, lat], ...]。首点取离画面中心最近的一份，后续点相对前一点取短弧
+  const projectPath = coords => {
+    let prev = null;
+    return coords.map(([lng, lat]) => {
+      const base = prev === null ? LNG : prev;
+      lng = base + ((lng - base + 540) % 360) - 180;
+      prev = lng;
+      return toScreenRaw(lat, lng);
+    });
+  };
+
   const LEVEL_COLORS = {
     D: '#3B82F6', S: '#66E86B', E: '#7B2FF7', SS: '#F5C63D',
     T: '#F5922B', ST: '#EF5A2A', VT: '#E53935', SU: '#F06292'
   };
-  const levelColor = code => LEVEL_COLORS[STORM_CODE_MAP[code] || 'E'];
-  
+  const RANK_LEVEL = { '-2': 'E', '-1': 'D', 0: 'S', 1: 'SS', 2: 'T', 3: 'ST', 4: 'VT', 5: 'SU' };
+  const levelColor = rank => LEVEL_COLORS[RANK_LEVEL[rank] || 'E'];
+
   /* ---------- 绘图原语 ---------- */
   const strokeLine = (ctx, pts, color, width, alpha) => {
     if (pts.length < 2) return;
@@ -1550,8 +1574,8 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
   // 分段着色，每段末端补圆头避免接缝
   const strokeSegments = (ctx, segs, width, alpha) => {
     const r = width / 2;
-    for (const { pts, code } of segs) {
-      const color = levelColor(code);
+    for (const { pts, rank } of segs) {
+      const color = levelColor(rank);
       strokeLine(ctx, pts, color, width, alpha);
       const end = pts[pts.length - 1];
       ctx.setFillColor(new Color(color, alpha));
@@ -1568,18 +1592,18 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
   };
   
   /* ---------- 线段构建 ---------- */
-  // 优先用点自带的 spline 坐标，没有则直线连接
   const segmentOf = (p, prev) => {
-    const toPt = c => toScreen(c[1], c[0]);
-    const pts = Array.isArray(p.spline) && p.spline.length > 1
-      ? p.spline.map(toPt)
-      : [toPt(prev.coordinates), toPt(p.coordinates)];
-    return { pts, code: p.code };
+    const coords = Array.isArray(p.spline) && p.spline.length > 1
+      ? p.spline : [prev.coordinates, p.coordinates];
+    return { pts: projectPath(coords), rank: prev.rank };
   };
   
   const buildHistSegments = (hist, split) => {
-    const segs = hist.slice(1).map((p, i) => segmentOf(p, hist[i]));
-    if (split) segs.push({ pts: split.head.map(c => toScreen(c[1], c[0])), code: split.code });
+    const segs = [];
+    for (let i = 1; i < hist.length; i++) {
+      if (!hist[i].hideSeg) segs.push(segmentOf(hist[i], hist[i - 1]));
+    }
+    if (split) segs.push({ pts: projectPath(split.head), rank: split.rank });
     return segs;
   };
   
@@ -1587,7 +1611,7 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
     const segs = [];
     let prev = last, list = future;
     if (split) {
-      segs.push({ pts: split.tail.map(c => toScreen(c[1], c[0])), code: split.code });
+      segs.push({ pts: projectPath(split.tail), rank: split.rank });
       prev = future[0];
       list = future.slice(1);
     }
@@ -1595,50 +1619,44 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
     return segs;
   };
   
-  /* ---------- 预测锥 ---------- */
   const drawCone = (ctx, cone) => {
     if (!Array.isArray(cone) || cone.length < 3) return;
-    const pts = cone
-      .filter(c => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]))
-      .map(c => toScreen(c[1], c[0]));
+    const pts = projectPath(
+      cone.filter(c => Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]))
+    );
     if (pts.length < 3) return;
-  
     const path = new Path();
     path.move(new Point(pts[0].x, pts[0].y));
     for (let i = 1; i < pts.length; i++) path.addLine(new Point(pts[i].x, pts[i].y));
     path.closeSubpath();
-  
     ctx.addPath(path);
-    ctx.setFillColor(new Color('#FFFFFF', 0.24));
+    ctx.setFillColor(new Color('#EEEEEE', 0.33));
     ctx.fillPath();
     ctx.addPath(path);
-    ctx.setStrokeColor(new Color('#FFFFFF', 0.4));
-    ctx.setLineWidth(1.2 * K);
+    ctx.setStrokeColor(new Color('#808080', 0.33));
+    ctx.setLineWidth(2 * K);
     ctx.strokePath();
   };
   
-  /* ---------- 主函数 ---------- */
   const drawStormTracks = (ctx, storms) => {
     if (!storms?.length) return;
     const R = 8 * K, ring = 1.2 * K, lineW = 5 * K;
     const inView = p => p.x > -20 && p.x < TARGET_WIDTH + 20 && p.y > -20 && p.y < TARGET_HEIGHT + 20;
     const dot = p => {
       const s = toScreen(p.coordinates[1], p.coordinates[0]);
-      if (inView(s)) drawDot(ctx, s, R, ring, levelColor(p.code), 0.45);
+      if (inView(s)) drawDot(ctx, s, R, ring, levelColor(p.rank), 0.45);
     };
-    const since = Date.now() - HISTORY_HOURS * 36e5;
     // 所有喇叭先画，保证在所有线和点下面
     storms.forEach(s => drawCone(ctx, s.cone));
   
     for (const { last, history = [], future = [], split } of storms) {
-      const hist = SHOW_ALL_HISTORY ? history : history.filter(p => p.t >= since);
-      strokeSegments(ctx, buildHistSegments(hist, split), lineW, 0.95);
+      strokeSegments(ctx, buildHistSegments(history, split), lineW, 0.95);
       strokeSegments(ctx, buildFutureSegments(last, future, split), lineW, 0.95);
-      hist.forEach(dot);
+      history.filter(p => !p.hideDot).forEach(dot);
       future.forEach(dot);
     }
   };
-
+  
   // 绘制台风图标
   const stormImageCache = new Map();
   const drawStormIcons = (ctx, storms) => {
@@ -1657,10 +1675,7 @@ return { name: data.name || id, last, history, future, cone: data.cone, split };
       const top = y - half;
       if (left + size < 0 || left > TARGET_WIDTH || top + size < 0 || top > TARGET_HEIGHT) continue;
   
-      let code = STORM_CODE_MAP[last.code];
-      if (!code) { 
-        console.log('未知台风代码: ' + last.code); code = 'E'; 
-      }
+      const code = RANK_LEVEL[last.rank] || 'E';
       let img = stormImageCache.get(code);
       if (!img) {
         img = base64ToImage(zoomEarthIcons[code]);
