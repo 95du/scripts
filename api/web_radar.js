@@ -1143,7 +1143,7 @@ async function main(family) {
   };
 
   const renderRadar = async ({ info, vp, tiles }) => {
-    const out = await runWV(wvRender, {
+    const result = await runWV(wvRender, {
       pal: PALETTE_B64, tiles, ts: TILE_SIZE,
       mw: vp.mosaicW, mh: vp.mosaicH,
       cx: vp.cropX, cy: vp.cropY, cw: vp.cropW, ch: vp.cropH,
@@ -1154,8 +1154,8 @@ async function main(family) {
     });
     cleanOldRadarCache(info.hash);
     return { 
-      image: base64ToImage(out.p), 
-      probe: out.probe 
+      image: base64ToImage(result.p), 
+      probe: result.probe 
     };
   };
 
@@ -1903,7 +1903,7 @@ async function main(family) {
     const radarP = radarInfoP
       .then(info => fetchRadar(info))
       .then(data => renderRadar(data))
-      .catch(e => (console.log('雷达错误: ' + (e.message || e)), null));
+      .catch(e => (console.log('雷达错误: ' + e), null));
 
     const overlayP = (async () => {
       if (!SHOW_LABELS) return null;
@@ -1911,13 +1911,13 @@ async function main(family) {
       if (cached) return cached;
       const items = await collectLabels();
       return items?.length ? await drawLabelOverlay(items) : null;
-    })().catch(e => (console.log('地图标签错误: ' + (e.message || e)), null));
+    })().catch(e => (console.log('地图标签错误: ' + e), null));
 
     const stormsP = stormIdsP.then(async ids => {
       const list = (await Promise.all(ids.map(getStormDetail))).filter(Boolean);
       cleanStormCache(ids);
       return list;
-    }).catch(e => (console.log('台风数据错误: ' + (e.message || e)), []));
+    }).catch(e => (console.log('台风数据错误: ' + e), []));
 
     const [baseImg, radar, overlay, storms] = await Promise.all([getBaseMap(), radarP, overlayP, stormsP]);
 
