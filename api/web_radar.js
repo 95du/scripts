@@ -57,7 +57,7 @@ async function main(family) {
   // 3. 底图样式与缓存
   /* ============================ */
   // 修改底图样式/调色时 +1 以清除旧渲染缓存
-  const MAP_RENDER_VERSION = 8;
+  const MAP_RENDER_VERSION = 2;
   const OCEAN_COLOR = '#1a3c5a';
   const LAND_COLOR = '#2f6e48';
   const LINE_COLOR = '#000000';
@@ -830,10 +830,14 @@ async function main(family) {
           const img = data ? base64ToImage(data) : null;
           if (!img) { complete = false; continue; }
           drawTile(t, img);
-          // 原始资源下载失败（null）时不缓存，避免缓存残缺瓦片
+          // null 表示请求失败：不缓存渲染瓦片；空 Data 表示 404，可缓存该瓦片结果，但不能视为完整底图
           if (t.fill && t.land) {
             if (ENABLE_RENDER_CACHE) renderCache.write(getRenderName(t.tileZ, t.cacheX, t.y), img);
           } else {
+            complete = false;
+          }
+          // Data 对象即使内容为空也是真值；404 的空 Data 不能让整张底图被误判为完整
+          if (!t.fill || !t.land || toB64(t.fill).length === 0 || toB64(t.land).length === 0) {
             complete = false;
           }
         } catch (e) {
