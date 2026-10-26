@@ -4,12 +4,17 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 全球台风雨雪雷达
- * 组件版本: Version 1.0.6
- * 发布时间: 2026-10-25
+ * 组件版本: Version 1.0.7
+ * 发布时间: 2026-10-27
  */
 
 
 async function main(family) {
+  const T0 = Date.now();
+  // 桌面小组件有执行时间限制：超出预算后跳过非必要的重绘（雨雪特效）
+  const WIDGET_BUDGET_MS = 20000;
+  const overBudget = () => !config.runsInApp && Date.now() - T0 > WIDGET_BUDGET_MS;
+
   const fm = FileManager.local();
   const depPath = fm.joinPath(fm.documentsDirectory(), '95du_module');
   const isDev = false;
@@ -32,6 +37,8 @@ async function main(family) {
 
   const pad = n => String(n).padStart(2, '0');
   const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  // 统一的错误日志：不再吞错，出问题时能在控制台看到来源
+  const logErr = (tag, e) => console.log(`${tag}: ${e}`);
 
   /* ============================ */
   // 1. 画布与分辨率
@@ -90,6 +97,9 @@ async function main(family) {
   const RADAR_DBZ_MIN = -32;
   const RADAR_DBZ_SPAN = 127.5;
 
+  // 雷达帧来源：live = 联网实时；cache = 联网但本次渲染失败，回退上次成功的图；offline = 无网络
+  const SOURCE_TEXT = { live: '今天', cache: '缓存', offline: '离线' };
+  
   /* ============================ */
   // 5. 城市与地名标签
   /* ============================ */
@@ -128,6 +138,16 @@ async function main(family) {
   const SNOW_TIER_IDX = { '小雪': 0, '中雪': 1, '大雪': 2 };
   const RAIN_TIERS = [[0.3, 1.0, 0.8], [0.5, 1.05, 0.9], [0.75, 1.15, 1.0], [1.0, 1.3, 1.2], [1.0, 1.5, 1.4]];
   const SNOW_TIERS = [[0.4, 1.3, 0.9], [0.7, 1.2, 1.0], [1.0, 1.1, 1.2]];
+  
+  /* ============================ */
+  // 8. 台风等级颜色、路径
+  /* ============================ */
+  const LEVEL_COLORS = {
+    D: '#3B82F6', S: '#66E86B', E: '#7B2FF7', SS: '#F5C63D',
+    T: '#F5922B', ST: '#EF5A2A', VT: '#E53935', SU: '#F06292'
+  };
+  const RANK_LEVEL = { '-2': 'E', '-1': 'D', 0: 'S', 1: 'SS', 2: 'T', 3: 'ST', 4: 'VT', 5: 'SU' };
+  
   // 显示全部历史路径
   const SHOW_ALL_HISTORY = setting.showAllHistory;
   // 显示台风信息框
@@ -196,7 +216,7 @@ async function main(family) {
       setting.updateTime = Date.now();
       writeSettings(setting);
     } catch (e) {
-      console.log('定位失败: ' + e);
+      logErr('定位失败', e);
     }
   };
   
@@ -230,8 +250,11 @@ async function main(family) {
     };
   };
 
+  // 记录每个缓存文件最近一次的取数结果：hit = 命中未过期缓存；fresh = 刚联网成功；stale = 联网失败，回退了过期缓存
+  const cacheState = new Map();
+
   /**
-   * 带缓存的请求。cacheTime 单位小时，0 = 永不过期
+   * cacheTime 单位小时，0 = 永不过期
    * staleFallback = true：网络失败或非 2xx 时回退到过期缓存
    */
   const getCacheData = async (
@@ -249,8 +272,15 @@ async function main(family) {
     const exists = fm.fileExists(filePath);
     const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
     const data = exists && !expired ? cache.read(name) : undefined;
-    if (data !== undefined && data !== null) return data;
+    if (data !== null && data !== undefined) {
+      cacheState.set(filePath, 'hit');
+      return data;
+    }
     const stale = staleFallback && exists ? cache.read(name) : undefined;
+    const fallback = () => {
+      if (stale != null) cacheState.set(filePath, 'stale');
+      return stale ?? null;
+    };
 
     try {
       const request = new Request(url);
@@ -281,16 +311,17 @@ async function main(family) {
           cache.write(name, empty);
           return empty;
         }
-        return stale ?? null;
+        return fallback();
       }
       if (response != null) {
         cache.write(name, response);
+        cacheState.set(filePath, 'fresh');
         return response;
       }
     } catch (e) {
-      console.log(`请求失败：${e}`);
+      logErr('请求失败', e);
     }
-    return stale ?? null;
+    return fallback();
   };
   
   // 地图瓦片/标签缓存
@@ -323,7 +354,7 @@ async function main(family) {
       setting.rain = content;
       writeSettings(setting);
     } catch (e) {
-      console.log(`天气错误: ${e}`);
+      logErr('天气错误', e);
     }
   };
 
@@ -410,9 +441,11 @@ async function main(family) {
         if (keep.has(name)) continue;
         const p = fm.joinPath(cacheStr, name);
         const ageH = (Date.now() - fm.creationDate(p).getTime()) / 36e5;
-        if (ageH > maxHours) try { fm.remove(p); } catch (e) {}
+        if (ageH > maxHours) try { fm.remove(p); } catch (e) { logErr('清理台风缓存失败', e); }
       }
-    } catch (e) {}
+    } catch (e) {
+      logErr('清理台风缓存失败', e);
+    }
   };
 
   const getActiveStormIds = async () => {
@@ -429,8 +462,7 @@ async function main(family) {
 
   // 经度展开避免跨日界线跳变
   const splineOf = (p, prev) => {
-    const raw = Array.isArray(p.spline) && p.spline.length > 1
-      ? p.spline : [prev.coordinates, p.coordinates];
+    const raw = Array.isArray(p.spline) && p.spline.length > 1 ? p.spline : [prev.coordinates, p.coordinates];
     const out = [raw[0]];
     for (let i = 1; i < raw.length; i++) {
       const q = raw[i], pr = out[i - 1];
@@ -486,7 +518,7 @@ async function main(family) {
       if (!path.length) return null;
   
       const now = Date.now();
-      let last = path[0], split = null;
+      let last = path[0], split = null
       if (now >= path.at(-1).t) {
         last = path.at(-1);
       } else if (now > path[0].t) {
@@ -507,7 +539,7 @@ async function main(family) {
       const hide = !SHOW_ALL_HISTORY && !!data.active && !isInvest;
       let l = -1;
       if (hide) {
-        const target = now - 36 * 36e5;
+        const target = now - 36 * 36e5
         let best = Infinity;
         pts.forEach((p, i) => {
           const d = Math.abs(p.t - target);
@@ -524,7 +556,7 @@ async function main(family) {
         cone: data.cone, split 
       };
     } catch (e) {
-      console.log(`台风详情获取失败 [${id}]: ${e.message || e}`);
+      logErr(`台风详情获取失败 [${id}]`, e);
       return null;
     }
   };
@@ -543,7 +575,8 @@ async function main(family) {
   const base64ToImage = data => {
     try {
       return data ? Image.fromData(Data.fromBase64String(data)) : null;
-    } catch {
+    } catch (e) {
+      logErr('base64 转图片失败', e);
       return null;
     }
   };
@@ -582,24 +615,25 @@ async function main(family) {
       if (res.startsWith('ERR:')) throw new Error(res.slice(4));
       return JSON.parse(res);
     });
+    // 队列本身不传播失败（错误由调用方的 await 处理）
     _wvQueue = job.catch(() => {});
     return job;
   };
 
   /** 并发池 */
   const mapPool = async (items, limit, fn) => {
-    const out = new Array(items.length);
+    const result = new Array(items.length);
     let i = 0;
     const worker = async () => {
       while (i < items.length) {
         const idx = i++;
-        out[idx] = await fn(items[idx], idx);
+        result[idx] = await fn(items[idx], idx);
       }
     };
     await Promise.all(
       Array.from({ length: Math.min(limit, Math.max(1, items.length)) }, worker)
     );
-    return out;
+    return result;
   };
 
   /* ============================ */
@@ -710,7 +744,7 @@ async function main(family) {
 
   const prepareTiles = list =>
     mapPool(list, CONCURRENCY, async tile => {
-      try { await loadTileAssets(tile); } catch (e) {}
+      try { await loadTileAssets(tile); } catch (e) { logErr(`瓦片失败 ${tile.key}`, e); }
     });
 
   /** WebView：把一批原始瓦片合成为 256 级 PNG（填色 → BM → 压暗 → 陆地 → 线） */
@@ -821,7 +855,7 @@ async function main(family) {
         rendered = await renderTiles(missing);
       } catch (e) {
         complete = false;
-        console.log('地图瓦片渲染失败: ' + (e.message || e));
+        logErr('地图瓦片渲染失败', e);
       }
       const renderCache = useFileManager('image', renderPath);
       for (const t of missing) {
@@ -842,7 +876,7 @@ async function main(family) {
           }
         } catch (e) {
           complete = false;
-          console.log('地图瓦片渲染失败 ' + t.key + ' ' + (e.message || e));
+          logErr(`地图瓦片渲染失败 ${t.key}`, e);
         }
       }
     }
@@ -863,9 +897,7 @@ async function main(family) {
   };
 
   // 整张底图缓存：位置 / 缩放 / 月份 / 样式不变时，直接读一张图，跳过瓦片读取、WebView 合成与二次拼接
-  const baseCacheName = () => `base_${month}_` +
-    [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, Math.round(LINE_OPACITY * 100), MAP_RENDER_VERSION]
-      .join('_').replace(/\./g, 'p') + '.png';
+  const baseCacheName = () => `base_${month}_` + [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, Math.round(LINE_OPACITY * 100), MAP_RENDER_VERSION].join('_').replace(/\./g, 'p') + '.png';
 
   /** 清理其他月份 / 旧版本 / 旧位置的底图缓存，避免磁盘持续增长 */
   const cleanStaleMapCache = keepBase => {
@@ -874,12 +906,14 @@ async function main(family) {
         const stale = name.startsWith('base_')
           ? name !== keepBase
           : !name.startsWith(month + '_') || !name.endsWith(`_v${MAP_RENDER_VERSION}.png`);
-        if (stale) try { fm.remove(fm.joinPath(renderPath, name)); } catch (e) {}
+        if (stale) try { fm.remove(fm.joinPath(renderPath, name)); } catch (e) { logErr('清理底图缓存失败', e); }
       }
       for (const name of fm.listContents(bmPath)) {
-        if (!name.startsWith(month + '_')) try { fm.remove(fm.joinPath(bmPath, name)); } catch (e) {}
+        if (!name.startsWith(month + '_')) try { fm.remove(fm.joinPath(bmPath, name)); } catch (e) { logErr('清理 BM 缓存失败', e); }
       }
-    } catch (e) {}
+    } catch (e) {
+      logErr('清理地图缓存失败', e);
+    }
   };
 
   const getBaseMap = async () => {
@@ -890,7 +924,9 @@ async function main(family) {
       try {
         const cached = fm.readImage(p);
         if (cached) return cached;
-      } catch (e) {}
+      } catch (e) {
+        logErr('读取整图缓存失败', e);
+      }
     }
     const vp = buildViewport();
     if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
@@ -907,39 +943,36 @@ async function main(family) {
   /* ============================ */
   // 雷达
   /* ============================ */
-  /** 最新雷达元数据。缓存过期且网络失败时回退到上一次成功的缓存 */
+  /**
+   * 最新雷达元数据。缓存过期且网络失败时回退到上一次成功的缓存。
+   * source：live = 元数据来自本次联网（或仍在 TTL 内）；offline = 联网失败，用的是过期元数据
+   */
   const getLatestRadar = async () => {
     const radarCacheTime = Math.max(Number(RADAR_META_TTL) || 0, 1) / 3600;
-    const metaFile = fm.joinPath(radarPath, '_radar_meta.json');
-  
     const cached = await getCacheData(
       '_radar_meta.json', 'https://tiles.zoom.earth/times/radar.json',
       'json', radarCacheTime, radarPath, 'GET', null, true
     );
     const reflectivity = cached?.reflectivity;
     if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
-  
-    // 元数据没被刷新 → 判定为离线
-    const ageSec = fm.fileExists(metaFile) ? (Date.now() - fm.creationDate(metaFile).getTime()) / 1000 : Infinity;
-    const offline = ageSec > radarCacheTime * 3600 + 30;
-  
+    const offline = cacheState.get(fm.joinPath(radarPath, '_radar_meta.json')) === 'stale';
     const nowSec = Math.floor(Date.now() / 1000);
     const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
     const past = allTs.filter(t => t <= nowSec);
     const ts = past.length ? past[past.length - 1] : allTs[0];
     const hash = reflectivity[String(ts)];
     if (!Number.isFinite(ts) || !hash) throw new Error('radar.json 无有效时间或 hash');
-  
+
+    const nowHM = hm(new Date());
     const frames = allTs.slice(-22).map(t => {
       const d = new Date(t * 1000);
-      const time = hm(d);
       return {
         isMajor: d.getMinutes() === 0,
         isSelected: t === ts,
-        isNow: time === hm(new Date())
+        isNow: hm(d) === nowHM
       };
     });
-  
+
     const u = new Date(ts * 1000);
     return {
       ts,
@@ -947,7 +980,7 @@ async function main(family) {
       ar: `${u.getUTCFullYear()}-${pad(u.getUTCMonth() + 1)}-${pad(u.getUTCDate())}/${pad(u.getUTCHours())}${pad(u.getUTCMinutes())}`,
       frames,
       localTimeStr: hm(u),
-      cached: offline 
+      source: offline ? 'offline' : 'live'
     };
   };
 
@@ -959,10 +992,12 @@ async function main(family) {
     try {
       for (const name of fm.listContents(radarPath)) {
         if (name !== '_radar_meta.json' && name !== 'radar_last.png' && (name.endsWith('.png') || name.endsWith('.webp')) && !name.startsWith(hash + '_')) {
-          try { fm.remove(fm.joinPath(radarPath, name)); } catch (e) {}
+          try { fm.remove(fm.joinPath(radarPath, name)); } catch (e) { logErr('清理雷达缓存失败', e); }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      logErr('清理雷达缓存失败', e);
+    }
   };
 
   /** 雷达在原生级别下的视口（与地图中心对齐，支持亚像素裁剪） */
@@ -1148,41 +1183,38 @@ async function main(family) {
     return { info, vp, tiles: loaded.filter(Boolean) };
   };
 
-  // 管理雷达缓存 (过期后请求失败)
-  const readLastRadar = (image = null, info = null) => {
-    const IMAGE = 'radar_last.png';
-    const INFO = 'radar_last.json';
-    const imageCache = useFileManager('image', radarPath);
-    const infoCache = useFileManager('json', radarPath);
-    if (image && info) {
-      imageCache.write(IMAGE, image);
-      infoCache.write(INFO, info);
-      return;
-    }
-    const cachedImage = imageCache.read(IMAGE);
-    const cachedInfo = infoCache.read(INFO);
-    if (!cachedImage) return null;
+  // 上次成功渲染的雷达图（供回退使用）
+  const LAST_IMAGE = 'radar_last.png';
+  const LAST_INFO = 'radar_last.json';
+
+  const saveLastRadar = (image, info) => {
+    useFileManager('image', radarPath).write(LAST_IMAGE, image);
+    useFileManager('json', radarPath).write(LAST_INFO, info);
+  };
+
+  /** 读取上次雷达图；source 由调用方根据当时的网络状态决定 */
+  const loadLastRadar = source => {
+    const image = useFileManager('image', radarPath).read(LAST_IMAGE);
+    if (!image) return null;
+    const info = useFileManager('json', radarPath).read(LAST_INFO);
     return {
-      image: cachedImage,
-      probe: cachedInfo?.probe ?? null,
-      cached: true,
-      localTimeStr: cachedInfo?.localTimeStr,
-      frames: cachedInfo?.frames || []
+      image,
+      probe: info?.probe ?? null,
+      radarInfo: {
+        source,
+        localTimeStr: info?.localTimeStr,
+        frames: info?.frames || []
+      }
     };
   };
 
   const renderRadar = async ({ info, vp, tiles }) => {
     const complete = tiles.length === vp.tiles.length;
-    // 先读缓存，避免作用域问题
-    const last = complete ? null : readLastRadar();
-    if (last) {
-      return {
-        image: last.image,
-        probe: last.probe,
-        radarInfo: last
-      };
+    if (!complete) {
+      const last = loadLastRadar(info.source === 'offline' ? 'offline' : 'cache');
+      if (last) return last;
     }
-  
+
     const result = await runWV(wvRender, {
       pal: PALETTE_B64, tiles, ts: TILE_SIZE,
       mw: vp.mosaicW, mh: vp.mosaicH,
@@ -1192,19 +1224,20 @@ async function main(family) {
       ymode: PALETTE_Y_MODE, flip: PALETTE_FLIP_Y,
       probe: { x: TARGET_WIDTH / 2, y: TARGET_HEIGHT / 2 }
     });
-  
+
     const image = base64ToImage(result.p);
     if (complete && image) {
-      readLastRadar(image, {
+      saveLastRadar(image, {
         probe: result.probe ?? null,
         hash: info.hash,
+        ts: info.ts,
         localTimeStr: info.localTimeStr,
         frames: info.frames,
         savedAt: Date.now()
       });
       cleanOldRadarCache(info.hash);
     }
-  
+
     return { image, probe: result.probe, radarInfo: info };
   };
 
@@ -1224,18 +1257,18 @@ async function main(family) {
     const y0 = Math.max(0, Math.floor((V.top - LABEL_MARGIN) / V.worldSize * n));
     const y1 = Math.min(n - 1, Math.floor((V.top + TARGET_HEIGHT + LABEL_MARGIN) / V.worldSize * n - 1e-9));
     const seen = new Set();
-    const out = [];
+    const result = [];
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const cx = ((x % n) + n) % n;
         const k = cx + '/' + y;
         if (!seen.has(k)) {
           seen.add(k);
-          out.push({ x: cx, y });
+          result.push({ x: cx, y });
         }
       }
     }
-    return out;
+    return result;
   };
 
   // 标签自带 z 数组：用逻辑 ZOOM 判断当前缩放是否应显示
@@ -1253,7 +1286,9 @@ async function main(family) {
           if (s === '') return null;
           const j = JSON.parse(s);
           if (Array.isArray(j)) return j;
-        } catch (e) {}
+        } catch (e) {
+          logErr(`标签缓存损坏 ${z}/${y}/${x}`, e);
+        }
       }
     }
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -1269,7 +1304,9 @@ async function main(family) {
         if (!String(s).trim()) { writeFresh(path, '[]'); return []; }
         const j = JSON.parse(s);
         if (Array.isArray(j)) { writeFresh(path, s); return j; }
-      } catch (e) {}
+      } catch (e) {
+        logErr(`标签请求异常(第${attempt + 1}次) ${z}/${y}/${x}`, e);
+      }
     }
     console.log(`标签瓦片请求失败 ${z}/${y}/${x}`);
     return undefined;
@@ -1397,8 +1434,7 @@ async function main(family) {
 
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE]
-      .join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
   );
 
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
@@ -1410,10 +1446,10 @@ async function main(family) {
   };
 
   const drawLabelOverlay = async (items) => {
-    const out = await runWV(wvLabels, {
+    const result = await runWV(wvLabels, {
       items, ow: TARGET_WIDTH, oh: TARGET_HEIGHT, fs: LABEL_FONT_SCALE * K, max: MAX_LABELS
     });
-    const data = Data.fromBase64String(out.p);
+    const data = Data.fromBase64String(result.p);
     // 有标签瓦片因网络失败缺失时不缓存
     if (items.complete !== false) writeFresh(overlayPath(), data);
     return Image.fromData(data);
@@ -1583,7 +1619,9 @@ async function main(family) {
           x: ox, y: oy, w: W, h: H, dir: dir, cost: best.cost
         });
       }
-      completion(JSON.stringify({ list: out }));
+      completion(JSON.stringify({ 
+        list: out 
+      }));
     } catch (e) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
@@ -1741,21 +1779,15 @@ async function main(family) {
   // coords: [[lng, lat], ...]。首点取离画面中心最近的一份，后续点相对前一点取短弧
   const projectPath = coords => {
     let prev = null;
-    return coords.map(([lng, lat]) => {
+    return coords.map(( [lng, lat] ) => {
       const base = prev === null ? LNG : prev;
       lng = base + ((lng - base + 540) % 360) - 180;
       prev = lng;
       return toScreenRaw(lat, lng);
     });
   };
-
-  const LEVEL_COLORS = {
-    D: '#3B82F6', S: '#66E86B', E: '#7B2FF7', SS: '#F5C63D',
-    T: '#F5922B', ST: '#EF5A2A', VT: '#E53935', SU: '#F06292'
-  };
-  const RANK_LEVEL = { '-2': 'E', '-1': 'D', 0: 'S', 1: 'SS', 2: 'T', 3: 'ST', 4: 'VT', 5: 'SU' };
+  
   const levelColor = rank => LEVEL_COLORS[RANK_LEVEL[rank] || 'E'];
-
   /* ---------- 绘图原语 ---------- */
   const strokeLine = (ctx, pts, color, width, alpha) => {
     if (pts.length < 2) return;
@@ -1945,19 +1977,20 @@ async function main(family) {
   /**
    * 所有网络 IO 同时发起（底图瓦片 / 雷达瓦片 / 标签 / 台风详情），WebView 调用经队列串行。
    * 合成顺序：底图 → 雷达 → 标签 → 台风 → 定位点 → 雨雪 → 气泡（最上层）
+   * 返回的 radarInfo 就是「真正画在图上」的那一份，UI 以它为准
    */
   const buildCombinedImage = async (radarInfoP, stormIdsP) => {
-    getWV().catch(() => {});
+    getWV().catch(e => logErr('WebView 初始化失败', e));
 
     const radarP = radarInfoP
       .then(info => fetchRadar(info))
       .then(data => renderRadar(data))
-      .catch(e => {
-        console.log('雷达错误: ' + e);
-        const last = readLastRadar();
-        return last
-          ? { image: last.image, probe: last.probe, radarInfo: last }
-          : null;
+      .catch(async e => {
+        logErr('雷达错误', e);
+        // 元数据拿不到 = 没网；元数据是实时的但渲染失败 = 缓存回退
+        const meta = await radarInfoP;
+        const last = loadLastRadar(meta?.source === 'live' ? 'cache' : 'offline');
+        return last || null;
       });
 
     const overlayP = (async () => {
@@ -1966,19 +1999,26 @@ async function main(family) {
       if (cached) return cached;
       const items = await collectLabels();
       return items?.length ? await drawLabelOverlay(items) : null;
-    })().catch(e => (console.log('地图标签错误: ' + e), null));
+    })().catch(e => (logErr('地图标签错误', e), null));
 
     const stormsP = stormIdsP.then(async ids => {
       const list = (await Promise.all(ids.map(getStormDetail))).filter(Boolean);
       cleanStormCache(ids);
       return list;
-    }).catch(e => (console.log('台风数据错误: ' + e), []));
+    }).catch(e => (logErr('台风数据错误', e), []));
 
-    const [baseImg, radar, overlay, storms] = await Promise.all([getBaseMap(), radarP, overlayP, stormsP]);
+    // 底图失败不应让整个组件空白：回退为纯海洋底色
+    const baseP = getBaseMap().catch(e => (logErr('底图错误', e), null));
+    const [baseImg, radar, overlay, storms] = await Promise.all([baseP, radarP, overlayP, stormsP]);
 
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
     const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
-    ctx.drawImageInRect(baseImg, full);
+    if (baseImg) {
+      ctx.drawImageInRect(baseImg, full);
+    } else {
+      ctx.setFillColor(new Color(OCEAN_COLOR));
+      ctx.fillRect(full);
+    }
     if (radar?.image) ctx.drawImageInRect(radar.image, full);
     if (overlay) ctx.drawImageInRect(overlay, full);
 
@@ -2001,18 +2041,23 @@ async function main(family) {
     // 雨雪特效、气泡画在最上层
     const probe = radar?.probe ?? null;
     const decoded = probe ? decodeRadarTooltip(probe) : null;
-    const fx = await buildPrecip(probe, decoded).catch(e => (console.log('雨雪特效错误: ' + (e.message || e)), null));
+    let fx = null;
+    if (overBudget()) {
+      console.log('已超出时间预算，跳过雨雪特效');
+    } else {
+      fx = await buildPrecip(probe, decoded).catch(e => (logErr('雨雪特效错误', e), null));
+    }
     if (fx) ctx.drawImageInRect(fx, full);
 
     const bubbles = await buildBubbles(decoded, SHOW_TROPICAL_SYSTEM ? storms : [])
-      .catch(e => (console.log('气泡错误: ' + (e.message || e)), []));
+      .catch(e => (logErr('气泡错误', e), []));
     for (const b of bubbles) {
       const img = base64ToImage(b.p);
       if (img) ctx.drawImageInRect(img, new Rect(b.x, b.y, b.w, b.h));
     }
 
     // 持久化 bmMaxZ 等运行期状态
-    try { writeSettings(setting); } catch (e) {}
+    try { writeSettings(setting); } catch (e) { logErr('保存设置失败', e); }
     return { image: ctx.getImage(), radarInfo: radar?.radarInfo ?? null };
   };
 
@@ -2035,16 +2080,19 @@ async function main(family) {
     text.font = Font.mediumSystemFont(14);
   };
 
-  // 雷达帧刻度线
+  // 雷达帧刻度线：文字按来源显示「今天 / 缓存 / 离线」，实时帧才使用「现在」蓝色高亮
   const createScaleTicks = (radarStack, radarInfo) => {
-    const { frames = [], timeType, localTimeStr, cached } = radarInfo;
-    if (!frames.length) return;
-    
-    const labelText = radarStack.addText(`雷达帧: ${cached ? '离线' : '今天'} ${localTimeStr}`);
+    const { frames = [], localTimeStr, source = 'live' } = radarInfo;
+    if (!localTimeStr && !frames.length) return;
+    const isLive = source === 'live';
+
+    const labelText = radarStack.addText(`雷达帧: ${SOURCE_TEXT[source] ?? SOURCE_TEXT.live} ${localTimeStr || ''}`);
     labelText.textColor = Color.white();
     labelText.font = Font.mediumSystemFont(14);
     labelText.textOpacity = 0.9;
+    if (!frames.length) return;
     radarStack.addSpacer(10);
+
     const ticksStack = radarStack.addStack();
     ticksStack.layoutHorizontally();
     ticksStack.bottomAlignContent();
@@ -2055,11 +2103,12 @@ async function main(family) {
       tick.size = new Size(1.5, frame.isSelected || frame.isMajor ? 12 : 8);
       tick.cornerRadius = 1;
       tick.backgroundColor = frame.isSelected
-        ? new Color(frame.isNow && !cached ? '#38BCFF' : '#FFFFFF')
+        ? new Color(frame.isNow && isLive ? '#38BCFF' : '#FFFFFF')
         : new Color('#EEEEEE', frame.isMajor ? 0.48 : 0.42);
     });
   };
-
+  
+  // 创建组件
   const createWidget = (
     city = `东经${Number(LNG).toFixed(3)}°   北纬${Number(LAT).toFixed(3)}°`,
     type = '',
@@ -2120,20 +2169,18 @@ async function main(family) {
       const radarStack = createBarStack(bottomStack);
       const img = radarStack.addImage(satellite);
       img.imageSize = new Size(16, 16)
-      img.tintColor = new Color(radarInfo.cached ? '#FF8800' : '#38BCFF');
+      img.tintColor = new Color(radarInfo.source === 'live' ? '#38BCFF' : '#FF8800');
       radarStack.addSpacer(10);
       createScaleTicks(radarStack, radarInfo);
     }
 
     return widget;
   };
-
-  /* ============================ */
+  
   // 运行
-  /* ============================ */
   const runWidget = async () => {
     if (setting.autoLocation) getLocation();
-    const radarInfoP = getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null));
+    const radarInfoP = getLatestRadar().catch(e => (logErr('雷达元数据错误', e), null));
     const stormIdsP = SHOW_TROPICAL_SYSTEM ? getActiveStormIds().catch(() => []) : Promise.resolve([]);
 
     const [{ radarInfo, image }, weatherData] = await Promise.all([
