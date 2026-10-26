@@ -910,12 +910,18 @@ async function main(family) {
   /** 最新雷达元数据。缓存过期且网络失败时回退到上一次成功的缓存 */
   const getLatestRadar = async () => {
     const radarCacheTime = Math.max(Number(RADAR_META_TTL) || 0, 1) / 3600;
+    const metaFile = fm.joinPath(radarPath, '_radar_meta.json');
+  
     const cached = await getCacheData(
       '_radar_meta.json', 'https://tiles.zoom.earth/times/radar.json',
       'json', radarCacheTime, radarPath, 'GET', null, true
     );
     const reflectivity = cached?.reflectivity;
     if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
+  
+    // 元数据没被刷新 → 判定为离线
+    const ageSec = fm.fileExists(metaFile) ? (Date.now() - fm.creationDate(metaFile).getTime()) / 1000 : Infinity;
+    const offline = ageSec > radarCacheTime * 3600 + 30;
   
     const nowSec = Math.floor(Date.now() / 1000);
     const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
@@ -934,14 +940,14 @@ async function main(family) {
       };
     });
   
-    const sel = frames.find(f => f.isSelected);
     const u = new Date(ts * 1000);
     return {
+      ts,
       hash,
       ar: `${u.getUTCFullYear()}-${pad(u.getUTCMonth() + 1)}-${pad(u.getUTCDate())}/${pad(u.getUTCHours())}${pad(u.getUTCMinutes())}`,
       frames,
-      timeType: sel?.isNow ? 'now' : 'today',
-      localTimeStr: hm(u)
+      localTimeStr: hm(u),
+      cached: offline 
     };
   };
 
@@ -952,7 +958,7 @@ async function main(family) {
   const cleanOldRadarCache = hash => {
     try {
       for (const name of fm.listContents(radarPath)) {
-        if (name !== '_radar_meta.json' && (name.endsWith('.png') || name.endsWith('.webp')) && !name.startsWith(hash + '_')) {
+        if (name !== '_radar_meta.json' && name !== 'radar_last.png' && (name.endsWith('.png') || name.endsWith('.webp')) && !name.startsWith(hash + '_')) {
           try { fm.remove(fm.joinPath(radarPath, name)); } catch (e) {}
         }
       }
@@ -1142,7 +1148,41 @@ async function main(family) {
     return { info, vp, tiles: loaded.filter(Boolean) };
   };
 
+  // 管理雷达缓存 (过期后请求失败)
+  const readLastRadar = (image = null, info = null) => {
+    const IMAGE = 'radar_last.png';
+    const INFO = 'radar_last.json';
+    const imageCache = useFileManager('image', radarPath);
+    const infoCache = useFileManager('json', radarPath);
+    if (image && info) {
+      imageCache.write(IMAGE, image);
+      infoCache.write(INFO, info);
+      return;
+    }
+    const cachedImage = imageCache.read(IMAGE);
+    const cachedInfo = infoCache.read(INFO);
+    if (!cachedImage) return null;
+    return {
+      image: cachedImage,
+      probe: cachedInfo?.probe ?? null,
+      cached: true,
+      localTimeStr: cachedInfo?.localTimeStr,
+      frames: cachedInfo?.frames || []
+    };
+  };
+
   const renderRadar = async ({ info, vp, tiles }) => {
+    const complete = tiles.length === vp.tiles.length;
+    // 先读缓存，避免作用域问题
+    const last = complete ? null : readLastRadar();
+    if (last) {
+      return {
+        image: last.image,
+        probe: last.probe,
+        radarInfo: last
+      };
+    }
+  
     const result = await runWV(wvRender, {
       pal: PALETTE_B64, tiles, ts: TILE_SIZE,
       mw: vp.mosaicW, mh: vp.mosaicH,
@@ -1152,11 +1192,20 @@ async function main(family) {
       ymode: PALETTE_Y_MODE, flip: PALETTE_FLIP_Y,
       probe: { x: TARGET_WIDTH / 2, y: TARGET_HEIGHT / 2 }
     });
-    cleanOldRadarCache(info.hash);
-    return { 
-      image: base64ToImage(result.p), 
-      probe: result.probe 
-    };
+  
+    const image = base64ToImage(result.p);
+    if (complete && image) {
+      readLastRadar(image, {
+        probe: result.probe ?? null,
+        hash: info.hash,
+        localTimeStr: info.localTimeStr,
+        frames: info.frames,
+        savedAt: Date.now()
+      });
+      cleanOldRadarCache(info.hash);
+    }
+  
+    return { image, probe: result.probe, radarInfo: info };
   };
 
   /* ============================ */
@@ -1903,7 +1952,13 @@ async function main(family) {
     const radarP = radarInfoP
       .then(info => fetchRadar(info))
       .then(data => renderRadar(data))
-      .catch(e => (console.log('雷达错误: ' + e), null));
+      .catch(e => {
+        console.log('雷达错误: ' + e);
+        const last = readLastRadar();
+        return last
+          ? { image: last.image, probe: last.probe, radarInfo: last }
+          : null;
+      });
 
     const overlayP = (async () => {
       if (!SHOW_LABELS) return null;
@@ -1958,7 +2013,7 @@ async function main(family) {
 
     // 持久化 bmMaxZ 等运行期状态
     try { writeSettings(setting); } catch (e) {}
-    return ctx.getImage();
+    return { image: ctx.getImage(), radarInfo: radar?.radarInfo ?? null };
   };
 
   /* ============================ */
@@ -1981,17 +2036,16 @@ async function main(family) {
   };
 
   // 雷达帧刻度线
-  const createScaleTicks = (stack, radarInfo) => {
-    const { frames = [], timeType, localTimeStr } = radarInfo;
+  const createScaleTicks = (radarStack, radarInfo) => {
+    const { frames = [], timeType, localTimeStr, cached } = radarInfo;
     if (!frames.length) return;
-    const prefix = { now: '现在', today: '今天' }[timeType];
     
-    const labelText = stack.addText(`雷达帧: ${prefix} ${localTimeStr}`);
+    const labelText = radarStack.addText(`雷达帧: ${cached ? '离线' : '今天'} ${localTimeStr}`);
     labelText.textColor = Color.white();
     labelText.font = Font.mediumSystemFont(14);
     labelText.textOpacity = 0.9;
-    stack.addSpacer(10);
-    const ticksStack = stack.addStack();
+    radarStack.addSpacer(10);
+    const ticksStack = radarStack.addStack();
     ticksStack.layoutHorizontally();
     ticksStack.bottomAlignContent();
     ticksStack.spacing = 5;
@@ -2001,7 +2055,7 @@ async function main(family) {
       tick.size = new Size(1.5, frame.isSelected || frame.isMajor ? 12 : 8);
       tick.cornerRadius = 1;
       tick.backgroundColor = frame.isSelected
-        ? new Color(frame.isNow ? '#38BCFF' : '#FFFFFF')
+        ? new Color(frame.isNow && !cached ? '#38BCFF' : '#FFFFFF')
         : new Color('#EEEEEE', frame.isMajor ? 0.48 : 0.42);
     });
   };
@@ -2066,7 +2120,7 @@ async function main(family) {
       const radarStack = createBarStack(bottomStack);
       const img = radarStack.addImage(satellite);
       img.imageSize = new Size(16, 16)
-      img.tintColor = new Color('#38BCFF');
+      img.tintColor = new Color(radarInfo.cached ? '#FF8800' : '#38BCFF');
       radarStack.addSpacer(10);
       createScaleTicks(radarStack, radarInfo);
     }
@@ -2082,20 +2136,19 @@ async function main(family) {
     const radarInfoP = getLatestRadar().catch(e => (console.log('雷达元数据错误: ' + (e.message || e)), null));
     const stormIdsP = SHOW_TROPICAL_SYSTEM ? getActiveStormIds().catch(() => []) : Promise.resolve([]);
 
-    const [bgImage, radarInfo, weatherData] = await Promise.all([
+    const [{ radarInfo, image }, weatherData] = await Promise.all([
       buildCombinedImage(radarInfoP, stormIdsP),
-      radarInfoP,
       getAlert(),
       getTwoHoursWeather()
     ]);
-
+    
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
     const [{ type, level } = {}] = alerts;
     const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
     const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
     
     const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
-    widget.backgroundImage = bgImage;
+    widget.backgroundImage = image;
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
     } else {
