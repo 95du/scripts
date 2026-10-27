@@ -4,7 +4,7 @@
 /**
  * 组件作者: 95du茅台
  * 组件名称: 全球台风雨雪雷达
- * 组件版本: Version 1.0.7
+ * 组件版本: Version 1.0.9
  * 发布时间: 2026-10-27
  */
 
@@ -99,7 +99,7 @@ async function main(family) {
 
   // 雷达帧来源：live = 联网实时；cache = 联网但本次渲染失败，回退上次成功的图；offline = 无网络
   const SOURCE_TEXT = { live: '今天', cache: '缓存', offline: '离线' };
-  
+
   /* ============================ */
   // 5. 城市与地名标签
   /* ============================ */
@@ -147,7 +147,6 @@ async function main(family) {
     T: '#F5922B', ST: '#EF5A2A', VT: '#E53935', SU: '#F06292'
   };
   const RANK_LEVEL = { '-2': 'E', '-1': 'D', 0: 'S', 1: 'SS', 2: 'T', 3: 'ST', 4: 'VT', 5: 'SU' };
-  
   // 显示全部历史路径
   const SHOW_ALL_HISTORY = setting.showAllHistory;
   // 显示台风信息框
@@ -272,7 +271,7 @@ async function main(family) {
     const exists = fm.fileExists(filePath);
     const expired = cacheTime > 0 && (!exists || (Date.now() - fm.creationDate(filePath).getTime()) / 36e5 > cacheTime);
     const data = exists && !expired ? cache.read(name) : undefined;
-    if (data !== null && data !== undefined) {
+    if (data !== undefined && data !== null) {
       cacheState.set(filePath, 'hit');
       return data;
     }
@@ -320,6 +319,7 @@ async function main(family) {
       }
     } catch (e) {
       logErr('请求失败', e);
+      cacheState.set(filePath, 'failed'); // 网络层失败（无网络 / 超时）；若有过期缓存可回退，下面会改记为 stale
     }
     return fallback();
   };
@@ -518,7 +518,7 @@ async function main(family) {
       if (!path.length) return null;
   
       const now = Date.now();
-      let last = path[0], split = null
+      let last = path[0], split = null;
       if (now >= path.at(-1).t) {
         last = path.at(-1);
       } else if (now > path[0].t) {
@@ -556,7 +556,7 @@ async function main(family) {
         cone: data.cone, split 
       };
     } catch (e) {
-      logErr(`台风详情获取失败 [${id}]`, e);
+      logErr(`台风详情失败 [${id}]`, e);
       return null;
     }
   };
@@ -622,18 +622,18 @@ async function main(family) {
 
   /** 并发池 */
   const mapPool = async (items, limit, fn) => {
-    const result = new Array(items.length);
+    const out = new Array(items.length);
     let i = 0;
     const worker = async () => {
       while (i < items.length) {
         const idx = i++;
-        result[idx] = await fn(items[idx], idx);
+        out[idx] = await fn(items[idx], idx);
       }
     };
     await Promise.all(
       Array.from({ length: Math.min(limit, Math.max(1, items.length)) }, worker)
     );
-    return result;
+    return out;
   };
 
   /* ============================ */
@@ -744,7 +744,7 @@ async function main(family) {
 
   const prepareTiles = list =>
     mapPool(list, CONCURRENCY, async tile => {
-      try { await loadTileAssets(tile); } catch (e) { logErr(`瓦片失败 ${tile.key}`, e); }
+      try { await loadTileAssets(tile); } catch (e) { logErr(`瓦片加载 ${tile.key}`, e); }
     });
 
   /** WebView：把一批原始瓦片合成为 256 级 PNG（填色 → BM → 压暗 → 陆地 → 线） */
@@ -955,7 +955,9 @@ async function main(family) {
     );
     const reflectivity = cached?.reflectivity;
     if (!reflectivity) throw new Error('radar.json 数据尚未同步或缓存为空');
+
     const offline = cacheState.get(fm.joinPath(radarPath, '_radar_meta.json')) === 'stale';
+
     const nowSec = Math.floor(Date.now() / 1000);
     const allTs = Object.keys(reflectivity).map(Number).sort((a, b) => a - b);
     const past = allTs.filter(t => t <= nowSec);
@@ -1167,20 +1169,23 @@ async function main(family) {
     if (!vp.tiles.length) throw new Error('视口瓦片计算为空');
     if (vp.tiles.length > MAX_TILES) throw new Error('需要瓦片过多 (' + vp.tiles.length + ')');
 
+    let netFailed = false; // 任一瓦片请求在网络层失败 = 当前没网
     const loaded = await Promise.all(vp.tiles.map(async (tile) => {
+      const name = radarCacheName(info.hash, nativeZ, tile.x, tile.y);
       const d = await getCacheData(
-        radarCacheName(info.hash, nativeZ, tile.x, tile.y),
+        name,
         radarTileURL(info, nativeZ, tile.x, tile.y),
         'data',
         0, // 不设过期，由 cleanOldRadarCache 管理
         radarPath
       );
+      if (cacheState.get(fm.joinPath(radarPath, name)) === 'failed') netFailed = true;
       const b64 = d ? toB64(d) : '';
       return b64.length > 80
         ? { px: (tile.x - vp.tileMinX) * TILE_SIZE, py: (tile.y - vp.tileMinY) * TILE_SIZE, b64 }
         : null;
     }));
-    return { info, vp, tiles: loaded.filter(Boolean) };
+    return { info, vp, tiles: loaded.filter(Boolean), netFailed };
   };
 
   // 上次成功渲染的雷达图（供回退使用）
@@ -1192,14 +1197,23 @@ async function main(family) {
     useFileManager('json', radarPath).write(LAST_INFO, info);
   };
 
-  /** 读取上次雷达图；source 由调用方根据当时的网络状态决定 */
+  // 回退来源只有一处判定：元数据是实时的、且瓦片请求没有网络层失败（渲染失败）→ 缓存；
+  // 否则（无元数据 / 过期元数据 / 瓦片请求因无网络失败）→ 离线
+  const fallbackSource = (meta, netFailed = false) =>
+    meta?.source === 'live' && !netFailed ? 'cache' : 'offline';
+
+  // 回退图的探针超过该时长就作废，避免用旧回波在中心点显示过期的降水提示框 / 特效
+  const PROBE_MAX_AGE_MS = 45 * 60 * 1000;
+
+  /** 读取上次雷达图；source 由 fallbackSource 决定 */
   const loadLastRadar = source => {
     const image = useFileManager('image', radarPath).read(LAST_IMAGE);
     if (!image) return null;
     const info = useFileManager('json', radarPath).read(LAST_INFO);
+    const probeFresh = !!info?.ts && Date.now() - info.ts * 1000 <= PROBE_MAX_AGE_MS;
     return {
       image,
-      probe: info?.probe ?? null,
+      probe: probeFresh ? (info.probe ?? null) : null,
       radarInfo: {
         source,
         localTimeStr: info?.localTimeStr,
@@ -1208,10 +1222,10 @@ async function main(family) {
     };
   };
 
-  const renderRadar = async ({ info, vp, tiles }) => {
+  const renderRadar = async ({ info, vp, tiles, netFailed }) => {
     const complete = tiles.length === vp.tiles.length;
     if (!complete) {
-      const last = loadLastRadar(info.source === 'offline' ? 'offline' : 'cache');
+      const last = loadLastRadar(fallbackSource(info, netFailed));
       if (last) return last;
     }
 
@@ -1257,18 +1271,18 @@ async function main(family) {
     const y0 = Math.max(0, Math.floor((V.top - LABEL_MARGIN) / V.worldSize * n));
     const y1 = Math.min(n - 1, Math.floor((V.top + TARGET_HEIGHT + LABEL_MARGIN) / V.worldSize * n - 1e-9));
     const seen = new Set();
-    const result = [];
+    const out = [];
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const cx = ((x % n) + n) % n;
         const k = cx + '/' + y;
         if (!seen.has(k)) {
           seen.add(k);
-          result.push({ x: cx, y });
+          out.push({ x: cx, y });
         }
       }
     }
-    return result;
+    return out;
   };
 
   // 标签自带 z 数组：用逻辑 ZOOM 判断当前缩放是否应显示
@@ -1434,7 +1448,8 @@ async function main(family) {
 
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE]
+      .join('_').replace(/\./g, 'p') + '.png'
   );
 
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
@@ -1518,7 +1533,7 @@ async function main(family) {
             rect = { x: dir === 'left' ? bx : tip.x, y: by, w: bodyW + arrowH, h: bodyH };
           }
           const probe = inflate(rect);
-          let cost = 4 * (rect.w * rect.h - area(rect, screen));      // 超出画面的面积
+          let cost = 4 * (rect.w * rect.h - area(rect, screen)); // 超出画面的面积
           for (const q of placed) cost += area(probe, q);
           for (const o of A.obstacles) if (!(it.ignore || []).includes(o.id)) cost += area(rect, o);
           cost = Math.round(cost);                                    // 抹平浮点误差，平局时保持候选优先级
@@ -1532,11 +1547,11 @@ async function main(family) {
         const horiz = dir === 'left' || dir === 'right';
         const side = { up: 'bottom', down: 'top', left: 'right', right: 'left' }[dir];   // 箭头所在的边
         const W = Math.ceil(bodyW + M * 2 + (horiz ? arrowH : 0)), H = Math.ceil(bodyH + M * 2 + (horiz ? 0 : arrowH));
-        const ox = Math.round(rect.x - M), oy = Math.round(rect.y - M);                  // 画布左上角（屏幕坐标）
+        const ox = Math.round(rect.x - M), oy = Math.round(rect.y - M); // 画布左上角（屏幕坐标）
         const x0 = bx - ox, y0 = by - oy, x1 = x0 + bodyW, y1 = y0 + bodyH;            // 主体（画布坐标）
         const ac = horiz
           ? Math.max(by + minOff, Math.min(by + bodyH - minOff, tip.y)) - oy
-          : Math.max(bx + minOff, Math.min(bx + bodyW - minOff, tip.x)) - ox;           // 箭头中心
+          : Math.max(bx + minOff, Math.min(bx + bodyW - minOff, tip.x)) - ox; // 箭头中心
 
         const cv = document.createElement('canvas');
         cv.width = W;
@@ -1779,16 +1794,17 @@ async function main(family) {
   // coords: [[lng, lat], ...]。首点取离画面中心最近的一份，后续点相对前一点取短弧
   const projectPath = coords => {
     let prev = null;
-    return coords.map(( [lng, lat] ) => {
+    return coords.map(([lng, lat]) => {
       const base = prev === null ? LNG : prev;
       lng = base + ((lng - base + 540) % 360) - 180;
       prev = lng;
       return toScreenRaw(lat, lng);
     });
   };
-  
-  const levelColor = rank => LEVEL_COLORS[RANK_LEVEL[rank] || 'E'];
+
   /* ---------- 绘图原语 ---------- */
+  const levelColor = rank => LEVEL_COLORS[RANK_LEVEL[rank] || 'E'];
+
   const strokeLine = (ctx, pts, color, width, alpha) => {
     if (pts.length < 2) return;
     const path = new Path();
@@ -1898,7 +1914,7 @@ async function main(family) {
     return lum > 0.6 ? '#12301a' : '#FFFFFF';
   };
   
-  // 台风屏幕坐标（只算一次，图标 / 气泡共用）
+  // 台风屏幕坐标（只算一次，图标/气泡共用）
   const attachScreen = storms => storms.forEach(st => {
     const [lng, lat] = st.last.coordinates;
     st.screen = toScreen(lat, lng);
@@ -1989,7 +2005,7 @@ async function main(family) {
         logErr('雷达错误', e);
         // 元数据拿不到 = 没网；元数据是实时的但渲染失败 = 缓存回退
         const meta = await radarInfoP;
-        const last = loadLastRadar(meta?.source === 'live' ? 'cache' : 'offline');
+        const last = loadLastRadar(fallbackSource(meta));
         return last || null;
       });
 
@@ -2009,6 +2025,7 @@ async function main(family) {
 
     // 底图失败不应让整个组件空白：回退为纯海洋底色
     const baseP = getBaseMap().catch(e => (logErr('底图错误', e), null));
+
     const [baseImg, radar, overlay, storms] = await Promise.all([baseP, radarP, overlayP, stormsP]);
 
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
@@ -2107,8 +2124,7 @@ async function main(family) {
         : new Color('#EEEEEE', frame.isMajor ? 0.48 : 0.42);
     });
   };
-  
-  // 创建组件
+
   const createWidget = (
     city = `东经${Number(LNG).toFixed(3)}°   北纬${Number(LAT).toFixed(3)}°`,
     type = '',
@@ -2150,7 +2166,6 @@ async function main(family) {
 
     topStack.addSpacer();
     widget.addSpacer();
-
     const bottomStack = widget.addStack();
     bottomStack.layoutHorizontally();
     bottomStack.centerAlignContent();
@@ -2176,8 +2191,10 @@ async function main(family) {
 
     return widget;
   };
-  
+
+  /* ============================ */
   // 运行
+  /* ============================ */
   const runWidget = async () => {
     if (setting.autoLocation) getLocation();
     const radarInfoP = getLatestRadar().catch(e => (logErr('雷达元数据错误', e), null));
