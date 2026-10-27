@@ -518,7 +518,7 @@ async function main(family) {
       if (!path.length) return null;
   
       const now = Date.now();
-      let last = path[0], split = null;
+      let last = path[0], split = null
       if (now >= path.at(-1).t) {
         last = path.at(-1);
       } else if (now > path[0].t) {
@@ -688,7 +688,8 @@ async function main(family) {
           if (ENABLE_RENDER_CACHE) {
             const name = getRenderName(tileZ, cx, y);
             const p = fm.joinPath(renderPath, name);
-            if (fm.fileExists(p) && (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
+            if (fm.fileExists(p) && 
+              (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
               image = renderCache.read(name);
             }
           }
@@ -818,7 +819,10 @@ async function main(family) {
           lctx.fillRect(0, 0, w, h);
           ctx.drawImage(lc, 0, 0);
         }
-        out.push({ k: t.k, d: cv.toDataURL('image/png').split(',')[1] });
+        out.push({ 
+          k: t.k, 
+          d: cv.toDataURL('image/png').split(',')[1] 
+        });
       }
       completion(JSON.stringify(out));
     } catch (e) {
@@ -919,8 +923,7 @@ async function main(family) {
   const getBaseMap = async () => {
     const name = baseCacheName();
     const p = fm.joinPath(renderPath, name);
-    if (ENABLE_RENDER_CACHE && fm.fileExists(p) &&
-        (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
+    if (ENABLE_RENDER_CACHE && fm.fileExists(p) && (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
       try {
         const cached = fm.readImage(p);
         if (cached) return cached;
@@ -2135,7 +2138,7 @@ async function main(family) {
     radarInfo
   ) => {
     const widget = new ListWidget();
-    widget.setPadding(12, 20, 12, 20);
+    widget.setPadding(12, 15, 12, 15);
     if (family === 'small') return widget;
 
     const topStack = widget.addStack();
