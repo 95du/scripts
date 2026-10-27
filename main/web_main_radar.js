@@ -4,8 +4,8 @@
 
 async function main() {
   const scriptName = '全球台风雨雪雷达'
-  const version = '1.0.5'
-  const updateDate = '2026年10月25日'
+  const version = '1.0.6'
+  const updateDate = '2026年10月27日'
   const pathName = '95du_radar';
   
   const rootUrl = 'https://raw.githubusercontent.com/95du/scripts/master';
@@ -117,7 +117,7 @@ async function main() {
       writeSettings(settings);
       module.notify(
         `${scriptName}❗️`, 
-        `新版本更新 Version ${version}，修复已知问题，增加显示全部台风`, 
+        `新版本更新 Version ${version}，修复已知问题，优化性能`, 
         'scriptable:///run/' + encodeURIComponent(Script.name())
       );
     }
