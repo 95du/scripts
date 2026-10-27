@@ -2138,7 +2138,7 @@ async function main(family) {
     radarInfo
   ) => {
     const widget = new ListWidget();
-    widget.setPadding(12, 15, 12, 15);
+    widget.setPadding(12, 18, 12, 18);
     if (family === 'small') return widget;
 
     const topStack = widget.addStack();
