@@ -2614,7 +2614,7 @@ const setBackground = async (widget, type, tcItem, tfItem, isLarge, locationText
       const feedbackData = await getTravelData();
       const image = await generateMapImage(getIsDay(), tcItem, tfItem, feedbackData, setting);
       const masking = shadowImage(image, locationText);
-      widget.backgroundImage = setting.skin === 1 ? masking : image;
+      widget.backgroundImage = setting.skin === 1 && tcItem.length > 0 ? masking : image;
     }
   } else {
     widget.backgroundColor = Color.dynamic(Color.white(), Color.black());
