@@ -64,11 +64,12 @@ async function main(family) {
   // 3. 底图样式与缓存
   /* ============================ */
   // 修改底图样式/调色时 +1 以清除旧渲染缓存
-  const MAP_RENDER_VERSION = 2;
+  // v3：底图不再含国界线，国界线单独成层，叠在雷达之上
+  const MAP_RENDER_VERSION = 3;
   const OCEAN_COLOR = '#1a3c5a';
   const LAND_COLOR = '#2f6e48';
   const LINE_COLOR = '#000000';
-  const LINE_OPACITY = 0.18;
+  const LINE_OPACITY = 0.25;
   // 整体压暗透明度
   const DIM_ALPHA = 0.08;
 
@@ -581,10 +582,11 @@ async function main(family) {
     }
   };
   
-  const newCtx = (w, h) => {
+  // opaque = false 用于透明覆盖层（国界线）
+  const newCtx = (w, h, opaque = true) => {
     const ctx = new DrawContext();
     ctx.size = new Size(w, h);
-    ctx.opaque = true;
+    ctx.opaque = opaque;
     ctx.respectScreenScale = false;
     return ctx;
   };
@@ -637,7 +639,7 @@ async function main(family) {
   };
 
   /* ============================ */
-  // 地图底图
+  // 地图底图（不含国界线）
   /* ============================ */
   const month = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][new Date().getUTCMonth()];
 
@@ -657,11 +659,15 @@ async function main(family) {
     land: `https://tiles.zoom.earth/static/land/v1/1x/webp/${z}/${y}/${x}.webp`
   });
 
+  // 底图瓦片不含国界线，因此与 LINE_OPACITY 无关
   const getRenderName = (z, x, y) =>
-    `${month}_${z}_${x}_${y}_lo${Math.round(LINE_OPACITY * 100)}_v${MAP_RENDER_VERSION}.png`;
+    `${month}_${z}_${x}_${y}_v${MAP_RENDER_VERSION}.png`;
 
-  /** 构建地图视口：从 ceil(RZ) 起逐级降低瓦片级别，直到瓦片数 ≤ MAP_TILE_BUDGET */
-  const buildViewport = () => {
+  /**
+   * 构建地图视口：从 ceil(RZ) 起逐级降低瓦片级别，直到瓦片数 ≤ MAP_TILE_BUDGET
+   * useCache = false 时不读取渲染瓦片缓存（国界线层只需要瓦片坐标）
+   */
+  const buildViewport = (useCache = true) => {
     const c = worldPx(LAT, LNG, RZ);
     const renderCache = useFileManager('image', renderPath);
 
@@ -685,7 +691,7 @@ async function main(family) {
         for (let x = minTileX; x <= maxTileX; x++) {
           const cx = ((x % n) + n) % n;
           let image = null;
-          if (ENABLE_RENDER_CACHE) {
+          if (ENABLE_RENDER_CACHE && useCache) {
             const name = getRenderName(tileZ, cx, y);
             const p = fm.joinPath(renderPath, name);
             if (fm.fileExists(p) && 
@@ -729,26 +735,37 @@ async function main(family) {
     return null;
   };
 
-  /** 并行加载单个瓦片的 fill / BM / line / land（null = 网络失败，空 Data = 404 不存在） */
+  /** 并行加载单个瓦片的 fill / BM / land（null = 网络失败，空 Data = 404 不存在）；国界线另行加载 */
   const loadTileAssets = async (tile) => {
     const { tileZ: z, cacheX: x, y } = tile;
     const name = `${z}_${x}_${y}.webp`;
     const urls = getTileUrls(z, x, y);
-    const [fill, bmObj, line, land] = await Promise.all([
+    const [fill, bmObj, land] = await Promise.all([
       getCacheData(name, urls.fill, 'data', FILL_CACHE_HOURS, fillPath),
       loadBM(z, x, y),
-      getCacheData(name, urls.line, 'data', LINE_CACHE_HOURS, linePath),
       getCacheData(name, urls.land, 'data', FILL_CACHE_HOURS, landPath)
     ]);
-    Object.assign(tile, { fill, bm: bmObj ? bmObj.b64 : '', bmDz: bmObj ? bmObj.dz : 0, line, land });
+    Object.assign(tile, { fill, bm: bmObj ? bmObj.b64 : '', bmDz: bmObj ? bmObj.dz : 0, land });
   };
 
-  const prepareTiles = list =>
+  /** 国界线瓦片（单独图层使用） */
+  const loadTileLine = async (tile) => {
+    const { tileZ: z, cacheX: x, y } = tile;
+    tile.line = await getCacheData(
+      `${z}_${x}_${y}.webp`, getTileUrls(z, x, y).line, 'data', LINE_CACHE_HOURS, linePath
+    );
+  };
+
+  const prepareTiles = (list, loader = loadTileAssets) =>
     mapPool(list, CONCURRENCY, async tile => {
-      try { await loadTileAssets(tile); } catch (e) { logErr(`瓦片加载 ${tile.key}`, e); }
+      try { await loader(tile); } catch (e) { logErr(`瓦片加载 ${tile.key}`, e); }
     });
 
-  /** WebView：把一批原始瓦片合成为 256 级 PNG（填色 → BM → 压暗 → 陆地 → 线） */
+  /**
+   * WebView：把一批原始瓦片合成为 256 级 PNG
+   *   cfg.mode = 'base'：填色 → BM → 压暗 → 陆地（不画线）
+   *   cfg.mode = 'line'：透明底，只画国界线
+   */
   const wvTiles = async A => {
     const loadImage = (data, type) => new Promise(res => {
       const img = new Image();
@@ -758,13 +775,36 @@ async function main(family) {
     });
     try {
       const cfg = A.cfg;
+      const lineMode = cfg.mode === 'line';
       const out = [];
       for (const t of A.tiles) {
-        const [bm, fill, land, line] = await Promise.all([
+        if (lineMode) {
+          const line = t.l && t.l.length > 80 ? await loadImage(t.l, 'webp') : null;
+          if (!line) continue;
+          const w = line.naturalWidth || 256;
+          const h = line.naturalHeight || 256;
+          const cv = document.createElement('canvas');
+          cv.width = w;
+          cv.height = h;
+          const ctx = cv.getContext('2d');
+          const lc = document.createElement('canvas');
+          lc.width = w;
+          lc.height = h;
+          const lctx = lc.getContext('2d');
+          lctx.drawImage(line, 0, 0, w, h);
+          lctx.globalCompositeOperation = 'source-in';
+          lctx.globalAlpha = cfg.lineOpacity;
+          lctx.fillStyle = cfg.lineColor;
+          lctx.fillRect(0, 0, w, h);
+          ctx.drawImage(lc, 0, 0);
+          out.push({ k: t.k, d: cv.toDataURL('image/png').split(',')[1] });
+          continue;
+        }
+
+        const [bm, fill, land] = await Promise.all([
           t.b && t.b.length > 1000 ? loadImage(t.b, 'jpeg') : null,
           t.f && t.f.length > 0 ? loadImage(t.f, 'webp') : null,
-          t.d && t.d.length > 80 ? loadImage(t.d, 'webp') : null,
-          t.l && t.l.length > 80 ? loadImage(t.l, 'webp') : null
+          t.d && t.d.length > 80 ? loadImage(t.d, 'webp') : null
         ]);
 
         const w = bm ? (bm.naturalWidth || 256) : fill ? (fill.naturalWidth || 256) : 256;
@@ -807,18 +847,6 @@ async function main(family) {
           ctx.drawImage(land, 0, 0, w, h);
           ctx.globalCompositeOperation = 'source-over';
         }
-        if (line) {
-          const lc = document.createElement('canvas');
-          lc.width = w;
-          lc.height = h;
-          const lctx = lc.getContext('2d');
-          lctx.drawImage(line, 0, 0, w, h);
-          lctx.globalCompositeOperation = 'source-in';
-          lctx.globalAlpha = cfg.lineOpacity;
-          lctx.fillStyle = cfg.lineColor;
-          lctx.fillRect(0, 0, w, h);
-          ctx.drawImage(lc, 0, 0);
-        }
         out.push({ 
           k: t.k, 
           d: cv.toDataURL('image/png').split(',')[1] 
@@ -830,33 +858,55 @@ async function main(family) {
     }
   };
 
-  const renderTiles = async list => {
+  const renderTiles = async (list, mode = 'base') => {
+    const lineMode = mode === 'line';
     const res = await runWV(wvTiles, {
-      cfg: { ocean: OCEAN_COLOR, land: LAND_COLOR, lineColor: LINE_COLOR, lineOpacity: LINE_OPACITY, dim: DIM_ALPHA },
-      tiles: list.map(t => ({
-        k: t.key, f: toB64(t.fill), b: t.bm || '', bz: t.bmDz || 0,
-        bx: t.cacheX, by: t.y, d: toB64(t.land), l: toB64(t.line)
-      }))
+      cfg: { mode, ocean: OCEAN_COLOR, land: LAND_COLOR, lineColor: LINE_COLOR, lineOpacity: LINE_OPACITY, dim: DIM_ALPHA },
+      tiles: list.map(t => lineMode
+        ? { k: t.key, l: toB64(t.line) }
+        : { k: t.key, f: toB64(t.fill), b: t.bm || '', bz: t.bmDz || 0, bx: t.cacheX, by: t.y, d: toB64(t.land) }
+      )
     });
     return new Map(res.map(x => [x.k, x.d]));
   };
 
-  /** 底图：缓存瓦片 + 新渲染瓦片 → 拼接 → 裁剪缩放到输出尺寸。complete = 所有瓦片资源齐全，可整图缓存 */
+  /** 把 [瓦片, 图片] 拼接 → 裁剪缩放到输出尺寸。opaque = false 输出透明图（国界线层） */
+  const stitchTiles = (vp, pairs, opaque = true) => {
+    const mapCtx = newCtx(vp.sourceWidth, vp.sourceHeight, opaque);
+    if (opaque) {
+      mapCtx.setFillColor(new Color(OCEAN_COLOR));
+      mapCtx.fillRect(new Rect(0, 0, vp.sourceWidth, vp.sourceHeight));
+    }
+    for (const [t, img] of pairs) {
+      mapCtx.drawImageInRect(
+        img,
+        new Rect((t.x - vp.minTileX) * TILE_SIZE, (t.y - vp.minTileY) * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+      );
+    }
+    const finalCtx = newCtx(TARGET_WIDTH, TARGET_HEIGHT, opaque);
+    const scaleX = TARGET_WIDTH / vp.cropWidth;
+    const scaleY = TARGET_HEIGHT / vp.cropHeight;
+    finalCtx.drawImageInRect(
+      mapCtx.getImage(),
+      new Rect(
+        -(vp.cropLeft - vp.minTileX * TILE_SIZE) * scaleX,
+        -(vp.cropTop - vp.minTileY * TILE_SIZE) * scaleY,
+        vp.sourceWidth * scaleX,
+        vp.sourceHeight * scaleY
+      )
+    );
+    return finalCtx.getImage();
+  };
+
+  /** 底图：缓存瓦片 + 新渲染瓦片 → 拼接。complete = 所有瓦片资源齐全，可整图缓存 */
   const renderBaseMap = async (vp, missing) => {
     let complete = true;
-    const mapCtx = newCtx(vp.sourceWidth, vp.sourceHeight);
-    mapCtx.setFillColor(new Color(OCEAN_COLOR));
-    mapCtx.fillRect(new Rect(0, 0, vp.sourceWidth, vp.sourceHeight));
-    const drawTile = (t, img) => mapCtx.drawImageInRect(
-      img,
-      new Rect((t.x - vp.minTileX) * TILE_SIZE, (t.y - vp.minTileY) * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-    );
-    vp.tiles.filter(t => t.image).forEach(t => drawTile(t, t.image));
+    const pairs = vp.tiles.filter(t => t.image).map(t => [t, t.image]);
 
     if (missing.length) {
       let rendered = new Map();
       try {
-        rendered = await renderTiles(missing);
+        rendered = await renderTiles(missing, 'base');
       } catch (e) {
         complete = false;
         logErr('地图瓦片渲染失败', e);
@@ -867,7 +917,7 @@ async function main(family) {
           const data = rendered.get(t.key);
           const img = data ? base64ToImage(data) : null;
           if (!img) { complete = false; continue; }
-          drawTile(t, img);
+          pairs.push([t, img]);
           // null 表示请求失败：不缓存渲染瓦片；空 Data 表示 404，可缓存该瓦片结果，但不能视为完整底图
           if (t.fill && t.land) {
             if (ENABLE_RENDER_CACHE) renderCache.write(getRenderName(t.tileZ, t.cacheX, t.y), img);
@@ -884,31 +934,21 @@ async function main(family) {
         }
       }
     }
-
-    const finalCtx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
-    const scaleX = TARGET_WIDTH / vp.cropWidth;
-    const scaleY = TARGET_HEIGHT / vp.cropHeight;
-    finalCtx.drawImageInRect(
-      mapCtx.getImage(),
-      new Rect(
-        -(vp.cropLeft - vp.minTileX * TILE_SIZE) * scaleX,
-        -(vp.cropTop - vp.minTileY * TILE_SIZE) * scaleY,
-        vp.sourceWidth * scaleX,
-        vp.sourceHeight * scaleY
-      )
-    );
-    return { image: finalCtx.getImage(), complete };
+    return { image: stitchTiles(vp, pairs, true), complete };
   };
 
-  // 整张底图缓存：位置 / 缩放 / 月份 / 样式不变时，直接读一张图，跳过瓦片读取、WebView 合成与二次拼接
-  const baseCacheName = () => `base_${month}_` + [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, Math.round(LINE_OPACITY * 100), MAP_RENDER_VERSION].join('_').replace(/\./g, 'p') + '.png';
+  // 整张图缓存：位置 / 缩放 / 月份 / 样式不变时，直接读一张图，跳过瓦片读取、WebView 合成与二次拼接
+  const baseCacheName = () => `base_${month}_` + [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, MAP_RENDER_VERSION].join('_').replace(/\./g, 'p') + '.png';
+  // 国界线覆盖层与月份无关，但与线条透明度有关
+  const lineCacheName = () => 'line_' + [LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, Math.round(LINE_OPACITY * 100), MAP_RENDER_VERSION].join('_').replace(/\./g, 'p') + '.png';
 
-  /** 清理其他月份 / 旧版本 / 旧位置的底图缓存，避免磁盘持续增长 */
-  const cleanStaleMapCache = keepBase => {
+  /** 清理其他月份 / 旧版本 / 旧位置的底图与国界线整图缓存，避免磁盘持续增长 */
+  const cleanStaleMapCache = () => {
+    const keep = [baseCacheName(), lineCacheName()];
     try {
       for (const name of fm.listContents(renderPath)) {
-        const stale = name.startsWith('base_')
-          ? name !== keepBase
+        const stale = name.startsWith('base_') || name.startsWith('line_')
+          ? !keep.includes(name)
           : !name.startsWith(month + '_') || !name.endsWith(`_v${MAP_RENDER_VERSION}.png`);
         if (stale) try { fm.remove(fm.joinPath(renderPath, name)); } catch (e) { logErr('清理底图缓存失败', e); }
       }
@@ -920,17 +960,24 @@ async function main(family) {
     }
   };
 
+  /** 读整图缓存（没有或过期返回 null） */
+  const readWholeCache = name => {
+    if (!ENABLE_RENDER_CACHE) return null;
+    const p = fm.joinPath(renderPath, name);
+    if (!fm.fileExists(p) || (Date.now() - fm.creationDate(p).getTime()) / 1000 > MAP_CACHE_SECONDS) return null;
+    try {
+      return fm.readImage(p) || null;
+    } catch (e) {
+      logErr('读取整图缓存失败', e);
+      return null;
+    }
+  };
+
   const getBaseMap = async () => {
     const name = baseCacheName();
-    const p = fm.joinPath(renderPath, name);
-    if (ENABLE_RENDER_CACHE && fm.fileExists(p) && (Date.now() - fm.creationDate(p).getTime()) / 1000 <= MAP_CACHE_SECONDS) {
-      try {
-        const cached = fm.readImage(p);
-        if (cached) return cached;
-      } catch (e) {
-        logErr('读取整图缓存失败', e);
-      }
-    }
+    const cached = readWholeCache(name);
+    if (cached) return cached;
+
     const vp = buildViewport();
     if (!vp.tiles.length) throw new Error('地图视口瓦片为空');
     const missing = vp.tiles.filter(t => !t.image);
@@ -938,7 +985,42 @@ async function main(family) {
     const { image, complete } = await renderBaseMap(vp, missing);
     if (ENABLE_RENDER_CACHE && complete) {
       useFileManager('image', renderPath).write(name, image);
-      cleanStaleMapCache(name);
+      cleanStaleMapCache();
+    }
+    return image;
+  };
+
+  /**
+   * 国界线覆盖层（透明 PNG，叠在雷达之上）
+   * 与底图使用同一视口与裁剪参数，所以像素级对齐
+   */
+  const getLineOverlay = async () => {
+    const name = lineCacheName();
+    const cached = readWholeCache(name);
+    if (cached) return cached;
+
+    const vp = buildViewport(false);
+    if (!vp.tiles.length) throw new Error('国界线视口瓦片为空');
+    await prepareTiles(vp.tiles, loadTileLine);
+
+    // line 为 null = 网络失败，不缓存整图；空 Data = 404（该瓦片没有线），视为完整
+    const complete = vp.tiles.every(t => t.line != null);
+    const drawable = vp.tiles.filter(t => t.line && toB64(t.line).length > 80);
+    let rendered = new Map();
+    if (drawable.length) rendered = await renderTiles(drawable, 'line');
+
+    const imgs = new Map();
+    const pairs = [];
+    for (const t of vp.tiles) {
+      if (!rendered.has(t.key)) continue;
+      if (!imgs.has(t.key)) imgs.set(t.key, base64ToImage(rendered.get(t.key)));
+      const img = imgs.get(t.key);
+      if (img) pairs.push([t, img]);
+    }
+    const image = stitchTiles(vp, pairs, false);
+    if (ENABLE_RENDER_CACHE && complete) {
+      useFileManager('image', renderPath).write(name, image);
+      cleanStaleMapCache();
     }
     return image;
   };
@@ -1451,8 +1533,7 @@ async function main(family) {
 
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE]
-      .join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
   );
 
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
@@ -1991,11 +2072,11 @@ async function main(family) {
   };
 
   /* ============================ */
-  // 主绘制：底图 → 雷达 → 标签 → 定位点 → 雨雪 → 提示框
+  // 主绘制：底图 → 雷达 → 国界线 → 标签 → 台风 → 定位点 → 雨雪 → 提示框
   /* ============================ */
   /**
-   * 所有网络 IO 同时发起（底图瓦片 / 雷达瓦片 / 标签 / 台风详情），WebView 调用经队列串行。
-   * 合成顺序：底图 → 雷达 → 标签 → 台风 → 定位点 → 雨雪 → 气泡（最上层）
+   * 所有网络 IO 同时发起（底图瓦片 / 国界线瓦片 / 雷达瓦片 / 标签 / 台风详情），WebView 调用经队列串行。
+   * 合成顺序：底图（无国界线）→ 雷达 → 国界线 → 标签 → 台风 → 定位点 → 雨雪 → 气泡（最上层）
    * 返回的 radarInfo 就是「真正画在图上」的那一份，UI 以它为准
    */
   const buildCombinedImage = async (radarInfoP, stormIdsP) => {
@@ -2028,8 +2109,10 @@ async function main(family) {
 
     // 底图失败不应让整个组件空白：回退为纯海洋底色
     const baseP = getBaseMap().catch(e => (logErr('底图错误', e), null));
+    // 国界线失败只是少一层线，不影响其他图层
+    const lineP = getLineOverlay().catch(e => (logErr('国界线错误', e), null));
 
-    const [baseImg, radar, overlay, storms] = await Promise.all([baseP, radarP, overlayP, stormsP]);
+    const [baseImg, radar, lineImg, overlay, storms] = await Promise.all([baseP, radarP, lineP, overlayP, stormsP]);
 
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
     const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
@@ -2040,6 +2123,7 @@ async function main(family) {
       ctx.fillRect(full);
     }
     if (radar?.image) ctx.drawImageInRect(radar.image, full);
+    if (lineImg) ctx.drawImageInRect(lineImg, full);
     if (overlay) ctx.drawImageInRect(overlay, full);
 
     if (SHOW_TROPICAL_SYSTEM) {
