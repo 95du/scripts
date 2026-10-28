@@ -658,6 +658,38 @@ async function main() {
   const settingMenu = [
     module.filesMenus(settings),
     {
+      type: 'group',
+      items: [
+        {
+          label: '热带系统',
+          name: 'showTropicalSystem',
+          type: 'switch',
+          icon: {
+            name: 'wind',
+            color: '#FF7800'
+          }
+        },
+        {
+          label: '全部历史',
+          name: 'showAllHistory',
+          type: 'switch',
+          icon: {
+            name: 'video.fill',
+            color: '#FF2D55'
+          }
+        },
+        {
+          label: '台风信息',
+          name: 'showTyphoonInfo',
+          type: 'switch',
+          icon: {
+            name: 'hurricane',
+            color: '#7B2FF7'
+          }
+        },
+      ]
+    },
+    {
       label: '按 雨/雪 量级自动调节特效强度',
       type: 'group',
       items: [
@@ -697,38 +729,6 @@ async function main() {
           icon: {
             name: 'tag.fill',
             color: '#5856D6'
-          }
-        },
-      ]
-    },
-    {
-      type: 'group',
-      items: [
-        {
-          label: '热带系统',
-          name: 'showTropicalSystem',
-          type: 'switch',
-          icon: {
-            name: 'wind',
-            color: '#FF7800'
-          }
-        },
-        {
-          label: '全部历史',
-          name: 'showAllHistory',
-          type: 'switch',
-          icon: {
-            name: 'video.fill',
-            color: '#FF2D55'
-          }
-        },
-        {
-          label: '台风信息',
-          name: 'showTyphoonInfo',
-          type: 'switch',
-          icon: {
-            name: 'hurricane',
-            color: '#7B2FF7'
           }
         },
       ]
