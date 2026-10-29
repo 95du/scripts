@@ -385,7 +385,7 @@ async function main(family) {
     return new Color('#000000', 0.4);
   };
 
-  const getWeatherIcon = (key, isDay = 1) => {
+  const getWeatherIcon = async (key, isDay = 1) => {
     const iconMap = {
       '晴': isDay ? 100 : 150,
       '多云': isDay ? 101 : 151,
@@ -406,10 +406,7 @@ async function main(family) {
       '特强浓雾': 515, '热': 900, '冷': 901
     };
     const iconId = iconMap[key] ?? (isDay ? 101 : 151);
-    return {
-      id: String(iconId),
-      url: `https://static.qweather.com/img/common/icon/202106d/${iconId}.png`
-    };
+    return await module.getCacheData(`https://static.qweather.com/img/common/icon/202106d/${iconId}.png`, 720, `${iconId}.png`);
   };
 
   // 色条渐变 (雨/小/中/大/雪)
@@ -2174,7 +2171,7 @@ async function main(family) {
     barStack.centerAlignContent();
     barStack.setPadding(4, 10, 4, 10);
     barStack.cornerRadius = 7;
-    barStack.backgroundColor = new Color('#000000', 0.4);
+    barStack.backgroundColor = new Color('#000000', 0.45);
     return barStack;
   };
 
@@ -2295,8 +2292,7 @@ async function main(family) {
     
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
     const [{ type, level } = {}] = alerts;
-    const qweather = getWeatherIcon(weather_desc, sunset?.is_day);
-    const weatherIcon = await module.getCacheData(qweather.url, 720, `${qweather.id}.png`);
+    const weatherIcon = await getWeatherIcon(weather_desc, sunset?.is_day);
     
     const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
     widget.backgroundImage = image;
