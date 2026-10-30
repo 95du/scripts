@@ -282,13 +282,12 @@ async function main() {
   
   // 轮询等待网页中获取到有效的经纬度并回调
   const waitScript = () => {
-    const take = () => {
-      if (!window.__coord) return (window.__wake = take);
+    if (window.__coord) {
       const coord = window.__coord;
       window.__coord = null;
-      completion(coord);
-    };
-    take();
+      return coord;
+    }
+    return null;
   };
   
   // 视图加载主函数：运行定位监听，最后返回获取到的坐标
@@ -297,7 +296,7 @@ async function main() {
     const htmlContent = rawHtml.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
       return String.fromCharCode(parseInt(grp, 16))
     });
-    
+  
     let appScript = await module.getCacheData('https://zoom.earth/assets/js/app.24434048.js', 72, 'app.js');
     // 解除收藏数量限制
     const readLimit = 'Yt(){return(this.Vt.locations||[]).slice(-(no.st?30:3))}';
@@ -305,7 +304,7 @@ async function main() {
     appScript = appScript
       .replace(readLimit, 'Yt(){return(this.Vt.locations||[])}')
       .replace(countLimit, 'get Kt(){return false}');
-
+  
     const html = `
     <html lang="zh-Hans">
       <head>
@@ -333,43 +332,43 @@ async function main() {
       </head>
       ${htmlContent}
       <script>${appScript.replace(/<\/script/gi, '<\\/script')}</script>
+      <script>(${pageScript.toString()})();</script>
       <script>
         document.addEventListener('DOMContentLoaded', () => {
           const btn = document.getElementById('custom-settings-btn');
-          const search = document.querySelector('button.search')
-          const settings = document.querySelector('button.settings:not(#custom-settings-btn)');
+          const search = document.querySelector('button.search');
+          const settingsBtn = document.querySelector('button.settings:not(#custom-settings-btn)');
           if (!btn || !search) return;
           const update = () => {
             const r = search.getBoundingClientRect();
-            btn.style.cssText = r.width && r.height ? \`left:\${r.left}px;top:\${r.top-r.height-8}px;width:\${r.width}px;height:\${r.height}px;display:flex\` : 'display:none';
+            btn.style.cssText = r.width && r.height
+              ? \`left:\${r.left}px;top:\${r.top - r.height - 8}px;width:\${r.width}px;height:\${r.height}px;display:flex\`
+              : 'display:none';
           };
           setInterval(update, 150);
           update();
           btn.onclick = e => {
             e.preventDefault();
             e.stopPropagation();
-            settings?.click();
+            settingsBtn?.click();
           };
         });
       </script>
-    </body>
     </html>`;
   
     const webView = new WebView();
-    await webView.loadHTML(html, `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},${settings.zoom}z/overlays=coverage:off`);
+    const baseURL = `https://zoom.earth/maps/radar/#view=${settings.lat},${settings.lng},${settings.zoom}z/overlays=coverage:off`;
+    webView.loadHTML(html, baseURL);
     // const locations = await webView.evaluateJavaScript(`JSON.parse(localStorage.getItem('ze_favorites') || '{}').locations || []`);
-    await webView.evaluateJavaScript(`(${pageScript})()`);
-    
-    let coord = null;
     let open = true;
     const listen = async () => {
       while (open) {
         try {
-          coord = await webView.evaluateJavaScript(`(${waitScript})()`, true);
+          const coord = await webView.evaluateJavaScript(`(${waitScript.toString()})()`);
           await updateLocation(coord);
         } catch (e) {
           console.error(e);
-          break;
+          await new Promise(r => Timer.schedule(0.8, false, r));
         }
       }
     };
