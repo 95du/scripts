@@ -1919,8 +1919,7 @@ async function main(family) {
   
   /* ---------- 线段构建 ---------- */
   const segmentOf = (p, prev) => {
-    const coords = Array.isArray(p.spline) && p.spline.length > 1
-      ? p.spline : [prev.coordinates, p.coordinates];
+    const coords = Array.isArray(p.spline) && p.spline.length > 1 ? p.spline : [prev.coordinates, p.coordinates];
     return { pts: projectPath(coords), rank: prev.rank };
   };
   
