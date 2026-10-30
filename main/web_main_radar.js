@@ -365,7 +365,7 @@ async function main() {
       while (open) {
         try {
           const coord = await webView.evaluateJavaScript(`(${waitScript.toString()})()`);
-          await updateLocation(coord);
+          if (coord) await updateLocation(coord);
         } catch (e) {
           console.error(e);
           await new Promise(r => Timer.schedule(0.8, false, r));
