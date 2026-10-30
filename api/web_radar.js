@@ -1101,7 +1101,7 @@ async function main(family) {
     const tiles = [];
     for (let y = tileMinY; y <= tileMaxY; y++) {
       for (let x = tileMinX; x <= tileMaxX; x++) {
-        if (x >= 0 && x < n && y >= 0 && y < n) tiles.push({ x, y });
+        if (y >= 0 && y < n) tiles.push({ x, y, cacheX: ((x % n) + n) % n });
       }
     }
     return {
@@ -1253,10 +1253,10 @@ async function main(family) {
 
     let netFailed = false; // 任一瓦片请求在网络层失败 = 当前没网
     const loaded = await Promise.all(vp.tiles.map(async (tile) => {
-      const name = radarCacheName(info.hash, nativeZ, tile.x, tile.y);
+      const name = radarCacheName(info.hash, nativeZ, tile.cacheX, tile.y);
       const d = await getCacheData(
         name,
-        radarTileURL(info, nativeZ, tile.x, tile.y),
+        radarTileURL(info, nativeZ, tile.cacheX, tile.y),
         'data',
         0, // 不设过期，由 cleanOldRadarCache 管理
         radarPath
@@ -1530,7 +1530,7 @@ async function main(family) {
 
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LABELS_VERSION, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
   );
 
   /** 读缓存的标签覆盖层（没有或过期返回 null） */
@@ -2285,12 +2285,12 @@ async function main(family) {
 
     const [{ radarInfo, image }, weatherData] = await Promise.all([
       buildCombinedImage(radarInfoP, stormIdsP),
-      getAlert(),
+      getAlert().catch(() => null),
       getTwoHoursWeather()
     ]);
     
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
-    const [{ type, level } = {}] = alerts;
+    const { type, level } = alerts?.[0] ?? {};
     const weatherIcon = await getWeatherIcon(weather_desc, sunset?.is_day);
     
     const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
