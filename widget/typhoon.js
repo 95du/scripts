@@ -192,73 +192,15 @@ const getLocation = async () => {
   }
 };
 
-// 解析台风数据
-const parse = t => {
-  t = t.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const name = t.match(/中文名[：:]\s*(\S+)/)?.[1];
-  const ename = t.match(/英文名[：:]\s*(\S+)/)?.[1];
-  const source = t.match(/名字来源[：:]\s*(.*?)\s*意义[：:]/)?.[1];
-  const meaning = t.match(/意义[：:]\s*(.+)/)?.[1];
-  return name && { name, ename, source, meaning };
-};
-  
-// 获取台风命名
-const getNextTyphoonNames = async (history, count = 6) => {
-  if (!history?.length) return [];
-
-  const colors = [
-    ['#00C400', '#FF4050'], 
-    ['#39A7F8', '#43FF4B'],
-    ['#FFD83A', '#669999'], 
-    ['#FDAC03', '#40DDFF'],
-    ['#F95BF9', '#246ED4'], 
-    ['#FF0000', '#FF66FF']
-  ];
-
-  const html = await getCacheData(
-    'nexttyphoonNames.html',
-    'https://www.nmc.cn/publish/typhoon/typhoon-name/index.html',
-    'string', 2160
-  );
-
-  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)]
-    .map(m => [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
-      .filter((_, i) => !(i % 2)).map(x => parse(x[1])).filter(Boolean))
-    .filter(x => x.length === 5);
-
-  const list = rows.flatMap((_, col) => rows.map(row => row[col]).filter(Boolean));
-  const same = (a, b) => a.name === b.name || a.ename?.toUpperCase() === b.ename?.toUpperCase();
-  let index = history.reduce((i, x) =>
-    i >= 0 ? i : list.findIndex(y => same(x, y)), -1);
-
-  if (index < 0) {
-    const next = history
-      .filter(x => /^\d{6}$/.test(x.tfbh))
-      .sort((a, b) => a.tfbh - b.tfbh)
-      .find(x => list.some(y => same(x, y)));
-    index = next ? list.findIndex(x => same(x, next)) : -1;
-  }
-
-  if (index < 0) return [];
-  const current = new Set(history.map(x => x.name));
-  return Array.from({ length: count }, (_, i) =>
-    list[(index + i + 1) % list.length]
-  ).filter(x => !current.has(x.name)).map((x, i) => ({
-    ...x,
-    iconColor: colors[i % 6][0],
-    textColor: colors[i % 6][1]
-  }));
-};
-
 // 获取当年历史台风
-const getHistoryTyphoon = async (year = new Date().getFullYear()) => {
+const getNextTyphoonNames = async (count = 6) => {
   try {
-    const url = `https://tf02.istrongcloud.com/data/complex/${year}.json`;
-    const data = await getCacheData('historyTyphoon.json', url, 'json', 6);
+    const url = 'https://raw.githubusercontent.com/95du/scripts/master/update/nextTyphoonNames.json';
+    const data = await getCacheData('nextTyphoonNames.json', url, 'json', 4);
     if (!data || !Array.isArray(data)) return [];
-    return data.filter(item => item.is_current === 1);
+    return data.slice(0, count);
   } catch (e) {
-    console.error(`历史台风失败: ${e}`);
+    console.error(`台风名称失败: ${e}`);
     return [];
   }
 };
@@ -1335,11 +1277,11 @@ const selectSkin = async () => {
       submitBtn.style.display = activeTheme.isVip ? 'none' : 'block';
     }
     
-    function triggerAnim(btn, e) {
+    function triggerAnim(btn, e, ripple = true) {
       btn.classList.remove('skin-clicking');
       void btn.offsetWidth;
       btn.classList.add('skin-clicking');
-      if (e) {
+      if (ripple && e) {
         btn.classList.add('skin-ripple');
         const rect = btn.getBoundingClientRect();
         const span = document.createElement('span');
@@ -1352,18 +1294,18 @@ const selectSkin = async () => {
         }, 850);
       }
     }
-
-    const bindInvoke = (btn, code, saveTheme = false) => {
+    
+    const bindInvoke = (btn, code, saveTheme = false, ripple = true) => {
       btn.addEventListener('click', function(e) {
-        triggerAnim(this, e);
+        triggerAnim(this, e, ripple);
         if (saveTheme) localStorage.setItem('THEME', themes[currentIndex].id);
         invoke(code, currentIndex);
       });
     };
-
+    
     bindInvoke(pathBtn, 'typhoon');
     bindInvoke(globalBtn, 'globalTyphoon');
-    bindInvoke(vipBtn, 'skinSelected', true);
+    bindInvoke(vipBtn, 'skinSelected', true, false);
     bindInvoke(submitBtn, 'skinSelected', true);
     renderList();
   </script>
@@ -3036,8 +2978,7 @@ const runWidget = async () => {
       await getTCDetails(tcItem);
     } else {
       const levels = levelAgency();
-      const history = await getHistoryTyphoon();
-      const typhoonNames = await getNextTyphoonNames(history);
+      const typhoonNames = await getNextTyphoonNames(6);
       widget = createLevelWidget(
         levels, typhoonNames, tcTextColor, isLarge
       );
