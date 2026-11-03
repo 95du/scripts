@@ -370,14 +370,17 @@ async function main(family) {
     );
     if (!cityInfo?.cityId) return {};
     
-    const [{ data }, alerts] = await Promise.all([
+    const [{ data }, alerts, { condition }] = await Promise.all([
       getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr),
-      getCacheData(`alert_${cityInfo.cityId}.json`, `https://h5ctywhr.api.moji.com/weatherthird/alert`, 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId })
+      getCacheData(`alert_${cityInfo.cityId}.json`, `https://h5ctywhr.api.moji.com/weatherthird/alert`, 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId }),
+      getCacheData('condition.json', 'https://h5ctywhr.api.moji.com/weatherDetail', 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId, cityType : 0 })
     ]);
+    
     data.alerts = alerts.alert;
+    data.tips = condition?.tips;
     return data || null;
   };
-
+  
   const getAlertColor = level => {
     if (level.includes('红色')) return Color.red();
     if (level.includes('橙色')) return new Color('#FF7800');
@@ -2215,6 +2218,7 @@ async function main(family) {
     weather_desc,
     weatherIcon,
     name,
+    tips = '',
     radarInfo
   ) => {
     const widget = new ListWidget();
@@ -2245,6 +2249,10 @@ async function main(family) {
         .imageSize = new Size(18, 18);
       stack.addSpacer(10);
       createStackText(stack, temp.value + temp.unit);
+      if (!name) {
+        stack.addSpacer(15);
+        createStackText(stack, tips);
+      }
     }
 
     topStack.addSpacer();
@@ -2289,10 +2297,10 @@ async function main(family) {
       getTwoHoursWeather()
     ]);
     
-    const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
+    const { city, temp, sunset, weather_desc, tips, alerts = [] } = weatherData || {};
     const { name, alertTypeId } = alerts?.[0] ?? {};
     const weatherIcon = await getWeatherIcon(weather_desc, sunset?.is_day);
-    const widget = createWidget(city, temp, weather_desc, weatherIcon, name, radarInfo);
+    const widget = createWidget(city, temp, weather_desc, weatherIcon, name, tips, radarInfo);
     widget.backgroundImage = image;
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
