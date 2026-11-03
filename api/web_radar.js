@@ -319,7 +319,7 @@ async function main(family) {
         return response;
       }
     } catch (e) {
-      logErr('请求失败', e);
+      logErr(`请求${name}失败: `, e);
       cacheState.set(filePath, 'failed'); // 网络层失败（无网络 / 超时）；若有过期缓存可回退，下面会改记为 stale
     }
     return fallback();
@@ -369,19 +369,20 @@ async function main(family) {
       'POST', { lon: setting.gcjLng, lat: setting.gcjLat }
     );
     if (!cityInfo?.cityId) return {};
-    const res = await getCacheData(
-      `weather_${cityInfo.cityId}.json`,
-      `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`,
-      'json', 1, cacheStr
-    );
-    return res?.data || null;
+    
+    const [{ data }, alerts] = await Promise.all([
+      getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr),
+      getCacheData(`alert_${cityInfo.cityId}.json`, `https://h5ctywhr.api.moji.com/weatherthird/alert`, 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId })
+    ]);
+    data.alerts = alerts.alert;
+    return data || null;
   };
 
   const getAlertColor = level => {
-    if (level === '红色') return Color.red();
-    if (level === '橙色') return new Color('#FF7800');
-    if (level === '黄色') return new Color('#EAC010');
-    if (level === '蓝色') return Color.blue();
+    if (level.includes('红色')) return Color.red();
+    if (level.includes('橙色')) return new Color('#FF7800');
+    if (level.includes('黄色')) return new Color('#EAC010');
+    if (level.includes('蓝色')) return Color.blue();
     return new Color('#000000', 0.4);
   };
 
@@ -501,7 +502,7 @@ async function main(family) {
   const getStormDetail = async id => {
     if (!id) return null;
     try {
-      const data = await getCacheData(`storm_detail_${id}.json`, `https://zoom.earth/data/storms/?id=${encodeURIComponent(id)}&lang=zh`, 'json', 0.6, cacheStr);
+      const data = await getCacheData(`storm_detail_${id}.json`, `https://zoom.earth/data/storms/?id=${encodeURIComponent(id)}&lang=zh`, 'json', 1.2, cacheStr);
       if (!data?.id) return null;
   
       const valid = p => p?.coordinates?.length >= 2 && Number.isFinite(p.coordinates[0]) && Number.isFinite(p.coordinates[1]) && Math.abs(p.coordinates[0]) <= 180 && Math.abs(p.coordinates[1]) <= 90 && Number.isFinite(Date.parse(p.date));
@@ -2210,11 +2211,10 @@ async function main(family) {
 
   const createWidget = (
     city = `东经${Number(LNG).toFixed(3)}°   北纬${Number(LAT).toFixed(3)}°`,
-    type = '',
-    levelColor,
     temp = {},
     weather_desc,
     weatherIcon,
+    name,
     radarInfo
   ) => {
     const widget = new ListWidget();
@@ -2230,11 +2230,11 @@ async function main(family) {
     icon.imageSize = new Size(15, 15);
     icon.tintColor = Color.white();
 
-    if (type) {
+    if (name) {
       stack.addSpacer(15);
-      const typeText = stack.addText(`${type}预警`);
+      const typeText = stack.addText(name);
       typeText.font = Font.mediumSystemFont(14);
-      typeText.textColor = levelColor;
+      typeText.textColor = getAlertColor(name);
     }
 
     if (weather_desc && temp) {
@@ -2290,10 +2290,9 @@ async function main(family) {
     ]);
     
     const { city, temp, sunset, weather_desc, alerts = [] } = weatherData || {};
-    const { type, level } = alerts?.[0] ?? {};
+    const { name, alertTypeId } = alerts?.[0] ?? {};
     const weatherIcon = await getWeatherIcon(weather_desc, sunset?.is_day);
-    
-    const widget = createWidget(city, type, getAlertColor(level), temp, weather_desc, weatherIcon, radarInfo);
+    const widget = createWidget(city, temp, weather_desc, weatherIcon, name, radarInfo);
     widget.backgroundImage = image;
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
