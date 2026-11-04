@@ -25,9 +25,7 @@ const tdtPath = ensureDir(fm.joinPath(mainPath, 'tdt_tiles'));
 const travelPath = ensureDir(fm.joinPath(mainPath, 'travel'));
 const settingPath = fm.joinPath(mainPath, 'setting.json');
 
-const writeSettings = (setting) => {
-  fm.writeString(settingPath, JSON.stringify(setting, null, 2));
-};
+const writeSettings = (setting) => fm.writeString(settingPath, JSON.stringify(setting, null, 2));
 
 const getSetting = () => {
   if (fm.fileExists(settingPath)) {
@@ -74,10 +72,7 @@ const getCacheData = async (
   if (data && !expired) return data;
   try {
     const request = new Request(url);
-    request.headers = {
-      'User-Agent': 'Mozilla/5.0',
-      'Accept': '*/*'
-    };
+    request.headers = { 'User-Agent': 'Mozilla/5.0' };
     const response = type === 'json'
       ? await request.loadJSON()
       : type === 'string'
@@ -192,7 +187,7 @@ const getLocation = async () => {
   }
 };
 
-// 获取当年历史台风
+// 获取下一个台风名称
 const getNextTyphoonNames = async (count = 6) => {
   try {
     const url = 'https://raw.githubusercontent.com/95du/scripts/master/update/nextTyphoonNames.json';
@@ -1171,9 +1166,9 @@ const selectSkin = async () => {
       <div class="setting-row">
         <div class="setting-label">
           <i class="icon-sprite icon-satellite"></i>
-          <span class="modal-text">雷达降雨</span>
+          <span class="modal-text">扰动信息</span>
         </div>
-        <input type="checkbox" class="checkbox" id="rain">
+        <input type="checkbox" class="checkbox" id="tcLevel">
       </div>
       <hr class="separ">
       <div class="setting-row">
@@ -1223,12 +1218,12 @@ const selectSkin = async () => {
     const iconBtn = document.getElementById('iconBtn');
     const travel = document.getElementById('travel');
     const radar = document.getElementById('radar');
-    const rain = document.getElementById('rain');
+    const rain = document.getElementById('tcLevel');
 
     // 开关状态初始化与事件绑定
     travel.checked = localStorage.getItem('travel') === 'true';
     radar.checked = localStorage.getItem('radar') === 'true';
-    rain.checked = localStorage.getItem('rain') === 'true';
+    rain.checked = localStorage.getItem('tcLevel') === 'true';
 
     const bindSwitch = (el, key) => {
       el.addEventListener('change', function() {
@@ -1238,7 +1233,7 @@ const selectSkin = async () => {
     };
     bindSwitch(travel, 'travel');
     bindSwitch(radar, 'radar');
-    bindSwitch(rain, 'rain');
+    bindSwitch(rain, 'tcLevel');
 
     // 显示 / 隐藏弹窗
     const toggleModal = show => overlay.classList.toggle('active', show);
@@ -1336,8 +1331,8 @@ const selectSkin = async () => {
         setting.radar = data;
         writeSettings(setting);
         break;
-      case 'rain':
-        setting.rain = data;
+      case 'tcLevel':
+        setting.tcLevel = data;
         writeSettings(setting);
         break;
     }
@@ -2780,7 +2775,7 @@ const createTCWidget = (tcItem, tc, date, info, tcLocation, textColor, isLarge) 
     listStack.addSpacer(12);
     const valueText = listStack.addText(item.value);
     
-    const chance = setting?.tc[tc.ident];
+    const chance = setting.tc && setting?.tc[tc.ident];
     if (i === 1 && chance) {
       listStack.addSpacer(6);
       const badge = listStack.addStack();
