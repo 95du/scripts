@@ -2249,7 +2249,7 @@ async function main(family) {
         .imageSize = new Size(18, 18);
       stack.addSpacer(10);
       createStackText(stack, temp.value + temp.unit);
-      if (!name) {
+      if (!name && tips) {
         stack.addSpacer(15);
         createStackText(stack, tips);
       }
