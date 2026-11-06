@@ -436,7 +436,7 @@ const currMergerTCNotice = (tc, details) => {
   const oldSummary = oldData.summary;
   const oldSpeed = oldData.speed;
   const speed = tc.speed || 0;
-  if (oldSummary !== summary || oldSpeed !== speed) {
+  if ((summary && oldSummary !== summary) || oldSpeed !== speed) {
     const message = [
       `${tc.strong}｜风速 ${speed} 米/秒｜${tc.pressure || 0} hPa`,
       getTyphoonLocation(tc),
