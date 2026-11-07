@@ -2692,8 +2692,9 @@ const createButtonStack = (topStack, tyIcon, name, barColor) => {
     icon.tintColor = Color.white();
     barStack.addSpacer(6);
   }
+  
   const statusText = barStack.addText(name ?? '');
-  statusText.textColor = Color.white();
+  statusText.textColor = barColor.hex === 'FFD83A' ? new Color('#555555') : Color.white();
   statusText.font = Font.boldSystemFont(14);
   return barStack;
 };
