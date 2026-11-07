@@ -365,27 +365,25 @@ async function main(family) {
     const cityInfo = await getCacheData(
       'cityInfo.json',
       'https://h5ctywhr.api.moji.com/weatherthird/getCityInfo',
-      'json', 2, cacheStr,
+      'json', 1, cacheStr,
       'POST', { lon: setting.gcjLng, lat: setting.gcjLat }
     );
     if (!cityInfo?.cityId) return {};
     
-    const [{ data }, alerts, { condition }] = await Promise.all([
+    const [{ data }, { condition }] = await Promise.all([
       getCacheData(`weather_${cityInfo.cityId}.json`, `https://co.moji.com/api/weather2/weather?lang=zh&city=${cityInfo.cityId}`, 'json', 1, cacheStr),
-      getCacheData(`alert_${cityInfo.cityId}.json`, `https://h5ctywhr.api.moji.com/weatherthird/alert`, 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId }),
       getCacheData('condition.json', 'https://h5ctywhr.api.moji.com/weatherDetail', 'json', 1, cacheStr, 'POST', { cityId: cityInfo.cityId, cityType : 0 })
     ]);
     
-    data.alerts = alerts.alert;
     data.tips = condition?.tips;
     return data || null;
   };
   
   const getAlertColor = level => {
-    if (level.includes('红色')) return Color.red();
-    if (level.includes('橙色')) return new Color('#FF7800');
-    if (level.includes('黄色')) return new Color('#EAC010');
-    if (level.includes('蓝色')) return Color.blue();
+    if (level === '红色') return Color.red();
+    if (level === '橙色') return new Color('#FF7800');
+    if (level === '黄色') return new Color('#EAC010');
+    if (level === '蓝色') return Color.blue();
     return new Color('#000000', 0.4);
   };
 
@@ -407,7 +405,8 @@ async function main(family) {
       '小到中雪': 408, '中到大雪': 409, '大到暴雪': 410, '雪': 499,
       '薄雾': 500, '雾': 501, '霾': 502, '扬沙': 503, '浮尘': 504, '沙尘暴': 507, '强沙尘暴': 508,
       '浓雾': 509, '强浓雾': 510, '中度霾': 511, '重度霾': 512, '严重霾': 513, '大雾': 514,
-      '特强浓雾': 515, '热': 900, '冷': 901
+      '特强浓雾': 515, 
+      '热': 900, '冷': 901
     };
     const iconId = iconMap[key] ?? (isDay ? 101 : 151);
     return await module.getCacheData(`https://static.qweather.com/img/common/icon/202106d/${iconId}.png`, 720, `${iconId}.png`);
@@ -2217,7 +2216,8 @@ async function main(family) {
     temp = {},
     weather_desc,
     weatherIcon,
-    name,
+    type,
+    level,
     tips = '',
     radarInfo
   ) => {
@@ -2234,11 +2234,11 @@ async function main(family) {
     icon.imageSize = new Size(15, 15);
     icon.tintColor = Color.white();
 
-    if (name) {
+    if (type) {
       stack.addSpacer(15);
-      const typeText = stack.addText(name);
+      const typeText = stack.addText(`${type}预警`);
       typeText.font = Font.mediumSystemFont(14);
-      typeText.textColor = getAlertColor(name);
+      typeText.textColor = getAlertColor(level);
     }
 
     if (weather_desc && temp) {
@@ -2249,7 +2249,7 @@ async function main(family) {
         .imageSize = new Size(18, 18);
       stack.addSpacer(10);
       createStackText(stack, temp.value + temp.unit);
-      if (!name && tips) {
+      if (!type && tips) {
         stack.addSpacer(15);
         createStackText(stack, tips);
       }
@@ -2298,9 +2298,9 @@ async function main(family) {
     ]);
     
     const { city, temp, sunset, weather_desc, tips, alerts = [] } = weatherData || {};
-    const { name, alertTypeId } = alerts?.[0] ?? {};
+    const { type, level } = alerts?.[0] ?? {};
     const weatherIcon = await getWeatherIcon(weather_desc, sunset?.is_day);
-    const widget = createWidget(city, temp, weather_desc, weatherIcon, name, tips, radarInfo);
+    const widget = createWidget(city, temp, weather_desc, weatherIcon, type, level, tips, radarInfo);
     widget.backgroundImage = image;
     if (config.runsInApp) {
       await widget[`present${family.charAt(0).toUpperCase() + family.slice(1)}`]();
