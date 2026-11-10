@@ -155,6 +155,14 @@ async function main(family) {
   // 显示热带系统
   const SHOW_TROPICAL_SYSTEM = setting.showTropicalSystem ?? true;
   
+  /* ============================ */
+  // 温度图层开关与默认值
+  /* ============================ */
+  const SHOW_TEMPERATURE = setting.showTemperature ?? true;
+  const TEMP_MODEL = setting.tempModel === 'icon' ? 'icon' : 'gfs';
+  const TEMP_TYPE = setting.tempType === 'temperature-feel' ? 'temperature-feel' : 'temperature'; // 气温 | 体感
+  const TEMP_CACHE_HOURS = 1.5;  // 温度数据与「带温度的标签图」的最长缓存时间
+  
   const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
     module.getCacheData(`${rootUrl}/update/typhoon_icons.json`, 720, 'typhoon_icons.json'),
     module.getCacheData(`${rootUrl}/update/zoomEarth_icons.json`, 720, 'zoomEarth_icons.json'),
@@ -1411,6 +1419,63 @@ async function main(family) {
     return undefined;
   };
 
+  /* ============================ */
+  // 温度
+  /* ============================ */
+  /**
+  /** 屏幕坐标 → 经纬度 */
+  const screenToLatLng = (sx, sy) => {
+    const world = TILE_SIZE * 2 ** RZ;
+    const c = worldPx(LAT, LNG, RZ);
+    const x = c.x + (sx - TARGET_WIDTH / 2);
+    const y = c.y + (sy - TARGET_HEIGHT / 2);
+    const lng = (x / world) * 360 - 180;
+    const n = Math.PI - (2 * Math.PI * y) / world;
+    const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    return { lat, lng };
+  };
+  
+  /**
+   * 批量取当前气温（Open-Meteo，模型 / 类型由 TEMP_MODEL、TEMP_TYPE 决定）
+   * points: [{ key, lat, lng }, ...]
+   * 返回 { map: Map<key, 摄氏度整数>, ok }；ok = 数据是新鲜的（缓存命中或刚联网成功）
+   */
+  const fetchTempsForPoints = async (points) => {
+    const map = new Map();
+    const list = points.slice(0, 100);
+    if (!list.length) return { map, ok: true };
+    const lats = list.map(p => p.lat.toFixed(3)).join(',');
+    const lngs = list.map(p => p.lng.toFixed(3)).join(',');
+    const variable = TEMP_TYPE === 'temperature-feel' ? 'apparent_temperature' : 'temperature_2m';
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}` +
+      `&current=${variable}&models=${TEMP_MODEL}_seamless`;
+    // 缓存名用完整请求的哈希，避免不同城市组合互相串缓存
+    let h = 5381;
+    for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) | 0;
+    const cacheName = `om_temp_${(h >>> 0).toString(36)}.json`;
+    try {
+      const data = await getCacheData(cacheName, url, 'json', TEMP_CACHE_HOURS / 4, cacheStr, 'GET', null, true);
+      const arr = Array.isArray(data) ? data : (data ? [data] : []);
+      arr.forEach((item, i) => {
+        const t = item?.current?.[variable];
+        if (i < list.length && Number.isFinite(t)) map.set(list[i].key, Math.round(t));
+      });
+      // 清理旧的温度缓存
+      for (const name of fm.listContents(cacheStr)) {
+        if (!name.startsWith('om_temp_') || name === cacheName) continue;
+        const p = fm.joinPath(cacheStr, name);
+        if ((Date.now() - fm.creationDate(p).getTime()) / 36e5 > 6) fm.remove(p);
+      }
+    } catch (e) {
+      logErr('批量气温失败', e);
+    }
+    const state = cacheState.get(fm.joinPath(cacheStr, cacheName));
+    return { 
+      map, 
+      ok: map.size > 0 && (state === 'hit' || state === 'fresh') 
+    };
+  };
+    
   /**
    * 收集可见标签（屏幕坐标，纯网络）
    * 瓦片级别依次尝试：ceil(ZOOM) → +1 → 逐级向下，取第一个有可显示内容的级别
@@ -1464,6 +1529,8 @@ async function main(family) {
   };
 
   /** WebView 内排版并绘制标签：测量文字 → 贪心碰撞检测 → 描边+填充 → 透明 PNG */
+  /** WebView 内排版并绘制标签：测量文字 → 贪心碰撞检测 → 描边+填充 → 温度胶囊 → 透明 PNG */
+  /** WebView 内排版并绘制标签：城市名在上，温度胶囊在下（原白点位置） */
   const wvLabels = A => {
     try {
       const FONT = '-apple-system, "PingFang SC", "Hiragino Sans GB", "Helvetica Neue", sans-serif';
@@ -1479,6 +1546,50 @@ async function main(family) {
       const placed = [];
       const hit = r => placed.some(q => r.x < q.x + q.w && r.x + r.w > q.x && r.y < q.y + q.h && r.y + r.h > q.y);
   
+      // Zoom Earth 原版温度胶囊色阶：按温度在相邻色标之间线性插值（色标取自原版截图）
+      const TEMP_STOPS = [
+        [-40, [170, 130, 250]],
+        [-25, [150, 150, 248]],
+        [-13, [134, 166, 246]],
+        [-9,  [126, 174, 244]],
+        [-7,  [122, 178, 246]],
+        [-3,  [116, 192, 248]],
+        [0,   [116, 204, 240]],
+        [4,   [102, 235, 241]],
+        [5,   [ 99, 241, 242]],
+        [6,   [109, 245, 236]],
+        [8,   [138, 253, 219]],
+        [9,   [147, 255, 207]],
+        [11,  [158, 255, 181]],
+        [13,  [174, 255, 165]],
+        [14,  [195, 255, 166]],
+        [15,  [210, 255, 169]],
+        [16,  [227, 255, 171]],
+        [17,  [240, 255, 172]],
+        [20,  [255, 255, 158]],
+        [22,  [255, 255, 135]],
+        [23,  [255, 252, 126]],
+        [25,  [255, 230, 109]],
+        [26,  [255, 220, 103]],
+        [27,  [255, 206,  95]],
+        [28,  [255, 193,  87]],
+        [34,  [255, 160,  80]],
+        [40,  [250, 120,  80]],
+      ];
+      const tempBg = (t) => {
+        const S = TEMP_STOPS;
+        if (t <= S[0][0]) return 'rgb(' + S[0][1].join(',') + ')';
+        for (let i = 1; i < S.length; i++) {
+          if (t <= S[i][0]) {
+            const [t0, c0] = S[i - 1], [t1, c1] = S[i];
+            const k = (t - t0) / (t1 - t0);
+            return 'rgb(' + c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(',') + ')';
+          }
+        }
+        return 'rgb(' + S[S.length - 1][1].join(',') + ')';
+      };
+      const tempFg = () => '#1a1a1a';
+  
       let drawn = 0;
       for (const it of A.items) {
         if (drawn >= A.max) break;
@@ -1490,20 +1601,57 @@ async function main(family) {
   
         let by;
         const rects = [];
-        if (kind === 'p') {
-          by = it.y - 9 * fs;                       // 文字在圆点上方（anchor = b）
-          rects.push({ x: it.x - 6 * fs, y: it.y - 6 * fs, w: 12 * fs, h: 12 * fs });
-        } else {
-          by = it.y + size * 0.35;                  // 区域名居中于坐标点
-        }
-        rects.push({ x: it.x - w / 2 - pad, y: by - size * 0.95 - pad, w: w + pad * 2, h: size * 1.25 + pad * 2 });
+        let tempRect = null;
+        // 胶囊：中心 = 锚点 (it.x, it.y)
+        if (kind === 'p' && Number.isFinite(it.temp)) {
+          const tFont = 14 * fs;
+          ctx.font = '700 ' + tFont + 'px ' + FONT;
+          const label = it.temp + '°';
+          const tw = ctx.measureText(label).width;
+          const tPadX = 8 * fs, tPadY = 4 * fs;
+          const bw = Math.max(tw + tPadX * 2, 28 * fs);
+          const bh = tFont + tPadY * 2;
+          const bx = it.x - bw / 2;
+          const ty = it.y - bh / 2;
+          tempRect = { x: bx, y: ty, w: bw, h: bh, label, tFont };
+          rects.push(tempRect);
   
-        const t = rects[rects.length - 1];
-        if (t.x + t.w < 0 || t.x > A.ow || t.y + t.h < 0 || t.y > A.oh) continue;
+          // 城市名在胶囊上方
+          const gap = 6 * fs;
+          by = ty - gap;
+          rects.push({
+            x: it.x - w / 2 - pad,
+            y: by - size * 0.95 - pad,
+            w: w + pad * 2,
+            h: size * 1.15 + pad * 2
+          });
+        } else if (kind === 'p') {
+          // 无温度：白点 + 上方文字
+          by = it.y - 9 * fs;
+          rects.push({ x: it.x - 6 * fs, y: it.y - 6 * fs, w: 12 * fs, h: 12 * fs });
+          rects.push({
+            x: it.x - w / 2 - pad,
+            y: by - size * 0.95 - pad,
+            w: w + pad * 2,
+            h: size * 1.25 + pad * 2
+          });
+        } else {
+          by = it.y + size * 0.35;
+          rects.push({
+            x: it.x - w / 2 - pad,
+            y: by - size * 0.95 - pad,
+            w: w + pad * 2,
+            h: size * 1.25 + pad * 2
+          });
+        }
+  
+        const probe = rects[rects.length - 1];
+        if (probe.x + probe.w < 0 || probe.x > A.ow || probe.y + probe.h < 0 || probe.y > A.oh) continue;
         if (rects.some(hit)) continue;
         rects.forEach(r => placed.push(r));
   
-        if (kind === 'p') {
+        // 无温度才画小白点
+        if (kind === 'p' && !tempRect) {
           ctx.beginPath();
           ctx.arc(it.x, it.y, 3.6 * fs, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
@@ -1513,6 +1661,8 @@ async function main(family) {
           ctx.fill();
         }
   
+        // 城市名
+        ctx.font = (kind === 'c' ? 'italic 600 ' : '600 ') + size + 'px ' + FONT;
         ctx.lineWidth = 3.6 * fs;
         ctx.strokeStyle = 'rgba(8,16,28,0.55)';
         ctx.fillStyle =
@@ -1520,8 +1670,33 @@ async function main(family) {
           kind === 'c' ? 'rgba(176,210,240,0.9)' :
           kind === 'a' ? 'rgba(255,255,255,0.62)' :
           'rgba(255,255,255,0.74)';
+        ctx.textBaseline = 'alphabetic';
         ctx.strokeText(it.t, it.x, by);
         ctx.fillText(it.t, it.x, by);
+  
+        // 温度胶囊
+        if (tempRect) {
+          const temp = it.temp;
+          const { x: bx, y: ty, w: bw, h: bh, label, tFont } = tempRect;
+          const rr = bh / 2;
+          ctx.beginPath();
+          ctx.moveTo(bx + rr, ty);
+          ctx.arcTo(bx + bw, ty, bx + bw, ty + bh, rr);
+          ctx.arcTo(bx + bw, ty + bh, bx, ty + bh, rr);
+          ctx.arcTo(bx, ty + bh, bx, ty, rr);
+          ctx.arcTo(bx, ty, bx + bw, ty, rr);
+          ctx.closePath();
+          ctx.fillStyle = tempBg(temp);
+          ctx.globalAlpha = 0.95;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = tempFg(temp);
+          ctx.font = '700 ' + tFont + 'px ' + FONT;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, it.x, ty + bh / 2);
+          ctx.textBaseline = 'alphabetic';
+        }
         drawn++;
       }
   
@@ -1530,20 +1705,22 @@ async function main(family) {
       completion('ERR:' + (e && e.message ? e.message : String(e)));
     }
   };
-
+  
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LABELS_VERSION, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE].join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LABELS_VERSION, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE, SHOW_TEMPERATURE ? ['t1c2', TEMP_MODEL, TEMP_TYPE].join('-') : 't0'].join('_').replace(/\./g, 'p') + '.png'
   );
-
-  /** 读缓存的标签覆盖层（没有或过期返回 null） */
+  
+  /** 读缓存的标签覆盖层 */
   const readOverlay = () => {
     const path = overlayPath();
     if (!fm.fileExists(path)) return null;
     const ageH = (Date.now() - fm.creationDate(path).getTime()) / 36e5;
-    return ageH <= LABELS_CACHE_HOURS ? fm.readImage(path) : null;
+    // 标签图里画了温度，缓存时间不能超过温度的有效期
+    const maxH = SHOW_TEMPERATURE ? Math.min(LABELS_CACHE_HOURS, TEMP_CACHE_HOURS) : LABELS_CACHE_HOURS;
+    return ageH <= maxH ? fm.readImage(path) : null;
   };
-
+  
   const drawLabelOverlay = async (items) => {
     const result = await runWV(wvLabels, {
       items, ow: TARGET_WIDTH, oh: TARGET_HEIGHT, fs: LABEL_FONT_SCALE * K, max: MAX_LABELS
@@ -2080,41 +2257,64 @@ async function main(family) {
    */
   const buildCombinedImage = async (radarInfoP, stormIdsP) => {
     getWV().catch(e => logErr('WebView 初始化失败', e));
-
+  
     const radarP = radarInfoP
       .then(info => fetchRadar(info))
       .then(data => renderRadar(data))
       .catch(async e => {
         logErr('雷达错误', e);
-        // 元数据拿不到 = 没网；元数据是实时的但渲染失败 = 缓存回退
         const meta = await radarInfoP;
         const last = loadLastRadar(fallbackSource(meta));
         return last || null;
       });
-
+  
     const overlayP = (async () => {
       if (!SHOW_LABELS) return null;
       const cached = readOverlay();
       if (cached) return cached;
       const items = await collectLabels();
-      return items?.length ? await drawLabelOverlay(items) : null;
+      if (!items?.length) return null;
+  
+      // 城市点取温，写到 it.temp，供 wvLabels 画胶囊
+      if (SHOW_TEMPERATURE) {
+        const pts = items
+          .filter(it => it.k === 'p')
+          .map(it => {
+            const { lat, lng } = screenToLatLng(it.x, it.y);
+            return {
+              key: it.t + '|' + Math.round(it.x) + '|' + Math.round(it.y),
+              lat, lng, it
+            };
+          });
+        if (pts.length) {
+          const { map: tempMap, ok } = await fetchTempsForPoints(pts);
+          for (const p of pts) {
+            if (tempMap.has(p.key)) p.it.temp = tempMap.get(p.key);
+          }
+          // 温度没取到（或只回退到旧缓存）：这张标签图不落盘，下次运行重试
+          if (!ok) items.complete = false;
+        }
+      }
+      return await drawLabelOverlay(items);
     })().catch(e => (logErr('地图标签错误', e), null));
-
+  
     const stormsP = stormIdsP.then(async ids => {
       const list = (await Promise.all(ids.map(getStormDetail))).filter(Boolean);
       cleanStormCache(ids);
       return list;
     }).catch(e => (logErr('台风数据错误', e), []));
-
-    // 底图失败不应让整个组件空白：回退为纯海洋底色
+  
     const baseP = getBaseMap().catch(e => (logErr('底图错误', e), null));
-    // 国界线失败只是少一层线，不影响其他图层
     const lineP = getLineOverlay().catch(e => (logErr('国界线错误', e), null));
-
-    const [baseImg, radar, lineImg, overlay, storms] = await Promise.all([baseP, radarP, lineP, overlayP, stormsP]);
-
+  
+    const [baseImg, radar, lineImg, overlay, storms] = await Promise.all([
+      baseP, radarP, lineP, overlayP, stormsP
+    ]);
+  
     const full = new Rect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
     const ctx = newCtx(TARGET_WIDTH, TARGET_HEIGHT);
+  
+    // 合成图片顺序：底图 → 雷达 → 国界线 → 标签(含温度胶囊) → 台风 → 定位点 → 雨雪 → 气泡
     if (baseImg) {
       ctx.drawImageInRect(baseImg, full);
     } else {
@@ -2124,24 +2324,24 @@ async function main(family) {
     if (radar?.image) ctx.drawImageInRect(radar.image, full);
     if (lineImg) ctx.drawImageInRect(lineImg, full);
     if (overlay) ctx.drawImageInRect(overlay, full);
-
+    // 是否显示台风
     if (SHOW_TROPICAL_SYSTEM) {
       attachScreen(storms);
       drawStormTracks(ctx, storms);
       drawStormIcons(ctx, storms);
     }
-
-    // 中心定位点（原生绘制）
+  
+    // 中心定位点
     const cx = TARGET_WIDTH / 2;
     const cy = TARGET_HEIGHT / 2;
-    const ro = (LOC_ICON_SIZE * K) / 2
+    const ro = (LOC_ICON_SIZE * K) / 2;
     const ri = ro * 0.72;
     ctx.setFillColor(Color.white());
     ctx.fillEllipse(new Rect(cx - ro, cy - ro, ro * 2, ro * 2));
     ctx.setFillColor(new Color(LOC_COLOR));
     ctx.fillEllipse(new Rect(cx - ri, cy - ri, ri * 2, ri * 2));
-
-    // 雨雪特效、气泡画在最上层
+  
+    // 雨雪特效、气泡
     const probe = radar?.probe ?? null;
     const decoded = probe ? decodeRadarTooltip(probe) : null;
     let fx = null;
@@ -2151,15 +2351,14 @@ async function main(family) {
       fx = await buildPrecip(probe, decoded).catch(e => (logErr('雨雪特效错误', e), null));
     }
     if (fx) ctx.drawImageInRect(fx, full);
-
+  
     const bubbles = await buildBubbles(decoded, SHOW_TROPICAL_SYSTEM ? storms : [])
       .catch(e => (logErr('气泡错误', e), []));
     for (const b of bubbles) {
       const img = base64ToImage(b.p);
       if (img) ctx.drawImageInRect(img, new Rect(b.x, b.y, b.w, b.h));
     }
-
-    // 持久化 bmMaxZ 等运行期状态
+  
     try { writeSettings(setting); } catch (e) { logErr('保存设置失败', e); }
     return { image: ctx.getImage(), radarInfo: radar?.radarInfo ?? null };
   };
