@@ -259,25 +259,27 @@ async function main() {
   };
   
   const updateLocation = async (coord) => {
-    const index = await module.generateAlert(
-      '是否更新坐标❓',
-      `【纬度 ${coord.lat}，经度 ${coord.lng}】\n使用自定义坐标前，请先关闭自动定位。否则缓存过期后，系统将重新获取当前位置并覆盖自定义坐标。`,
-      options = ['取消', '更新']
-    );
-    if (index === 0) return;
-    settings.gcjLng = coord.lng;
-    settings.gcjLat = coord.lat;
-    settings.updateTime = Date.now();
-    writeSettings({ 
-      ...settings, ...coord 
+    Timer.schedule(1000, false, async () => {
+      const index = await module.generateAlert(
+        '是否更新坐标❓',
+        `【纬度 ${coord.lat}，经度 ${coord.lng}】\n使用自定义坐标前，请先关闭自动定位。否则缓存过期后，系统将重新获取当前位置并覆盖自定义坐标。`,
+        options = ['取消', '更新']
+      );
+      if (index === 0) return;
+      settings.gcjLng = coord.lng;
+      settings.gcjLat = coord.lat;
+      settings.updateTime = Date.now();
+      writeSettings({ 
+        ...settings, ...coord 
+      });
+      
+      const cityInfoPath = fm.joinPath(cacheStr, 'cityInfo.json');
+      if (fm.fileExists(cityInfoPath)) fm.remove(cityInfoPath);
+      for (const file of fm.listContents(cacheStr)) {
+        if (/^weather_.+\.json$/.test(file)) fm.remove(fm.joinPath(cacheStr, file))
+      }
+      ScriptableRun();
     });
-    
-    const cityInfoPath = fm.joinPath(cacheStr, 'cityInfo.json');
-    if (fm.fileExists(cityInfoPath)) fm.remove(cityInfoPath);
-    for (const file of fm.listContents(cacheStr)) {
-      if (/^weather_.+\.json$/.test(file)) fm.remove(fm.joinPath(cacheStr, file));
-    }
-    ScriptableRun();
   };
   
   // 轮询等待网页中获取到有效的经纬度并回调
@@ -292,12 +294,12 @@ async function main() {
   
   // 视图加载主函数：运行定位监听，最后返回获取到的坐标
   const viewZoomEarth = async () => {
-    const rawHtml = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 168, 'zoomEarth.html');
+    const rawHtml = await module.getCacheData('https://raw.githubusercontent.com/95du/scripts/master/web/ZoomEarth.html', 240, 'zoomEarth.html');
     const htmlContent = rawHtml.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
       return String.fromCharCode(parseInt(grp, 16))
     });
   
-    let appScript = await module.getCacheData('https://zoom.earth/assets/js/app.24434048.js', 72, 'app.js');
+    let appScript = await module.getCacheData('https://zoom.earth/assets/js/app.24434048.js', 240, 'app.js');
     // 解除收藏数量限制
     const readLimit = 'Yt(){return(this.Vt.locations||[]).slice(-(no.st?30:3))}';
     const countLimit = 'get Kt(){return this.Jt>=(no.st?30:3)}';
@@ -656,7 +658,7 @@ async function main() {
   // 设置菜单页
   const settingMenu = [
     module.filesMenus(settings),
-    {
+        {
       type: 'group',
       items: [
         {
@@ -685,7 +687,71 @@ async function main() {
             name: 'hurricane',
             color: '#7B2FF7'
           }
+        }
+      ]
+    },
+    {
+      type: 'group',
+      items: [
+        {
+          label: '显示温度',
+          name: 'showTemperature',
+          type: 'switch',
+          icon: {
+            name: 'thermometer',
+            color: '#FF0000'
+          }
         },
+        {
+          label: '温度类型',
+          name: 'tempType',
+          type: 'select',
+          multiple: false,
+          icon: {
+            name: 'thermometer.sun.fill',
+            color: '#FF9500'
+          },
+          options: [
+            {
+              label: '数值类型',
+              values: [
+                {
+                  label: '普通气温',
+                  value: 'temperature'
+                },
+                {
+                  label: '体感温度',
+                  value: 'temperature-feel'
+                }
+              ]
+            }
+          ]
+        },
+        {
+          label: '气象模型',
+          name: 'tempModel',
+          type: 'select',
+          multiple: false,
+          icon: {
+            name: 'globe.americas.fill',
+            color: '#00C4B6'
+          },
+          options: [
+            {
+              label: '数值预报模型',
+              values: [
+                {
+                  label: 'ICON (德国气象)',
+                  value: 'icon'
+                },
+                {
+                  label: 'GFS (美国全球)',
+                  value: 'gfs'
+                }
+              ]
+            }
+          ]
+        }
       ]
     },
     {
