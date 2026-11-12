@@ -702,56 +702,6 @@ async function main() {
             color: '#FF0000'
           }
         },
-        {
-          label: '温度类型',
-          name: 'tempType',
-          type: 'select',
-          multiple: false,
-          icon: {
-            name: 'thermometer.sun.fill',
-            color: '#FF9500'
-          },
-          options: [
-            {
-              label: '数值类型',
-              values: [
-                {
-                  label: '普通气温',
-                  value: 'temperature'
-                },
-                {
-                  label: '体感温度',
-                  value: 'temperature-feel'
-                }
-              ]
-            }
-          ]
-        },
-        {
-          label: '气象模型',
-          name: 'tempModel',
-          type: 'select',
-          multiple: false,
-          icon: {
-            name: 'globe.americas.fill',
-            color: '#00C4B6'
-          },
-          options: [
-            {
-              label: '数值预报模型',
-              values: [
-                {
-                  label: 'ICON (德国气象)',
-                  value: 'icon'
-                },
-                {
-                  label: 'GFS (美国全球)',
-                  value: 'gfs'
-                }
-              ]
-            }
-          ]
-        }
       ]
     },
     {
