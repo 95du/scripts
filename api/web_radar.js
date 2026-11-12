@@ -159,8 +159,6 @@ async function main(family) {
   // 温度图层开关与默认值
   /* ============================ */
   const SHOW_TEMPERATURE = setting.showTemperature ?? true;
-  const TEMP_MODEL = setting.tempModel === 'icon' ? 'icon' : 'gfs';
-  const TEMP_TYPE = setting.tempType === 'temperature-feel' ? 'temperature-feel' : 'temperature'; // 气温 | 体感
   const TEMP_CACHE_HOURS = 1.5;  // 温度数据与「带温度的标签图」的最长缓存时间
   
   const [typhoonIcons, zoomEarthIcons, satellite] = await Promise.all([
@@ -1436,7 +1434,7 @@ async function main(family) {
   };
   
   /**
-   * 批量取当前气温（Open-Meteo，模型 / 类型由 TEMP_MODEL、TEMP_TYPE 决定）
+   * 批量取当前气温（Open-Meteo ICON，普通气温）
    * points: [{ key, lat, lng }, ...]
    * 返回 { map: Map<key, 摄氏度整数>, ok }；ok = 数据是新鲜的（缓存命中或刚联网成功）
    */
@@ -1446,9 +1444,8 @@ async function main(family) {
     if (!list.length) return { map, ok: true };
     const lats = list.map(p => p.lat.toFixed(3)).join(',');
     const lngs = list.map(p => p.lng.toFixed(3)).join(',');
-    const variable = TEMP_TYPE === 'temperature-feel' ? 'apparent_temperature' : 'temperature_2m';
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lngs}` +
-      `&current=${variable}&models=${TEMP_MODEL}_seamless`;
+      `&current=temperature_2m&models=icon_seamless`;
     // 缓存名用完整请求的哈希，避免不同城市组合互相串缓存
     let h = 5381;
     for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) | 0;
@@ -1457,7 +1454,7 @@ async function main(family) {
       const data = await getCacheData(cacheName, url, 'json', TEMP_CACHE_HOURS / 4, cacheStr, 'GET', null, true);
       const arr = Array.isArray(data) ? data : (data ? [data] : []);
       arr.forEach((item, i) => {
-        const t = item?.current?.[variable];
+        const t = item?.current?.temperature_2m;
         if (i < list.length && Number.isFinite(t)) map.set(list[i].key, Math.round(t));
       });
       // 清理旧的温度缓存
@@ -1470,10 +1467,7 @@ async function main(family) {
       logErr('批量气温失败', e);
     }
     const state = cacheState.get(fm.joinPath(cacheStr, cacheName));
-    return { 
-      map, 
-      ok: map.size > 0 && (state === 'hit' || state === 'fresh') 
-    };
+    return { map, ok: map.size > 0 && (state === 'hit' || state === 'fresh') };
   };
     
   /**
@@ -1602,8 +1596,9 @@ async function main(family) {
         let by;
         const rects = [];
         let tempRect = null;
-        // 胶囊：中心 = 锚点 (it.x, it.y)
+  
         if (kind === 'p' && Number.isFinite(it.temp)) {
+          // 胶囊：中心 = 锚点 (it.x, it.y)
           const tFont = 14 * fs;
           ctx.font = '700 ' + tFont + 'px ' + FONT;
           const label = it.temp + '°';
@@ -1708,10 +1703,10 @@ async function main(family) {
   
   const overlayPath = () => fm.joinPath(
     labelsPath,
-    ['lbl', LABELS_LANG, LABELS_VERSION, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE, SHOW_TEMPERATURE ? ['t1c2', TEMP_MODEL, TEMP_TYPE].join('-') : 't0'].join('_').replace(/\./g, 'p') + '.png'
+    ['lbl', LABELS_LANG, LABELS_VERSION, LAT, LNG, ZOOM, TARGET_WIDTH, TARGET_HEIGHT, LABEL_FONT_SCALE, SHOW_TEMPERATURE ? 't1c2' : 't0'].join('_').replace(/\./g, 'p') + '.png'
   );
   
-  /** 读缓存的标签覆盖层 */
+  /** 读缓存的标签覆盖层（没有或过期返回 null） */
   const readOverlay = () => {
     const path = overlayPath();
     if (!fm.fileExists(path)) return null;
@@ -2295,6 +2290,7 @@ async function main(family) {
           if (!ok) items.complete = false;
         }
       }
+  
       return await drawLabelOverlay(items);
     })().catch(e => (logErr('地图标签错误', e), null));
   
